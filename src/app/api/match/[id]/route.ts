@@ -1,0 +1,501 @@
+// ------------------------------------------------------------------
+// Remontada — /api/match/[id]
+// Match details from FotMob (events, stats, lineups, info, form)
+// Normalized for Persian display
+// ------------------------------------------------------------------
+import { NextResponse } from "next/server";
+import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
+import { cached } from "@/lib/cache";
+
+const UA =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
+
+async function fetchJson<T>(url: string, timeoutMs = 12000): Promise<T> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      headers: { "User-Agent": UA, Accept: "application/json" },
+      signal: ctrl.signal,
+      cache: "no-store",
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status} for ${url}`);
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+// ---------------- FotMob raw shapes ----------------
+interface FMPlayerRef { id?: number | null; name?: string | null }
+interface FMEvent {
+  type: string;
+  time?: number;
+  addedTime?: number | null;
+  isHome?: boolean | null;
+  player?: FMPlayerRef | null;
+  homeScore?: number;
+  awayScore?: number;
+  card?: string | null;           // "yellow" | "red" | ...
+  ownGoal?: boolean | null;
+  isPenalty?: boolean | null;
+  isPenaltyShootoutEvent?: boolean;
+  swap?: { name: string; id?: string }[] | null;  // [in, out]
+  injuryTimeInMin?: number;
+}
+interface FMStatRow {
+  title: string;
+  key: string;
+  stats?: (string | number | null)[];
+  rawStats?: ({ value?: number | null; total?: number } | null)[];
+  type?: string; // "graph" | "text" | "title"
+  highlighted?: string;
+}
+interface FMStatGroup {
+  title: string;
+  key?: string;
+  stats?: FMStatRow[];
+}
+interface FMStarter {
+  id: number; name: string; shirtNumber?: string;
+  positionId?: number; usualPlayingPositionId?: number;
+  verticalLayout?: { x?: number; y?: number };
+  performance?: { rating?: number };
+  age?: number;
+}
+interface FMLineupTeam {
+  id: number; name: string; formation?: string | null;
+  starters?: FMStarter[];
+  subs?: FMStarter[];
+  coach?: { name?: string; firstName?: string; lastName?: string } | null;
+}
+interface FMMatchDetails {
+  general?: {
+    matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
+    leagueName?: string; leagueRoundName?: string; countryCode?: string;
+    homeTeam?: { id?: number; name?: string };
+    awayTeam?: { id?: number; name?: string };
+    matchTimeUTC?: string; started?: boolean; finished?: boolean;
+    teamColors?: { darkMode?: { home?: string; away?: string } };
+  };
+  header?: {
+    teams?: { id?: number; name?: string; score?: number }[];
+    status?: {
+      utcTime?: string; started?: boolean; finished?: boolean; cancelled?: boolean;
+      reason?: { short?: string; long?: string } | null;
+      scoreStr?: string;
+    };
+  };
+  content?: {
+    matchFacts?: {
+      events?: { events?: FMEvent[] };
+      infoBox?: Record<string, unknown>;
+      teamForm?: [
+        { result?: number; resultString?: string }[],
+        { result?: number; resultString?: string }[]
+      ];
+      playerOfTheMatch?: {
+        id?: number;
+        name?: string | { firstName?: string; lastName?: string; fullName?: string } | null;
+        rating?: { num?: string } | null;
+        teamName?: string;
+      } | null;
+    };
+    stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
+    lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
+    momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
+  };
+}
+
+// ---------------- Persian mappings ----------------
+const EVENT_FA: Record<string, string> = {
+  Goal: "گل",
+  Card: "کارت",
+  Substitution: "تعویض",
+  Half: "پایان نیمه",
+  AddedTime: "وقت تلف‌شده",
+  MissedPenalty: "پنالتی از دست رفته",
+  Penalty: "پنالتی",
+  VAR: "ویدیو داوری",
+  Injury: "مصدمیت",
+};
+
+const STAT_FA: Record<string, string> = {
+  ballpossession: "مالکیت توپ",
+  ballpossesion: "مالکیت توپ",
+  shotsontarget: "شوت در چارچوب",
+  shots_on_target: "شوت در چارچوب",
+  shotsonunsave: "شوت‌های روی دروازه",
+  shotstarget: "شوت در چارچوب",
+  expected_goals: "گل‌های مورد انتظار (xG)",
+  expected_goals_open_play: "xG بازی باز",
+  expected_goals_set_play: "xG ضربات ایستگاهی",
+  expected_goals_non_penalty: "xG بدون پنالتی",
+  expected_goals_on_target: "xG روی در چارچوب",
+  total_shots: "شوت‌های کل",
+  shotsofftarget: "شوت خارج از چارچوب",
+  blocked_shots: "شوت بلاک‌شده",
+  shots_woodwork: "برخورد با تیرک",
+  shots_inside_box: "شوت داخل محوطه",
+  shots_outside_box: "شوت بیرون محوطه",
+  big_chance: "موقعیت طلایی",
+  big_chance_missed_title: "موقعیت طلایی از دست رفته",
+  accurate_passes: "پاس صحیح",
+  passes: "کل پاس‌ها",
+  own_half_passes: "پاس در نیمه خودی",
+  opposition_half_passes: "پاس در نیمه حریف",
+  long_balls_accurate: "پاس بلند صحیح",
+  accurate_crosses: "پاس عرضی صحیح",
+  player_throws: "اوت",
+  touches_opp_box: "لمس در محوطه حریف",
+  offsides: "آفساید",
+  "matchstats.headers.tackles": "تکل",
+  interceptions: "قطع توپ",
+  shot_blocks: "بلاک (دفاع)",
+  clearances: "دفع توپ",
+  keeper_saves: "مهار دروازه‌بان",
+  duel_won: "دوئل برده",
+  ground_duels_won: "دوئل زمینی برده",
+  aerials_won: "دوئل هوایی برده",
+  dribbles_succeeded: "دریبل موفق",
+  yellow_cards: "کارت زرد",
+  red_cards: "کارت قرمز",
+  fouls: "خطا",
+  corners: "کرنر",
+  dispossessed: "از دست دادن توپ",
+};
+
+const STAT_GROUP_FA: Record<string, string> = {
+  "top stats": "آمار کلیدی",
+  shots: "شوت‌ها",
+  "expected goals (xg)": "گل‌های مورد انتظار",
+  passes: "پاس‌ها",
+  defence: "دفاع",
+  duels: "دوئل‌ها",
+  discipline: "انضباطی",
+};
+
+function statFa(title: string, key: string): string {
+  return STAT_FA[(key || "").toLowerCase()] || STAT_FA[title?.toLowerCase()] || title;
+}
+
+function fmtMinute(e: FMEvent): string {
+  const base = e.time ?? 0;
+  if (e.addedTime && e.addedTime > 0) return `${base}+${e.addedTime}′`;
+  return `${base}′`;
+}
+
+// ---------------- lineup row clustering ----------------
+interface Chip { id: number; name: string; shirt?: string; rating?: number; _y?: number }
+
+function toChip(p: FMStarter): Chip {
+  return {
+    id: p.id,
+    name: p.name,
+    shirt: p.shirtNumber || undefined,
+    rating: p.performance?.rating ?? undefined,
+    _y: p.verticalLayout?.y ?? 0,
+  };
+}
+
+function clusterRows(starters: FMStarter[]): { players: Chip[] }[] {
+  const sorted = [...starters].sort((a, b) => (a.verticalLayout?.y ?? 0) - (b.verticalLayout?.y ?? 0));
+  const rows: Chip[][] = [];
+  for (const p of sorted) {
+    const chip = toChip(p);
+    const last = rows[rows.length - 1];
+    if (!last) {
+      rows.push([chip]);
+      continue;
+    }
+    if (Math.abs(chip._y! - last[0]._y!) <= 0.14) {
+      last.push(chip);
+    } else {
+      rows.push([chip]);
+    }
+  }
+  return rows.map((players) => ({ players: players.map(({ _y, ...rest }) => rest) }));
+}
+
+interface LineupSide {
+  teamId: number;
+  name: string;
+  fa: string;
+  formation?: string;
+  coach?: string;
+  rows: { players: Omit<Chip, "_y">[] }[];
+  subs: { id: number; name: string; shirt?: string }[];
+}
+
+// ---------------- normalizer ----------------
+export interface MatchDetailNormalized {
+  match: {
+    id: string;
+    leagueName: string;
+    leagueFa: string;
+    ccode: string;
+    leagueId: number;
+    round?: string;
+    utcTime: string;
+    started: boolean;
+    finished: boolean;
+    cancelled: boolean;
+    live: boolean;
+    minute?: string;
+    statusText?: string;
+    home: { id: number; name: string; fa: string; logo: string; score: number | null };
+    away: { id: number; name: string; fa: string; logo: string; score: number | null };
+  };
+  scorers: { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean }[];
+  events: {
+    type: string;
+    typeFa: string;
+    minute: string;
+    side: "home" | "away" | "neutral";
+    player?: string;
+    card?: string;
+    ownGoal: boolean;
+    penalty: boolean;
+    swapIn?: string;
+    swapOut?: string;
+    homeScore: number | null;
+    awayScore: number | null;
+  }[];
+  statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
+  lineups: { home: LineupSide | null; away: LineupSide | null } | null;
+  info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
+  form: { home: string[]; away: string[] } | null;
+  momentum: { minute: number; value: number }[] | null;
+  playerOfTheMatch?: { name: string; rating?: string | null } | null;
+  fetchedAt: string;
+}
+
+function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized {
+  const g = raw.general || {};
+  const hs = raw.header?.status || {};
+  const teams = raw.header?.teams || [];
+  const homeT = teams.find((t) => t.id === g.homeTeam?.id) || teams[0];
+  const awayT = teams.find((t) => t.id === g.awayTeam?.id) || teams[1];
+
+  const started = !!hs.started || !!g.started;
+  const finished = !!hs.finished || !!g.finished;
+  const cancelled = !!hs.cancelled;
+  const live = started && !finished && !cancelled;
+
+  const utcTime = hs.utcTime || g.matchTimeUTC || "";
+  const leagueName = g.leagueName || "";
+  const ccode = (g.countryCode || "").toUpperCase();
+  const lgCfg = LEAGUES.find((l) => l.fotmobId === (g.parentLeagueId || g.leagueId));
+
+  const home = {
+    id: g.homeTeam?.id ?? homeT?.id ?? 0,
+    name: g.homeTeam?.name || homeT?.name || "",
+    fa: teamFa(g.homeTeam?.name) || g.homeTeam?.name || "",
+    logo: fotmobTeamLogo(g.homeTeam?.id ?? 0),
+    score: typeof homeT?.score === "number" ? homeT.score : null,
+  };
+  const away = {
+    id: g.awayTeam?.id ?? awayT?.id ?? 0,
+    name: g.awayTeam?.name || awayT?.name || "",
+    fa: teamFa(g.awayTeam?.name) || g.awayTeam?.name || "",
+    logo: fotmobTeamLogo(g.awayTeam?.id ?? 0),
+    score: typeof awayT?.score === "number" ? awayT.score : null,
+  };
+
+  // minute for live matches (computed Tehran-time from kickoff)
+  let minute: string | undefined;
+  if (live && utcTime) {
+    const elapsedMin = Math.floor((Date.now() - new Date(utcTime).getTime()) / 60_000);
+    if (elapsedMin >= 0 && elapsedMin <= 130) {
+      minute = elapsedMin > 45 ? `${Math.min(elapsedMin, 90)}′` : `${elapsedMin}′`;
+    }
+  }
+  if (live && !minute) minute = "در جریان";
+
+  // ---------------- events + scorers ----------------
+  const rawEvents = raw.content?.matchFacts?.events?.events || [];
+  const events: MatchDetailNormalized["events"] = [];
+  const scorers: MatchDetailNormalized["scorers"] = [];
+  for (const e of rawEvents) {
+    if (e.isPenaltyShootoutEvent) continue;
+    const side: "home" | "away" | "neutral" = e.isHome === true ? "home" : e.isHome === false ? "away" : "neutral";
+    const isGoal = e.type === "Goal";
+    events.push({
+      type: e.type,
+      typeFa: EVENT_FA[e.type] || e.type,
+      minute: fmtMinute(e),
+      side,
+      player: e.player?.name || undefined,
+      card: e.card || undefined,
+      ownGoal: !!e.ownGoal,
+      penalty: e.type === "MissedPenalty" || (!!isGoal && !!e.isPenalty),
+      swapIn: e.type === "Substitution" ? e.swap?.[0]?.name : undefined,
+      swapOut: e.type === "Substitution" ? e.swap?.[1]?.name : undefined,
+      homeScore: typeof e.homeScore === "number" ? e.homeScore : null,
+      awayScore: typeof e.awayScore === "number" ? e.awayScore : null,
+    });
+    if (isGoal) {
+      if (side !== "neutral") {
+        scorers.push({
+          side,
+          player: e.player?.name || "",
+          minute: fmtMinute(e),
+          ownGoal: !!e.ownGoal,
+          penalty: !!e.isPenalty,
+        });
+      }
+    }
+  }
+  events.reverse(); // newest-first for timeline
+
+  // ---------------- stats ----------------
+  // Shape: Periods.All.stats = [ { title: groupName, stats: [ {row}, {titleRow}, ... ] }, ... ]
+  const statGroups: MatchDetailNormalized["statGroups"] = [];
+  const allPeriod = raw.content?.stats?.Periods?.All;
+  if (allPeriod?.stats) {
+    for (const grp of allPeriod.stats) {
+      const groupName = grp.title || "";
+      const bucket: MatchDetailNormalized["statGroups"][number] = {
+        title: STAT_GROUP_FA[groupName.toLowerCase()] || groupName,
+        rows: [],
+      };
+      for (const s of grp.stats || []) {
+        if (s.type === "title") continue; // section header row inside group
+        const raw0 = s.rawStats?.[0]?.value;
+        const raw1 = s.rawStats?.[1]?.value;
+        const v0 = typeof raw0 === "number" ? raw0 : parseFloat(String(raw0 ?? "")) || 0;
+        const v1 = typeof raw1 === "number" ? raw1 : parseFloat(String(raw1 ?? "")) || 0;
+        const disp0 = s.stats?.[0] ?? (raw0 ?? "—");
+        const disp1 = s.stats?.[1] ?? (raw1 ?? "—");
+        bucket.rows.push({
+          key: s.key || s.title,
+          title: statFa(s.title, s.key || ""),
+          home: String(disp0),
+          away: String(disp1),
+          graph: s.type === "graph",
+          homeVal: v0,
+          awayVal: v1,
+        });
+      }
+      if (bucket.rows.length > 0) statGroups.push(bucket);
+    }
+  }
+
+  // ---------------- lineups ----------------
+  let lineups: MatchDetailNormalized["lineups"] = null;
+  const lu = raw.content?.lineup;
+  if (lu?.homeTeam?.starters?.length && lu?.awayTeam?.starters?.length) {
+    const build = (t?: FMLineupTeam): LineupSide | null => {
+      if (!t?.starters?.length) return null;
+      return {
+        teamId: t.id,
+        name: t.name,
+        fa: teamFa(t.name) || t.name,
+        formation: t.formation || undefined,
+        coach: t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined,
+        rows: clusterRows(t.starters),
+        subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, shirt: s.shirtNumber || undefined })),
+      };
+    };
+    lineups = { home: build(lu.homeTeam), away: build(lu.awayTeam) };
+  }
+
+  // ---------------- info box ----------------
+  const infoBox = raw.content?.matchFacts?.infoBox || {};
+  const md = infoBox["Match Date"] as { utcTime?: string } | undefined;
+  const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
+  const rf = infoBox["Referee"] as { text?: string } | undefined;
+  const at = infoBox["Attendance"] as unknown;
+  const tn = infoBox["Tournament"] as { leagueName?: string; roundName?: string } | undefined;
+  const roundRaw = g.leagueRoundName || tn?.roundName || "";
+  const info: MatchDetailNormalized["info"] = {
+    stadium: st?.name,
+    city: st?.city,
+    referee: rf?.text,
+    attendance: typeof at === "number" ? at.toLocaleString("en-US") : (typeof at === "string" ? at : undefined),
+    date: md?.utcTime || utcTime,
+    tournament: tn?.leagueName || leagueName,
+    round: roundRaw ? (/^\d+$/.test(roundRaw) ? `هفته ${roundRaw}` : roundRaw) : undefined,
+  };
+
+  // ---------------- team form ----------------
+  const tf = raw.content?.matchFacts?.teamForm;
+  let form: MatchDetailNormalized["form"] = null;
+  if (Array.isArray(tf) && tf.length === 2) {
+    const mapForm = (arr: { resultString?: string }[]) =>
+      (arr || []).slice(0, 5).map((f) => (f.resultString || "").charAt(0).toUpperCase()).filter((c) => "WDL".includes(c));
+    form = { home: mapForm(tf[0]), away: mapForm(tf[1]) };
+  }
+
+  // ---------------- momentum ----------------
+  const momData = raw.content?.momentum?.main?.data;
+  const momentum =
+    momData && momData.length > 4
+      ? momData
+          .filter((m) => typeof m.minute === "number")
+          .map((m) => ({ minute: m.minute as number, value: m.value ?? 0 }))
+      : null;
+
+  const pom = raw.content?.matchFacts?.playerOfTheMatch;
+  const pomNameRaw = pom?.name;
+  const pomName = pom
+    ? typeof pomNameRaw === "string"
+      ? pomNameRaw
+      : pomNameRaw?.fullName || [pomNameRaw?.firstName, pomNameRaw?.lastName].filter(Boolean).join(" ") || null
+    : null;
+  const pomRating = pom?.rating?.num || null;
+
+  return {
+    match: {
+      id: matchId,
+      leagueName,
+      leagueFa: lgCfg?.faName || competitionFa(leagueName, ccode) || leagueName,
+      ccode,
+      leagueId: g.leagueId ?? 0,
+      round: info.round,
+      utcTime,
+      started,
+      finished,
+      cancelled,
+      live,
+      minute,
+      statusText: hs.reason?.long || undefined,
+      home,
+      away,
+    },
+    scorers,
+    events,
+    statGroups,
+    lineups,
+    info,
+    form,
+    momentum,
+    playerOfTheMatch: pomName ? { name: pomName, rating: pomRating } : null,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+// ---------------- route handler ----------------
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
+  const { id } = await ctx.params;
+  if (!/^\d{3,12}$/.test(id)) {
+    return NextResponse.json({ ok: false, error: "شناسه مسابقه نامعتبر است" }, { status: 400 });
+  }
+
+  try {
+    const norm = await cached(`matchDetails:${id}`, 25_000, async () => {
+      const raw = await fetchJson<FMMatchDetails>(
+        `https://www.fotmob.com/api/data/matchDetails?matchId=${id}`
+      );
+      if (!raw?.general?.homeTeam) throw new Error("Empty match payload");
+      return normalize(raw, id);
+    });
+    return NextResponse.json({ ok: true, ...norm });
+  } catch (err) {
+    console.error("[api/match]", err);
+    return NextResponse.json(
+      { ok: false, error: "خطا در دریافت جزئیات مسابقه" },
+      { status: 502 }
+    );
+  }
+}
