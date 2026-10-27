@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: { params: Promise<{ key: stri
   const lg = LEAGUES.find((l) => l.key === key);
   const name = lg?.faName || "لیگ";
   return {
-    title: `${name} | جدول، برنامه و نتایج | رمانتادا`,
+    title: `${name} | جدول، برنامه و نتایج`,
     description: `جدول رده‌بندی، برنامه بازی‌ها، نتایج اخیر و آقای گل ${name} — رمانتادا، مرجع فارسی فوتبال`,
   };
 }

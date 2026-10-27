@@ -3,7 +3,7 @@ import { TopScorersView } from "@/components/remontada/topscorers-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 
 export const metadata: Metadata = {
-  title: "آقای گلان لیگ‌های بزرگ | رمانتادا",
+  title: "آقای گلان لیگ‌های بزرگ",
   description: "جدول یکپارچه‌ی بهترین گلزنان لیگ قهرمانان اروپا، پریمیرلیگ، لالیگا، سری‌آ، بوندسلیگا، لیگ ۱ فرانسه و لیگ خلیج فارس — رمانتادا",
 };
 

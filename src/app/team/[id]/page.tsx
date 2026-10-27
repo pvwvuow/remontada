@@ -3,7 +3,7 @@ import { TeamView } from "@/components/remontada/team-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 
 export const metadata: Metadata = {
-  title: "صفحه تیم | رمانتادا",
+  title: "صفحه تیم",
   description: "نتایج اخیر، بازی‌های پیش‌رو، رتبه و فرم تیم فوتبال — رمانتادا",
 };
 

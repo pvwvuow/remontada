@@ -6,7 +6,7 @@ import { TeamLogo } from "@/components/remontada/team-logo";
 import { LEAGUES } from "@/lib/leagues";
 
 export const metadata: Metadata = {
-  title: "لیگ‌ها و جام‌ها | رمانتادا",
+  title: "لیگ‌ها و جام‌ها",
   description: "فهرست لیگ‌های پوشش‌داده‌شده در رمانتادا: لیگ قهرمانان اروپا، پریمیرلیگ، لالیگا، سری‌آ، بوندسلیگا، لیگ ۱ فرانسه و لیگ خلیج فارس",
 };
 

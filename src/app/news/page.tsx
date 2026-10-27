@@ -3,7 +3,7 @@ import { NewsPageClient } from "@/components/remontada/news-page-client";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 
 export const metadata: Metadata = {
-  title: "اخبار فوتبال | رمانتادا",
+  title: "اخبار فوتبال",
   description: "آخرین اخبار داغ فوتبال جهان از ESPN، BBC Sport و Sky Sports با ترجمه فارسی — رمانتادا",
 };
 

@@ -3,7 +3,7 @@ import { MatchDetail } from "@/components/remontada/match-detail";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 
 export const metadata: Metadata = {
-  title: "جزئیات مسابقه | رمانتادا",
+  title: "جزئیات مسابقه",
   description: "رویدادهای زنده، آمار، ترکیب تیم‌ها و اطلاعات کامل مسابقه فوتبال",
 };
 
