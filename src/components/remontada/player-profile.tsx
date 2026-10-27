@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { ShareButton } from "./share-button";
 import { TeamLogo } from "./team-logo";
 import { JsonLd } from "./json-ld";
+import { ScorerAvatarTile } from "./glass-stats";
 
 function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
   return (
@@ -27,19 +28,19 @@ function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
 
 function StatBox({ display, title, accent }: { display: string; title: string; accent?: boolean }) {
   return (
-    <div className="bg-card px-2 py-2.5 text-center">
-      <p className={cn("font-black text-[15px] tabular-persian leading-6", accent && "text-chart-3")} dir="ltr">
+    <div className="rounded-lg bg-[#a9cdf611] border border-glass-border-soft px-2 py-2.5 text-center">
+      <p className={cn("font-medium text-[15px] text-[#e0efff] tabular-persian leading-6", accent && "text-chart-3")} dir="ltr">
         {faDigits(display)}
       </p>
-      <p className="text-[9.5px] text-muted-foreground truncate">{title}</p>
+      <p className="text-[9px] text-steel/70 truncate">{title}</p>
     </div>
   );
 }
 
 function InfoChip({ label, value }: { label: string; value: string }) {
   return (
-    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1 text-[10.5px]">
-      <span className="text-muted-foreground">{label}</span>
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-glass-border-soft bg-white/[0.03] px-2.5 py-1 text-[10.5px]">
+      <span className="text-steel/80">{label}</span>
       <span className="font-bold">{value}</span>
     </span>
   );
@@ -47,6 +48,14 @@ function InfoChip({ label, value }: { label: string; value: string }) {
 
 export function PlayerProfile({ p }: { p: PlayerData }) {
   const j = jalaliShort;
+  // poster treatment: the season's headline metric (goals, else rating)
+  // gets the oversized light number of the studio scoring-chart hero
+  const seasonStats = p.season?.stats ?? [];
+  const featuredStat =
+    seasonStats.find((s) => s.key === "goals") ??
+    seasonStats.find((s) => s.key === "rating") ??
+    seasonStats[0] ?? null;
+  const restStats = featuredStat ? seasonStats.filter((s) => s !== featuredStat) : seasonStats;
   const teamName = p.team?.fa || p.team?.name || "";
   const chips: { label: string; value: string }[] = [];
   if (p.info.age) chips.push({ label: "سن", value: faDigits(p.info.age) });
@@ -81,23 +90,19 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
       <JsonLd data={personLd} />
 
       {/* ---------- header ---------- */}
-      <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden">
+      <section className="glass-scorer-hero overflow-hidden">
         <div className="px-4 py-4 flex items-center gap-3.5">
-          <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
-            <span className="text-xl font-black text-primary" aria-hidden>
-              {(p.name || "؟").trim().charAt(0).toUpperCase()}
-            </span>
-          </div>
+          <ScorerAvatarTile name={p.name || "؟"} size={60} />
           <div className="min-w-0 flex-1">
-            <h1 className="font-black text-lg leading-7 truncate" dir="auto">{p.name}</h1>
-            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
-              {p.positionFa && <span className="font-bold text-foreground/75">{p.positionFa}</span>}
+            <h1 className="font-black text-lg leading-7 truncate text-[#f1f7fd]" dir="auto">{p.name}</h1>
+            <p className="text-[11px] text-steel flex items-center gap-1.5 flex-wrap mt-0.5">
+              {p.positionFa && <span className="font-bold text-[#ecf3fa]/85">{p.positionFa}</span>}
               {p.team && (
                 <>
                   {p.positionFa && <span aria-hidden>·</span>}
                   <Link
                     href={`/team/${p.team.id}`}
-                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors font-bold"
+                    className="inline-flex items-center gap-1.5 hover:text-sky-soft transition-colors font-bold"
                     prefetch={false}
                   >
                     <TeamLogo id={p.team.id} alt="" size={14} />
@@ -125,16 +130,31 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
 
       {/* ---------- season stats ---------- */}
       {p.season && (
-        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="آمار فصل">
-          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between text-[11px]">
-            <span className="font-black text-[12px]">آمار فصل {faDigits(p.season.season)}</span>
-            <span className="font-bold text-muted-foreground">{p.season.leagueFa}</span>
+        <section className="glass-card overflow-hidden" aria-label="آمار فصل">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+            <span className="font-black text-[12px] text-[#ecf3fa]">آمار فصل {faDigits(p.season.season)}</span>
+            <span className="font-bold text-steel/80">{p.season.leagueFa}</span>
           </header>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border/25">
-            {p.season.stats.map((s, i) => (
-              <StatBox key={`${s.key}-${i}`} display={s.display} title={s.title} accent={s.key === "rating"} />
-            ))}
-          </div>
+          {featuredStat && (
+            <div className="px-4 pt-4 pb-1.5 flex items-end justify-between gap-3">
+              <div className="flex flex-col min-w-0">
+                <span className="text-[38px] font-light text-[#dfedff] leading-none tabular-persian" dir="ltr">
+                  {faDigits(featuredStat.display)}
+                </span>
+                <span className="text-[10.5px] font-black text-steel mt-2">{featuredStat.title}</span>
+              </div>
+              <p className="text-[9px] font-bold tracking-[0.22em] text-steel/60 uppercase text-end shrink-0 pb-1.5">
+                {p.season.leagueFa}
+              </p>
+            </div>
+          )}
+          {restStats.length > 0 && (
+            <div className="px-4 py-3.5 grid grid-cols-3 sm:grid-cols-4 gap-2">
+              {restStats.map((s, i) => (
+                <StatBox key={`${s.key}-${i}`} display={s.display} title={s.title} accent={s.key === "rating"} />
+              ))}
+            </div>
+          )}
         </section>
       )}
 
@@ -143,10 +163,10 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         <Link
           href={`/match/${p.next.id}`}
           prefetch={false}
-          className="group rounded-2xl border border-primary/25 bg-primary/[0.06] hover:bg-primary/[0.1] transition-colors px-4 py-3 flex items-center gap-3"
+          className="glass-row glass-row-hover group px-4 py-3 flex items-center gap-3"
           aria-label="بازی بعدی بازیکن"
         >
-          <span className="text-[10px] font-black text-primary border border-primary/30 bg-primary/10 rounded-lg px-2 py-1 shrink-0">
+          <span className="text-[10px] font-black text-sky-soft border border-sky-soft/25 bg-sky-soft/10 rounded-lg px-2 py-1 shrink-0">
             بازی بعدی
           </span>
           <span className="flex items-center gap-2 min-w-0 flex-1 text-[12.5px] font-bold">
@@ -162,9 +182,9 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
 
       {/* ---------- career path (cycle-20) ---------- */}
       {p.career.length > 0 && (
-        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="مسیر حرفه‌ای">
-          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center gap-2 text-[12px] font-black">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
+        <section className="glass-card overflow-hidden" aria-label="مسیر حرفه‌ای">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
               <path d="M12 12h.01" />
               <path d="M5 3h14v5a7 7 0 0 1-14 0V3z" />
               <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
@@ -173,7 +193,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
             مسیر حرفه‌ای
             <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.career.length)} دوره</span>
           </header>
-          <ul className="divide-y divide-border/25">
+          <ul className="glass-list">
             {p.career.map((c, i) => (
               <li key={`${c.teamId}-${c.from}-${i}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
                 {c.kind === "senior" ? (
@@ -187,7 +207,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   <p className="flex items-center gap-1.5 min-w-0">
                     <span className="font-bold text-[12.5px] truncate">{c.fa}</span>
                     {c.kind === "national" && (
-                      <span className="text-[8.5px] font-black text-primary border border-primary/25 bg-primary/10 rounded px-1 py-px shrink-0">
+                      <span className="text-[8.5px] font-black text-mint border border-mint/25 bg-mint/10 rounded px-1 py-px shrink-0">
                         تیم ملی
                       </span>
                     )}
@@ -197,7 +217,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                       </span>
                     )}
                     {c.transfer && (
-                      <span className="hidden sm:inline text-[8.5px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">
+                      <span className="hidden sm:inline text-[8.5px] font-bold text-steel border border-glass-border-soft rounded px-1 py-px shrink-0">
                         {c.transfer}
                       </span>
                     )}
@@ -209,14 +229,14 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                 </div>
                 <div className="flex items-center gap-2.5 shrink-0 text-[10px] font-bold text-muted-foreground tabular-persian">
                   {c.apps !== null && <span title="بازی">{faDigits(c.apps)}<span className="hidden sm:inline"> بازی</span></span>}
-                  {c.goals !== null && <span title="گل" className="text-primary font-black">{faDigits(c.goals)}<span className="hidden sm:inline"> گل</span></span>}
+                  {c.goals !== null && <span title="گل" className="text-mint font-black">{faDigits(c.goals)}<span className="hidden sm:inline"> گل</span></span>}
                   {c.assists !== null && <span title="پاس گل">{faDigits(c.assists)}<span className="hidden sm:inline"> پاس</span></span>}
                 </div>
               </li>
             ))}
           </ul>
           {p.careerYouth.length > 0 && (
-            <div className="border-t border-border/30 px-3 sm:px-4 py-2.5">
+            <div className="border-t border-glass-border-soft px-3 sm:px-4 py-2.5">
               <p className="text-[10px] font-black text-muted-foreground mb-1.5">سطح پایه</p>
               <p className="flex flex-wrap gap-x-3 gap-y-1">
                 {p.careerYouth.map((y, i) => (
@@ -235,8 +255,8 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
 
       {/* ---------- trophies (cycle-20) ---------- */}
       {p.trophies.length > 0 && (
-        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="افتخارات">
-          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center gap-2 text-[12px] font-black">
+        <section className="glass-card overflow-hidden" aria-label="افتخارات">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M8 21h8M12 17v4" />
               <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
@@ -245,7 +265,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
             افتخارات
             <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.trophies.length)} جام</span>
           </header>
-          <ul className="divide-y divide-border/25">
+          <ul className="glass-list">
             {p.trophies.map((t, i) => (
               <li key={`${t.leagueName}-${t.teamName}-${i}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
                 <span className="w-7 h-7 rounded-lg bg-chart-3/15 border border-chart-3/25 flex items-center justify-center shrink-0 text-chart-3" aria-hidden>
@@ -275,14 +295,14 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
       )}
 
       {/* ---------- recent matches ---------- */}
-      <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="بازی‌های اخیر">
-        <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[12px] font-black">
+      <section className="glass-card overflow-hidden" aria-label="بازی‌های اخیر">
+        <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[12px] font-black">
           بازی‌های اخیر {p.recent.length > 0 && <span className="text-muted-foreground font-bold text-[10.5px]">({faDigits(p.recent.length)} بازی اخیر)</span>}
         </header>
         {p.recent.length === 0 ? (
           <p className="text-center text-muted-foreground text-sm py-8">بازی اخیری برای این بازیکن ثبت نشده است.</p>
         ) : (
-          <ul className="divide-y divide-border/25">
+          <ul className="glass-list">
             {p.recent.map((m) => {
               const jd = jalaliShort(m.utcTime);
               return (
@@ -290,7 +310,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   <Link
                     href={`/match/${m.id}`}
                     prefetch={false}
-                    className="group flex items-center gap-2.5 px-3 sm:px-4 py-2.5 hover:bg-accent/40 transition-colors"
+                    className="glass-row-hover group flex items-center gap-2.5 px-3 sm:px-4 py-2.5"
                   >
                     {m.result ? <ResultBadge r={m.result} /> : <span className="w-[18px] shrink-0" aria-hidden />}
                     <span className="text-[11px] tabular-persian font-black text-muted-foreground w-12 text-center shrink-0" dir="ltr">
@@ -298,7 +318,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                     </span>
                     <span className="flex items-center gap-1.5 min-w-0 flex-1">
                       <TeamLogo id={m.opponentId} alt="" size={16} />
-                      <span className="truncate text-[12px] font-bold group-hover:text-primary transition-colors">
+                      <span className="truncate text-[12px] font-bold group-hover:text-sky-soft transition-colors">
                         {m.isHome ? "میزبان" : "بیرون"} · {m.opponent}
                       </span>
                       {m.onBench && !m.played && (
@@ -308,7 +328,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                     </span>
                     <span className="hidden sm:flex items-center gap-2 shrink-0 text-[10px] text-muted-foreground tabular-persian">
                       {m.goals > 0 && (
-                        <span className="font-black text-primary" title="گل">⚽ {faDigits(m.goals)}</span>
+                        <span className="font-black text-mint" title="گل">⚽ {faDigits(m.goals)}</span>
                       )}
                       {m.assists > 0 && (
                         <span className="font-bold" title="پاس گل">🅰 {faDigits(m.assists)}</span>
@@ -318,7 +338,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                       {m.minutes !== null && m.played && <span title="دقیقه بازی">{faDigits(m.minutes)}′</span>}
                     </span>
                     <span className="sm:hidden flex items-center gap-1.5 shrink-0 text-[10px] tabular-persian">
-                      {m.goals > 0 && <span className="font-black text-primary">⚽{faDigits(m.goals)}</span>}
+                      {m.goals > 0 && <span className="font-black text-mint">⚽{faDigits(m.goals)}</span>}
                       {m.rating && <span className="font-black text-chart-3">{faDigits(m.rating)}</span>}
                     </span>
                     <span className="text-[9.5px] text-muted-foreground/70 tabular-persian shrink-0 w-14 text-end">

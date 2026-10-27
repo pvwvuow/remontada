@@ -47,9 +47,9 @@ function resultOf(m: NormMatch, teamId: number): "W" | "D" | "L" {
 }
 
 function formChip(c: "W" | "D" | "L") {
-  if (c === "W") return "bg-primary/15 text-primary border-primary/30";
-  if (c === "D") return "bg-muted text-muted-foreground border-border";
-  return "bg-destructive/15 text-destructive border-destructive/30";
+  if (c === "W") return "bg-mint/15 text-mint border-mint/30";
+  if (c === "D") return "bg-white/[0.04] text-steel border-glass-border-soft";
+  return "bg-rose-deep/20 text-rose-soft border-rose-deep/30";
 }
 
 /** tick state for live countdowns — 30s cadence, minute precision.
@@ -78,9 +78,9 @@ function useCountdown(iso?: string): { days: number; hours: number; minutes: num
 
 function SegBox({ v, l }: { v: number; l: string }) {
   return (
-    <div className="rounded-xl border border-primary/25 bg-primary/10 px-2.5 py-1.5 text-center min-w-[48px]">
-      <p className="text-[15px] font-black tabular-persian text-primary leading-none">{faDigits(String(v).padStart(2, "0"))}</p>
-      <p className="text-[8.5px] font-bold text-muted-foreground mt-1">{l}</p>
+    <div className="rounded-xl border border-glass-border-soft bg-white/[0.04] px-2.5 py-1.5 text-center min-w-[48px]">
+      <p className="text-[16px] font-light tabular-persian text-[#dfedff] leading-none">{faDigits(String(v).padStart(2, "0"))}</p>
+      <p className="text-[8.5px] font-bold text-steel/70 mt-1">{l}</p>
     </div>
   );
 }
@@ -95,11 +95,11 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
     <Link
       href={`/match/${m.id}`}
       prefetch={false}
-      className="block rounded-2xl border border-primary/25 bg-gradient-to-l from-primary/[0.12] via-card/70 to-card/40 overflow-hidden hover:border-primary/50 transition-colors"
+      className="glass-card block overflow-hidden transition-transform duration-200 hover:-translate-y-0.5"
     >
-      <div className="px-4 py-2 border-b border-primary/15 bg-primary/[0.08] flex items-center justify-between gap-2">
-        <h2 className="text-[12.5px] font-black text-primary">بازی بعدی</h2>
-        <span className="text-[10px] font-bold text-muted-foreground truncate">
+      <div className="px-4 py-2 border-b border-glass-border-soft bg-white/[0.02] flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-sky-soft">بازی بعدی</h2>
+        <span className="text-[10px] font-bold text-steel/80 truncate">
           {m.leagueFa}
         </span>
       </div>
@@ -119,7 +119,7 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
           <span
             className={cn(
               "shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black",
-              isHome ? "bg-primary/10 text-primary border-primary/20" : "bg-sky-500/10 text-sky-500 border-sky-500/20"
+              isHome ? "bg-sky-soft/10 text-sky-soft border-sky-soft/20" : "bg-steel/10 text-steel border-steel/20"
             )}
           >
             {isHome ? "خانه" : "بیرون"}
@@ -128,7 +128,7 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
         {cd ? (
           cd.started ? (
             <span className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-[10.5px] font-black px-2.5 py-1.5">
-              <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+              <span className="live-dot live-dot-glow w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
               بازی شروع شده است
             </span>
           ) : (
@@ -186,7 +186,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
         <span
           className={cn(
             "shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black",
-            isHome ? "bg-primary/10 text-primary border-primary/20" : "bg-sky-500/10 text-sky-500 border-sky-500/20"
+            isHome ? "bg-sky-soft/10 text-sky-soft border-sky-soft/20" : "bg-steel/10 text-steel border-steel/20"
           )}
         >
           {isHome ? "خانه" : "بیرون"}
@@ -202,7 +202,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
         ) : (
           <div className="flex items-center gap-1.5">
             {m.started && !m.cancelled && (
-              <span className="font-black text-[13px] tabular-persian bg-muted/60 rounded-lg px-2 py-0.5">
+              <span className="font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
                 {isHome ? m.home.score ?? "—" : m.away.score ?? "—"} : {isHome ? m.away.score ?? "—" : m.home.score ?? "—"}
               </span>
             )}
@@ -218,7 +218,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
   );
 
   return (
-    <Link href={`/match/${m.id}`} className="hover:bg-accent/40 transition-colors block" prefetch={false}>
+    <Link href={`/match/${m.id}`} className="glass-row-hover block" prefetch={false}>
       {inner}
     </Link>
   );
@@ -226,12 +226,12 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
 
 function Section({ title, children, extra }: { title: string; children: React.ReactNode; extra?: React.ReactNode }) {
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
-        <h2 className="text-[12.5px] font-black">{title}</h2>
+    <section className="glass-card overflow-hidden">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-[#ecf3fa]">{title}</h2>
         {extra}
       </header>
-      <div className="divide-y divide-border/25">{children}</div>
+      <div className="glass-list">{children}</div>
     </section>
   );
 }
@@ -255,7 +255,7 @@ function SplitBar({ label, d }: { label: string; d: { wins: number; draws: numbe
           گل {faDigits(d.gf)}:{faDigits(d.ga)}
         </span>
       </div>
-      <div className="flex h-1.5 rounded-full overflow-hidden bg-muted">
+      <div className="flex h-1.5 rounded-full overflow-hidden bg-white/[0.06]">
         {total > 0 && seg.map((x, i) => <div key={i} className={x.cls} style={{ width: `${(x.n / total) * 100}%` }} />)}
       </div>
     </div>
@@ -268,12 +268,12 @@ function BigMatchCard({ title, m, tone }: { title: string; m: (TeamFormMatch & {
     <Link
       href={`/match/${m.id}`}
       className={cn(
-        "flex-1 min-w-0 rounded-xl border px-3 py-2.5 transition-colors hover:bg-accent/40",
-        tone === "win" ? "border-primary/25 bg-primary/5" : "border-destructive/25 bg-destructive/5"
+        "flex-1 min-w-0 rounded-xl border px-3 py-2.5 transition-colors",
+        tone === "win" ? "border-mint/25 bg-mint/[0.05]" : "border-rose-deep/30 bg-rose-deep/[0.07]"
       )}
       prefetch={false}
     >
-      <p className={cn("text-[9.5px] font-black mb-1", tone === "win" ? "text-primary" : "text-destructive")}>{title}</p>
+      <p className={cn("text-[9.5px] font-black mb-1", tone === "win" ? "text-mint" : "text-rose-soft")}>{title}</p>
       <div className="flex items-center gap-2 min-w-0">
         { }
         <img src={m.opponent.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
@@ -295,10 +295,10 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
     { l: "بدون گل", v: faDigits(s.failedToScore), sub: s.played ? `${faDigits(Math.round((s.failedToScore / s.played) * 100))}٪ بازی‌ها` : "—" },
   ];
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
-        <h2 className="text-[12.5px] font-black">آمار فصل</h2>
-        <Link href={`/league/${s.leagueKey}`} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors">
+    <section className="glass-card overflow-hidden">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-[#ecf3fa]">آمار فصل</h2>
+        <Link href={`/league/${s.leagueKey}`} className="text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
           {s.leagueFa}{s.season ? ` · فصل ${faDigits(s.season)}` : ""}
         </Link>
       </header>
@@ -306,9 +306,9 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
         {/* KPI grid */}
         <div className="grid grid-cols-4 gap-2">
           {kpis.map((k) => (
-            <div key={k.l} className="rounded-xl border border-border/50 bg-muted/25 px-2 py-2.5 text-center">
-              <p className="text-[9px] text-muted-foreground font-bold">{k.l}</p>
-              <p className="text-base font-black tabular-persian leading-tight mt-0.5">{k.v}</p>
+            <div key={k.l} className="rounded-xl border border-glass-border-soft bg-[#a9cdf611] px-2 py-2.5 text-center">
+              <p className="text-[9px] text-steel/70 font-bold">{k.l}</p>
+              <p className="text-base font-medium text-[#e0efff] tabular-persian leading-tight mt-0.5">{k.v}</p>
               <p className="text-[8.5px] text-muted-foreground/80 tabular-persian mt-0.5">{k.sub}</p>
             </div>
           ))}
@@ -440,10 +440,10 @@ function PreMatchPanel({
   );
 
   return (
-    <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
-        <h2 className="text-[12.5px] font-black">مصاف پیش از بازی</h2>
-        <Link href={`/match/${pm.matchId}`} prefetch={false} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors">
+    <section className="glass-card overflow-hidden">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-[#ecf3fa]">مصاف پیش از بازی</h2>
+        <Link href={`/match/${pm.matchId}`} prefetch={false} className="text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
           صفحه بازی ←
         </Link>
       </header>
@@ -455,7 +455,7 @@ function PreMatchPanel({
             {sideHead(ours, "end")}
             <FormChips items={ours.form} />
           </div>
-          <span className="text-[9.5px] font-black text-muted-foreground bg-muted/60 rounded-lg px-2 py-1 whitespace-nowrap">
+          <span className="text-[9.5px] font-black text-steel bg-white/[0.04] rounded-lg px-2 py-1 whitespace-nowrap">
             در برابر
           </span>
           <div className="flex flex-col items-start gap-1.5 min-w-0">
@@ -466,7 +466,7 @@ function PreMatchPanel({
 
         {/* season comparison */}
         {metrics.some((x) => x.a || x.b) && (
-          <div className="rounded-xl border border-border/40 bg-muted/15 px-3.5 py-2 flex flex-col divide-y divide-border/25">
+          <div className="rounded-xl border border-glass-border-soft bg-white/[0.02] px-3.5 py-2 flex flex-col glass-list">
             {metrics.map((x) => {
               if (!x.a && !x.b) return null;
               const max = Math.max(x.pa ?? 0, x.pb ?? 0, 1);
@@ -474,12 +474,12 @@ function PreMatchPanel({
                 <div key={x.label} className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 py-1.5">
                   <div className="min-w-0">
                     <span className="font-black text-[12px] tabular-persian block text-end">{x.a ?? "—"}</span>
-                    {x.pa != null && x.pb != null && <MiniBar pct={(x.pa / max) * 100} cls="bg-primary/70" align="end" />}
+                    {x.pa != null && x.pb != null && <MiniBar pct={(x.pa / max) * 100} cls="bg-sky-soft/70" align="end" />}
                   </div>
                   <span className="text-[9.5px] font-bold text-muted-foreground text-center px-1 whitespace-nowrap">{x.label}</span>
                   <div className="min-w-0">
                     <span className="font-black text-[12px] tabular-persian block text-start">{x.b ?? "—"}</span>
-                    {x.pa != null && x.pb != null && <MiniBar pct={((x.pb ?? 0) / max) * 100} cls="bg-sky-500/70" align="start" />}
+                    {x.pa != null && x.pb != null && <MiniBar pct={((x.pb ?? 0) / max) * 100} cls="bg-sky-soft/70" align="start" />}
                   </div>
                 </div>
               );
@@ -527,12 +527,12 @@ export function TeamView({ teamId }: { teamId: number }) {
   if (loading && !data) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
-        <div className="rounded-2xl border border-border/60 bg-card/40 p-8 flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded bg-muted animate-pulse" />
-          <div className="h-5 w-40 rounded bg-muted animate-pulse" />
-          <div className="h-3 w-24 rounded bg-muted animate-pulse" />
+        <div className="glass-card p-8 flex flex-col items-center gap-4">
+          <div className="w-16 h-16 rounded bg-white/[0.05] animate-pulse" />
+          <div className="h-5 w-40 rounded bg-white/[0.05] animate-pulse" />
+          <div className="h-3 w-24 rounded bg-white/[0.05] animate-pulse" />
         </div>
-        <div className="h-40 rounded-2xl border border-border/60 bg-card/40 animate-pulse" />
+        <div className="glass-card h-40 animate-pulse" />
       </div>
     );
   }
@@ -564,13 +564,15 @@ export function TeamView({ teamId }: { teamId: number }) {
   return (
     <div className="flex flex-col gap-4">
       {/* profile header */}
-      <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden">
+      <section className="glass-card glass-hero overflow-hidden">
         <div className="p-5 flex items-center gap-4">
           { }
-          <img src={data.team.logo} alt="" width={64} height={64} className="w-16 h-16 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <span className="brand-glyph w-[72px] h-[72px] flex items-center justify-center shrink-0 overflow-hidden">
+            <img src={data.team.logo} alt="" width={56} height={56} className="w-14 h-14 object-contain drop-shadow-[0_5px_12px_oklch(0.03_0.015_255/65%)]" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
-              <h1 className="text-xl font-black truncate">{data.team.fa || data.team.name}</h1>
+              <h1 className="text-xl font-black truncate text-[#ecf3fa]">{data.team.fa || data.team.name}</h1>
               <FavoriteStar
                 team={{ id: teamId, fa: data.team.fa || data.team.name, en: data.team.name }}
                 size={20}
@@ -583,22 +585,22 @@ export function TeamView({ teamId }: { teamId: number }) {
               />
             </div>
             {st ? (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                <Link href={`/league/${st.leagueKey}`} className="hover:text-primary transition-colors font-bold">
+              <p className="text-[11px] text-steel/85 mt-0.5">
+                <Link href={`/league/${st.leagueKey}`} className="hover:text-sky-soft transition-colors font-bold">
                   {st.leagueFa}
                 </Link>
                 {" · "}
                 رتبه {faDigits(st.rank)} با {faDigits(st.pts)} امتیاز
               </p>
             ) : season ? (
-              <p className="text-[11px] text-muted-foreground mt-0.5">
-                <Link href={`/league/${season.leagueKey}`} className="hover:text-primary transition-colors font-bold">
+              <p className="text-[11px] text-steel/85 mt-0.5">
+                <Link href={`/league/${season.leagueKey}`} className="hover:text-sky-soft transition-colors font-bold">
                   {season.leagueFa}
                 </Link>
                 {season.season ? ` · فصل ${faDigits(season.season)}` : ""}
               </p>
             ) : (
-              <p className="text-[11px] text-muted-foreground mt-0.5">اطلاعات لیگ یافت نشد</p>
+              <p className="text-[11px] text-steel/85 mt-0.5">اطلاعات لیگ یافت نشد</p>
             )}
             {formEntries.length > 0 && (
               <div className="flex items-center gap-1.5 mt-2 flex-wrap">
@@ -628,8 +630,8 @@ export function TeamView({ teamId }: { teamId: number }) {
                 { l: "برد", v: st.wins },
                 { l: "گل", v: `${st.gd > 0 ? "+" : ""}${st.gd}` },
               ].map((x) => (
-                <div key={x.l} className="rounded-xl border border-border/50 bg-muted/30 px-3 py-2">
-                  <p className="text-[9px] text-muted-foreground font-bold">{x.l}</p>
+                <div key={x.l} className="rounded-xl border border-glass-border-soft bg-white/[0.03] px-3 py-2">
+                  <p className="text-[9px] text-steel/70 font-bold">{x.l}</p>
                   <p className="text-sm font-black tabular-persian">{typeof x.v === "number" ? faDigits(x.v) : x.v}</p>
                 </div>
               ))}
