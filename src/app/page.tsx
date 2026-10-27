@@ -7,6 +7,7 @@ import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
 import { SearchBox } from "@/components/remontada/search-box";
+import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -254,6 +255,9 @@ export default function Home() {
 
         {tab === "news" && <NewsView items={news} loading={newsLoading} />}
       </main>
+
+      {/* goal notifications for favorite teams (opt-in chip) */}
+      <GoalNotifier />
 
       {/* ---------- footer ---------- */}
       <footer className="mt-auto border-t border-border/50 bg-background/60">

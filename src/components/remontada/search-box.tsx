@@ -6,6 +6,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeamSearchResult } from "@/lib/fotmob";
+import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -137,13 +138,13 @@ export function SearchBox() {
               ) : (
                 <ul className="p-1.5 flex flex-col">
                   {results.map((r, i) => (
-                    <li key={r.teamId}>
+                    <li key={r.teamId} className="relative">
                       <button
                         type="button"
                         onClick={() => go(r.teamId)}
                         onMouseEnter={() => setActive(i)}
                         className={cn(
-                          "w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-start transition-colors",
+                          "w-full flex items-center gap-2.5 ps-8 pe-2.5 py-2 rounded-xl text-start transition-colors",
                           i === active ? "bg-primary/10" : "hover:bg-accent/40"
                         )}
                       >
@@ -164,6 +165,12 @@ export function SearchBox() {
                           )}
                         </span>
                       </button>
+                      {/* favorite star — sibling of the row button (no nested buttons) */}
+                      <FavoriteStar
+                        team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
+                        size={14}
+                        className="absolute top-1/2 -translate-y-1/2 start-2"
+                      />
                     </li>
                   ))}
                 </ul>

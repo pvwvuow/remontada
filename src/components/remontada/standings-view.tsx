@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
+import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -41,15 +42,22 @@ function StandingsTable({ data }: { data: StandingsData }) {
                   <span className="font-bold text-muted-foreground tabular-persian">{faDigits(r.idx)}</span>
                 </td>
                 <td className="py-2 px-1">
-                  <Link
-                    href={`/team/${r.teamId}`}
-                    className="flex items-center gap-2 min-w-0 rounded-lg px-1 -mx-1 py-0.5 hover:bg-primary/10 transition-colors group"
-                    prefetch={false}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                    <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
-                  </Link>
+                  <div className="flex items-center gap-0.5 min-w-0">
+                    <Link
+                      href={`/team/${r.teamId}`}
+                      className="flex items-center gap-2 min-w-0 flex-1 rounded-lg px-1 -mx-1 py-0.5 hover:bg-primary/10 transition-colors group"
+                      prefetch={false}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                      <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
+                    </Link>
+                    <FavoriteStar
+                      team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
+                      size={13}
+                      className="opacity-70 hover:opacity-100"
+                    />
+                  </div>
                 </td>
                 <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.played)}</td>
                 <td className="py-2 px-1.5 text-center tabular-persian">{faDigits(r.wins)}</td>
