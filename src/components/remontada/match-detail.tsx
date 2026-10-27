@@ -1,0 +1,553 @@
+"use client";
+
+// ------------------------------------------------------------------
+// Remontada — full match detail page
+// scoreboard + scorers + events timeline + stats + lineups + info
+// ------------------------------------------------------------------
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { faDigits, tehranDateLong, tehranTime, formColor } from "@/lib/format";
+import { cn } from "@/lib/utils";
+
+// ---------- API shape (mirrors /api/match/[id]) ----------
+interface DetailMatch {
+  id: string;
+  leagueName: string;
+  leagueFa: string;
+  ccode: string;
+  leagueId: number;
+  round?: string;
+  utcTime: string;
+  started: boolean;
+  finished: boolean;
+  cancelled: boolean;
+  live: boolean;
+  minute?: string;
+  statusText?: string;
+  home: { id: number; name: string; fa: string; logo: string; score: number | null };
+  away: { id: number; name: string; fa: string; logo: string; score: number | null };
+}
+interface DetailScorer { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean }
+interface DetailEvent {
+  type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
+  player?: string; card?: string; ownGoal: boolean; penalty: boolean;
+  swapIn?: string; swapOut?: string; homeScore: number | null; awayScore: number | null;
+}
+interface DetailStatRow { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }
+interface DetailStatGroup { title: string; rows: DetailStatRow[] }
+interface LineupSide {
+  teamId: number; name: string; fa: string; formation?: string; coach?: string;
+  rows: { players: { id: number; name: string; shirt?: string; rating?: number }[] }[];
+  subs: { id: number; name: string; shirt?: string }[];
+}
+interface DetailData {
+  ok: boolean;
+  match: DetailMatch;
+  scorers: DetailScorer[];
+  events: DetailEvent[];
+  statGroups: DetailStatGroup[];
+  lineups: { home: LineupSide | null; away: LineupSide | null } | null;
+  info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
+  form: { home: string[]; away: string[] } | null;
+  momentum: { minute: number; value: number }[] | null;
+  playerOfTheMatch?: { name: string; rating?: string | null } | null;
+  error?: string;
+}
+
+type Tab = "events" | "stats" | "lineups" | "info";
+
+const TAB_LABELS: { key: Tab; label: string }[] = [
+  { key: "events", label: "رویدادها" },
+  { key: "stats", label: "آمار" },
+  { key: "lineups", label: "ترکیب" },
+  { key: "info", label: "اطلاعات" },
+];
+
+// ---------- small icons ----------
+function GoalIcon({ className }: { className?: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <circle cx="12" cy="12" r="9" fillOpacity="0.15" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M12 7.2l4.2 3-1.6 4.9H9.4L7.8 10.2 12 7.2z" />
+    </svg>
+  );
+}
+function CardIcon({ color }: { color: "yellow" | "red" }) {
+  return <span className={cn("inline-block w-2.5 h-3.5 rounded-[2px]", color === "yellow" ? "bg-amber-400" : "bg-red-500")} aria-hidden />;
+}
+function SubIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+      <path d="M7 4v12M7 16l-3-3M7 16l3-3" /><path d="M17 20V8m0 0l-3 3m3-3l3 3" />
+    </svg>
+  );
+}
+
+function eventIcon(e: DetailEvent) {
+  if (e.type === "Goal") {
+    return e.ownGoal ? <GoalIcon className="text-muted-foreground" /> : <GoalIcon className="text-primary" />;
+  }
+  if (e.type === "Card") {
+    return <CardIcon color={e.card === "red" ? "red" : "yellow"} />;
+  }
+  if (e.type === "Substitution") return <SubIcon />;
+  if (e.type === "MissedPenalty" || e.type === "Penalty") {
+    return <span className="text-[10px] font-black text-destructive">پ</span>;
+  }
+  return <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 inline-block" aria-hidden />;
+}
+
+function eventText(e: DetailEvent) {
+  if (e.type === "Goal") {
+    const parts = [e.player || ""];
+    if (e.penalty) parts.push("(پنالتی)");
+    if (e.ownGoal) parts.push("(گل به خودی)");
+    return parts.filter(Boolean).join(" ");
+  }
+  if (e.type === "Substitution") return `${e.swapIn || "?"} ← ${e.swapOut || "?"}`;
+  if (e.type === "Card") return e.player || "کارت";
+  if (e.type === "MissedPenalty") return `${e.player || ""} (پنالتی از دست رفت)`;
+  return e.player || e.typeFa;
+}
+
+// ---------- scoreboard ----------
+function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTheMatch"] }) {
+  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden backdrop-blur-sm">
+      <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px]">
+        <Link href="/" className="font-bold text-muted-foreground hover:text-primary transition-colors truncate">
+          {m.leagueFa || m.leagueName}
+        </Link>
+        {m.round && <span className="text-muted-foreground/70 shrink-0">{m.round}</span>}
+      </div>
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-5 px-3 sm:px-8 py-6">
+        {/* home */}
+        <div className="flex flex-col items-center gap-2.5 text-center min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.home.logo} alt="" width={52} height={52} className="w-11 h-11 sm:w-14 sm:h-14 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <Link
+            href={`/team/${m.home.id}`}
+            className="font-black text-[13px] sm:text-[15px] leading-5 hover:text-primary transition-colors"
+            prefetch={false}
+          >
+            {m.home.fa || m.home.name}
+          </Link>
+        </div>
+        {/* score */}
+        <div className="flex flex-col items-center gap-2">
+          {m.started && !m.cancelled ? (
+            <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live && "text-red-300")}>
+              <span>{m.home.score ?? "—"}</span>
+              <span className="text-muted-foreground/40 text-2xl">:</span>
+              <span>{m.away.score ?? "—"}</span>
+            </div>
+          ) : (
+            <div className="font-black text-2xl sm:text-3xl text-muted-foreground tabular-persian">
+              {tehranTime(m.utcTime)}
+            </div>
+          )}
+          <span
+            className={cn(
+              "text-[11px] font-black rounded-lg px-2.5 py-1 border tabular-persian whitespace-nowrap",
+              m.live ? "text-red-400 border-red-500/30 bg-red-500/10" : "text-muted-foreground border-border bg-muted/40"
+            )}
+          >
+            {m.live && <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-red-500 me-1.5 align-middle" />}
+            {status}
+          </span>
+        </div>
+        {/* away */}
+        <div className="flex flex-col items-center gap-2.5 text-center min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={m.away.logo} alt="" width={52} height={52} className="w-11 h-11 sm:w-14 sm:h-14 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <Link
+            href={`/team/${m.away.id}`}
+            className="font-black text-[13px] sm:text-[15px] leading-5 hover:text-primary transition-colors"
+            prefetch={false}
+          >
+            {m.away.fa || m.away.name}
+          </Link>
+        </div>
+      </div>
+
+      {/* scorers + POTM */}
+      {m.started && !m.cancelled && (
+        <div className="px-4 pb-4 pt-1 grid grid-cols-[1fr_auto_1fr] gap-2 text-[11px]">
+          <div className="flex flex-col gap-1 items-start ps-2">
+            {m.home.score !== null &&
+              m.scorers.filter((s) => s.side === "home").map((s, i) => (
+                <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
+                  <GoalIcon className="text-primary/80" />
+                  <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
+                  {s.penalty && " (پ)"}
+                  {s.ownGoal && " (گل به خودی)"}
+                </span>
+              ))}
+          </div>
+          <div className="w-px bg-border/40" aria-hidden />
+          <div className="flex flex-col gap-1 items-end pe-2">
+            {m.away.score !== null &&
+              m.scorers.filter((s) => s.side === "away").map((s, i) => (
+                <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
+                  <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
+                  {s.penalty && " (پ)"}
+                  {s.ownGoal && " (گل به خودی)"}
+                  <GoalIcon className="text-primary/80" />
+                </span>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {potm && (
+        <div className="border-t border-border/40 px-4 py-2.5 flex items-center justify-center gap-2 text-[11px] bg-muted/20">
+          <span className="text-chart-3">★</span>
+          <span className="text-muted-foreground">بهترین بازیکن زمین:</span>
+          <span className="font-black">{potm.name}</span>
+          {potm.rating && <span className="text-primary font-bold tabular-persian">({faDigits(potm.rating)})</span>}
+        </div>
+      )}
+    </section>
+  );
+}
+
+// ---------- events timeline ----------
+function EventsTimeline({ events, match }: { events: DetailEvent[]; match: DetailMatch }) {
+  if (events.length === 0) {
+    return <p className="text-center text-muted-foreground text-sm py-10">رویدادی ثبت نشده است.</p>;
+  }
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <div className="divide-y divide-border/25">
+        {events.map((e, i) => (
+          <div
+            key={i}
+            className={cn(
+              "grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2.5 text-[12.5px]",
+              e.side === "home" && "bg-accent/15"
+            )}
+          >
+            {/* home side (right in RTL) */}
+            <div className={cn("flex items-center gap-2 justify-start", e.side !== "home" && "invisible")}>
+              {eventIcon(e)}
+              <span className="font-semibold">{eventText(e)}</span>
+            </div>
+            {/* minute + score */}
+            <div className="flex flex-col items-center min-w-[54px]">
+              <span className="text-[11px] font-black text-muted-foreground tabular-persian">{faDigits(e.minute)}</span>
+              {e.homeScore !== null && e.awayScore !== null && e.type === "Goal" && (
+                <span className="text-[10px] text-muted-foreground/70 tabular-persian">
+                  {faDigits(e.homeScore)}:{faDigits(e.awayScore)}
+                </span>
+              )}
+            </div>
+            {/* away side */}
+            <div className={cn("flex items-center gap-2 justify-end", e.side !== "away" && "invisible")}>
+              <span className="font-semibold">{eventText(e)}</span>
+              {eventIcon(e)}
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="px-4 py-2 text-[10px] text-muted-foreground/60 border-t border-border/25">
+        {match.home.fa || match.home.name} — رویدادهای سمت راست | {match.away.fa || match.away.name} — رویدادهای سمت چپ
+      </div>
+    </div>
+  );
+}
+
+// ---------- stats ----------
+function StatBars({ groups }: { groups: DetailStatGroup[] }) {
+  if (groups.length === 0) {
+    return <p className="text-center text-muted-foreground text-sm py-10">آماری برای این بازی ثبت نشده است.</p>;
+  }
+  return (
+    <div className="flex flex-col gap-4">
+      {groups.map((g, gi) => (
+        <div key={gi} className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between text-[11px]">
+            <span className="font-bold text-muted-foreground tabular-persian">{faDigits(g.rows[0]?.home || "0")}</span>
+            <span className="font-black text-[12px]">{g.title}</span>
+            <span className="font-bold text-muted-foreground tabular-persian">{faDigits(g.rows[0]?.away || "0")}</span>
+          </header>
+          <div className="p-3 flex flex-col gap-3">
+            {g.rows.map((r, i) => {
+              const hv = r.homeVal ?? 0;
+              const av = r.awayVal ?? 0;
+              const total = hv + av;
+              const hp = total > 0 ? (hv / total) * 100 : 50;
+              const numeric = r.homeVal !== null && r.awayVal !== null && total > 0;
+              return (
+                <div key={i} className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between text-[11.5px]">
+                    <span className="font-black tabular-persian w-12 text-start">{r.home}</span>
+                    <span className="text-muted-foreground text-[10.5px]">{r.title}</span>
+                    <span className="font-black tabular-persian w-12 text-end">{r.away}</span>
+                  </div>
+                  {numeric && r.graph && (
+                    <div className="flex h-1.5 rounded-full overflow-hidden gap-0.5" dir="ltr">
+                      <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${hp}%` }} />
+                      <div className="flex-1" />
+                      <div className="bg-chart-4 h-full rounded-full transition-all" style={{ width: `${100 - hp}%` }} />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------- lineups ----------
+function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lineups"]>; match: DetailMatch }) {
+  const side = (t: LineupSide | null, isHome: boolean) => {
+    if (!t) return null;
+    return (
+      <div className="flex-1 min-w-0 flex flex-col gap-3">
+        <div className="flex items-center justify-center gap-2 text-[12px] flex-wrap">
+          <span className="font-black truncate">{t.fa || t.name}</span>
+          {t.formation && (
+            <span className="text-[10px] font-bold text-muted-foreground border border-border rounded-md px-1.5 py-0.5" dir="ltr">
+              {t.formation}
+            </span>
+          )}
+        </div>
+        <div className="rounded-2xl border border-primary/20 bg-gradient-to-b from-primary/[0.07] to-transparent p-2.5 flex flex-col gap-1.5 min-h-[240px] justify-around">
+          {t.rows.map((row, ri) => (
+            <div key={ri} className="flex justify-center gap-1.5 flex-wrap">
+              {row.players.map((p) => (
+                <div key={p.id} className="flex flex-col items-center gap-0.5 min-w-0" title={p.name}>
+                  <span
+                    className={cn(
+                      "w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black tabular-persian shrink-0",
+                      isHome ? "bg-primary/20 border-primary/40 text-primary" : "bg-chart-4/20 border-chart-4/40 text-chart-4"
+                    )}
+                  >
+                    {p.shirt ? faDigits(p.shirt) : "–"}
+                  </span>
+                  <span className="text-[8.5px] text-muted-foreground max-w-[64px] truncate leading-3">{p.name}</span>
+                  {typeof p.rating === "number" && p.rating > 0 && (
+                    <span className="text-[8px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+        {t.coach && (
+          <p className="text-[10px] text-muted-foreground text-center">سرمربی: <span className="font-bold text-foreground/80">{t.coach}</span></p>
+        )}
+        {t.subs.length > 0 && (
+          <details className="text-[11px]">
+            <summary className="cursor-pointer text-muted-foreground font-bold select-none hover:text-foreground transition-colors">
+              بازیکنان ذخیره ({faDigits(t.subs.length)})
+            </summary>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {t.subs.map((s) => (
+                <span key={s.id} className="bg-muted/60 border border-border/50 rounded-lg px-2 py-1 text-[10px] flex items-center gap-1.5">
+                  {s.shirt && <span className="text-muted-foreground tabular-persian">{faDigits(s.shirt)}</span>}
+                  {s.name}
+                </span>
+              ))}
+            </div>
+          </details>
+        )}
+      </div>
+    );
+  };
+  return (
+    <div className="flex flex-col sm:flex-row gap-5 items-start">
+      {side(lineups.home, true) ?? <p className="flex-1 text-center text-muted-foreground text-xs py-8">ترکیب {match.home.fa || match.home.name} ثبت نشده</p>}
+      <div className="hidden sm:block w-px self-stretch bg-border/40" aria-hidden />
+      {side(lineups.away, false) ?? <p className="flex-1 text-center text-muted-foreground text-xs py-8">ترکیب {match.away.fa || match.away.name} ثبت نشده</p>}
+    </div>
+  );
+}
+
+// ---------- info ----------
+function InfoPanel({ data }: { data: DetailData }) {
+  const rows: { label: string; value?: string }[] = [
+    { label: "مسابقه", value: data.info.tournament || data.match.leagueFa },
+    { label: "مرحله", value: data.info.round },
+    { label: "تاریخ", value: data.info.date ? tehranDateLong(data.info.date) : undefined },
+    { label: "ساعت", value: data.info.date ? `${tehranTime(data.info.date)} (به وقت تهران)` : undefined },
+    { label: "ورشوگاه", value: [data.info.stadium, data.info.city].filter(Boolean).join("، ") || data.info.stadium },
+    { label: "داور", value: data.info.referee },
+    { label: "تماشاگران", value: data.info.attendance ? faDigits(data.info.attendance) : undefined },
+  ].filter((r) => r.value);
+
+  if (rows.length === 0) {
+    return <p className="text-center text-muted-foreground text-sm py-10">اطلاعات تکمیلی ثبت نشده است.</p>;
+  }
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <ul className="divide-y divide-border/25">
+        {rows.map((r, i) => (
+          <li key={i} className="flex items-center justify-between px-4 py-3 text-[12.5px]">
+            <span className="text-muted-foreground font-bold">{r.label}</span>
+            <span className="font-semibold text-start">{r.value}</span>
+          </li>
+        ))}
+      </ul>
+      {data.form && (
+        <div className="border-t border-border/40 px-4 py-3 flex flex-col gap-2.5">
+          {(["home", "away"] as const).map((side) => (
+            <div key={side} className="flex items-center gap-2.5 flex-wrap">
+              <span className="text-[11px] font-bold text-muted-foreground min-w-[80px]">
+                {side === "home" ? "فرم میزبان" : "فرم مهمان"}:
+              </span>
+              <div className="flex gap-1">
+                {data.form![side].map((f, i) => (
+                  <span key={i} className={cn("w-6 h-6 rounded-lg border text-[10px] font-black flex items-center justify-center", formColor(f as "W" | "D" | "L"))}>
+                    {f === "W" ? "ب" : f === "D" ? "م" : "با"}
+                  </span>
+                ))}
+                {data.form![side].length === 0 && <span className="text-[10px] text-muted-foreground/60">—</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------- main ----------
+export function MatchDetail({ matchId }: { matchId: string }) {
+  const [data, setData] = useState<DetailData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tab, setTab] = useState<Tab>("events");
+
+  const fetchDetail = useCallback(
+    async (silent = false) => {
+      if (!silent) setLoading(true);
+      try {
+        const res = await fetch(`/api/match/${matchId}`, { cache: "no-store" });
+        const json = (await res.json()) as DetailData;
+        if (json.ok) {
+          setData(json);
+          setError(null);
+        } else {
+          setError(json.error || "خطا در دریافت اطلاعات مسابقه");
+        }
+      } catch {
+        setError("ارتباط برقرار نشد. دوباره تلاش کنید.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [matchId]
+  );
+
+  useEffect(() => {
+    fetchDetail();
+  }, [fetchDetail]);
+
+  // auto-refresh while live
+  useEffect(() => {
+    if (!data?.match.live) return;
+    const iv = setInterval(() => {
+      if (document.visibilityState === "visible") fetchDetail(true);
+    }, 30_000);
+    return () => clearInterval(iv);
+  }, [data?.match.live, fetchDetail]);
+
+  if (loading && !data) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <div className="rounded-2xl border border-border/60 bg-card/40 p-8 flex flex-col items-center gap-4">
+          <div className="w-14 h-14 rounded bg-muted animate-pulse" />
+          <div className="h-8 w-32 rounded bg-muted animate-pulse" />
+          <div className="h-4 w-48 rounded bg-muted animate-pulse" />
+        </div>
+        <div className="h-48 rounded-2xl border border-border/60 bg-card/40 animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error && !data) {
+    return (
+      <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-8 text-center">
+        <p className="font-black text-sm text-destructive mb-1">{error}</p>
+        <button onClick={() => fetchDetail()} className="text-xs font-bold text-foreground underline underline-offset-4">
+          تلاش مجدد
+        </button>
+      </div>
+    );
+  }
+
+  if (!data) return null;
+  const m = data.match;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* back link */}
+      <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors w-fit">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M9 18l6-6-6-6" />
+        </svg>
+        بازگشت به نتایج
+      </Link>
+
+      <Scoreboard m={m} potm={data.playerOfTheMatch} />
+
+      {/* momentum (live) */}
+      {data.momentum && data.momentum.length > 4 && (
+        <section className="rounded-2xl border border-border/60 bg-card/60 p-3.5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-[11px] font-black text-muted-foreground">فشار بازی</h3>
+            <span className="text-[9px] text-muted-foreground/60">{m.home.fa} ← → {m.away.fa}</span>
+          </div>
+          <div className="flex items-center gap-[2px] h-8" dir="ltr">
+            {data.momentum.filter((_, i) => i % Math.ceil(data.momentum!.length / 60) === 0).map((p, i) => (
+              <div key={i} className="flex-1 flex flex-col justify-center h-full" title={`دقیقه ${p.minute}`}>
+                <div className="flex-1 flex flex-col justify-end">
+                  {p.value > 0 && <div className={cn("rounded-t-sm", p.value > 40 ? "bg-primary/80" : "bg-primary/35")} style={{ height: `${p.value}%` }} />}
+                </div>
+                <div className="w-full h-px bg-border/60" />
+                <div className="flex-1">
+                  {p.value < 0 && <div className={cn("rounded-b-sm", p.value < -40 ? "bg-chart-4/80" : "bg-chart-4/35")} style={{ height: `${-p.value}%` }} />}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* tabs */}
+      <nav className="flex items-center gap-1 border-b border-border/40 -mx-1 px-1" aria-label="بخش‌های مسابقه">
+        {TAB_LABELS.map((t) => (
+          <button
+            key={t.key}
+            onClick={() => setTab(t.key)}
+            aria-current={tab === t.key ? "page" : undefined}
+            className={cn(
+              "relative px-3.5 py-2 text-[12.5px] font-bold transition-colors",
+              tab === t.key ? "text-primary" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {t.label}
+            {tab === t.key && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />}
+          </button>
+        ))}
+      </nav>
+
+      <div className={cn(loading && "opacity-50 transition-opacity")}>
+        {tab === "events" && <EventsTimeline events={data.events} match={m} />}
+        {tab === "stats" && <StatBars groups={data.statGroups} />}
+        {tab === "lineups" &&
+          (data.lineups ? (
+            <LineupsPitch lineups={data.lineups} match={m} />
+          ) : (
+            <p className="text-center text-muted-foreground text-sm py-10">ترکیب بازیکنان هنوز اعلام نشده است.</p>
+          ))}
+        {tab === "info" && <InfoPanel data={data} />}
+      </div>
+    </div>
+  );
+}

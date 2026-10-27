@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
 import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
@@ -137,6 +138,26 @@ export default function Home() {
           <div className="flex items-center justify-between gap-3 py-3">
             <Logo />
             <div className="flex items-center gap-2">
+              <Link
+                href="/leagues"
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary border border-border/60 rounded-lg px-2.5 py-1.5 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M8 21h8M12 17v4" />
+                  <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+                  <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
+                </svg>
+                لیگ‌ها
+              </Link>
+              <Link
+                href="/news"
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary border border-border/60 rounded-lg px-2.5 py-1.5 transition-colors"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
+                </svg>
+                صفحه کامل اخبار
+              </Link>
               {tab === "matches" && (
                 <div className="flex items-center gap-2">
                   {liveCount > 0 && (
@@ -235,6 +256,13 @@ export default function Home() {
       {/* ---------- footer ---------- */}
       <footer className="mt-auto border-t border-border/50 bg-background/60">
         <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col items-center gap-2 text-center">
+          <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
+            <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
+            <span aria-hidden>·</span>
+            <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
+            <span aria-hidden>·</span>
+            <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
+          </div>
           <p className="text-xs text-muted-foreground">
             داده‌های نتایج و جدول‌ها از <span className="font-bold text-foreground/80">FotMob</span> و
             <span className="font-bold text-foreground/80"> ESPN</span> — اخبار از ESPN، BBC Sport و Sky Sports

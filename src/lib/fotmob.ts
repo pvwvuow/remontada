@@ -282,13 +282,21 @@ interface FotMobRow {
   qualColor?: string | null;
 }
 
-export async function getStandings(leagueKey: string): Promise<StandingsData> {
+// Fetch + cache the (heavy) league payload once; standings & fixtures share it
+async function getLeagueRaw(leagueKey: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   if (!lg) throw new Error(`Unknown league: ${leagueKey}`);
-  return cached(`standings:${leagueKey}`, 60 * 60_000, async () => {
-    const raw = await fetchJson<FotMobLeague>(
+  const raw = await cached(`leagueRaw:${leagueKey}`, 60 * 60_000, async () =>
+    fetchJson<FotMobLeague>(
       `https://www.fotmob.com/api/data/leagues?id=${lg.fotmobId}&ccode3=${lg.ccode3}&lang=en`
-    );
+    )
+  );
+  return { lg, raw };
+}
+
+export async function getStandings(leagueKey: string): Promise<StandingsData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey);
+  const build = () => {
     const rows: StandingsRow[] = (raw.table?.[0]?.data?.table?.all || []).map((r) => {
       const [gf, ga] = (r.scoresStr || "0-0").split("-").map((x) => parseInt(x, 10) || 0);
       return {
@@ -320,10 +328,138 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
-      scorers: uniqueScorers.slice(0, 5),
+      scorers: uniqueScorers.slice(0, 10),
       updatedAt: new Date().toISOString(),
     };
+  };
+  return cached(`standings:${leagueKey}`, 60 * 60_000, build);
+}
+
+// ---------------- FotMob: league fixtures (full season) ----------------
+interface FotMobFixture {
+  id: string;
+  round?: string;
+  roundName?: number | string;
+  home: { id: string | number; name: string; shortName?: string };
+  away: { id: string | number; name: string; shortName?: string };
+  status: { utcTime: string; started: boolean; finished: boolean; cancelled: boolean; scoreStr?: string };
+}
+
+export interface NormFixture {
+  id: string;
+  round?: string;
+  utcTime: string;
+  started: boolean;
+  finished: boolean;
+  cancelled: boolean;
+  home: { id: number; name: string; fa: string; short: string; logo: string; score: number | null };
+  away: { id: number; name: string; fa: string; short: string; logo: string; score: number | null };
+}
+
+function normalizeFixture(f: FotMobFixture): NormFixture {
+  // finished fixtures carry "2 - 1" in status.scoreStr
+  let hs: number | null = null;
+  let as: number | null = null;
+  const sm = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(f.status?.scoreStr || "");
+  if (sm) {
+    hs = Number(sm[1]);
+    as = Number(sm[2]);
+  }
+  return {
+    id: String(f.id),
+    round: f.roundName ? (/^\d+$/.test(String(f.roundName)) ? `هفته ${f.roundName}` : String(f.roundName)) : undefined,
+    utcTime: f.status?.utcTime || "",
+    started: !!f.status?.started,
+    finished: !!f.status?.finished,
+    cancelled: !!f.status?.cancelled,
+    home: {
+      id: Number(f.home?.id || 0),
+      name: f.home?.name || "",
+      fa: teamFa(f.home?.name, f.home?.shortName),
+      short: f.home?.shortName || f.home?.name || "",
+      logo: fotmobTeamLogo(Number(f.home?.id || 0)),
+      score: hs,
+    },
+    away: {
+      id: Number(f.away?.id || 0),
+      name: f.away?.name || "",
+      fa: teamFa(f.away?.name, f.away?.shortName),
+      short: f.away?.shortName || f.away?.name || "",
+      logo: fotmobTeamLogo(Number(f.away?.id || 0)),
+      score: as,
+    },
+  };
+}
+
+export interface LeagueFixturesData {
+  leagueKey: string;
+  leagueFa: string;
+  season: string;
+  upcoming: NormFixture[];
+  recent: NormFixture[];
+  total: number;
+}
+
+export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixturesData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey);
+  const all = (raw.fixtures?.allMatches || []) as FotMobFixture[];
+  const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
+  const now = Date.now();
+  const mapped = all.filter((f) => f?.id && f?.home && f?.away).map(normalizeFixture);
+  const upcoming = mapped
+    .filter((f) => !f.started && !f.finished && !f.cancelled && new Date(f.utcTime).getTime() >= now - 3 * 3600_000)
+    .sort((a, b) => a.utcTime.localeCompare(b.utcTime))
+    .slice(0, 15);
+  const recent = mapped
+    .filter((f) => f.finished && !f.cancelled)
+    .sort((a, b) => b.utcTime.localeCompare(a.utcTime))
+    .slice(0, 10);
+  return {
+    leagueKey,
+    leagueFa: lg.faName,
+    season,
+    upcoming,
+    recent,
+    total: mapped.length,
+  };
+}
+
+// ---------------- FotMob: team page (via league payload + daily feed) ----------------
+export interface TeamRowInfo {
+  rank: number;
+  pts: number;
+  played: number;
+  gd: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  leagueKey: string;
+  leagueFa: string;
+}
+
+/** Find a team's standings row across our configured leagues (best-effort). */
+export async function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
+  const candidates = [...LEAGUES].sort((a, b) => {
+    const ah = hintLeagueId && a.fotmobId === hintLeagueId ? -1 : 0;
+    const bh = hintLeagueId && b.fotmobId === hintLeagueId ? -1 : 0;
+    return ah - bh;
   });
+  for (const lg of candidates) {
+    try {
+      const st = await getStandings(lg.key);
+      const row = st.rows.find((r) => r.teamId === teamId);
+      if (row) {
+        return {
+          rank: row.idx, pts: row.pts, played: row.played, gd: row.gd,
+          wins: row.wins, draws: row.draws, losses: row.losses,
+          leagueKey: lg.key, leagueFa: lg.faName,
+        };
+      }
+    } catch {
+      // try next league
+    }
+  }
+  return null;
 }
 
 export { LEAGUES };

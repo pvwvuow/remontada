@@ -13,7 +13,7 @@ skills/
 examples/
 mini-services/
 tests/
-remontada/
+/remontada/
 .caddy*
 *.db
 *.sqlite

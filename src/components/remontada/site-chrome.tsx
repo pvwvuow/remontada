@@ -1,0 +1,107 @@
+// ------------------------------------------------------------------
+// Remontada — shared site chrome (header with portal nav + footer)
+// ------------------------------------------------------------------
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+
+export function SiteLogo({ small = false }: { small?: boolean }) {
+  return (
+    <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+      <div className="relative w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center overflow-hidden pitch-lines">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-primary" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
+        </svg>
+      </div>
+      <div className="leading-tight hidden xs:block sm:block">
+        <p className={`${small ? "text-base" : "text-lg"} font-black tracking-tight group-hover:text-primary transition-colors`}>
+          رمانتادا<span className="text-primary">.</span>
+        </p>
+        <p className="text-[10px] text-muted-foreground font-medium">فوتبال، بی‌وقفه و زنده</p>
+      </div>
+    </Link>
+  );
+}
+
+const NAV_ITEMS = [
+  { href: "/", label: "نتایج زنده", icon: "live" },
+  { href: "/leagues", label: "لیگ‌ها", icon: "trophy" },
+  { href: "/news", label: "اخبار", icon: "news" },
+] as const;
+
+function NavIcon({ name }: { name: "live" | "trophy" | "news" }) {
+  if (name === "live") {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
+      </svg>
+    );
+  }
+  if (name === "trophy") {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M8 21h8M12 17v4" />
+        <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+        <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
+    </svg>
+  );
+}
+
+export function SiteHeader() {
+  const pathname = usePathname();
+  return (
+    <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
+      <div className="max-w-3xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+        <SiteLogo small />
+        <nav className="flex items-center gap-1 text-[12px] font-bold" aria-label="ناوبری اصلی">
+          {NAV_ITEMS.map((item) => {
+            const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") : pathname.startsWith(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={active ? "page" : undefined}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors",
+                  active ? "text-primary bg-primary/10 border border-primary/25" : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
+                )}
+              >
+                <NavIcon name={item.icon} />
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+export function SiteFooter() {
+  return (
+    <footer className="mt-auto border-t border-border/50 bg-background/60">
+      <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
+        <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
+          <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
+          <span aria-hidden>·</span>
+          <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
+          <span aria-hidden>·</span>
+          <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
+        </div>
+        <p className="text-[10px] text-muted-foreground/70">
+          داده‌ها از FotMob و ESPN — رمانتادا، مرجع فارسی نتایج زنده فوتبال
+        </p>
+      </div>
+    </footer>
+  );
+}
