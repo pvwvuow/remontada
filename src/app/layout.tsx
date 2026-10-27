@@ -3,7 +3,32 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/remontada/pwa-register";
+import { JsonLd } from "@/components/remontada/json-ld";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
+
+// ---- site-identity structured data (cycle 29) ------------------------------
+// Emitted sitewide from the root layout so every page (including the
+// client-rendered home) carries WebSite + Organization identity for crawlers.
+const SITE_LD: Record<string, unknown> = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
+      "name": SITE_NAME,
+      "alternateName": "Remontada",
+      "url": SITE_URL,
+      "inLanguage": "fa-IR",
+    },
+    {
+      "@type": "Organization",
+      "@id": `${SITE_URL}/#org`,
+      "name": SITE_NAME,
+      "url": SITE_URL,
+      "logo": `${SITE_URL}/icons/icon-512.png`,
+    },
+  ],
+};
 
 const vazir = localFont({
   src: [
@@ -83,6 +108,7 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body className={`${vazir.variable} antialiased bg-background text-foreground font-sans`}>
+        <JsonLd data={SITE_LD} />
         {children}
         <Toaster />
         <PwaRegister />

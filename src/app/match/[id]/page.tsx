@@ -5,10 +5,40 @@ import { JsonLd } from "@/components/remontada/json-ld";
 import { getMatchLdData } from "@/lib/fotmob";
 import { SITE_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
-  title: "جزئیات مسابقه",
-  description: "رویدادهای زنده، آمار، ترکیب تیم‌ها و اطلاعات کامل مسابقه فوتبال",
-};
+// ---- dynamic SEO (cycle 29) ------------------------------------------------
+// Title/description from the same cached match payload the JSON-LD uses:
+// «رئال مادرید - بارسلونا | رمانتادا» instead of a generic static title.
+// Failures degrade to the old static metadata and never break the page.
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  if (!/^\d{4,12}$/.test(id)) {
+    return { title: "جزئیات مسابقه", robots: { index: false, follow: false } };
+  }
+  try {
+    const m = await getMatchLdData(id);
+    if (!m) return { title: "جزئیات مسابقه" };
+    const home = m.homeFa || m.homeName;
+    const away = m.awayFa || m.awayName;
+    const title = `${home} - ${away}`;
+    const kickoff = m.utcTime ? new Date(m.utcTime).getTime() : NaN;
+    const state = m.cancelled
+      ? "این بازی لغو شده است."
+      : m.finished
+        ? "نتیجه، خلاصه رویدادها و آمار کامل بازی."
+        : Number.isFinite(kickoff) && kickoff <= Date.now()
+          ? "پخش زنده، آمار لحظه‌ای و ترکیب تیم‌ها."
+          : "زمان شروع، پیش‌بازی و آمار دو تیم.";
+    const desc = m.leagueName ? `${title} در ${m.leagueName} — ${state}` : `${title} — ${state}`;
+    return {
+      title,
+      description: desc,
+      alternates: { canonical: `/match/${id}` },
+      openGraph: { title: `${title} | رمانتادا`, description: desc },
+    };
+  } catch {
+    return { title: "جزئیات مسابقه" };
+  }
+}
 
 export default async function MatchPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
