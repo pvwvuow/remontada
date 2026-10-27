@@ -82,16 +82,16 @@ export function LiveFavoriteChip() {
   if (!match) return null;
 
   return (
-    <div className="border-t border-red-500/20 bg-red-500/[0.07]">
+    <div className="border-t border-red-500/25 bg-red-500/[0.08] backdrop-blur-md">
       <div className="max-w-5xl mx-auto px-3 sm:px-5 py-1.5 flex items-center justify-center">
         <Link
           href={`/match/${match.id}`}
           prefetch={false}
-          className="group inline-flex items-center gap-2 rounded-full border border-red-500/30 bg-red-500/10 hover:bg-red-500/15 transition-colors ps-2.5 pe-3 py-1 text-[11px] font-black max-w-full"
+          className="group inline-flex items-center gap-2 rounded-full border border-red-500/35 bg-red-500/[0.12] hover:bg-red-500/20 transition-colors ps-2.5 pe-3 py-1 text-[11px] font-black max-w-full"
           aria-label={`بازی زنده ${match.myTeam} — مشاهده صفحه بازی`}
         >
           <span className="flex items-center gap-1.5 shrink-0 text-red-400">
-            <span className="live-dot inline-block w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden />
+            <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-red-500" aria-hidden />
             زنده
           </span>
           <span className="flex items-center gap-1.5 truncate">

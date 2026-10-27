@@ -33,7 +33,7 @@ function SeasonProgress({ progress }: { progress: { current: number; total: numb
         </span>
       </div>
       <div
-        className="flex-1 h-2 rounded-full bg-muted overflow-hidden"
+        className="flex-1 h-2 rounded-full bg-white/[0.07] overflow-hidden"
         role="progressbar"
         aria-valuemin={1}
         aria-valuemax={progress.total}
@@ -59,7 +59,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
   return (
     <Link
       href={`/match/${f.id}`}
-      className="group grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 sm:px-4 py-3 hover:bg-accent/40 transition-colors"
+      className="group grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-3 sm:px-4 py-3 glass-row-hover transition-colors"
       prefetch={false}
     >
       <div className="flex items-center justify-end gap-2 min-w-0 font-semibold">
@@ -69,7 +69,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
       </div>
       <div className="flex flex-col items-center min-w-[86px]">
         {showResult ? (
-          <span className="font-black text-sm tabular-persian bg-muted/60 rounded-lg px-2.5 py-0.5">
+          <span className="font-black text-sm tabular-persian text-[#e0efff] bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] rounded-lg px-2.5 py-0.5">
             {f.home.score ?? "—"} : {f.away.score ?? "—"}
           </span>
         ) : (
@@ -96,19 +96,19 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
     // desktop: split into two columns inside one card; mobile: single list
     const mid = Math.ceil(items.length / 2);
     return (
-      <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-        <div className="divide-y divide-border/25 lg:hidden">
+      <div className="glass-card overflow-hidden">
+        <div className="glass-list lg:hidden">
           {items.map((f) => (
             <FixtureRow key={f.id} f={f} showResult={showResult} />
           ))}
         </div>
         <div className="hidden lg:grid lg:grid-cols-2">
-          <div className="divide-y divide-border/25">
+          <div className="glass-list">
             {items.slice(0, mid).map((f) => (
               <FixtureRow key={f.id} f={f} showResult={showResult} />
             ))}
           </div>
-          <div className="divide-y divide-border/25 border-s border-border/25">
+          <div className="glass-list border-s border-[color:var(--glass-hairline)]">
             {items.slice(mid).map((f) => (
               <FixtureRow key={f.id} f={f} showResult={showResult} />
             ))}
@@ -129,11 +129,11 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
       {[...byDate.entries()].map(([date, list]) => {
         const j = jalaliShort(`${date}T12:00:00Z`);
         return (
-          <div key={date} className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-            <header className="px-4 py-2 border-b border-border/40 bg-muted/25 text-[11px] font-black text-muted-foreground">
+          <div key={date} className="glass-card overflow-hidden">
+            <header className="px-4 py-2 border-b border-[color:var(--glass-hairline)] glass-thead text-[11px] font-black text-[#b6cce3]">
               {j.weekday} {j.day} {j.month}
             </header>
-            <div className="divide-y divide-border/25">
+            <div className="glass-list">
               {list.map((f) => (
                 <FixtureRow key={f.id} f={f} showResult={showResult} />
               ))}
@@ -149,12 +149,12 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
 function WinStatList({ title, items, tone }: { title: string; items: LeagueStats["topHomeWins"]; tone: "home" | "away" }) {
   const max = Math.max(...items.map((i) => i.wins), 1);
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black flex items-center gap-1.5">
+    <div className="glass-card overflow-hidden">
+      <header className="px-4 py-2.5 border-b border-[color:var(--glass-hairline)] glass-thead text-[11px] font-black text-[#b6cce3] flex items-center gap-1.5">
         <span aria-hidden>{tone === "home" ? "🏟️" : "✈️"}</span>
         {title}
       </header>
-      <ol className="divide-y divide-border/25">
+      <ol className="glass-list">
         {items.map((t, i) => (
           <li key={t.teamId} className="flex items-center gap-3 px-4 py-2.5">
             <span className="w-5 text-[11px] font-black text-muted-foreground tabular-persian shrink-0">{faDigits(i + 1)}</span>
@@ -165,10 +165,10 @@ function WinStatList({ title, items, tone }: { title: string; items: LeagueStats
                 <Link href={`/team/${t.teamId}`} className="font-bold text-[12.5px] truncate hover:text-primary transition-colors" prefetch={false}>
                   {t.fa || t.short}
                 </Link>
-                <span className="text-[11px] font-black text-primary tabular-persian shrink-0">{faDigits(t.wins)} برد</span>
+                <span className="text-[11px] font-black text-sky-soft tabular-persian shrink-0">{faDigits(t.wins)} برد</span>
               </div>
-              <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
-                <div className={cn("h-full rounded-full", tone === "home" ? "bg-primary/70" : "bg-chart-4/70")} style={{ width: `${(t.wins / max) * 100}%` }} />
+              <div className="mt-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
+                <div className={cn("h-full rounded-full", tone === "home" ? "bg-sky-soft/80" : "bg-steel/80")} style={{ width: `${(t.wins / max) * 100}%` }} />
               </div>
             </div>
           </li>
@@ -180,8 +180,8 @@ function WinStatList({ title, items, tone }: { title: string; items: LeagueStats
 
 function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 px-3 py-3 text-center">
-      <p className="text-lg sm:text-xl font-black text-primary tabular-persian leading-6">{value}</p>
+    <div className="rounded-xl border border-[color:var(--glass-border-soft)] bg-[#a9cdf611] px-3 py-3 text-center">
+      <p className="text-lg sm:text-xl font-black text-[#dfedff] tabular-persian leading-6">{value}</p>
       <p className="text-[10.5px] font-bold mt-0.5">{label}</p>
       {sub && <p className="text-[9px] text-muted-foreground mt-0.5 tabular-persian">{sub}</p>}
     </div>
@@ -208,17 +208,17 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
       </div>
 
       {/* result split bar */}
-      <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
-        <h3 className="text-[11px] font-black text-muted-foreground mb-3">ترکیب نتایج {leagueFa} این فصل</h3>
-        <div className="flex h-2.5 rounded-full overflow-hidden bg-muted/40" dir="rtl" aria-hidden>
-          <div className="bg-primary/80" style={{ width: `${pct(stats.homeWins)}%` }} />
-          <div className="bg-muted-foreground/30" style={{ width: `${pct(stats.draws)}%` }} />
-          <div className="bg-chart-4/80" style={{ width: `${pct(stats.awayWins)}%` }} />
+      <section className="glass-card p-4">
+        <h3 className="text-[11px] font-black text-[#b6cce3] mb-3">ترکیب نتایج {leagueFa} این فصل</h3>
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-white/[0.07]" dir="rtl" aria-hidden>
+          <div className="bg-sky-soft/85" style={{ width: `${pct(stats.homeWins)}%` }} />
+          <div className="bg-white/[0.14]" style={{ width: `${pct(stats.draws)}%` }} />
+          <div className="bg-steel/80" style={{ width: `${pct(stats.awayWins)}%` }} />
         </div>
         <div className="flex items-center justify-between mt-2 text-[11px] font-bold tabular-persian">
-          <span className="text-primary">{faDigits(stats.homeWins)} برد میزبان</span>
+          <span className="text-sky-soft">{faDigits(stats.homeWins)} برد میزبان</span>
           <span className="text-muted-foreground">{faDigits(stats.draws)} مساوی</span>
-          <span className="text-chart-4">{faDigits(stats.awayWins)} برد مهمان</span>
+          <span className="text-steel">{faDigits(stats.awayWins)} برد مهمان</span>
         </div>
       </section>
 
@@ -230,14 +230,14 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
 
       {/* highest scoring rounds */}
       {stats.topRounds.length > 0 && (
-        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black">پرگل‌ترین هفته‌های فصل</header>
-          <ol className="divide-y divide-border/25">
+        <div className="glass-card overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-[color:var(--glass-hairline)] glass-thead text-[11px] font-black text-[#b6cce3]">پرگل‌ترین هفته‌های فصل</header>
+          <ol className="glass-list">
             {stats.topRounds.map((r, i) => (
               <li key={r.round} className="flex items-center gap-3 px-4 py-2.5">
                 <span className={cn(
                   "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 tabular-persian",
-                  i === 0 ? "bg-chart-3/20 text-chart-3 border border-chart-3/30" : "bg-muted text-muted-foreground"
+                  i === 0 ? "bg-chart-3/20 text-chart-3 border border-chart-3/30" : "bg-white/[0.05] text-muted-foreground"
                 )}>
                   {faDigits(i + 1)}
                 </span>
@@ -246,7 +246,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
                     <span className="font-bold text-[12.5px] truncate">{r.round}</span>
                     <span className="text-[11px] font-black tabular-persian shrink-0">{faDigits(r.goals)} گل</span>
                   </div>
-                  <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                  <div className="mt-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
                     <div className="h-full bg-chart-3/60 rounded-full" style={{ width: `${(r.goals / maxRoundGoals) * 100}%` }} />
                   </div>
                   <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDigits(r.avg.toFixed(1))} گل</p>
@@ -259,15 +259,15 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
 
       {/* biggest win */}
       {stats.biggestWin && (
-        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black">پرامتیازترین برد فصل</header>
-          <Link href={`/match/${stats.biggestWin.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors" prefetch={false}>
+        <div className="glass-card overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-[color:var(--glass-hairline)] glass-thead text-[11px] font-black text-[#b6cce3]">پرامتیازترین برد فصل</header>
+          <Link href={`/match/${stats.biggestWin.id}`} className="flex items-center gap-3 px-4 py-3 glass-row-hover transition-colors" prefetch={false}>
             <span className="flex items-center justify-end gap-2 flex-1 min-w-0 font-black text-[12.5px]">
               <span className="truncate">{stats.biggestWin.home.fa || stats.biggestWin.home.short}</span>
               { }
               <img src={stats.biggestWin.home.logo} alt="" width={20} height={20} loading="lazy" className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
             </span>
-            <span className="font-black text-sm tabular-persian bg-primary/10 text-primary rounded-lg px-2.5 py-1 shrink-0">
+            <span className="font-black text-sm tabular-persian text-[#e0efff] bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] rounded-lg px-2.5 py-1 shrink-0">
               {faDigits(stats.biggestWin.home.score ?? 0)} : {faDigits(stats.biggestWin.away.score ?? 0)}
             </span>
             <span className="flex items-center gap-2 flex-1 min-w-0 font-semibold text-[12.5px] text-muted-foreground">
@@ -384,7 +384,7 @@ function FormDotsMini({ form }: { form?: ("W" | "D" | "L")[] }) {
           key={i}
           className={cn(
             "w-[7px] h-[7px] rounded-full",
-            f === "W" ? "bg-primary/80" : f === "D" ? "bg-muted-foreground/40" : "bg-destructive/70"
+            f === "W" ? "bg-mint" : f === "D" ? "bg-white/[0.16]" : "bg-rose-soft/90"
           )}
         />
       ))}
@@ -444,14 +444,14 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
         <h2 className="text-[12.5px] font-black text-primary">پیش‌نمایش بازی‌های امروز</h2>
         <span className="text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(todays.length)} بازی</span>
       </header>
-      <div className="divide-y divide-border/25">
+      <div className="glass-list">
         {shown.map((f) => (
           <div key={f.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3.5">
             <PreviewSide team={f.home} row={rowsById.get(f.home.id)} />
             <Link
               href={`/match/${f.id}`}
               prefetch={false}
-              className="flex flex-col items-center gap-1 shrink-0 min-w-[62px] rounded-xl border border-border/50 bg-muted/30 px-2.5 py-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              className="flex flex-col items-center gap-1 shrink-0 min-w-[62px] rounded-xl border border-[color:var(--glass-border-soft)] bg-white/[0.04] px-2.5 py-2 hover:border-sky-soft/40 hover:bg-sky-soft/10 transition-colors"
               title="صفحه بازی"
             >
               <span className="text-[12px] font-black tabular-persian">{tehranTime(f.utcTime)}</span>
@@ -462,7 +462,7 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
         ))}
       </div>
       {todays.length > shown.length && (
-        <p className="text-[10px] text-muted-foreground px-4 py-2 border-t border-border/25 tabular-persian">
+        <p className="text-[10px] text-muted-foreground px-4 py-2 border-t border-[color:var(--glass-hairline)] tabular-persian">
           و {faDigits(todays.length - shown.length)} بازی دیگر امروز — در تب «بازی‌های پیش‌رو»
         </p>
       )}
@@ -621,7 +621,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
             {fixtures && <>در مجموع {faDigits(fixtures.total)} بازی</>}
           </p>
         </div>
-        <span className="text-[10px] font-bold text-muted-foreground border border-border rounded-lg px-2 py-1">
+        <span className="text-[10px] font-bold text-[#b6cce3] border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-lg px-2 py-1">
           {lg.ccode3}
         </span>
       </div>
@@ -633,7 +633,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       <PreMatchPreview fixtures={fixtures?.upcoming || []} standings={standings} />
 
       {/* tabs */}
-      <nav className="flex items-center gap-1 overflow-x-auto border-b border-border/40 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="بخش‌های لیگ">
+      <nav className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--glass-border-soft)] -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="بخش‌های لیگ">
         {TABS.map((t) => (
           <button
             key={t.key}
@@ -641,25 +641,25 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
             aria-current={tab === t.key ? "page" : undefined}
             className={cn(
               "relative px-3.5 py-2 text-[12.5px] font-bold whitespace-nowrap transition-colors",
-              tab === t.key ? "text-primary" : "text-muted-foreground hover:text-foreground"
+              tab === t.key ? "text-sky-soft" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t.label}
-            {tab === t.key && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />}
+            {tab === t.key && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-sky-soft rounded-full" aria-hidden />}
           </button>
         ))}
       </nav>
 
       {error && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-sm px-4 py-3">
+        <div className="glass-card border-rose-soft/25 text-rose-soft text-sm px-4 py-3">
           {error}
         </div>
       )}
 
       {loading && !standings && !fixtures ? (
-        <div className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-col gap-3" aria-busy="true">
+        <div className="glass-card p-4 flex flex-col gap-3" aria-busy="true">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-4 rounded bg-muted animate-pulse" style={{ width: `${40 + ((i * 17) % 45)}%` }} />
+            <div key={i} className="h-4 rounded bg-white/[0.06] animate-pulse" style={{ width: `${40 + ((i * 17) % 45)}%` }} />
           ))}
         </div>
       ) : (

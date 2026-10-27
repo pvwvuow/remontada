@@ -22,7 +22,7 @@ export function FavoritesSection() {
           </svg>
           <h2 className="text-sm font-black">تیم‌های مورد علاقه</h2>
         </div>
-        <div className="rounded-2xl border border-dashed border-border/70 bg-card/30 px-4 py-5 flex items-center gap-3">
+        <div className="glass-card border-dashed border-[color:var(--glass-border-soft)] px-4 py-5 flex items-center gap-3">
           <span className="text-amber-400/80 shrink-0" aria-hidden>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
               <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
@@ -54,11 +54,11 @@ export function FavoritesSection() {
         {favs.map((t) => (
           <div
             key={t.id}
-            className="group relative rounded-2xl border border-amber-400/25 bg-amber-400/[0.04] p-3.5 flex flex-col items-center gap-2 text-center hover:border-amber-400/50 hover:bg-amber-400/[0.07] transition-all"
+            className="group relative glass-card glass-amber p-3.5 flex flex-col items-center gap-2 text-center hover:border-amber-400/40 transition-all"
           >
             <Link href={`/team/${t.id}`} prefetch={false} className="flex flex-col items-center gap-2 w-full">
               <TeamLogo id={t.id} alt={t.fa} size={34} className="group-hover:scale-110 transition-transform" />
-              <span className="font-bold text-[12px] leading-tight group-hover:text-primary transition-colors w-full truncate">
+              <span className="font-bold text-[12px] leading-tight group-hover:text-sky-soft transition-colors w-full truncate">
                 {t.fa}
               </span>
               {t.en && <span className="text-[9px] text-muted-foreground truncate w-full">{t.en}</span>}

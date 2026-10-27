@@ -77,8 +77,8 @@ export function ShareButton({
       className={cn(
         "inline-flex items-center justify-center gap-1 rounded-lg border px-1.5 transition-all shrink-0 cursor-pointer",
         copied
-          ? "text-primary border-primary/40 bg-primary/10"
-          : "text-muted-foreground border-border/60 bg-card/60 hover:text-foreground hover:bg-accent",
+          ? "text-mint border-mint/40 bg-mint/10"
+          : "text-steel border-[color:var(--glass-border-soft)] bg-white/[0.04] hover:text-foreground hover:bg-white/[0.08] hover:border-[color:var(--glass-border)]",
         className
       )}
       style={{ height: size, minWidth: size, width: copied ? "auto" : size, maxWidth: "none" }}

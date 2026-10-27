@@ -133,8 +133,8 @@ export function SearchBox() {
         className={cn(
           "inline-flex items-center justify-center w-8 h-8 rounded-lg border transition-colors",
           open
-            ? "text-primary bg-primary/10 border-primary/25"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border-transparent"
+            ? "text-sky-soft bg-sky-soft/10 border-sky-soft/30"
+            : "text-steel hover:text-foreground hover:bg-white/[0.06] border-[color:var(--glass-border-soft)]"
         )}
       >
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" aria-hidden>
@@ -147,8 +147,8 @@ export function SearchBox() {
         <>
           {/* overlay panel */}
           <div className="fixed inset-0 z-40 bg-background/40 backdrop-blur-[2px]" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute z-50 top-10 end-0 w-[min(92vw,420px)] rounded-2xl border border-border/70 bg-popover shadow-2xl overflow-hidden" role="dialog" aria-label="جستجوی تیم">
-            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-border/40">
+          <div className="absolute z-50 top-10 end-0 w-[min(92vw,420px)] rounded-2xl glass-popover overflow-hidden" role="dialog" aria-label="جستجوی تیم">
+            <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[color:var(--glass-hairline)]">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground shrink-0" aria-hidden>
                 <circle cx="11" cy="11" r="7" />
                 <path d="M20 20l-3.8-3.8" />
@@ -163,7 +163,7 @@ export function SearchBox() {
                 maxLength={40}
               />
               {loading && (
-                <span className="w-4 h-4 rounded-full border-2 border-primary/30 border-t-primary animate-spin shrink-0" aria-label="در حال جستجو" />
+                <span className="w-4 h-4 rounded-full border-2 border-sky-soft/30 border-t-sky-soft animate-spin shrink-0" aria-label="در حال جستجو" />
               )}
             </div>
 
@@ -183,7 +183,7 @@ export function SearchBox() {
                           key={t.id}
                           type="button"
                           onClick={() => go(t.id)}
-                          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 ps-1.5 pe-2.5 py-1 text-[11px] font-bold hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
+                          className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--glass-border-soft)] bg-white/[0.04] ps-1.5 pe-2.5 py-1 text-[11px] font-bold hover:bg-sky-soft/10 hover:border-sky-soft/40 hover:text-sky-soft transition-colors"
                         >
                           <img src={t.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                           {t.fa}
@@ -202,7 +202,7 @@ export function SearchBox() {
                         onMouseEnter={() => setActive(i)}
                         className={cn(
                           "w-full flex items-center gap-2.5 ps-8 pe-2.5 py-2 rounded-xl text-start transition-colors",
-                          i === active ? "bg-primary/10" : "hover:bg-accent/40"
+                          i === active ? "bg-sky-soft/[0.09]" : "hover:bg-white/[0.05]"
                         )}
                       >
                         { }
@@ -216,7 +216,7 @@ export function SearchBox() {
                           </span>
                         </span>
                         <span className="shrink-0 flex flex-col items-end gap-0.5">
-                          <span className="text-[9.5px] font-bold text-muted-foreground border border-border/60 rounded-md px-1.5 py-px">
+                          <span className="text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
                             {r.leagueFa}
                           </span>
                           {r.rank > 0 && (

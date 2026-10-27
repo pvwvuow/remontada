@@ -34,7 +34,7 @@ function NewsCard({ item }: { item: ClientNewsItem }) {
   const display = item.titleFa && item.titleFa !== item.title ? item.titleFa : item.titleFa || item.title;
 
   const body = (
-    <article className="group rounded-2xl border border-border/60 bg-card/60 overflow-hidden hover:border-primary/30 hover:bg-card transition-all cursor-pointer h-full flex flex-col">
+    <article className="group glass-card overflow-hidden hover:border-sky-soft/30 transition-all cursor-pointer h-full flex flex-col">
       <div className="relative aspect-video bg-muted/40 overflow-hidden">
         {item.image ? (
            
@@ -58,7 +58,7 @@ function NewsCard({ item }: { item: ClientNewsItem }) {
         </span>
       </div>
       <div className="p-3.5 flex flex-col gap-2 flex-1">
-        <h3 className="font-black text-[13.5px] leading-6 line-clamp-3 group-hover:text-primary transition-colors">
+        <h3 className="font-black text-[13.5px] leading-6 line-clamp-3 group-hover:text-sky-soft transition-colors">
           {display}
         </h3>
         {item.summary && (
@@ -85,12 +85,12 @@ function Skeleton() {
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" aria-busy="true">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden">
-          <div className="aspect-video bg-muted animate-pulse" />
+        <div key={i} className="glass-card overflow-hidden">
+          <div className="aspect-video bg-white/[0.04] animate-pulse" />
           <div className="p-3.5 flex flex-col gap-2.5">
-            <div className="h-4 rounded bg-muted animate-pulse" />
-            <div className="h-4 rounded bg-muted animate-pulse w-4/5" />
-            <div className="h-3 rounded bg-muted animate-pulse w-1/3 mt-1" />
+            <div className="h-4 rounded bg-white/[0.06] animate-pulse" />
+            <div className="h-4 rounded bg-white/[0.06] animate-pulse w-4/5" />
+            <div className="h-3 rounded bg-white/[0.06] animate-pulse w-1/3 mt-1" />
           </div>
         </div>
       ))}
@@ -108,7 +108,7 @@ export function NewsView({ items, loading, emptyHint }: NewsViewProps) {
   if (loading && items.length === 0) return <Skeleton />;
   if (items.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border/70 bg-card/30 px-6 py-14 text-center">
+      <div className="glass-card border-dashed border-[color:var(--glass-border-soft)] px-6 py-14 text-center">
         <p className="font-black text-sm mb-1">خبری یافت نشد</p>
         <p className="text-xs text-muted-foreground">{emptyHint || "چند لحظه بعد دوباره بررسی کنید"}</p>
       </div>

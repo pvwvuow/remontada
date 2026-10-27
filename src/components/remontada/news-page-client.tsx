@@ -31,8 +31,8 @@ function Chip({
       className={cn(
         "shrink-0 inline-flex items-center gap-1.5 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
         active
-          ? "bg-primary/15 border-primary/40 text-primary"
-          : cn("bg-card/50 text-muted-foreground hover:border-border hover:text-foreground", className)
+          ? "bg-sky-soft/15 border-sky-soft/40 text-sky-soft"
+          : cn("bg-white/[0.03] border-[color:var(--glass-border-soft)] text-steel hover:border-[color:var(--glass-border)] hover:text-foreground", className)
       )}
     >
       {children}
@@ -45,7 +45,7 @@ function CountBadge({ n, active }: { n: number; active: boolean }) {
     <span
       className={cn(
         "rounded-md px-1.5 py-px text-[10px] font-black tabular-persian border",
-        active ? "bg-primary/10 border-primary/30 text-primary" : "bg-background/70 border-border/60 text-muted-foreground"
+        active ? "bg-sky-soft/10 border-sky-soft/30 text-sky-soft" : "bg-white/[0.05] border-[color:var(--glass-border-soft)] text-muted-foreground"
       )}
     >
       {faDigits(n)}
@@ -135,7 +135,7 @@ export function NewsPageClient() {
         </div>
 
         {/* chronological order toggle */}
-        <div className="shrink-0 flex rounded-xl border border-border/60 bg-card/50 p-0.5" role="group" aria-label="ترتیب زمانی">
+        <div className="shrink-0 flex rounded-xl border border-[color:var(--glass-border-soft)] bg-white/[0.03] p-0.5" role="group" aria-label="ترتیب زمانی">
           {(
             [
               { key: "newest", label: "تازه‌ترین" },
@@ -148,7 +148,7 @@ export function NewsPageClient() {
               aria-pressed={sort === o.key}
               className={cn(
                 "px-2.5 py-1.5 rounded-lg text-[11px] font-bold transition-colors whitespace-nowrap",
-                sort === o.key ? "bg-primary/15 text-primary" : "text-muted-foreground hover:text-foreground"
+                sort === o.key ? "bg-sky-soft/[0.12] text-sky-soft" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {o.label}
@@ -198,7 +198,7 @@ export function NewsPageClient() {
       <div className="flex justify-end">
         <button
           onClick={() => fetchNews()}
-          className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
+          className="flex items-center gap-1.5 text-xs font-semibold bg-white/[0.04] border border-[color:var(--glass-border-soft)] px-3 py-1.5 rounded-lg hover:bg-white/[0.08] hover:border-[color:var(--glass-border)] transition-colors"
         >
           <svg
             width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"

@@ -233,6 +233,16 @@
   box-shadow: inset 0 1px 0 oklch(0.88 0.05 232 / 22%);
 }
 
+/* floating overlay panel (phase 5: search dropdown) — stronger glass for
+   elements that hover above the page: heavier blur + brighter border */
+.glass-popover {
+  background: var(--glass-bg-strong);
+  border: 1px solid oklch(0.8 0.07 235 / 24%);
+  box-shadow: var(--glass-halo), inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
 /* red live glow — pulsing minute text / dot (studio rose-red accent) */
 .live-glow {
   text-shadow:
