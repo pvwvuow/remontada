@@ -6,9 +6,34 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeamSearchResult } from "@/lib/fotmob";
+import { fotmobTeamLogo } from "@/lib/leagues";
+import { useFavorites } from "@/lib/favorites";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+/** fallback suggestions for the empty search state (ids verified from match feed) */
+const POPULAR_TEAMS: { id: number; fa: string }[] = [
+  { id: 101610, fa: "پرسپولیس" },
+  { id: 101614, fa: "استقلال" },
+  { id: 176352, fa: "تراکتور" },
+  { id: 101611, fa: "سپاهان" },
+  { id: 8633, fa: "رئال مادرید" },
+  { id: 8634, fa: "بارسلونا" },
+  { id: 10260, fa: "منچستریونایتد" },
+];
+
+/** renders `text` with the matched [start,end) range highlighted */
+function Hl({ text, range }: { text: string; range?: [number, number] | null }) {
+  if (!range || range[0] < 0 || range[1] > text.length || range[0] >= range[1]) return <>{text}</>;
+  return (
+    <>
+      {text.slice(0, range[0])}
+      <mark className="bg-primary/20 text-primary rounded-sm px-0.5">{text.slice(range[0], range[1])}</mark>
+      {text.slice(range[1])}
+    </>
+  );
+}
 
 export function SearchBox() {
   const router = useRouter();
@@ -17,6 +42,7 @@ export function SearchBox() {
   const [results, setResults] = useState<TeamSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0); // keyboard-highlighted result
+  const favorites = useFavorites();
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
@@ -75,6 +101,21 @@ export function SearchBox() {
     [router]
   );
 
+  // empty-state suggestions: user's favorites first, then popular teams (deduped)
+  const suggestions: { id: number; fa: string; logo: string }[] = [];
+  const seenIds = new Set<number>();
+  for (const f of favorites.slice(0, 3)) {
+    if (seenIds.has(f.id)) continue;
+    seenIds.add(f.id);
+    suggestions.push({ id: f.id, fa: f.fa, logo: fotmobTeamLogo(f.id) });
+  }
+  for (const p of POPULAR_TEAMS) {
+    if (suggestions.length >= 6) break;
+    if (seenIds.has(p.id)) continue;
+    seenIds.add(p.id);
+    suggestions.push({ id: p.id, fa: p.fa, logo: fotmobTeamLogo(p.id) });
+  }
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { setOpen(false); return; }
     if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)); }
@@ -132,9 +173,25 @@ export function SearchBox() {
                   حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌های {faDigits(7)} لیگ بزرگ
                 </p>
               ) : !loading && results.length === 0 ? (
-                <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
-                  تیمی با این نام پیدا نشد.
-                </p>
+                <div className="py-4 px-4 flex flex-col items-center gap-3">
+                  <p className="text-[11.5px] text-muted-foreground">تیمی با این نام پیدا نشد.</p>
+                  <div className="w-full">
+                    <p className="text-[10px] font-bold text-muted-foreground/80 text-center mb-2">شاید دنبال این تیم‌ها بودید:</p>
+                    <div className="flex flex-wrap justify-center gap-1.5">
+                      {suggestions.map((t) => (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => go(t.id)}
+                          className="inline-flex items-center gap-1.5 rounded-full border border-border/60 bg-muted/30 ps-1.5 pe-2.5 py-1 text-[11px] font-bold hover:bg-primary/10 hover:border-primary/30 hover:text-primary transition-colors"
+                        >
+                          <img src={t.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                          {t.fa}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
               ) : (
                 <ul className="p-1.5 flex flex-col">
                   {results.map((r, i) => (
@@ -151,8 +208,12 @@ export function SearchBox() {
                         { }
                         <img src={r.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                         <span className="min-w-0 flex-1">
-                          <span className="block font-bold text-[13px] truncate">{r.fa || r.name}</span>
-                          <span className="block text-[10px] text-muted-foreground truncate">{r.name}</span>
+                          <span className="block font-bold text-[13px] truncate">
+                            <Hl text={r.fa || r.name} range={r.fa ? r.hl?.fa ?? null : r.hl?.name ?? null} />
+                          </span>
+                          <span className="block text-[10px] text-muted-foreground truncate">
+                            <Hl text={r.name} range={r.hl?.name ?? null} />
+                          </span>
                         </span>
                         <span className="shrink-0 flex flex-col items-end gap-0.5">
                           <span className="text-[9.5px] font-bold text-muted-foreground border border-border/60 rounded-md px-1.5 py-px">

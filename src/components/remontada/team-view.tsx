@@ -20,7 +20,18 @@ interface TeamData {
   live: NormMatch[];
   recent: (NormMatch & { round?: string })[];
   upcoming: NormMatch[];
+  prematch?: PreMatchPayload | null;
   error?: string;
+}
+
+/** mirrors PreMatchInfo from /api/team/[id] (cycle 18) */
+interface PreMatchPayload {
+  matchId: string;
+  kickoff: string;
+  venue: "home" | "away";
+  opponent: { id: number; name: string; fa: string; logo: string };
+  oppRow: TeamRowInfo | null;
+  oppSeason: TeamSeasonStats | null;
 }
 
 type Row = NormMatch & { round?: string };
@@ -319,6 +330,173 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
   );
 }
 
+// ---------------- pre-match panel (cycle 18) ----------------
+
+interface SideStats {
+  fa: string;
+  logo: string;
+  row: TeamRowInfo | null;
+  season: TeamSeasonStats | null;
+  form: { res: "W" | "D" | "L"; title: string }[];
+}
+
+function seasonPts(s: TeamSeasonStats | null, r: TeamRowInfo | null): number | undefined {
+  if (r) return r.pts;
+  if (s && s.played > 0) return s.wins * 3 + s.draws;
+  return undefined;
+}
+
+function FormChips({ items }: { items: { res: "W" | "D" | "L"; title: string }[] }) {
+  if (items.length === 0) {
+    return <span className="text-[10px] text-muted-foreground">در دسترس نیست</span>;
+  }
+  return (
+    <div className="flex items-center gap-1">
+      {items.map((f, i) => (
+        <span
+          key={i}
+          title={f.title}
+          className={cn(
+            "w-[18px] h-[18px] rounded-md border text-[8.5px] font-black flex items-center justify-center cursor-default",
+            formChip(f.res)
+          )}
+        >
+          {f.res === "W" ? "ب" : f.res === "D" ? "م" : "پ"}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function MiniBar({ pct, cls, align }: { pct: number; cls: string; align: "end" | "start" }) {
+  if (pct <= 0) return null;
+  return (
+    <div className={cn("h-1 mt-1 flex w-full", align === "end" ? "justify-end" : "justify-start")}>
+      <div className={cn("h-1 rounded-full", cls)} style={{ width: `${Math.max(6, Math.min(100, pct))}%` }} />
+    </div>
+  );
+}
+
+/** «مصاف پیش از بازی» — form of both teams + season stats comparison.
+ *  Graceful: sides without a data source (e.g. Iranian teams) show “—” chips. */
+function PreMatchPanel({
+  pm,
+  teamFaName,
+  teamLogo,
+  row,
+  season,
+  formEntries,
+}: {
+  pm: PreMatchPayload;
+  teamFaName: string;
+  teamLogo: string;
+  row: TeamRowInfo | null;
+  season: TeamSeasonStats | null;
+  formEntries: { res: "W" | "D" | "L"; title: string }[];
+}) {
+  const ours: SideStats = { fa: teamFaName, logo: teamLogo, row, season, form: formEntries };
+  const opp: SideStats = {
+    fa: pm.opponent.fa || pm.opponent.name,
+    logo: pm.opponent.logo,
+    row: pm.oppRow,
+    season: pm.oppSeason,
+    form:
+      pm.oppSeason?.form.map((f) => ({
+        res: f.res,
+        title: `${f.opponent.fa || f.opponent.name} ${faDigits(f.gf)} - ${faDigits(f.ga)}${f.round ? ` · ${faRound(f.round)}` : ""}`,
+      })) || [],
+  };
+
+  const pts = (s: SideStats) => seasonPts(s.season, s.row);
+  const rowTxt = (s: SideStats) => (s.row ? `رتبه ${faDigits(s.row.rank)}` : null);
+  const playedTxt = (s: SideStats) =>
+    s.season?.played ? faDigits(s.season.played) : s.row?.played ? faDigits(s.row.played) : null;
+  const wdlTxt = (s: SideStats) => {
+    const s2 = s.season;
+    const w = s2 ? s2.wins : s.row?.wins;
+    const d = s2 ? s2.draws : s.row?.draws;
+    const l = s2 ? s2.losses : s.row?.losses;
+    if (w == null || d == null || l == null) return null;
+    return `${faDigits(w)} ب · ${faDigits(d)} م · ${faDigits(l)} پ`;
+  };
+  const gfTxt = (s: SideStats) =>
+    s.season && s.season.played > 0 ? `${faDigits(s.season.goalsFor)} : ${faDigits(s.season.goalsAgainst)}` : null;
+  const csTxt = (s: SideStats) => (s.season?.played ? faDigits(s.season.cleanSheets) : null);
+
+  const metrics: { label: string; a?: string | null; b?: string | null; pa?: number | null; pb?: number | null }[] = [
+    { label: "رتبه در جدول", a: rowTxt(ours), b: rowTxt(opp) },
+    { label: "امتیاز", a: pts(ours) ?? null, b: pts(opp) ?? null, pa: pts(ours) ?? null, pb: pts(opp) ?? null },
+    { label: "بازی‌ها", a: playedTxt(ours), b: playedTxt(opp) },
+    { label: "برد/مساوی/باخت", a: wdlTxt(ours), b: wdlTxt(opp) },
+    { label: "گل زده : خورده", a: gfTxt(ours), b: gfTxt(opp), pa: ours.season?.goalsFor ?? null, pb: opp.season?.goalsFor ?? null },
+    { label: "کلین‌شیت", a: csTxt(ours), b: csTxt(opp), pa: ours.season?.cleanSheets ?? null, pb: opp.season?.cleanSheets ?? null },
+  ];
+
+  const sideHead = (s: SideStats, align: "end" | "start") => (
+    <div className={cn("flex items-center gap-2 min-w-0", align === "end" ? "flex-row" : "flex-row-reverse")}>
+      <img src={s.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+      <span className="text-[12px] font-black truncate">{s.fa}</span>
+    </div>
+  );
+
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black">مصاف پیش از بازی</h2>
+        <Link href={`/match/${pm.matchId}`} prefetch={false} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors">
+          صفحه بازی ←
+        </Link>
+      </header>
+
+      <div className="p-4 flex flex-col gap-3">
+        {/* two team heads + forms */}
+        <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3">
+          <div className="flex flex-col items-end gap-1.5 min-w-0">
+            {sideHead(ours, "end")}
+            <FormChips items={ours.form} />
+          </div>
+          <span className="text-[9.5px] font-black text-muted-foreground bg-muted/60 rounded-lg px-2 py-1 whitespace-nowrap">
+            در برابر
+          </span>
+          <div className="flex flex-col items-start gap-1.5 min-w-0">
+            {sideHead(opp, "start")}
+            <FormChips items={opp.form} />
+          </div>
+        </div>
+
+        {/* season comparison */}
+        {metrics.some((x) => x.a || x.b) && (
+          <div className="rounded-xl border border-border/40 bg-muted/15 px-3.5 py-2 flex flex-col divide-y divide-border/25">
+            {metrics.map((x) => {
+              if (!x.a && !x.b) return null;
+              const max = Math.max(x.pa ?? 0, x.pb ?? 0, 1);
+              return (
+                <div key={x.label} className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-3 py-1.5">
+                  <div className="min-w-0">
+                    <span className="font-black text-[12px] tabular-persian block text-end">{x.a ?? "—"}</span>
+                    {x.pa != null && x.pb != null && <MiniBar pct={(x.pa / max) * 100} cls="bg-primary/70" align="end" />}
+                  </div>
+                  <span className="text-[9.5px] font-bold text-muted-foreground text-center px-1 whitespace-nowrap">{x.label}</span>
+                  <div className="min-w-0">
+                    <span className="font-black text-[12px] tabular-persian block text-start">{x.b ?? "—"}</span>
+                    {x.pa != null && x.pb != null && <MiniBar pct={((x.pb ?? 0) / max) * 100} cls="bg-sky-500/70" align="start" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!opp.season && !opp.row && (
+          <p className="text-[10px] text-muted-foreground text-center">
+            آمار فصل حریف از منبع داده در دسترس نیست — فرم بالا از بازی‌های اخیر است.
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -462,6 +640,18 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* next match + live countdown */}
       {data.upcoming.length > 0 && <NextMatchCard m={data.upcoming[0]} teamId={teamId} />}
+
+      {/* pre-match panel: both teams' form + season comparison (cycle 18) */}
+      {data.prematch && (
+        <PreMatchPanel
+          pm={data.prematch}
+          teamFaName={data.team.fa || data.team.name}
+          teamLogo={data.team.logo}
+          row={st}
+          season={season}
+          formEntries={formEntries}
+        />
+      )}
 
       {/* season stats */}
       {season && season.played > 0 && <SeasonPanel s={season} />}

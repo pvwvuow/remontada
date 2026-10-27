@@ -14,8 +14,20 @@ import {
   dateKeyToYYYYMMDD,
   type NormMatch,
   type NormFixture,
+  type TeamRowInfo,
+  type TeamSeasonStats,
 } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
+
+/** Pre-match context for the team page panel (cycle 18): opponent form + season stats */
+export interface PreMatchInfo {
+  matchId: string;
+  kickoff: string;
+  venue: "home" | "away";
+  opponent: { id: number; name: string; fa: string; logo: string };
+  oppRow: TeamRowInfo | null;       // opponent standings row (null for leagues w/o standings)
+  oppSeason: TeamSeasonStats | null; // opponent season stats (null for e.g. Persian Gulf league)
+}
 
 export const dynamic = "force-dynamic";
 
@@ -116,6 +128,34 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       .sort((a, b) => (b.utcTime || "").localeCompare(a.utcTime || ""))
       .slice(0, 10);
 
+    // ---- pre-match context (cycle 18): opponent of the next fixture ----
+    // best-effort only — a failure here must never fail the whole request
+    let prematch: PreMatchInfo | null = null;
+    const nextMatch = upcoming[0];
+    if (nextMatch) {
+      try {
+        const isHome = nextMatch.home.id === teamId;
+        const opp = isHome ? nextMatch.away : nextMatch.home;
+        const oppRow = await findTeamInStandings(opp.id, nextMatch.leagueId).catch(() => null);
+        // league of the fixture itself first, then opponent's standings league
+        const nextLeagueKey =
+          LEAGUES.find((l) => l.fotmobId === nextMatch.leagueId)?.key || oppRow?.leagueKey;
+        const oppSeason = nextLeagueKey
+          ? await getTeamSeasonFromLeague(nextLeagueKey, opp.id).catch(() => null)
+          : null;
+        prematch = {
+          matchId: nextMatch.id,
+          kickoff: nextMatch.utcTime,
+          venue: isHome ? "home" : "away",
+          opponent: { id: opp.id, name: opp.name, fa: opp.fa, logo: opp.logo },
+          oppRow,
+          oppSeason,
+        };
+      } catch {
+        prematch = null;
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       team: { id: teamId, name: teamName.name, fa: teamName.fa, logo },
@@ -124,6 +164,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       live,
       recent,
       upcoming,
+      prematch,
       fetchedAt: new Date().toISOString(),
     });
   } catch (err) {

@@ -780,6 +780,74 @@ export async function getTeamSeasonFromLeague(leagueKey: string, teamId: number)
   };
 }
 
+// ---------------- Minimal match data for SSR JSON-LD (cycle 18) ----------------
+export interface MatchLdData {
+  id: string;
+  homeName: string;
+  homeFa: string;
+  awayName: string;
+  awayFa: string;
+  utcTime: string;
+  cancelled: boolean;
+  finished: boolean;
+  leagueName?: string;
+  stadium?: string;
+  city?: string;
+}
+
+interface FMLdDetails {
+  general?: {
+    homeTeam?: { id?: number; name?: string };
+    awayTeam?: { id?: number; name?: string };
+    leagueName?: string;
+    parentLeagueName?: string;
+  };
+  header?: {
+    status?: { utcTime?: string; finished?: boolean; cancelled?: boolean };
+  };
+  content?: {
+    matchFacts?: { infoBox?: Record<string, unknown> };
+  };
+}
+
+/** sentinel cached for unknown/dead match ids so 404 spam does not hit FotMob */
+const LD_NOT_FOUND = { __remontadaLdNotFound: true } as const;
+
+/**
+ * Minimal match payload for the server-rendered SportsEvent JSON-LD on
+ * /match/[id]. Lightweight: one short-timeout FotMob call, cached 60s.
+ * Never throws — returns null when data is unavailable/unknown
+ * (FotMob answers HTTP 200 with {error:true} for dead ids, cycle-17 finding).
+ */
+export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
+  if (!/^\d{4,12}$/.test(id)) return null;
+  const payload = await cached(`matchld:${id}`, 60_000, async (): Promise<MatchLdData | typeof LD_NOT_FOUND> => {
+    const raw = await fetchJson<FMLdDetails>(`https://www.fotmob.com/api/data/matchDetails?matchId=${id}`, 6000).catch(() => null);
+    if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error) return LD_NOT_FOUND;
+    const g = raw.general;
+    const home = g?.homeTeam;
+    const away = g?.awayTeam;
+    if (!home?.name || !away?.name) return LD_NOT_FOUND;
+    const infoBox = raw.content?.matchFacts?.infoBox || {};
+    const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
+    return {
+      id,
+      homeName: home.name,
+      homeFa: teamFa(home.name),
+      awayName: away.name,
+      awayFa: teamFa(away.name),
+      utcTime: raw.header?.status?.utcTime || "",
+      cancelled: !!raw.header?.status?.cancelled,
+      finished: !!raw.header?.status?.finished,
+      leagueName: g?.leagueName || g?.parentLeagueName || undefined,
+      stadium: st?.name || undefined,
+      city: st?.city || undefined,
+    };
+  });
+  if (!payload || typeof payload !== "object") return null;
+  return (payload as typeof LD_NOT_FOUND).__remontadaLdNotFound ? null : (payload as MatchLdData);
+}
+
 // ---------------- Global top scorers (merged across all leagues) ----------------
 export interface GlobalScorer {
   rank: number;        // global dense rank across all leagues
@@ -933,6 +1001,30 @@ export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
 
 export interface TeamSearchResult extends TeamIndexEntry {
   matchedOn: string;
+  /** character ranges [start, end) in the original fa/name strings where the
+   *  query matched — UI highlights them without re-normalizing (cycle 18) */
+  hl?: { fa?: [number, number] | null; name?: [number, number] | null };
+}
+
+/** Find the query's match inside `display` tolerating normalization diffs
+ *  (ZWNJ/diacritics stripped, Arabic→Persian chars, case). Returns [start, end)
+ *  in the ORIGINAL string so the client can highlight without index drift. */
+function rangeOf(display: string, nq: string): [number, number] | null {
+  if (!display || !nq) return null;
+  const chars: string[] = [];
+  const map: number[] = [];
+  for (let i = 0; i < display.length; i++) {
+    const cp = display.charCodeAt(i);
+    if (cp === 0x200c || cp === 0x200e || cp === 0x200f || cp === 0x0640 || (cp >= 0x064b && cp <= 0x0652)) continue;
+    let c = display[i].toLowerCase();
+    if (c === "ي") c = "ی";
+    else if (c === "ك") c = "ک";
+    chars.push(c);
+    map.push(i);
+  }
+  const idx = chars.join("").indexOf(nq);
+  if (idx < 0) return null;
+  return [map[idx], map[idx + nq.length - 1] + 1];
 }
 
 export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResult[]> {
@@ -955,7 +1047,15 @@ export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResul
     if (score > 0) scored.push({ e, score, matchedOn });
   }
   scored.sort((a, b) => b.score - a.score || a.e.rank - b.e.rank);
-  return scored.slice(0, limit).map(({ e, matchedOn }) => ({ ...e, matchedOn }));
+  return scored.slice(0, limit).map(({ e, matchedOn }) => {
+    const faRange = rangeOf(e.fa || "", nq);
+    const nameRange = rangeOf(e.name || "", nq);
+    return {
+      ...e,
+      matchedOn,
+      hl: faRange || nameRange ? { fa: faRange, name: nameRange } : undefined,
+    };
+  });
 }
 
 export { LEAGUES };
