@@ -5,6 +5,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { SearchBox } from "./search-box";
 import { LiveFavoriteChip } from "./live-favorite-chip";
@@ -68,7 +69,7 @@ function NavIcon({ name }: { name: "live" | "trophy" | "goal" | "news" }) {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
@@ -97,6 +98,12 @@ export function SiteHeader() {
           </nav>
         </div>
       </div>
+      {/* optional page-specific row (e.g. home tabs + refresh controls) —
+          keeps the shared chrome single-source while letting each page
+          extend the sticky header with its own controls */}
+      {children != null && (
+        <div className="max-w-5xl mx-auto px-3 sm:px-5">{children}</div>
+      )}
       {/* live favorite strip — only renders when a favorite team is playing now */}
       <LiveFavoriteChip />
     </header>

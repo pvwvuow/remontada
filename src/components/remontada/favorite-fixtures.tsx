@@ -3,11 +3,13 @@
 // ------------------------------------------------------------------
 // Remontada — "upcoming matches of my teams" (client-only, cycle 20)
 // Reads the localStorage favorites store (remontada:favorites) and
-// scans the next 3 days of the matches feed (offset 0..2) for fixtures
-// of those teams that have NOT started yet. Renders a compact card
-// grid above the matches list on the home page. Refreshes every 5 min
-// (tab-visible only). Renders nothing when: no favorites / no upcoming
-// fixture found / fetch failed — fully graceful.
+// scans the upcoming days of the matches feed (offset 0..N-1) for
+// fixtures of those teams that have NOT started yet. Renders a compact
+// card grid above the matches list on the home page. Refreshes every
+// 5 min (tab-visible only). Cycle-23: the horizon is user-selectable
+// (3 or 7 days, persisted in remontada:fav-fixtures-days). Renders
+// nothing when: no favorites / no upcoming fixture found / fetch
+// failed — fully graceful.
 // ------------------------------------------------------------------
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -28,6 +30,7 @@ interface UpcomingFavMatch {
 }
 
 const MAX_SHOW = 6;
+const DAYS_KEY = "remontada:fav-fixtures-days";
 
 function dayLabelFa(utcTime: string): string {
   try {
@@ -47,9 +50,35 @@ export function FavoriteFixtures() {
   const favs = useFavorites();
   const [items, setItems] = useState<UpcomingFavMatch[]>([]);
   const [expanded, setExpanded] = useState(false);
+  // cycle-23: user-selectable horizon (3 or 7 days), persisted locally
+  const [days, setDays] = useState<3 | 7>(3);
   const stoppedRef = useRef(false);
 
   const favKey = favs.map((f) => f.id).join(",");
+
+  // restore the saved horizon (after hydration to avoid mismatch)
+  // NOTE: setState must not run synchronously inside the effect body
+  // (react-hooks/set-state-in-effect) — defer via a microtask timer
+  useEffect(() => {
+    try {
+      const v = Number(localStorage.getItem(DAYS_KEY));
+      if (v === 3 || v === 7) {
+        const t = setTimeout(() => setDays(v), 0);
+        return () => clearTimeout(t);
+      }
+    } catch {
+      // private mode / storage disabled — default stays
+    }
+  }, []);
+
+  const setRange = (d: 3 | 7) => {
+    setDays(d);
+    try {
+      localStorage.setItem(DAYS_KEY, String(d));
+    } catch {
+      // ignore persistence failures
+    }
+  };
 
   useEffect(() => {
     stoppedRef.current = false;
@@ -62,12 +91,13 @@ export function FavoriteFixtures() {
     const tick = async () => {
       if (stoppedRef.current || document.visibilityState !== "visible") return;
       try {
-        const days = await Promise.allSettled(
-          [0, 1, 2].map((o) => fetch(`/api/matches?offset=${o}`, { cache: "no-store" }).then((r) => r.json())),
+        const offsets = Array.from({ length: days }, (_, i) => i);
+        const daysRes = await Promise.allSettled(
+          offsets.map((o) => fetch(`/api/matches?offset=${o}`, { cache: "no-store" }).then((r) => r.json())),
         );
         if (stoppedRef.current) return;
         const found: UpcomingFavMatch[] = [];
-        for (const res of days) {
+        for (const res of daysRes) {
           if (res.status !== "fulfilled" || !res.value?.ok) continue;
           for (const g of (res.value.groups || []) as LeagueGroup[]) {
             for (const m of (g.matches || []) as NormMatch[]) {
@@ -100,7 +130,7 @@ export function FavoriteFixtures() {
       stoppedRef.current = true;
       clearInterval(iv);
     };
-  }, [favKey]);
+  }, [favKey, days]);
 
   if (favs.length === 0 || items.length === 0) return null;
   const shown = expanded ? items : items.slice(0, MAX_SHOW);
@@ -116,7 +146,25 @@ export function FavoriteFixtures() {
         <span className="text-[10px] font-bold text-amber-400/90 bg-amber-400/10 border border-amber-400/25 rounded-md px-1.5 py-0.5 tabular-persian">
           {faDigits(items.length)} بازی
         </span>
-        <span className="ms-auto text-[10px] text-muted-foreground hidden sm:block">۳ روز آینده · هر ۵ دقیقه</span>
+        {/* cycle-23: horizon selector (3 or 7 days) */}
+        <div className="ms-auto flex items-center gap-1" role="group" aria-label="بازه زمانی" title="بروزرسانی خودکار هر ۵ دقیقه">
+          {[3, 7].map((d) => (
+            <button
+              key={d}
+              onClick={() => setRange(d as 3 | 7)}
+              aria-pressed={days === d}
+              title={`${d} روز آینده`}
+              className={cn(
+                "text-[10px] font-black rounded-md px-2 py-1 border transition-colors cursor-pointer tabular-persian",
+                days === d
+                  ? "text-amber-400 bg-amber-400/15 border-amber-400/40"
+                  : "text-muted-foreground border-transparent hover:bg-accent/40 hover:text-foreground",
+              )}
+            >
+              {faDigits(d)} روز
+            </button>
+          ))}
+        </div>
       </header>
       <div className="p-1.5 grid gap-1">
         {shown.map((m) => (

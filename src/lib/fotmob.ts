@@ -308,8 +308,28 @@ interface FotMobLeague {
   table?: { data?: { table?: { all?: FotMobRow[] } } };
   fixtures?: { allMatches?: unknown[] };
   stats?: {
-    players?: { header?: string; participant?: FMStatPlayer; topThree?: FMStatPlayer[] }[];
+    players?: {
+      header?: string;
+      participant?: FMStatPlayer;
+      topThree?: FMStatPlayer[];
+      fetchAllUrl?: string;  // full-season static stats file (data.fotmob.com, gzip)
+    }[];
   };
+}
+
+// Row shape of the full-season goals file (TopLists[0].StatList).
+// NOTE: "ParticiantId" is FotMob's own typo in the payload — both spellings accepted.
+interface FMStatFullRow {
+  ParticiantId?: number;
+  ParticipantId?: number;
+  ParticipantName?: string;
+  TeamId?: number;
+  TeamName?: string;
+  ParticipantCountryCode?: string;
+  StatValue?: number;
+  Rank?: number;
+  MatchesPlayed?: number;
+  MinutesPlayed?: number;
 }
 interface FotMobRow {
   id: number; name: string; shortName?: string;
@@ -360,6 +380,48 @@ function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
   for (const t of cat.topThree || []) if (t?.name) out.push(t);
   const seen = new Set<number>();
   return out.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+}
+
+/**
+ * Full-season goals list (cycle-23): the league payload's "Top scorer"
+ * category exposes only participant + topThree (~4 names), but it also
+ * carries a `fetchAllUrl` pointing at a static S3 file with the complete
+ * ranking (100+ rows). Returns up to `limit` entries, de-duplicated by
+ * player id. Fully graceful — any failure returns [] and callers fall
+ * back to the short category list.
+ */
+export async function getFullGoalScorers(leagueKey: string, limit = 20): Promise<ScorerEntry[]> {
+  try {
+    return await cached(`fullGoals:${leagueKey}`, 60 * 60_000, async () => {
+      const { raw } = await getLeagueRaw(leagueKey);
+      const cat = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
+      const url = cat?.fetchAllUrl;
+      if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+      const data = await fetchJson<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+      const rows = data?.TopLists?.[0]?.StatList || [];
+      const out: ScorerEntry[] = [];
+      const seen = new Set<number>();
+      for (const r of rows) {
+        const id = r.ParticiantId ?? r.ParticipantId;
+        if (!r.ParticipantName || id == null || seen.has(id)) continue;
+        seen.add(id);
+        out.push({
+          rank: r.Rank ?? out.length + 1,
+          name: r.ParticipantName,
+          team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+          teamId: r.TeamId ?? 0,
+          goals: Math.round(r.StatValue ?? 0),
+          playerId: id,
+          ...(r.ParticipantCountryCode ? { ccode: r.ParticipantCountryCode } : {}),
+          ...(r.MinutesPlayed ? { minutes: r.MinutesPlayed } : {}),
+        });
+        if (out.length >= limit) break;
+      }
+      return out;
+    });
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the caller
+  }
 }
 
 export async function getStandings(leagueKey: string): Promise<StandingsData> {
@@ -428,6 +490,18 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const seen = new Set<string>();
     const uniqueScorers = scorers.filter((s) => (seen.has(s.name) ? false : (seen.add(s.name), true)));
 
+    // cycle-23: merge the full-season goals file on top of the ~4 category
+    // names — enriched entries (assists/xG/rating) stay first, the rest of
+    // the ranking is appended so /topscorers + the sitemap get real depth
+    const fullScorers = await getFullGoalScorers(leagueKey, 24);
+    const enrichedIds = new Set(
+      uniqueScorers.map((s) => s.playerId).filter((id): id is number => id != null),
+    );
+    const mergedScorers = [...uniqueScorers, ...fullScorers.filter((s) => s.playerId == null || !enrichedIds.has(s.playerId))]
+      .sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name))
+      .slice(0, 20)
+      .map((s, i) => ({ ...s, rank: i + 1 }));
+
     // assist leaders (participant + topThree of the "Assists" category)
     const assistEntries: AssistEntry[] = statCategory(raw, /^assists$/i)
       .map((p, i) => ({
@@ -442,7 +516,7 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
-      scorers: uniqueScorers.slice(0, 10),
+      scorers: mergedScorers,
       assists: assistEntries,
       updatedAt: new Date().toISOString(),
     };

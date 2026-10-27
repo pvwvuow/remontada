@@ -7,10 +7,9 @@ import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
 import { faDigits } from "@/lib/format";
-import { SearchBox } from "@/components/remontada/search-box";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
-import { LiveFavoriteChip } from "@/components/remontada/live-favorite-chip";
+import { SiteHeader } from "@/components/remontada/site-chrome";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -20,26 +19,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "standings", label: "جدول لیگ‌ها" },
   { key: "news", label: "اخبار" },
 ];
-
-function Logo() {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div className="relative w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center overflow-hidden pitch-lines">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-primary" aria-hidden>
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
-        </svg>
-      </div>
-      <div className="leading-tight">
-        <h1 className="text-lg sm:text-xl font-black tracking-tight">
-          رمانتادا
-          <span className="text-primary">.</span>
-        </h1>
-        <p className="text-[10px] text-muted-foreground font-medium">فوتبال، بی‌وقفه و زنده</p>
-      </div>
-    </div>
-  );
-}
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>("matches");
@@ -157,13 +136,12 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ---------- header ---------- */}
-      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
-        <div className="max-w-5xl mx-auto px-3 sm:px-5">
-          <div className="flex items-center justify-between gap-3 py-3">
+      {/* ---------- header (cycle-23: shared SiteHeader — single-source chrome) ---------- */}
+      <SiteHeader>
+        {(liveCount > 0 || tab === "matches") && (
+          <div className="flex items-center justify-between gap-3 pt-2">
             <div className="flex items-center gap-2.5 min-w-0">
-              <Logo />
-              {/* live matches counter — always visible next to the logo */}
+              {/* live matches counter — always visible when something is live */}
               {liveCount > 0 && (
                 <button
                   onClick={() => changeTab("matches")}
@@ -178,45 +156,22 @@ export default function Home() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <SearchBox />
-              <Link
-                href="/leagues"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary border border-border/60 rounded-lg px-2.5 py-1.5 transition-colors"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M8 21h8M12 17v4" />
-                  <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
-                  <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
-                </svg>
-                لیگ‌ها
-              </Link>
-              <Link
-                href="/news"
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary border border-border/60 rounded-lg px-2.5 py-1.5 transition-colors"
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-                  <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
-                </svg>
-                صفحه کامل اخبار
-              </Link>
               {tab === "matches" && (
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => fetchMatches()}
-                    className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
-                    aria-label="بروزرسانی نتایج"
+                <button
+                  onClick={() => fetchMatches()}
+                  className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
+                  aria-label="بروزرسانی نتایج"
+                >
+                  <svg
+                    width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                    className={cn(matchesLoading && "animate-spin")} aria-hidden
                   >
-                    <svg
-                      width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                      className={cn(matchesLoading && "animate-spin")} aria-hidden
-                    >
-                      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                      <path d="M21 3v6h-6" />
-                    </svg>
-                    بروزرسانی
-                  </button>
-                </div>
+                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                    <path d="M21 3v6h-6" />
+                  </svg>
+                  بروزرسانی
+                </button>
               )}
               {tab === "matches" && lastFetch && (
                 <span className="hidden sm:block text-[10px] text-muted-foreground tabular-persian whitespace-nowrap">
@@ -225,43 +180,40 @@ export default function Home() {
               )}
             </div>
           </div>
+        )}
 
-          {/* tabs */}
-          <nav className="flex items-center gap-1 -mb-px overflow-x-auto" aria-label="بخش‌های سایت">
-            {TABS.map((t) => (
-              <button
-                key={t.key}
-                onClick={() => changeTab(t.key)}
-                aria-current={tab === t.key ? "page" : undefined}
-                className={cn(
-                  "relative px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors rounded-t-lg",
-                  tab === t.key
-                    ? "text-primary"
-                    : "text-muted-foreground hover:text-foreground"
-                )}
-              >
-                {t.label}
-                {t.key === "matches" && liveCount > 0 && (
-                  <span className="ms-1.5 inline-block align-top text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-full px-1.5 tabular-persian">
-                    {liveCount}
-                  </span>
-                )}
-                {tab === t.key && (
-                  <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />
-                )}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* cycle-22 bug fix: the home page has its own header (not SiteHeader),
-            so the live favorite strip was missing on the most important page —
-            mount it here too (renders nothing unless a favorite team is live) */}
-        <LiveFavoriteChip />
-      </header>
+        {/* tabs */}
+        <nav className="flex items-center gap-1 -mb-px overflow-x-auto" aria-label="بخش‌های صفحه اصلی">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => changeTab(t.key)}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={cn(
+                "relative px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors rounded-t-lg",
+                tab === t.key
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              {t.label}
+              {t.key === "matches" && liveCount > 0 && (
+                <span className="ms-1.5 inline-block align-top text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-full px-1.5 tabular-persian">
+                  {liveCount}
+                </span>
+              )}
+              {tab === t.key && (
+                <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />
+              )}
+            </button>
+          ))}
+        </nav>
+      </SiteHeader>
 
       {/* ---------- content ---------- */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
+        {/* h1 lives in the content since the shared header renders a <p> logo */}
+        <h1 className="sr-only">رمانتادا — نتایج زنده فوتبال، جدول لیگ‌ها و اخبار</h1>
         {tab === "matches" && (
           <>
             {matchesError && (
