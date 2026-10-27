@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { faDigits, tehranDateLong, tehranTime, formColor } from "@/lib/format";
+import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 // ---------- API shape (mirrors /api/match/[id]) ----------
@@ -54,12 +54,13 @@ interface DetailData {
   error?: string;
 }
 
-type Tab = "events" | "stats" | "lineups" | "info";
+type Tab = "events" | "stats" | "lineups" | "info" | "h2h";
 
 const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: "events", label: "رویدادها" },
   { key: "stats", label: "آمار" },
   { key: "lineups", label: "ترکیب" },
+  { key: "h2h", label: "رو در رو" },
   { key: "info", label: "اطلاعات" },
 ];
 
@@ -416,12 +417,198 @@ function InfoPanel({ data }: { data: DetailData }) {
   );
 }
 
+// ---------- head-to-head ----------
+interface H2HTeam { id: number; name: string; fa: string; logo: string }
+interface H2HMeeting {
+  id: string; utcTime: string; leagueFa: string;
+  home: H2HTeam; away: H2HTeam;
+  scoreStr?: string; winner: "home" | "away" | "draw" | null;
+  reason?: string; finished: boolean;
+}
+interface H2HData {
+  ok: boolean;
+  home: H2HTeam; away: H2HTeam;
+  totals: { homeWins: number; draws: number; awayWins: number; played: number };
+  results: H2HMeeting[];
+  upcoming: H2HMeeting[];
+  hasData: boolean;
+  error?: string;
+}
+
+function H2HMeetingRow({ m, curHomeId, curAwayId }: { m: H2HMeeting; curHomeId: number; curAwayId: number }) {
+  const wTeamId = m.winner === "home" ? m.home.id : m.winner === "away" ? m.away.id : null;
+  const homeWon = wTeamId === curHomeId;
+  const awayWon = wTeamId === curAwayId;
+  const j = jalaliShort(m.utcTime);
+
+  const teams = (
+    <>
+      <span className={cn("flex items-center justify-end gap-1.5 min-w-0 flex-1", homeWon ? "font-black" : "font-semibold text-muted-foreground")}>
+        <span className="truncate text-[12.5px]">{m.home.fa || m.home.name}</span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={m.home.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+      </span>
+      <span className={cn(
+        "shrink-0 font-black text-[12.5px] tabular-persian rounded-lg px-2 py-0.5 min-w-[52px] text-center",
+        m.finished ? "bg-muted/60" : "text-foreground/80"
+      )}>
+        {m.finished ? (m.scoreStr ? `${faDigits(m.scoreStr.split("-")[0].trim())} - ${faDigits(m.scoreStr.split("-")[1].trim())}` : "—") : tehranTime(m.utcTime)}
+      </span>
+      <span className={cn("flex items-center gap-1.5 min-w-0 flex-1", awayWon ? "font-black" : "font-semibold text-muted-foreground")}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={m.away.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        <span className="truncate text-[12.5px]">{m.away.fa || m.away.name}</span>
+      </span>
+    </>
+  );
+
+  return (
+    <div className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-accent/30 transition-colors">
+      <div className="flex flex-col shrink-0 min-w-[84px]">
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian whitespace-nowrap">
+          {j.weekday} {faDigits(j.day)} {j.month}
+        </span>
+        <span className="text-[9px] text-muted-foreground/70 truncate max-w-full">{m.leagueFa}</span>
+      </div>
+      <div className="flex-1 flex items-center gap-2 min-w-0">{teams}</div>
+      {m.finished ? (
+        m.reason && m.reason !== "FT" ? (
+          <span className="shrink-0 text-[9px] font-bold text-muted-foreground border border-border rounded-md px-1.5 py-0.5">{m.reason}</span>
+        ) : null
+      ) : (
+        <span className="shrink-0 text-[9px] font-black text-primary border border-primary/30 bg-primary/10 rounded-md px-1.5 py-0.5">پیش‌رو</span>
+      )}
+    </div>
+  );
+}
+
+function H2HPanel({ data, loading }: { data: H2HData | null; loading: boolean }) {
+  if (loading && !data) {
+    return (
+      <div className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-col gap-3" aria-busy="true">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <div className="h-3 w-20 rounded bg-muted animate-pulse" />
+            <div className="h-4 rounded bg-muted animate-pulse flex-1" />
+            <div className="h-5 w-12 rounded bg-muted animate-pulse" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (!data || !data.ok) {
+    return (
+      <p className="text-center text-muted-foreground text-sm py-10">
+        {data?.error || "سابقه رو در رو در دسترس نیست."}
+      </p>
+    );
+  }
+  if (!data.hasData) {
+    return <p className="text-center text-muted-foreground text-sm py-10">سابقه‌ای از دیدار این دو تیم ثبت نشده است.</p>;
+  }
+
+  const { totals, home, away } = data;
+  const { played } = totals;
+  const pct = (n: number) => (played > 0 ? (n / played) * 100 : 0);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* summary card */}
+      <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          <span className="flex items-center gap-2 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={home.logo} alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+            <span className="font-black text-[13px] truncate">{home.fa || home.name}</span>
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap tabular-persian">
+            {faDigits(totals.played)} دیدار
+          </span>
+          <span className="flex items-center gap-2 min-w-0 justify-end">
+            <span className="font-black text-[13px] truncate">{away.fa || away.name}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={away.logo} alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          </span>
+        </div>
+        {/* wins bar: home | draws | away (home = right in RTL) */}
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-muted/40" dir="rtl" aria-hidden>
+          <div className="bg-primary/80" style={{ width: `${pct(totals.homeWins)}%` }} />
+          <div className="bg-muted-foreground/30" style={{ width: `${pct(totals.draws)}%` }} />
+          <div className="bg-chart-4/80" style={{ width: `${pct(totals.awayWins)}%` }} />
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[11px] font-bold tabular-persian">
+          <span className="text-primary">{faDigits(totals.homeWins)} برد</span>
+          <span className="text-muted-foreground">{faDigits(totals.draws)} مساوی</span>
+          <span className="text-chart-4">{faDigits(totals.awayWins)} برد</span>
+        </div>
+      </section>
+
+      {/* last meetings */}
+      {data.results.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black text-muted-foreground">
+            آخرین دیدارها
+          </header>
+          <div className="divide-y divide-border/25">
+            {data.results.map((mt) => (
+              <Link key={mt.id} href={`/match/${mt.id}`} className="block" prefetch={false}>
+                <H2HMeetingRow m={mt} curHomeId={home.id} curAwayId={away.id} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* upcoming meetings between the two teams */}
+      {data.upcoming.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black text-muted-foreground">
+            دیدارهای پیش‌روی این دو تیم
+          </header>
+          <div className="divide-y divide-border/25">
+            {data.upcoming.map((mt) => (
+              <Link key={mt.id} href={`/match/${mt.id}`} className="block" prefetch={false}>
+                <H2HMeetingRow m={mt} curHomeId={home.id} curAwayId={away.id} />
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <p className="text-[10px] text-muted-foreground px-1">
+        آمار رو در رو بر اساس دیدارهای رسمی ثبت‌شده در FotMob است؛ بردهای میزبان ({home.fa || home.name}) با رنگ سبز و بردهای مهمان ({away.fa || away.name}) با رنگ آبی نمایش داده می‌شود. روی هر دیدار کلیک کنید تا صفحه‌ی آن بازی باز شود.
+      </p>
+    </div>
+  );
+}
+
 // ---------- main ----------
 export function MatchDetail({ matchId }: { matchId: string }) {
   const [data, setData] = useState<DetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("events");
+
+  // --- head-to-head (lazy per tab) ---
+  const [h2h, setH2h] = useState<H2HData | null>(null);
+  const [h2hLoading, setH2hLoading] = useState(false);
+
+  const fetchH2H = useCallback(async () => {
+    setH2hLoading(true);
+    try {
+      const res = await fetch(`/api/match-h2h/${matchId}`, { cache: "no-store" });
+      const json = (await res.json()) as H2HData;
+      setH2h(json);
+    } catch {
+      setH2h({ ok: false, error: "ارتباط برقرار نشد.", home: null as never, away: null as never, totals: { homeWins: 0, draws: 0, awayWins: 0, played: 0 }, results: [], upcoming: [], hasData: false });
+    } finally {
+      setH2hLoading(false);
+    }
+  }, [matchId]);
+
+  useEffect(() => {
+    if (tab === "h2h" && !h2h && !h2hLoading) fetchH2H();
+  }, [tab, h2h, h2hLoading, fetchH2H]);
 
   const fetchDetail = useCallback(
     async (silent = false) => {
@@ -547,6 +734,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             <p className="text-center text-muted-foreground text-sm py-10">ترکیب بازیکنان هنوز اعلام نشده است.</p>
           ))}
         {tab === "info" && <InfoPanel data={data} />}
+        {tab === "h2h" && <H2HPanel data={h2h} loading={h2hLoading} />}
       </div>
     </div>
   );
