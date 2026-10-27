@@ -148,7 +148,7 @@ export function SearchBox() {
                           i === active ? "bg-primary/10" : "hover:bg-accent/40"
                         )}
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        { }
                         <img src={r.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                         <span className="min-w-0 flex-1">
                           <span className="block font-bold text-[13px] truncate">{r.fa || r.name}</span>

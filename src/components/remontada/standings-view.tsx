@@ -86,7 +86,7 @@ function StandingsTable({ data }: { data: StandingsData }) {
                       className="flex items-center gap-2 min-w-0 flex-1 rounded-lg px-1 -mx-1 py-0.5 hover:bg-primary/10 transition-colors group"
                       prefetch={false}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      { }
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                       <span className="min-w-0 flex flex-col">
                         <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>

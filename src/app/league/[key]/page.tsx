@@ -3,6 +3,9 @@ import { LeagueView } from "@/components/remontada/league-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { LEAGUES } from "@/lib/leagues";
 
+// unknown league keys → hard 404 (only the 7 known leagues are valid)
+export const dynamicParams = false;
+
 export async function generateStaticParams() {
   return LEAGUES.map((l) => ({ key: l.key }));
 }

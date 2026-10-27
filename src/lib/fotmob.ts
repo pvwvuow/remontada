@@ -305,15 +305,36 @@ interface FotMobRow {
   qualColor?: string | null;
 }
 
+// Thrown when FotMob has no usable payload for a league (e.g. Persian Gulf
+// Pro League returns a literal `null` body). Routes translate this into a
+// friendly 503 Persian message instead of a raw engine TypeError.
+export class LeagueUnavailableError extends Error {
+  constructor(leagueKey: string) {
+    super(`league payload unavailable: ${leagueKey}`);
+    this.name = "LeagueUnavailableError";
+  }
+}
+
 // Fetch + cache the (heavy) league payload once; standings & fixtures share it
 async function getLeagueRaw(leagueKey: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   if (!lg) throw new Error(`Unknown league: ${leagueKey}`);
-  const raw = await cached(`leagueRaw:${leagueKey}`, 60 * 60_000, async () =>
-    fetchJson<FotMobLeague>(
+  // NOTE: the null/invalid guard lives INSIDE the cached producer so an
+  // unusable payload is never cached — each request retries upstream.
+  const raw = await cached(`leagueRaw:${leagueKey}`, 60 * 60_000, async () => {
+    const data = await fetchJson<FotMobLeague>(
       `https://www.fotmob.com/api/data/leagues?id=${lg.fotmobId}&ccode3=${lg.ccode3}&lang=en`
-    )
-  );
+    );
+    if (data == null || typeof data !== "object") {
+      throw new LeagueUnavailableError(leagueKey);
+    }
+    return data;
+  });
+  // belt & braces: payloads cached as `null` by OLDER builds (L1/L2) must
+  // also fail fast here instead of leaking a TypeError downstream
+  if (raw == null || typeof raw !== "object") {
+    throw new LeagueUnavailableError(leagueKey);
+  }
   return { lg, raw };
 }
 
@@ -590,7 +611,7 @@ export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixtur
   const upcoming = mapped
     .filter((f) => !f.started && !f.finished && !f.cancelled && new Date(f.utcTime).getTime() >= now - 3 * 3600_000)
     .sort((a, b) => a.utcTime.localeCompare(b.utcTime))
-    .slice(0, 15);
+    .slice(0, 20);
   const recent = mapped
     .filter((f) => f.finished && !f.cancelled)
     .sort((a, b) => b.utcTime.localeCompare(a.utcTime))

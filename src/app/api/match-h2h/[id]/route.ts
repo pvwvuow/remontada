@@ -184,7 +184,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       hasData: meetings.length > 0,
       fetchedAt: new Date().toISOString(),
     });
-  } catch {
+  } catch (err) {
+    // unknown match id from upstream → "not found", not a gateway failure
+    const msg = err instanceof Error ? err.message : "";
+    if (/\bHTTP 404\b/.test(msg)) {
+      return NextResponse.json({ ok: false, error: "مسابقه یافت نشد." }, { status: 404 });
+    }
     return NextResponse.json({ ok: false, error: "دریافت سابقه رو در رو ناموفق بود." }, { status: 502 });
   }
 }

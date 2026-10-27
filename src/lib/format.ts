@@ -102,6 +102,16 @@ export function offsetDateISO(offset: number): string {
   return new Date(t).toISOString().slice(0, 10);
 }
 
+/** Tehran calendar date (YYYY-MM-DD) of an ISO timestamp — single source of
+ *  truth so client components never re-derive the +3:30 offset
+ *  (fix of cycle-16 bug #7). */
+export function tehranDateKey(iso: string): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Date(d.getTime() + 3.5 * 3600_000).toISOString().slice(0, 10);
+}
+
 /** "۳ ساعت پیش" / "۲۰ دقیقه پیش" relative Persian time */
 export function timeAgoFa(iso: string): string {
   if (!iso) return "";

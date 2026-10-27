@@ -147,7 +147,7 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
             {(p.teamId || p.teamName) && (
               <>
                 {p.teamLogo && (
-                  /* eslint-disable-next-line @next/next/no-img-element */
+                   
                   <img src={p.teamLogo} alt="" width={13} height={13} className="w-[13px] h-[13px] object-contain inline-block" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                 )}
                 <span>{p.teamName}</span>
@@ -191,7 +191,7 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-5 px-3 sm:px-8 py-6">
         {/* home */}
         <div className="flex flex-col items-center gap-2.5 text-center min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={m.home.logo} alt="" width={52} height={52} className="w-11 h-11 sm:w-14 sm:h-14 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <Link
             href={`/team/${m.home.id}`}
@@ -226,7 +226,7 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
         </div>
         {/* away */}
         <div className="flex flex-col items-center gap-2.5 text-center min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={m.away.logo} alt="" width={52} height={52} className="w-11 h-11 sm:w-14 sm:h-14 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <Link
             href={`/team/${m.away.id}`}
@@ -537,14 +537,14 @@ function SeasonComparePanel({
     <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
       <header className="flex items-center justify-between gap-2 mb-3">
         <span className="flex items-center gap-1.5 min-w-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={comparison.home.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <span className="font-black text-[12px] truncate">{sideName(comparison.home)}</span>
         </span>
         <span className="text-[10px] font-black text-muted-foreground whitespace-nowrap">مقایسه فصل</span>
         <span className="flex items-center gap-1.5 min-w-0 justify-end">
           <span className="font-black text-[12px] truncate">{sideName(comparison.away)}</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={comparison.away.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         </span>
       </header>
@@ -592,7 +592,7 @@ function H2HMeetingRow({ m, curHomeId, curAwayId }: { m: H2HMeeting; curHomeId: 
     <>
       <span className={cn("flex items-center justify-end gap-1.5 min-w-0 flex-1", homeWon ? "font-black" : "font-semibold text-muted-foreground")}>
         <span className="truncate text-[12.5px]">{m.home.fa || m.home.name}</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={m.home.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
       </span>
       <span className={cn(
@@ -602,7 +602,7 @@ function H2HMeetingRow({ m, curHomeId, curAwayId }: { m: H2HMeeting; curHomeId: 
         {m.finished ? (m.scoreStr ? `${faDigits(m.scoreStr.split("-")[0].trim())} - ${faDigits(m.scoreStr.split("-")[1].trim())}` : "—") : tehranTime(m.utcTime)}
       </span>
       <span className={cn("flex items-center gap-1.5 min-w-0 flex-1", awayWon ? "font-black" : "font-semibold text-muted-foreground")}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={m.away.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         <span className="truncate text-[12.5px]">{m.away.fa || m.away.name}</span>
       </span>
@@ -664,7 +664,7 @@ function H2HPanel({ data, loading }: { data: H2HData | null; loading: boolean })
       <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
         <div className="flex items-center justify-between gap-2 mb-3">
           <span className="flex items-center gap-2 min-w-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={home.logo} alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
             <span className="font-black text-[13px] truncate">{home.fa || home.name}</span>
           </span>
@@ -673,7 +673,7 @@ function H2HPanel({ data, loading }: { data: H2HData | null; loading: boolean })
           </span>
           <span className="flex items-center gap-2 min-w-0 justify-end">
             <span className="font-black text-[13px] truncate">{away.fa || away.name}</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={away.logo} alt="" width={22} height={22} className="w-[22px] h-[22px] object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           </span>
         </div>

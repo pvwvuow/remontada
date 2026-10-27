@@ -90,7 +90,7 @@ function MatchRow({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
         <span className={cn("truncate text-[13px] sm:text-sm", homeWin ? "text-foreground" : "text-foreground/85", homeFav && !homeWin && "text-foreground")}>
           {m.home.fa || m.home.name}
         </span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img
           src={m.home.logo}
           alt=""
@@ -120,7 +120,7 @@ function MatchRow({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
 
       {/* away */}
       <div className={cn("flex items-center gap-2 min-w-0", awayWin ? "font-black" : "font-semibold")}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img
           src={m.away.logo}
           alt=""
@@ -323,7 +323,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
         const j = jalaliShort(`${iso}T12:00:00Z`);
         return { offset: o, iso, ...j, isToday: o === 0 };
       }),
-    [todayISO] // eslint-disable-line react-hooks/exhaustive-deps
+    [todayISO]  
   );
 
   const activeJ = jalaliShort(`${offsetDateISO(offset)}T12:00:00Z`);

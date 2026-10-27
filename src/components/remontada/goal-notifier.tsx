@@ -74,9 +74,18 @@ export function GoalNotifier() {
   const snapRef = useRef<Map<string, SnapEntry>>(new Map());
   const summaryFiredRef = useRef<Set<string>>(new Set());
 
-  // read permission once on mount (client only)
+  // read permission once on mount (client only) — async tick so we never
+  // call setState synchronously inside the effect body
+  // (react-hooks/set-state-in-effect, cycle-16 bug #4)
   useEffect(() => {
-    setPermission(typeof window === "undefined" || typeof Notification === "undefined" ? "unsupported" : Notification.permission);
+    const t = setTimeout(() => {
+      setPermission(
+        typeof window === "undefined" || typeof Notification === "undefined"
+          ? "unsupported"
+          : Notification.permission
+      );
+    }, 0);
+    return () => clearTimeout(t);
   }, []);
 
   // polling + state diffing

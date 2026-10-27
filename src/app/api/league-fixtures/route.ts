@@ -3,7 +3,7 @@
 // Full-season fixtures (upcoming + recent) for a configured league
 // ------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
-import { getLeagueFixtures, LEAGUES } from "@/lib/fotmob";
+import { getLeagueFixtures, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";
 
 export const dynamic = "force-dynamic";
 
@@ -17,8 +17,14 @@ export async function GET(req: NextRequest) {
     const data = await getLeagueFixtures(key);
     return NextResponse.json({ ok: true, ...data });
   } catch (err) {
+    if (err instanceof LeagueUnavailableError) {
+      return NextResponse.json(
+        { ok: false, error: "داده این لیگ موقتاً در دسترس نیست." },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "fetch failed" },
+      { ok: false, error: "دریافت برنامه لیگ ناموفق بود." },
       { status: 502 }
     );
   }

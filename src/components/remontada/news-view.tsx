@@ -37,7 +37,7 @@ function NewsCard({ item }: { item: ClientNewsItem }) {
     <article className="group rounded-2xl border border-border/60 bg-card/60 overflow-hidden hover:border-primary/30 hover:bg-card transition-all cursor-pointer h-full flex flex-col">
       <div className="relative aspect-video bg-muted/40 overflow-hidden">
         {item.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
+           
           <img
             src={item.image}
             alt=""

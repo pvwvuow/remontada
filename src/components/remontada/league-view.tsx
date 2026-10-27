@@ -9,7 +9,7 @@ import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, Leag
 import { LEAGUES } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
-import { faDigits, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
+import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
@@ -32,7 +32,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
     >
       <div className="flex items-center justify-end gap-2 min-w-0 font-semibold">
         <span className="truncate text-[13px]">{f.home.fa || f.home.name}</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={f.home.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
       </div>
       <div className="flex flex-col items-center min-w-[86px]">
@@ -48,7 +48,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
         {f.round && <span className="text-[9px] text-muted-foreground/60 mt-0.5">{f.round}</span>}
       </div>
       <div className="flex items-center gap-2 min-w-0 font-semibold">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={f.away.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         <span className="truncate text-[13px]">{f.away.fa || f.away.name}</span>
       </div>
@@ -126,7 +126,7 @@ function WinStatList({ title, items, tone }: { title: string; items: LeagueStats
         {items.map((t, i) => (
           <li key={t.teamId} className="flex items-center gap-3 px-4 py-2.5">
             <span className="w-5 text-[11px] font-black text-muted-foreground tabular-persian shrink-0">{faDigits(i + 1)}</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
+            { }
             <img src={t.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
@@ -232,14 +232,14 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
           <Link href={`/match/${stats.biggestWin.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors" prefetch={false}>
             <span className="flex items-center justify-end gap-2 flex-1 min-w-0 font-black text-[12.5px]">
               <span className="truncate">{stats.biggestWin.home.fa || stats.biggestWin.home.short}</span>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={stats.biggestWin.home.logo} alt="" width={20} height={20} loading="lazy" className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
             </span>
             <span className="font-black text-sm tabular-persian bg-primary/10 text-primary rounded-lg px-2.5 py-1 shrink-0">
               {faDigits(stats.biggestWin.home.score ?? 0)} : {faDigits(stats.biggestWin.away.score ?? 0)}
             </span>
             <span className="flex items-center gap-2 flex-1 min-w-0 font-semibold text-[12.5px] text-muted-foreground">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
+              { }
               <img src={stats.biggestWin.away.logo} alt="" width={20} height={20} loading="lazy" className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
               <span className="truncate">{stats.biggestWin.away.fa || stats.biggestWin.away.short}</span>
             </span>
@@ -306,11 +306,6 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
 
 // ---------- pre-match preview: today's fixtures enriched from cached standings ----------
 
-/** Tehran date key (YYYY-MM-DD) of an ISO timestamp — mirrors format.ts helpers */
-function tehranDateKey(iso: string): string {
-  return new Date(new Date(iso).getTime() + 3.5 * 3600_000).toISOString().slice(0, 10);
-}
-
 function FormDotsMini({ form }: { form?: ("W" | "D" | "L")[] }) {
   if (!form || form.length === 0) return null;
   return (
@@ -338,7 +333,7 @@ function PreviewSide({
   return (
     <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
       <Link href={`/team/${team.id}`} prefetch={false} className="flex items-center gap-2 min-w-0 group">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={team.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         <span className="font-black text-[12.5px] sm:text-[13px] truncate group-hover:text-primary transition-colors">
           {team.fa || team.name}
@@ -434,7 +429,7 @@ function StandingsTable({ data }: { data: StandingsData }) {
                 </td>
                 <td className="py-2 px-1">
                   <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    { }
                     <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                     <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
                   </Link>

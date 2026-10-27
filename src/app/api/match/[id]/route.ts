@@ -559,6 +559,10 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
 }
 
 // ---------------- route handler ----------------
+// FotMob answers HTTP 200 with {error:true, message:"Data not found"} for
+// unknown ids → distinguishable "not found", not a gateway failure
+class MatchNotFoundError extends Error {}
+
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   if (!/^\d{3,12}$/.test(id)) {
@@ -570,12 +574,19 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       const raw = await fetchJson<FMMatchDetails>(
         `https://www.fotmob.com/api/data/matchDetails?matchId=${id}`
       );
+      if (raw && typeof raw === "object" && (raw as { error?: unknown }).error === true) {
+        throw new MatchNotFoundError("Data not found");
+      }
       if (!raw?.general?.homeTeam) throw new Error("Empty match payload");
       return normalize(raw, id);
     });
     return NextResponse.json({ ok: true, ...norm });
   } catch (err) {
     console.error("[api/match]", err);
+    const msg = err instanceof Error ? err.message : "";
+    if (err instanceof MatchNotFoundError || /\bHTTP 404\b/.test(msg)) {
+      return NextResponse.json({ ok: false, error: "مسابقه یافت نشد." }, { status: 404 });
+    }
     return NextResponse.json(
       { ok: false, error: "خطا در دریافت جزئیات مسابقه" },
       { status: 502 }

@@ -5,7 +5,7 @@
 // Uses the same 60-min cached getStandings payload — no extra FotMob hit.
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
-import { getStandings } from "@/lib/fotmob";
+import { getStandings, LeagueUnavailableError } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
 
 export const dynamic = "force-dynamic";
@@ -29,7 +29,13 @@ export async function GET(_req: Request, { params }: { params: Promise<{ leagueK
       scorers: st.scorers,
       updatedAt: st.updatedAt,
     });
-  } catch {
+  } catch (err) {
+    if (err instanceof LeagueUnavailableError) {
+      return NextResponse.json(
+        { ok: false, error: "داده این لیگ موقتاً در دسترس نیست." },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { ok: false, error: "دریافت گلزنان این لیگ ناموفق بود." },
       { status: 502 }

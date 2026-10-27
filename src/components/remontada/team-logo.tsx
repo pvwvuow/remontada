@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 export function TeamLogo({ id, alt, size = 34, className = "" }: { id: number | string; alt: string; size?: number; className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
+     
     <img
       src={`https://images.fotmob.com/image_resources/logo/teamlogo/${id}.png`}
       alt={alt}

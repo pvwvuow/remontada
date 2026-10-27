@@ -41,20 +41,28 @@ function formChip(c: "W" | "D" | "L") {
   return "bg-destructive/15 text-destructive border-destructive/30";
 }
 
-/** tick state for live countdowns — 30s cadence, minute precision */
-function useCountdown(iso?: string): { days: number; hours: number; minutes: number } | null {
+/** tick state for live countdowns — 30s cadence, minute precision.
+ *  `started: true` once kickoff has passed — callers show a live/started
+ *  state instead of a frozen ۰۰:۰۰:۰۰ (fix of cycle-16 bug #6). */
+function useCountdown(iso?: string): { days: number; hours: number; minutes: number; started: boolean } | null {
   const [now, setNow] = useState<number | null>(null);
   useEffect(() => {
     if (!iso) return;
-    setNow(Date.now());
+    // async first tick (setTimeout 0) — avoids synchronous setState inside
+    // the effect body (react-hooks/set-state-in-effect, cycle-16 bug #4)
+    const t0 = setTimeout(() => setNow(Date.now()), 0);
     const iv = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(iv);
+    return () => {
+      clearTimeout(t0);
+      clearInterval(iv);
+    };
   }, [iso]);
   if (!iso || now == null) return null;
   const diff = new Date(iso).getTime() - now;
-  if (Number.isNaN(diff) || diff <= 0) return { days: 0, hours: 0, minutes: 0 };
+  if (Number.isNaN(diff)) return null;
+  if (diff <= 0) return { days: 0, hours: 0, minutes: 0, started: true };
   const mins = Math.floor(diff / 60_000);
-  return { days: Math.floor(mins / 1440), hours: Math.floor((mins % 1440) / 60), minutes: mins % 60 };
+  return { days: Math.floor(mins / 1440), hours: Math.floor((mins % 1440) / 60), minutes: mins % 60, started: false };
 }
 
 function SegBox({ v, l }: { v: number; l: string }) {
@@ -86,10 +94,10 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
       </div>
       <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
         <div className="flex items-center gap-2.5 min-w-0 flex-1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={us.logo} alt="" width={30} height={30} loading="lazy" className="w-[30px] h-[30px] object-contain shrink-0 opacity-80" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <span className="text-[10px] font-bold text-muted-foreground shrink-0">در برابر</span>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={opp.logo} alt="" width={38} height={38} loading="lazy" className="w-[38px] h-[38px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <div className="min-w-0">
             <p className="text-sm font-black truncate">{opp.fa || opp.name}</p>
@@ -107,11 +115,18 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
           </span>
         </div>
         {cd ? (
-          <div className="flex items-center gap-1.5 shrink-0" role="timer" aria-label="شمارش معکوس تا شروع بازی">
-            <SegBox v={cd.days} l="روز" />
-            <SegBox v={cd.hours} l="ساعت" />
-            <SegBox v={cd.minutes} l="دقیقه" />
-          </div>
+          cd.started ? (
+            <span className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 text-[10.5px] font-black px-2.5 py-1.5">
+              <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+              بازی شروع شده است
+            </span>
+          ) : (
+            <div className="flex items-center gap-1.5 shrink-0" role="timer" aria-label="شمارش معکوس تا شروع بازی">
+              <SegBox v={cd.days} l="روز" />
+              <SegBox v={cd.hours} l="ساعت" />
+              <SegBox v={cd.minutes} l="دقیقه" />
+            </div>
+          )
         ) : (
           <span className="text-[11px] font-bold text-muted-foreground shrink-0">در حال محاسبه…</span>
         )}
@@ -166,7 +181,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
           {isHome ? "خانه" : "بیرون"}
         </span>
         <span className="truncate font-black">{opponent.fa || opponent.name}</span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={opponent.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
       </div>
       {/* score / result */}
@@ -249,7 +264,7 @@ function BigMatchCard({ title, m, tone }: { title: string; m: (TeamFormMatch & {
     >
       <p className={cn("text-[9.5px] font-black mb-1", tone === "win" ? "text-primary" : "text-destructive")}>{title}</p>
       <div className="flex items-center gap-2 min-w-0">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
+        { }
         <img src={m.opponent.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         <span className="text-[11px] font-black truncate">{m.opponent.fa || m.opponent.name}</span>
         <span className="text-[11px] font-black tabular-persian shrink-0 ms-auto">{faDigits(m.gf)} : {faDigits(m.ga)}</span>
@@ -373,7 +388,7 @@ export function TeamView({ teamId }: { teamId: number }) {
       {/* profile header */}
       <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden">
         <div className="p-5 flex items-center gap-4">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
+          { }
           <img src={data.team.logo} alt="" width={64} height={64} className="w-16 h-16 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
