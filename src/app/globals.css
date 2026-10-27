@@ -36,6 +36,16 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* glass studio tokens exposed as Tailwind colors (phase 2+): borders,
+     steel text and soft accents usable with Tailwind color utilities */
+  --color-glass-border: var(--glass-border);
+  --color-glass-border-soft: var(--glass-border-soft);
+  --color-steel: var(--steel);
+  --color-mint: var(--mint);
+  --color-mint-deep: var(--mint-deep);
+  --color-rose-soft: var(--rose-soft);
+  --color-rose-deep: var(--rose-deep);
+  --color-sky-soft: var(--sky-soft);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -153,6 +163,55 @@
   background: oklch(0.28 0.03 255 / 38%);
   border: 1px solid var(--glass-border-soft);
   border-radius: 0.75rem;
+}
+
+/* featured hero tile (phase 2: Top Match) — the studio's glowing panel:
+   stronger sky border + corner light blooms + slightly brighter glass */
+.glass-hero {
+  background:
+    radial-gradient(140px 100px at 94% 0%, oklch(0.62 0.09 240 / 13%), transparent 72%),
+    radial-gradient(130px 95px at 4% 102%, oklch(0.62 0.09 240 / 9%), transparent 72%),
+    var(--glass-bg);
+  border: 1px solid oklch(0.8 0.07 235 / 26%);
+  border-radius: 1.1rem;
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 26px oklch(0.6 0.09 240 / 10%);
+}
+
+/* amber-whisper variant (favorites fixtures card) — same glass, faint
+   warm tint in the upper half so the amber accent reads on-palette */
+.glass-amber {
+  background:
+    linear-gradient(180deg, oklch(0.83 0.11 85 / 4.5%), transparent 46%),
+    var(--glass-bg);
+}
+
+/* hairline separators between rows of a glass list — mirrors the studio
+   fixtures poster (0.8px lines, rgba(202,223,246,~0.1)) */
+.glass-list > * + * {
+  border-top: 1px solid oklch(0.9 0.045 240 / 9%);
+}
+
+/* soft steel hover for rows inside glass lists */
+.glass-row-hover {
+  transition: background-color 0.18s ease;
+}
+.glass-row-hover:hover {
+  background-color: oklch(0.84 0.06 235 / 5.5%);
+}
+
+/* red live glow — pulsing minute text / dot (studio rose-red accent) */
+.live-glow {
+  text-shadow:
+    0 0 12px oklch(0.62 0.2 25 / 55%),
+    0 0 3px oklch(0.62 0.2 25 / 75%);
+}
+.live-dot-glow {
+  box-shadow:
+    0 0 9px oklch(0.62 0.21 25 / 85%),
+    0 0 2.5px oklch(0.7 0.19 25 / 90%);
 }
 
 /* sticky bars (header / footer chrome): blurred navy glass slab */

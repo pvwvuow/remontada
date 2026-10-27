@@ -137,13 +137,13 @@ export function FavoriteFixtures() {
   const hidden = items.length - shown.length;
 
   return (
-    <section className="rounded-2xl border border-amber-400/25 bg-amber-400/[0.04] overflow-hidden" aria-label="بازی‌های بعدی تیم‌های مورد علاقه">
-      <header className="flex items-center gap-2 px-3.5 py-2.5 border-b border-amber-400/20 bg-amber-400/[0.05]">
+    <section className="glass-card glass-amber overflow-hidden" aria-label="بازی‌های بعدی تیم‌های مورد علاقه">
+      <header className="flex items-center gap-2 px-3.5 py-2.5 border-b border-glass-border-soft bg-amber-400/[0.04]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className="text-amber-400 shrink-0" aria-hidden>
           <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
         </svg>
         <h2 className="font-black text-[12.5px]">بازی‌های بعدی تیم‌های من</h2>
-        <span className="text-[10px] font-bold text-amber-400/90 bg-amber-400/10 border border-amber-400/25 rounded-md px-1.5 py-0.5 tabular-persian">
+        <span className="text-[10px] font-bold text-amber-300/90 bg-amber-400/10 border border-amber-400/25 rounded-md px-1.5 py-0.5 tabular-persian">
           {faDigits(items.length)} بازی
         </span>
         {/* cycle-23: horizon selector (3 or 7 days) */}
@@ -157,8 +157,8 @@ export function FavoriteFixtures() {
               className={cn(
                 "text-[10px] font-black rounded-md px-2 py-1 border transition-colors cursor-pointer tabular-persian",
                 days === d
-                  ? "text-amber-400 bg-amber-400/15 border-amber-400/40"
-                  : "text-muted-foreground border-transparent hover:bg-accent/40 hover:text-foreground",
+                  ? "text-amber-300 bg-amber-400/15 border-amber-400/40"
+                  : "text-muted-foreground bg-white/[0.03] border-glass-border-soft hover:text-foreground",
               )}
             >
               {faDigits(d)} روز
@@ -166,13 +166,13 @@ export function FavoriteFixtures() {
           ))}
         </div>
       </header>
-      <div className="p-1.5 grid gap-1">
+      <div className="glass-list py-1 flex flex-col">
         {shown.map((m) => (
           <Link
             key={m.id}
             href={`/match/${m.id}`}
             prefetch={false}
-            className="group grid grid-cols-[54px_1fr_auto_1fr] items-center gap-1.5 sm:gap-2.5 px-2.5 py-2 rounded-xl hover:bg-accent/40 transition-colors"
+            className="group grid grid-cols-[54px_1fr_auto_1fr] items-center gap-1.5 sm:gap-2.5 px-2.5 py-2 rounded-xl glass-row-hover"
           >
             {/* day + time */}
             <div className="flex flex-col items-center justify-center text-center leading-tight">
@@ -189,7 +189,7 @@ export function FavoriteFixtures() {
               <span className={cn("truncate text-[12.5px]", m.favSide === "home" ? "text-foreground" : "text-foreground/85")}>{m.homeName}</span>
               <TeamLogo id={m.homeId} alt="" size={18} />
             </div>
-            <span className="text-muted-foreground/50 text-[10px] font-bold px-1">vs</span>
+            <span className="text-steel/50 text-[10px] font-bold px-1">vs</span>
             {/* away */}
             <div className={cn("flex items-center gap-1.5 min-w-0", m.favSide === "away" ? "font-black" : "font-semibold")}>
               <TeamLogo id={m.awayId} alt="" size={18} />
@@ -209,7 +209,7 @@ export function FavoriteFixtures() {
         {(hidden > 0 || expanded) && items.length > MAX_SHOW && (
           <button
             onClick={() => setExpanded((v) => !v)}
-            className="text-[10px] font-black text-amber-400/90 hover:text-amber-300 transition-colors shrink-0 cursor-pointer"
+            className="text-[10px] font-black text-amber-300/90 hover:text-amber-200 transition-colors shrink-0 cursor-pointer"
           >
             {expanded ? "نمایش کمتر" : `+${faDigits(hidden)} بازی دیگر`}
           </button>
