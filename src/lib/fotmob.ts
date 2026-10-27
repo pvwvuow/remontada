@@ -462,6 +462,149 @@ export async function findTeamInStandings(teamId: number, hintLeagueId?: number)
   return null;
 }
 
+// ---------------- Global top scorers (merged across all leagues) ----------------
+export interface GlobalScorer {
+  rank: number;
+  name: string;
+  team: string;
+  teamId: number;
+  goals: number;
+  leagueKey: string;
+  leagueFa: string;
+}
+
+export interface GlobalScorersData {
+  scorers: GlobalScorer[];
+  perLeague: { leagueKey: string; leagueFa: string; scorers: StandingsData["scorers"] }[];
+  updatedAt: string;
+}
+
+export async function getAllTopScorers(): Promise<GlobalScorersData> {
+  const settled = await Promise.allSettled(LEAGUES.map((lg) => getStandings(lg.key)));
+  const merged: GlobalScorer[] = [];
+  const perLeague: GlobalScorersData["perLeague"] = [];
+  settled.forEach((r, i) => {
+    const lg = LEAGUES[i];
+    if (r.status !== "fulfilled") return;
+    const st = r.value;
+    if (st.scorers?.length) {
+      perLeague.push({ leagueKey: lg.key, leagueFa: lg.faName, scorers: st.scorers });
+      for (const s of st.scorers) {
+        merged.push({
+          name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
+          leagueKey: lg.key, leagueFa: lg.faName,
+        });
+      }
+    }
+  });
+  merged.sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
+  // assign dense global ranks 1..n
+  merged.forEach((s, i) => { s.rank = i + 1; });
+  return { scorers: merged, perLeague, updatedAt: new Date().toISOString() };
+}
+
+// ---------------- Team index (for search) ----------------
+export interface TeamIndexEntry {
+  teamId: number;
+  name: string;
+  fa: string;
+  logo: string;
+  leagueKey: string;
+  leagueFa: string;
+  rank: number;
+  pts: number;
+  aliases?: string;
+}
+
+/** Normalize a search query / team name: lowercase, strip ZWNJ/diacritics, unify Arabic→Persian chars. */
+export function normalizeQuery(q: string): string {
+  return (q || "")
+    .toLowerCase()
+    .replace(/[\u200c\u200e\u200f\u0640]/g, "")
+    .replace(/[\u064b-\u0652]/g, "")
+    .replace(/ي/g, "ی")
+    .replace(/ك/g, "ک")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+let teamIndexCache: { at: number; data: TeamIndexEntry[] } | null = null;
+
+// Teams whose league page is unavailable via FotMob keyless API (e.g. Persian Gulf Pro
+// League returns `null`), but which must still be searchable. Ids verified from match feed.
+const SEARCH_FALLBACK_TEAMS: { teamId: number; name: string; fa: string; leagueKey: string; leagueFa: string }[] = [
+  { teamId: 101610, name: "Persepolis FC", fa: "پرسپولیس", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
+  { teamId: 101614, name: "Esteghlal FC", fa: "استقلال", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
+  { teamId: 176352, name: "Tractor SC", fa: "تراکتور", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
+  { teamId: 101611, name: "Sepahan SC", fa: "سپاهان", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
+];
+
+/** Flat index of every team in our 7 league standings (getStandings is cached, so this is cheap). */
+export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
+  if (teamIndexCache && Date.now() - teamIndexCache.at < 10 * 60_000) return teamIndexCache.data;
+  // domestic leagues first, UCL last — a team playing both (e.g. Real Madrid)
+  // should be attributed to its domestic league
+  const ordered = [...LEAGUES].sort((a, b) => {
+    const rank = (k: string) => (k === "ucl" ? 1 : 0);
+    return rank(a.key) - rank(b.key);
+  });
+  const settled = await Promise.allSettled(ordered.map((lg) => getStandings(lg.key)));
+  const out: TeamIndexEntry[] = [];
+  const seen = new Set<number>();
+  settled.forEach((r, i) => {
+    const lg = ordered[i];
+    if (r.status !== "fulfilled") return;
+    for (const row of r.value.rows) {
+      if (seen.has(row.teamId)) continue;
+      seen.add(row.teamId);
+      out.push({
+        teamId: row.teamId, name: row.name, fa: row.fa, logo: row.logo,
+        leagueKey: lg.key, leagueFa: lg.faName, rank: row.idx, pts: row.pts,
+        aliases: `${row.name} ${row.fa}`,
+      });
+    }
+  });
+  // fallback entries for leagues whose standings feed is unavailable
+  for (const fb of SEARCH_FALLBACK_TEAMS) {
+    if (seen.has(fb.teamId)) continue;
+    seen.add(fb.teamId);
+    out.push({
+      teamId: fb.teamId, name: fb.name, fa: fb.fa, logo: fotmobTeamLogo(fb.teamId),
+      leagueKey: fb.leagueKey, leagueFa: fb.leagueFa, rank: 0, pts: 0,
+      aliases: `${fb.name} ${fb.fa}`,
+    });
+  }
+  teamIndexCache = { at: Date.now(), data: out };
+  return out;
+}
+
+export interface TeamSearchResult extends TeamIndexEntry {
+  matchedOn: string;
+}
+
+export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResult[]> {
+  const nq = normalizeQuery(q);
+  if (nq.length < 2) return [];
+  const index = await getTeamIndex();
+  const scored: { e: TeamIndexEntry; score: number; matchedOn: string }[] = [];
+  for (const e of index) {
+    const hay = normalizeQuery(e.aliases || `${e.name} ${e.fa}`);
+    let score = -1;
+    let matchedOn = e.fa || e.name;
+    if (hay === nq) { score = 100; }
+    else if (hay.startsWith(nq)) { score = 80; matchedOn = e.fa || e.name; }
+    else if (hay.includes(nq)) { score = 50; }
+    else {
+      // word-level match (e.g. "real" matches "real madrid")
+      const words = nq.split(" ");
+      if (words.length > 1 && words.every((w) => hay.includes(w))) { score = 40; }
+    }
+    if (score > 0) scored.push({ e, score, matchedOn });
+  }
+  scored.sort((a, b) => b.score - a.score || a.e.rank - b.e.rank);
+  return scored.slice(0, limit).map(({ e, matchedOn }) => ({ ...e, matchedOn }));
+}
+
 export { LEAGUES };
 
 // ---------------- helpers ----------------

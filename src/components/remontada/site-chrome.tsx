@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { SearchBox } from "./search-box";
 
 export function SiteLogo({ small = false }: { small?: boolean }) {
   return (
@@ -29,10 +30,11 @@ export function SiteLogo({ small = false }: { small?: boolean }) {
 const NAV_ITEMS = [
   { href: "/", label: "نتایج زنده", icon: "live" },
   { href: "/leagues", label: "لیگ‌ها", icon: "trophy" },
+  { href: "/topscorers", label: "گلزنان", icon: "goal" },
   { href: "/news", label: "اخبار", icon: "news" },
 ] as const;
 
-function NavIcon({ name }: { name: "live" | "trophy" | "news" }) {
+function NavIcon({ name }: { name: "live" | "trophy" | "goal" | "news" }) {
   if (name === "live") {
     return (
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -50,6 +52,14 @@ function NavIcon({ name }: { name: "live" | "trophy" | "news" }) {
       </svg>
     );
   }
+  if (name === "goal") {
+    return (
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="12" cy="8" r="4.2" />
+        <path d="M9 12l-2.5 9L12 18l5.5 3L15 12" />
+      </svg>
+    );
+  }
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
@@ -63,7 +73,9 @@ export function SiteHeader() {
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
       <div className="max-w-3xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
         <SiteLogo small />
-        <nav className="flex items-center gap-1 text-[12px] font-bold" aria-label="ناوبری اصلی">
+        <div className="flex items-center gap-1.5">
+          <SearchBox />
+          <nav className="flex items-center gap-1 text-[12px] font-bold" aria-label="ناوبری اصلی">
           {NAV_ITEMS.map((item) => {
             const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") : pathname.startsWith(item.href);
             return (
@@ -81,7 +93,8 @@ export function SiteHeader() {
               </Link>
             );
           })}
-        </nav>
+          </nav>
+        </div>
       </div>
     </header>
   );
@@ -95,6 +108,8 @@ export function SiteFooter() {
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
           <span aria-hidden>·</span>
           <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
+          <span aria-hidden>·</span>
+          <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
           <span aria-hidden>·</span>
           <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
         </div>

@@ -6,6 +6,7 @@ import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
 import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
+import { SearchBox } from "@/components/remontada/search-box";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -138,6 +139,7 @@ export default function Home() {
           <div className="flex items-center justify-between gap-3 py-3">
             <Logo />
             <div className="flex items-center gap-2">
+              <SearchBox />
               <Link
                 href="/leagues"
                 className="hidden sm:inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary border border-border/60 rounded-lg px-2.5 py-1.5 transition-colors"
@@ -260,6 +262,8 @@ export default function Home() {
             <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
             <span aria-hidden>·</span>
             <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
+            <span aria-hidden>·</span>
+            <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
             <span aria-hidden>·</span>
             <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
           </div>

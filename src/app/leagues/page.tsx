@@ -1,12 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
+import { TeamLogo } from "@/components/remontada/team-logo";
 import { LEAGUES } from "@/lib/leagues";
 
 export const metadata: Metadata = {
   title: "لیگ‌ها و جام‌ها | رمانتادا",
   description: "فهرست لیگ‌های پوشش‌داده‌شده در رمانتادا: لیگ قهرمانان اروپا، پریمیرلیگ، لالیگا، سری‌آ، بوندسلیگا، لیگ ۱ فرانسه و لیگ خلیج فارس",
 };
+
+// FotMob team ids (verified against live standings / match feed)
+const POPULAR_TEAMS: { id: number; fa: string; en: string; leagueKey: string }[] = [
+  { id: 101610, fa: "پرسپولیس", en: "Persepolis", leagueKey: "persiangulf" },
+  { id: 101614, fa: "استقلال", en: "Esteghlal", leagueKey: "persiangulf" },
+  { id: 8633, fa: "رئال‌مادرید", en: "Real Madrid", leagueKey: "laliga" },
+  { id: 8634, fa: "بارسلونا", en: "Barcelona", leagueKey: "laliga" },
+  { id: 10260, fa: "منچستریونایتد", en: "Manchester United", leagueKey: "pl" },
+];
 
 export default function LeaguesPage() {
   return (
@@ -48,8 +59,34 @@ export default function LeaguesPage() {
             </Link>
           ))}
         </div>
+
+        {/* popular teams */}
+        <section className="mt-7" aria-label="تیم‌های محبوب">
+          <div className="flex items-center gap-2 mb-3 px-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="text-chart-2" aria-hidden>
+              <path d="M12 3l2.4 5.6 6.1.5-4.6 4 1.4 6-5.3-3.2L6.7 19l1.4-6-4.6-4 6.1-.5L12 3z" />
+            </svg>
+            <h2 className="text-sm font-black">تیم‌های محبوب</h2>
+            <span className="text-[10px] text-muted-foreground ms-auto">دسترسی سریع به صفحه‌ی تیم</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+            {POPULAR_TEAMS.map((t) => (
+              <Link
+                key={t.id}
+                href={`/team/${t.id}`}
+                prefetch={false}
+                className="group rounded-2xl border border-border/60 bg-card/60 p-3.5 flex flex-col items-center gap-2 text-center hover:border-primary/40 hover:bg-card transition-all"
+              >
+                <TeamLogo id={t.id} alt={t.fa} size={34} className="group-hover:scale-110 transition-transform" />
+                <span className="font-bold text-[12px] leading-tight group-hover:text-primary transition-colors">{t.fa}</span>
+                <span className="text-[9px] text-muted-foreground truncate w-full">{t.en}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       </main>
       <SiteFooter />
+      <BackToTop />
     </div>
   );
 }
