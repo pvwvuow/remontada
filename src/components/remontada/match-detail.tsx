@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
+import type { TeamSeasonStats } from "@/lib/fotmob";
 import { cn } from "@/lib/utils";
 
 // ---------- API shape (mirrors /api/match/[id]) ----------
@@ -488,10 +489,89 @@ interface H2HData {
   ok: boolean;
   home: H2HTeam; away: H2HTeam;
   totals: { homeWins: number; draws: number; awayWins: number; played: number };
+  comparison?: {
+    home: H2HTeam & { season: TeamSeasonStats | null };
+    away: H2HTeam & { season: TeamSeasonStats | null };
+  } | null;
   results: H2HMeeting[];
   upcoming: H2HMeeting[];
   hasData: boolean;
   error?: string;
+}
+
+// ---------- season comparison (two TeamSeasonStats side by side) ----------
+function SeasonComparePanel({
+  comparison,
+}: {
+  comparison: NonNullable<H2HData["comparison"]>;
+}) {
+  const hs = comparison.home.season;
+  const as = comparison.away.season;
+  if (!hs && !as) return null;
+
+  const pts = (s: TeamSeasonStats | null) => (s ? s.wins * 3 + s.draws : null);
+  const rows: { label: string; h: number | null; a: number | null; digits?: number }[] = [
+    { label: "امتیاز", h: pts(hs), a: pts(as) },
+    { label: "برد", h: hs?.wins ?? null, a: as?.wins ?? null },
+    { label: "گل زده", h: hs?.goalsFor ?? null, a: as?.goalsFor ?? null },
+    { label: "گل خورده", h: hs?.goalsAgainst ?? null, a: as?.goalsAgainst ?? null },
+    { label: "میانگین گل", h: hs?.avgFor ?? null, a: as?.avgFor ?? null, digits: 1 },
+    { label: "کلین‌شیت", h: hs?.cleanSheets ?? null, a: as?.cleanSheets ?? null },
+  ];
+
+  const fmt = (v: number | null, digits?: number) =>
+    v == null ? "—" : faDigits(digits ? v.toFixed(digits) : Math.round(v));
+
+  const sideName = (t: H2HTeam & { season: TeamSeasonStats | null }) =>
+    t.fa || t.name;
+
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
+      <header className="flex items-center justify-between gap-2 mb-3">
+        <span className="flex items-center gap-1.5 min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={comparison.home.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <span className="font-black text-[12px] truncate">{sideName(comparison.home)}</span>
+        </span>
+        <span className="text-[10px] font-black text-muted-foreground whitespace-nowrap">مقایسه فصل</span>
+        <span className="flex items-center gap-1.5 min-w-0 justify-end">
+          <span className="font-black text-[12px] truncate">{sideName(comparison.away)}</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={comparison.away.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        </span>
+      </header>
+      <div className="flex flex-col divide-y divide-border/20">
+        {rows.map((r) => {
+          const max = Math.max(r.h ?? 0, r.a ?? 0, 0.0001);
+          const hw = r.h != null ? Math.max((r.h / max) * 100, r.h > 0 ? 6 : 0) : 0;
+          const aw = r.a != null ? Math.max((r.a / max) * 100, r.a > 0 ? 6 : 0) : 0;
+          return (
+            <div key={r.label} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-1.5">
+              {/* home side (start = right in RTL) */}
+              <div className="flex items-center justify-start gap-1.5 min-w-0">
+                <div className="w-12 sm:w-20 h-1.5 rounded-full bg-muted/50 overflow-hidden flex justify-start shrink-0">
+                  <div className="h-full bg-primary/80 rounded-full" style={{ width: `${hw}%` }} />
+                </div>
+                <span className="text-[11px] font-black tabular-persian">{fmt(r.h, r.digits)}</span>
+              </div>
+              <span className="text-[9.5px] font-bold text-muted-foreground w-14 sm:w-16 text-center shrink-0">{r.label}</span>
+              {/* away side (end = left in RTL) */}
+              <div className="flex items-center justify-end gap-1.5 min-w-0">
+                <span className="text-[11px] font-black tabular-persian">{fmt(r.a, r.digits)}</span>
+                <div className="w-12 sm:w-20 h-1.5 rounded-full bg-muted/50 overflow-hidden flex justify-end shrink-0">
+                  <div className="h-full bg-chart-4/80 rounded-full" style={{ width: `${aw}%` }} />
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[9px] text-muted-foreground mt-2 tabular-persian">
+        {(hs?.leagueFa || as?.leagueFa) && <>{hs?.leagueFa}{hs?.leagueFa && as?.leagueFa && hs?.leagueFa !== as?.leagueFa ? " / " : ""}{as?.leagueFa !== hs?.leagueFa ? as?.leagueFa : ""} · </>}
+        آمار فصل جاری هر تیم از فیکسچرهای لیگش
+      </p>
+    </section>
+  );
 }
 
 function H2HMeetingRow({ m, curHomeId, curAwayId }: { m: H2HMeeting; curHomeId: number; curAwayId: number }) {
@@ -601,6 +681,9 @@ function H2HPanel({ data, loading }: { data: H2HData | null; loading: boolean })
           <span className="text-chart-4">{faDigits(totals.awayWins)} برد</span>
         </div>
       </section>
+
+      {/* season stats comparison */}
+      {data.comparison && <SeasonComparePanel comparison={data.comparison} />}
 
       {/* last meetings */}
       {data.results.length > 0 && (

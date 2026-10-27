@@ -16,6 +16,29 @@ import { cn } from "@/lib/utils";
 const ALL_KEY = "all";
 const FILTER_STORAGE_KEY = "remontada:topscorers-filter";
 
+function ScorerBadges({ s }: { s: GlobalScorer }) {
+  const badges: { label: string; cls: string; title: string }[] = [];
+  if (s.assists != null && s.assists > 0) {
+    badges.push({ label: `${faDigits(s.assists)} پاس گل`, cls: "bg-chart-2/10 border-chart-2/25 text-chart-2", title: "پاس گل فصل" });
+  }
+  if (s.gPlusA != null && s.gPlusA > 0) {
+    badges.push({ label: `${faDigits(s.gPlusA)} گل+پاس`, cls: "bg-primary/10 border-primary/25 text-primary", title: "مجموع گل و پاس گل" });
+  }
+  if (s.xg != null && s.xg > 0) {
+    badges.push({ label: `xG ${faDigits(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
+  }
+  if (badges.length === 0) return null;
+  return (
+    <span className="flex items-center gap-1 flex-wrap">
+      {badges.map((b) => (
+        <span key={b.label} title={b.title} className={cn("shrink-0 rounded-md border px-1.5 py-px text-[9px] font-bold tabular-persian", b.cls)}>
+          {b.label}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; maxGoals: number; mainRank: number; showGlobal: boolean }) {
   return (
     <li className="px-3 sm:px-4 py-3 hover:bg-accent/30 transition-colors">
@@ -49,6 +72,7 @@ function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; max
                 جهانی {faDigits(s.rank)}
               </span>
             )}
+            <ScorerBadges s={s} />
           </div>
         </div>
         <span className="font-black text-primary tabular-persian text-lg shrink-0">
@@ -60,6 +84,55 @@ function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; max
         <div className="h-full bg-chart-3/70 rounded-full" style={{ width: `${maxGoals > 0 ? (s.goals / maxGoals) * 100 : 0}%` }} />
       </div>
     </li>
+  );
+}
+
+function AssistsCard({ data }: { data: GlobalScorersData }) {
+  const list = data.assists || [];
+  if (list.length === 0) return null;
+  const max = list.reduce((m, a) => Math.max(m, a.value), 0);
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/25">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
+          <path d="M4 19h16" />
+          <path d="M5 15l5-5 4 3 5-7" />
+        </svg>
+        <h2 className="text-[12.5px] font-black">مسابقه پاس گل</h2>
+        <span className="ms-auto text-[10px] text-muted-foreground tabular-persian">{faDigits(list.length)} بازیکن برتر</span>
+      </header>
+      <ol className="divide-y divide-border/25">
+        {list.slice(0, 8).map((a) => (
+          <li key={`${a.leagueKey}-${a.name}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-accent/30 transition-colors">
+            <span
+              className={cn(
+                "w-[26px] h-[26px] rounded-lg flex items-center justify-center text-[10.5px] font-black shrink-0 tabular-persian",
+                a.rank <= 3 ? "bg-chart-2/15 text-chart-2 border border-chart-2/30" : "bg-muted text-muted-foreground"
+              )}
+            >
+              {faDigits(a.rank)}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-[12.5px] truncate">{a.name}</p>
+              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground mt-0.5 min-w-0">
+                <span className="truncate">{a.team}</span>
+                <span aria-hidden>·</span>
+                <Link href={`/league/${a.leagueKey}`} className="shrink-0 hover:text-primary transition-colors font-bold">
+                  {a.leagueFa}
+                </Link>
+              </div>
+              <div className="mt-1 h-[3px] rounded-full bg-muted overflow-hidden">
+                <div className="h-full bg-chart-2/70 rounded-full" style={{ width: `${max > 0 ? (a.value / max) * 100 : 0}%` }} />
+              </div>
+            </div>
+            <span className="font-black text-chart-2 tabular-persian text-base shrink-0">
+              {faDigits(a.value)}
+              <span className="text-[9px] font-bold text-muted-foreground ms-1">پاس</span>
+            </span>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -236,9 +309,11 @@ export function TopScorersView() {
         </p>
       )}
 
+      {data && !loading && <AssistsCard data={data} />}
+
       {data && !loading && (
         <p className="text-[10px] text-muted-foreground px-1">
-          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. فیلتر انتخابی شما برای بازدیدهای بعدی ذخیره می‌ماند.
+          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. بج‌های سبز/فیروزه‌ای پاس گل و گل+پاس و xG هر گلزن را نشان می‌دهند. فیلتر انتخابی شما برای بازدیدهای بعدی ذخیره می‌ماند.
         </p>
       )}
     </div>

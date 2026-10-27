@@ -61,6 +61,28 @@ export interface StandingsRow {
   played: number; wins: number; draws: number; losses: number;
   goalsFor: number; goalsAgainst: number; gd: number; pts: number;
   qualColor?: string;
+  form?: ("W" | "D" | "L")[];   // last 5 league results, oldest → newest (from season fixtures)
+}
+
+export interface ScorerEntry {
+  rank: number;
+  name: string;
+  team: string;
+  teamId: number;
+  goals: number;
+  ccode?: string;
+  assists?: number;   // from the league "Assists" category (matched by player id)
+  gPlusA?: number;    // "Goals + Assists"
+  xg?: number;        // "Expected goals (xG)"
+  rating?: number;    // "FotMob rating"
+}
+
+export interface AssistEntry {
+  rank: number;
+  name: string;
+  team: string;
+  teamId: number;
+  assists: number;
 }
 
 export interface StandingsData {
@@ -68,7 +90,8 @@ export interface StandingsData {
   leagueFa: string;
   season: string;
   rows: StandingsRow[];
-  scorers: { rank: number; name: string; team: string; teamId: number; goals: number; ccode?: string }[];
+  scorers: ScorerEntry[];
+  assists: AssistEntry[];
   updatedAt: string;
 }
 
@@ -265,15 +288,13 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
 }
 
 // ---------------- FotMob: standings + top scorers ----------------
+interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }
 interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
   table?: { data?: { table?: { all?: FotMobRow[] } } };
+  fixtures?: { allMatches?: unknown[] };
   stats?: {
-    players?: {
-      header?: string;
-      participant?: { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number };
-      topThree?: { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }[];
-    }[];
+    players?: { header?: string; participant?: FMStatPlayer; topThree?: FMStatPlayer[] }[];
   };
 }
 interface FotMobRow {
@@ -295,29 +316,72 @@ async function getLeagueRaw(leagueKey: string): Promise<{ lg: (typeof LEAGUES)[n
   return { lg, raw };
 }
 
+/** Pull one stats category (participant + topThree, deduped by player id). */
+function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
+  const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
+  if (!cat) return [];
+  const out: FMStatPlayer[] = [];
+  if (cat.participant?.name) out.push(cat.participant);
+  for (const t of cat.topThree || []) if (t?.name) out.push(t);
+  const seen = new Set<number>();
+  return out.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+}
+
 export async function getStandings(leagueKey: string): Promise<StandingsData> {
   const { lg, raw } = await getLeagueRaw(leagueKey);
   const build = () => {
+    // ---- team form (last 5 league results per team, one pass over season fixtures) ----
+    const formMap = new Map<number, ("W" | "D" | "L")[]>();
+    for (const f of (raw.fixtures?.allMatches || []) as FotMobFixture[]) {
+      const st = f?.status;
+      if (!st?.finished || st.cancelled) continue;
+      const sm = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(st.scoreStr || "");
+      if (!sm) continue;
+      const h = Number(sm[1]);
+      const a = Number(sm[2]);
+      const hid = Number(f.home?.id || 0);
+      const aid = Number(f.away?.id || 0);
+      const push = (id: number, res: "W" | "D" | "L") => {
+        const arr = formMap.get(id);
+        if (arr) arr.push(res);
+        else formMap.set(id, [res]);
+      };
+      push(hid, h > a ? "W" : h < a ? "L" : "D");
+      push(aid, a > h ? "W" : a < h ? "L" : "D");
+    }
+
     const rows: StandingsRow[] = (raw.table?.[0]?.data?.table?.all || []).map((r) => {
       const [gf, ga] = (r.scoresStr || "0-0").split("-").map((x) => parseInt(x, 10) || 0);
+      const form = formMap.get(r.id);
       return {
         idx: r.idx, teamId: r.id, name: r.name, fa: teamFa(r.name, r.shortName),
         logo: fotmobTeamLogo(r.id),
         played: r.played, wins: r.wins, draws: r.draws, losses: r.losses,
         goalsFor: gf, goalsAgainst: ga, gd: r.goalConDiff ?? gf - ga, pts: r.pts,
         qualColor: r.qualColor || undefined,
+        ...(form && form.length > 0 ? { form: form.slice(-5) } : {}),
       };
     });
     if (rows.length === 0) throw new Error("No standings data");
 
-    // Top scorers from stats.players (header "Top scorer" + topThree)
+    // Top scorers from stats.players (header "Top scorer" + topThree),
+    // enriched with assists / G+A / xG / rating matched by player id
+    const assistsMap = new Map(statCategory(raw, /^assists$/i).map((p) => [p.id, p.value ?? 0]));
+    const gpaMap = new Map(statCategory(raw, /goals \+ assists/i).map((p) => [p.id, p.value ?? 0]));
+    const xgMap = new Map(statCategory(raw, /^expected goals \(xg\)$/i).map((p) => [p.id, p.value ?? 0]));
+    const ratingMap = new Map(statCategory(raw, /fotmob rating/i).map((p) => [p.id, p.value ?? 0]));
+
     const scorers: StandingsData["scorers"] = [];
     const gs = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
-    const pushScorer = (s: { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }, i: number) => {
+    const pushScorer = (s: FMStatPlayer, i: number) => {
       if (!s?.name) return;
       scorers.push({
         rank: s.rank ?? i + 1, name: s.name, team: teamFa(s.teamName, ) || s.teamName || "",
         teamId: s.teamId ?? 0, goals: s.value ?? 0, ccode: s.ccode,
+        ...(assistsMap.has(s.id) ? { assists: assistsMap.get(s.id) } : {}),
+        ...(gpaMap.has(s.id) ? { gPlusA: gpaMap.get(s.id) } : {}),
+        ...(xgMap.has(s.id) ? { xg: xgMap.get(s.id) } : {}),
+        ...(ratingMap.has(s.id) ? { rating: ratingMap.get(s.id) } : {}),
       });
     };
     if (gs?.participant) pushScorer(gs.participant, 0);
@@ -326,10 +390,21 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const seen = new Set<string>();
     const uniqueScorers = scorers.filter((s) => (seen.has(s.name) ? false : (seen.add(s.name), true)));
 
+    // assist leaders (participant + topThree of the "Assists" category)
+    const assistEntries: AssistEntry[] = statCategory(raw, /^assists$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName, ) || p.teamName || "",
+        teamId: p.teamId ?? 0, assists: p.value ?? 0,
+      }))
+      .sort((a, b) => b.assists - a.assists || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }))
+      .slice(0, 6);
+
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
       scorers: uniqueScorers.slice(0, 10),
+      assists: assistEntries,
       updatedAt: new Date().toISOString(),
     };
   };
@@ -689,12 +764,27 @@ export interface GlobalScorer {
   team: string;
   teamId: number;
   goals: number;
+  assists?: number;
+  gPlusA?: number;
+  xg?: number;
+  rating?: number;
+  leagueKey: string;
+  leagueFa: string;
+}
+
+export interface GlobalAssist {
+  rank: number;
+  name: string;
+  team: string;
+  teamId: number;
+  value: number;       // assists
   leagueKey: string;
   leagueFa: string;
 }
 
 export interface GlobalScorersData {
   scorers: GlobalScorer[];
+  assists: GlobalAssist[];
   perLeague: { leagueKey: string; leagueFa: string; scorers: StandingsData["scorers"] }[];
   updatedAt: string;
 }
@@ -702,6 +792,7 @@ export interface GlobalScorersData {
 export async function getAllTopScorers(): Promise<GlobalScorersData> {
   const settled = await Promise.allSettled(LEAGUES.map((lg) => getStandings(lg.key)));
   const merged: GlobalScorer[] = [];
+  const mergedAssists: GlobalAssist[] = [];
   const perLeague: GlobalScorersData["perLeague"] = [];
   settled.forEach((r, i) => {
     const lg = LEAGUES[i];
@@ -713,15 +804,30 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
         merged.push({
           name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
           leagueRank: s.rank || 0,
+          ...(s.assists != null ? { assists: s.assists } : {}),
+          ...(s.gPlusA != null ? { gPlusA: s.gPlusA } : {}),
+          ...(s.xg != null ? { xg: s.xg } : {}),
+          ...(s.rating != null ? { rating: s.rating } : {}),
           leagueKey: lg.key, leagueFa: lg.faName,
         });
       }
+    }
+    for (const a of st.assists || []) {
+      mergedAssists.push({
+        name: a.name, team: a.team, teamId: a.teamId, value: a.assists,
+        leagueKey: lg.key, leagueFa: lg.faName,
+      });
     }
   });
   merged.sort((a, b) => b.goals - a.goals || a.name.localeCompare(b.name));
   // assign dense global ranks 1..n
   merged.forEach((s, i) => { s.rank = i + 1; });
-  return { scorers: merged, perLeague, updatedAt: new Date().toISOString() };
+  mergedAssists.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+  mergedAssists.forEach((a, i) => { a.rank = i + 1; });
+  // de-dup assist leaders by player name (same player can appear in league + cup lists)
+  const seenA = new Set<string>();
+  const assists = mergedAssists.filter((a) => (seenA.has(a.name) ? false : (seenA.add(a.name), true))).slice(0, 10);
+  return { scorers: merged, assists, perLeague, updatedAt: new Date().toISOString() };
 }
 
 // ---------------- Team index (for search) ----------------

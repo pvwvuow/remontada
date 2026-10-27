@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { cached } from "@/lib/cache";
 import { teamFa, competitionFa, fotmobTeamLogo, LEAGUES } from "@/lib/leagues";
+import { findTeamInStandings, getTeamSeasonFromLeague, type TeamSeasonStats } from "@/lib/fotmob";
 
 export const dynamic = "force-dynamic";
 
@@ -158,12 +159,26 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
       else awayWins++;
     }
 
+    // ---- season stats comparison of the two teams (best-effort) ----
+    // leagueKey: standings lookup per team (works even when the two teams
+    // play in different leagues, e.g. cup or European fixtures)
+    const seasonFor = async (teamId: number): Promise<TeamSeasonStats | null> => {
+      const row = await findTeamInStandings(teamId).catch(() => null);
+      if (!row?.leagueKey) return null;
+      return getTeamSeasonFromLeague(row.leagueKey, teamId).catch(() => null);
+    };
+    const [homeSeason, awaySeason] = await Promise.all([seasonFor(home.id), seasonFor(away.id)]);
+    const comparison = homeSeason || awaySeason
+      ? { home: { ...home, season: homeSeason }, away: { ...away, season: awaySeason } }
+      : null;
+
     return NextResponse.json({
       ok: true,
       matchId: id,
       home,
       away,
       totals: { homeWins, draws, awayWins, played: results.length },
+      comparison,
       results: results.slice(0, 8),
       upcoming,
       hasData: meetings.length > 0,

@@ -7,12 +7,32 @@ import Link from "next/link";
 import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
-import { faDigits } from "@/lib/format";
+import { faDigits, formColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function QualBar({ color }: { color?: string }) {
   if (!color) return null;
   return <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: color }} aria-hidden />;
+}
+
+/** Last-5 league form chips (ب/م/پ) — desktop only. */
+function FormChips({ form }: { form?: ("W" | "D" | "L")[] }) {
+  if (!form || form.length === 0) return null;
+  return (
+    <span className="hidden md:flex items-center gap-[3px] shrink-0 ms-1" title="۵ بازی آخر در لیگ (از قدیم به جدید)">
+      {form.map((c, i) => (
+        <span
+          key={i}
+          className={cn(
+            "w-[13px] h-[13px] rounded-[3px] border text-[7.5px] font-black flex items-center justify-center leading-none",
+            formColor(c)
+          )}
+        >
+          {c === "W" ? "ب" : c === "D" ? "م" : "پ"}
+        </span>
+      ))}
+    </span>
+  );
 }
 
 function StandingsTable({ data }: { data: StandingsData }) {
@@ -57,6 +77,7 @@ function StandingsTable({ data }: { data: StandingsData }) {
                       size={13}
                       className="opacity-70 hover:opacity-100"
                     />
+                    <FormChips form={r.form} />
                   </div>
                 </td>
                 <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.played)}</td>
