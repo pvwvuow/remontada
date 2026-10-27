@@ -241,6 +241,7 @@ export default function Home() {
             loading={standingsLoading}
             leagueKey={leagueKey}
             onLeagueChange={setLeagueKey}
+            onRetry={() => fetchStandings(leagueKey)}
           />
         )}
 

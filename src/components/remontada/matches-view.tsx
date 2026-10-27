@@ -9,6 +9,7 @@ import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
 import { faDigits, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
 import { TeamLogo } from "@/components/remontada/team-logo";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
 
 export { tehranTime };
@@ -315,10 +316,24 @@ function Skeleton() {
   );
 }
 
-function EmptyState({ favsOnly, statusFilter }: { favsOnly?: boolean; statusFilter?: "all" | "live" | "finished" }) {
+/** maps day/filters context to the shared EmptyState (cycle-34) */
+function MatchesEmptyState({
+  favsOnly,
+  statusFilter,
+  offset,
+  onToday,
+  onShowAll,
+}: {
+  favsOnly?: boolean;
+  statusFilter: "all" | "live" | "finished";
+  offset: number;
+  onToday: () => void;
+  onShowAll: () => void;
+}) {
   let title = "بازی‌ای برای این روز پیدا نشد";
   let sub = "روز دیگری را از نوار بالا انتخاب کنید";
   let icon: "ball" | "star" | "live" = "ball";
+  let action: React.ComponentProps<typeof EmptyState>["action"];
   if (statusFilter === "live") {
     title = "الان بازی زنده‌ای جریان ندارد";
     sub = "چند دقیقه دیگر دوباره سر بزنید یا فیلتر را روی «همه» بگذارید";
@@ -330,30 +345,11 @@ function EmptyState({ favsOnly, statusFilter }: { favsOnly?: boolean; statusFilt
     title = "امروز بازی تیم‌های مورد علاقه‌ی شما نیست";
     sub = "روز دیگری را از نوار بالا امتحان کنید یا فیلتر را بردارید";
     icon = "star";
+    action = { label: "نمایش همه‌ی بازی‌ها", onClick: onShowAll };
+  } else if (offset !== 0) {
+    action = { label: "رفتن به بازی‌های امروز", onClick: onToday };
   }
-  return (
-    <div className="rounded-2xl border border-dashed border-glass-border-soft bg-white/[0.02] px-6 py-14 text-center">
-      <div className="mx-auto w-14 h-14 rounded-2xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-4">
-        {icon === "live" ? (
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-red-400/70" aria-hidden>
-            <circle cx="12" cy="12" r="3" />
-            <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
-          </svg>
-        ) : icon === "star" ? (
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-amber-400/70" aria-hidden>
-            <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
-          </svg>
-        ) : (
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-muted-foreground" aria-hidden>
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
-          </svg>
-        )}
-      </div>
-      <p className="font-black text-sm mb-1">{title}</p>
-      <p className="text-xs text-muted-foreground">{sub}</p>
-    </div>
-  );
+  return <EmptyState icon={icon} title={title} sub={sub} action={action} />;
 }
 
 export interface MatchesViewProps {
@@ -543,7 +539,13 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
       {loading && groups.length === 0 ? (
         <Skeleton />
       ) : shownGroups.length === 0 ? (
-        <EmptyState favsOnly={onlyFavs && favIds.size > 0} statusFilter={statusFilter} />
+        <MatchesEmptyState
+          favsOnly={onlyFavs && favIds.size > 0}
+          statusFilter={statusFilter}
+          offset={offset}
+          onToday={() => onOffsetChange(0)}
+          onShowAll={() => setOnlyFavs(false)}
+        />
       ) : (
         <div className={cn("grid gap-4 lg:grid-cols-2 lg:items-start transition-opacity", loading && "opacity-50 pointer-events-none")}>
           {shownGroups.map((g) => (

@@ -11,6 +11,7 @@ import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
@@ -90,7 +91,14 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
 
 function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[]; showResult: boolean; dateGrouped?: boolean }) {
   if (items.length === 0) {
-    return <p className="text-center text-muted-foreground text-sm py-10">موردی برای نمایش نیست.</p>;
+    return (
+      <EmptyState
+        icon="calendar"
+        compact
+        title={showResult ? "بازی پایان‌یافته‌ای در بازه‌ی اخیر نیست" : "برنامه‌ی بازی‌های پیش‌رو ثبت نشده است"}
+        sub={showResult ? "به محض پایان بازی‌ها، نتایج همین‌جا ثبت می‌شود." : "به محض اعلام برنامه، بازی‌ها همین‌جا نمایش داده می‌شوند."}
+      />
+    );
   }
   if (!dateGrouped) {
     // desktop: split into two columns inside one card; mobile: single list
@@ -194,7 +202,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
   const maxRoundGoals = Math.max(...stats.topRounds.map((r) => r.goals), 1);
 
   if (n === 0) {
-    return <p className="text-center text-muted-foreground text-sm py-10">هنوز بازی‌ای از این فصل به پایان نرسیده است؛ آمار بعد از شروع لیگ فعال می‌شود.</p>;
+    return <EmptyState icon="calendar" compact title="هنوز بازی‌ای از این فصل به پایان نرسیده است" sub="آمار لیگ بعد از شروع فصل و پایان نخستین بازی‌ها فعال می‌شود." />;
   }
 
   return (
@@ -290,7 +298,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
 function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: string }) {
   const list = data.scorers;
   if (!list || list.length === 0) {
-    return <p className="text-center text-muted-foreground text-sm py-10">آقای گل این لیگ هنوز ثبت نشده است.</p>;
+    return <EmptyState icon="medal" compact title="آقای گل این لیگ هنوز ثبت نشده است" sub="گلزنان پس از ثبت داده‌ی فصل از سوی منبع نمایش داده می‌شوند." />;
   }
   const lgCfg = LEAGUES.find((l) => l.key === leagueKey);
   const [top, ...rest] = list;
@@ -559,6 +567,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [fixtures, setFixtures] = useState<LeagueFixturesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0); // «تلاش دوباره» re-runs the fetch effect
 
   useEffect(() => {
     let cancelled = false;
@@ -583,10 +592,17 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [leagueKey]);
+  }, [leagueKey, attempt]);
 
   if (!lg) {
-    return <p className="text-center text-muted-foreground text-sm py-16">لیگ مورد نظر یافت نشد.</p>;
+    return (
+      <EmptyState
+        icon="search"
+        title="لیگ مورد نظر یافت نشد"
+        sub="کلید لیگ نامعتبر است؛ از میان لیگ‌های پرطرفدار یکی را انتخاب کنید."
+        action={{ label: "مشاهده‌ی لیگ‌ها", href: "/leagues" }}
+      />
+    );
   }
 
   // JSON-LD: standings table as ItemList of SportsTeam (client-rendered, read by crawlers)
@@ -651,8 +667,15 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       </nav>
 
       {error && (
-        <div className="glass-card border-rose-soft/25 text-rose-soft text-sm px-4 py-3">
-          {error}
+        <div className="glass-card border-rose-soft/25 text-rose-soft text-sm px-4 py-3 flex items-center justify-between gap-3 flex-wrap">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => setAttempt((a) => a + 1)}
+            className="text-xs font-bold underline underline-offset-4 cursor-pointer"
+          >
+            تلاش دوباره
+          </button>
         </div>
       )}
 
@@ -669,11 +692,11 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               <StandingsTable data={standings} league={lg} />
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
-          ) : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}
-          {tab === "stats" && (fixtures?.stats ? <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} /> : <p className="text-center text-muted-foreground text-sm py-10">آماری برای این لیگ ثبت نشده است.</p>)}
+          ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
+          {tab === "stats" && (fixtures?.stats ? <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} /> : <EmptyState icon="ball" compact title="آماری برای این لیگ ثبت نشده است" sub="آمار فصل از بازی‌های پایان‌یافته محاسبه می‌شود." />)}
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
-          {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <p className="text-center text-muted-foreground text-sm py-10">—</p>)}
+          {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}
         </div>
       )}
     </div>

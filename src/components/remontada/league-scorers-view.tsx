@@ -9,6 +9,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ScorerEntry } from "@/lib/fotmob";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { ScorerAvatarTile, GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits } from "@/lib/format";
@@ -237,9 +238,12 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
         </div>
       ) : (
         !error && (
-          <p className="text-center text-muted-foreground text-sm py-12">
-            داده گلزنان این لیگ هنوز منتشر نشده است.
-          </p>
+          <EmptyState
+            icon="medal"
+            compact
+            title="داده گلزنان این لیگ هنوز منتشر نشده است"
+            sub="معمولاً پس از شروع فصل و پایان هفته‌ی نخست منتشر می‌شود."
+          />
         )
       )}
 

@@ -9,6 +9,7 @@ import Link from "next/link";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
 import { ShareButton } from "@/components/remontada/share-button";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
 
 // ---------- API shape (mirrors /api/match/[id]) ----------
@@ -910,7 +911,12 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           (data.lineups ? (
             <LineupsPitch lineups={data.lineups} match={m} />
           ) : (
-            <p className="glass-card text-center text-steel text-sm py-10">ترکیب بازیکنان هنوز اعلام نشده است.</p>
+            <EmptyState
+              icon="shirt"
+              compact
+              title="ترکیب بازیکنان هنوز اعلام نشده است"
+              sub="ترکیب معمولاً ۲۰ تا ۴۰ دقیقه پیش از شروع بازی اعلام می‌شود."
+            />
           ))}
         {tab === "info" && <InfoPanel data={data} />}
         {tab === "h2h" && <H2HPanel data={h2h} loading={h2hLoading} />}

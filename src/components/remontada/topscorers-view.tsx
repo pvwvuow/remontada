@@ -11,6 +11,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalScorersData } from "@/lib/fotmob";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { ScorerAvatarTile, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits } from "@/lib/format";
@@ -394,9 +395,12 @@ export function TopScorersView() {
           </div>
         </div>
       ) : (
-        <p className="text-center text-muted-foreground text-sm py-12">
-          داده گلزنان این بخش هنوز منتشر نشده است.
-        </p>
+        <EmptyState
+          icon="medal"
+          compact
+          title="داده گلزنان این بخش هنوز منتشر نشده است"
+          sub="چند لحظه بعد دوباره بررسی کنید یا فیلتر لیگ را عوض کنید."
+        />
       )}
 
       {data && !loading && <AssistsCard data={data} />}

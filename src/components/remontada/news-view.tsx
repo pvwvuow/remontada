@@ -4,6 +4,7 @@
 // Remontada — football news view (multi-source, Persian titles)
 // ------------------------------------------------------------------
 import { timeAgoFa } from "@/lib/format";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
 
 export interface ClientNewsItem {
@@ -107,12 +108,7 @@ export interface NewsViewProps {
 export function NewsView({ items, loading, emptyHint }: NewsViewProps) {
   if (loading && items.length === 0) return <Skeleton />;
   if (items.length === 0) {
-    return (
-      <div className="glass-card border-dashed border-[color:var(--glass-border-soft)] px-6 py-14 text-center">
-        <p className="font-black text-sm mb-1">خبری یافت نشد</p>
-        <p className="text-xs text-muted-foreground">{emptyHint || "چند لحظه بعد دوباره بررسی کنید"}</p>
-      </div>
-    );
+    return <EmptyState icon="news" title="خبری یافت نشد" sub={emptyHint || "چند لحظه بعد دوباره بررسی کنید"} />;
   }
   return (
     <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3 transition-opacity", loading && "opacity-50")}>

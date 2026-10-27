@@ -10,6 +10,7 @@ import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch } from "@/l
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
 
 interface TeamData {
@@ -670,7 +671,7 @@ export function TeamView({ teamId }: { teamId: number }) {
         {data.upcoming.length > 0 ? (
           data.upcoming.map((m) => <TeamMatchRow key={m.id} m={m} teamId={teamId} label="upcoming" />)
         ) : (
-          <p className="text-center text-muted-foreground text-sm py-6">در ۱۰ روز آینده بازی‌ای ثبت نشده است.</p>
+          <EmptyState icon="calendar" compact title="در ۱۰ روز آینده بازی‌ای ثبت نشده است" sub="بعد از اعلام برنامه‌ی جدید، بازی‌ها همین‌جا نمایش داده می‌شوند." />
         )}
       </Section>
 
@@ -678,7 +679,7 @@ export function TeamView({ teamId }: { teamId: number }) {
         {data.recent.length > 0 ? (
           data.recent.map((m) => <TeamMatchRow key={m.id} m={m} teamId={teamId} label="recent" />)
         ) : (
-          <p className="text-center text-muted-foreground text-sm py-6">بازی پایان‌یافته‌ای در بازه‌ی اخیر یافت نشد.</p>
+          <EmptyState icon="ball" compact title="بازی پایان‌یافته‌ای در بازه‌ی اخیر یافت نشد" sub="بازی‌های قبلی تیم پس از به‌روزرسانی فید روزانه نمایش داده می‌شوند." />
         )}
       </Section>
 

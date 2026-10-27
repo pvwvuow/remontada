@@ -8,6 +8,7 @@ import Link from "next/link";
 import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
+import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits, formColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -259,9 +260,10 @@ export interface StandingsViewProps {
   loading: boolean;
   leagueKey: string;
   onLeagueChange: (k: string) => void;
+  onRetry?: () => void;
 }
 
-export function StandingsView({ data, loading, leagueKey, onLeagueChange }: StandingsViewProps) {
+export function StandingsView({ data, loading, leagueKey, onLeagueChange, onRetry }: StandingsViewProps) {
   return (
     <div className="flex flex-col gap-4">
       {/* ---- league chips ---- */}
@@ -295,7 +297,12 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange }: Stan
           <ScorersCard data={data} />
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground text-center py-10">دریافت جدول ناموفق بود.</p>
+        <EmptyState
+          icon="trophy"
+          title="دریافت جدول ناموفق بود"
+          sub="ارتباط با منبع داده برقرار نشد؛ یک بار دیگر امتحان کنید."
+          action={onRetry ? { label: "تلاش دوباره", onClick: onRetry } : undefined}
+        />
       )}
     </div>
   );
