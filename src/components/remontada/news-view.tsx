@@ -19,13 +19,13 @@ export interface ClientNewsItem {
 
 const SOURCE_STYLE: Record<string, string> = {
   ESPN: "bg-red-500/10 text-red-400 border-red-500/30",
-  BBC: "bg-amber-500/10 text-amber-400 border-amber-500/30",
+  "BBC Sport": "bg-amber-500/10 text-amber-400 border-amber-500/30",
   "Sky Sports": "bg-sky-500/10 text-sky-400 border-sky-500/30",
 };
 
-function sourceStyle(s: string): string {
+export function sourceStyle(s: string): string {
   if (SOURCE_STYLE[s]) return SOURCE_STYLE[s];
-  if (/bbc/i.test(s)) return SOURCE_STYLE.BBC;
+  if (/bbc/i.test(s)) return SOURCE_STYLE["BBC Sport"];
   if (/sky/i.test(s)) return SOURCE_STYLE["Sky Sports"];
   return "bg-muted text-muted-foreground border-border";
 }
@@ -101,15 +101,16 @@ function Skeleton() {
 export interface NewsViewProps {
   items: ClientNewsItem[];
   loading: boolean;
+  emptyHint?: string;
 }
 
-export function NewsView({ items, loading }: NewsViewProps) {
+export function NewsView({ items, loading, emptyHint }: NewsViewProps) {
   if (loading && items.length === 0) return <Skeleton />;
   if (items.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border/70 bg-card/30 px-6 py-14 text-center">
         <p className="font-black text-sm mb-1">خبری یافت نشد</p>
-        <p className="text-xs text-muted-foreground">چند لحظه بعد دوباره بررسی کنید</p>
+        <p className="text-xs text-muted-foreground">{emptyHint || "چند لحظه بعد دوباره بررسی کنید"}</p>
       </div>
     );
   }

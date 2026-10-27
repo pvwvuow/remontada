@@ -71,7 +71,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   return (
     <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
-      <div className="max-w-3xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
+      <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
         <SiteLogo small />
         <div className="flex items-center gap-1.5">
           <SearchBox />
@@ -103,7 +103,7 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="mt-auto border-t border-border/50 bg-background/60">
-      <div className="max-w-3xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
+      <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
           <span aria-hidden>·</span>

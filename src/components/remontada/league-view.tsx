@@ -58,11 +58,27 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
     return <p className="text-center text-muted-foreground text-sm py-10">موردی برای نمایش نیست.</p>;
   }
   if (!dateGrouped) {
+    // desktop: split into two columns inside one card; mobile: single list
+    const mid = Math.ceil(items.length / 2);
     return (
-      <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden divide-y divide-border/25">
-        {items.map((f) => (
-          <FixtureRow key={f.id} f={f} showResult={showResult} />
-        ))}
+      <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+        <div className="divide-y divide-border/25 lg:hidden">
+          {items.map((f) => (
+            <FixtureRow key={f.id} f={f} showResult={showResult} />
+          ))}
+        </div>
+        <div className="hidden lg:grid lg:grid-cols-2">
+          <div className="divide-y divide-border/25">
+            {items.slice(0, mid).map((f) => (
+              <FixtureRow key={f.id} f={f} showResult={showResult} />
+            ))}
+          </div>
+          <div className="divide-y divide-border/25 border-s border-border/25">
+            {items.slice(mid).map((f) => (
+              <FixtureRow key={f.id} f={f} showResult={showResult} />
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -74,7 +90,7 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
     byDate.get(k)!.push(f);
   }
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2 lg:items-start">
       {[...byDate.entries()].map(([date, list]) => {
         const j = jalaliShort(`${date}T12:00:00Z`);
         return (
@@ -140,6 +156,8 @@ function StandingsTable({ data }: { data: StandingsData }) {
               <th className="py-2.5 px-1.5 font-bold text-center">بر</th>
               <th className="py-2.5 px-1.5 font-bold text-center">مس</th>
               <th className="py-2.5 px-1.5 font-bold text-center">با</th>
+              <th className="py-2.5 px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
+              <th className="py-2.5 px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
               <th className="py-2.5 px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
               <th className="py-2.5 px-2.5 font-black text-center">امتیاز</th>
             </tr>
@@ -162,6 +180,8 @@ function StandingsTable({ data }: { data: StandingsData }) {
                 <td className="py-2 px-1.5 text-center tabular-persian">{faDigits(r.wins)}</td>
                 <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.draws)}</td>
                 <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.losses)}</td>
+                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden lg:table-cell">{faDigits(r.goalsFor)}</td>
+                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden lg:table-cell">{faDigits(r.goalsAgainst)}</td>
                 <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden sm:table-cell">{r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}</td>
                 <td className="py-2 px-2.5 text-center">
                   <span className="font-black text-primary tabular-persian bg-primary/10 rounded-lg px-2 py-0.5 inline-block min-w-[34px]">{faDigits(r.pts)}</span>
@@ -260,7 +280,12 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         </div>
       ) : (
         <div className={cn("transition-opacity", loading && "opacity-50")}>
-          {tab === "standings" && (standings ? <StandingsTable data={standings} /> : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}
+          {tab === "standings" && (standings ? (
+            <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
+              <StandingsTable data={standings} />
+              {standings.scorers?.length > 0 && <ScorersList data={standings} />}
+            </div>
+          ) : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} /> : <p className="text-center text-muted-foreground text-sm py-10">—</p>)}

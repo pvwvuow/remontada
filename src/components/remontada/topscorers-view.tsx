@@ -159,10 +159,26 @@ export function TopScorersView() {
       {loading ? (
         <Skeleton />
       ) : visible.length > 0 ? (
-        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden divide-y divide-border/25">
-          {visible.map((s) => (
-            <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={filter === ALL_KEY ? s.rank <= 3 : s.rank <= 3} />
-          ))}
+        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          {/* mobile / tablet: single ranked list */}
+          <ol className="divide-y divide-border/25 lg:hidden">
+            {visible.map((s) => (
+              <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+            ))}
+          </ol>
+          {/* desktop: two ranked columns (right column = first half, RTL-aware) */}
+          <div className="hidden lg:grid lg:grid-cols-2">
+            <ol className="divide-y divide-border/25">
+              {visible.slice(0, Math.ceil(visible.length / 2)).map((s) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+              ))}
+            </ol>
+            <ol className="divide-y divide-border/25 border-s border-border/25">
+              {visible.slice(Math.ceil(visible.length / 2)).map((s) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+              ))}
+            </ol>
+          </div>
         </div>
       ) : (
         <p className="text-center text-muted-foreground text-sm py-12">

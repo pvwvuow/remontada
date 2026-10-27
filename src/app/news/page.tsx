@@ -11,7 +11,7 @@ export default function NewsPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-4xl mx-auto px-3 sm:px-5 py-5">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
         <div className="mb-4 px-1 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-black">اخبار فوتبال</h1>

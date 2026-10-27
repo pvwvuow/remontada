@@ -158,7 +158,7 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange }: Stan
       {!data && loading ? (
         <Skeleton />
       ) : data ? (
-        <div className={cn("grid gap-4 lg:grid-cols-[1fr_280px] items-start transition-opacity", loading && "opacity-50")}>
+        <div className={cn("grid gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_330px] items-start transition-opacity", loading && "opacity-50")}>
           <div className="flex flex-col gap-3 min-w-0">
             <div className="flex items-center justify-between px-1">
               <h2 className="text-sm font-black">{data.leagueFa}</h2>

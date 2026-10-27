@@ -269,7 +269,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
       ) : groups.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className={cn("flex flex-col gap-4 transition-opacity", loading && "opacity-50 pointer-events-none")}>
+        <div className={cn("grid gap-4 lg:grid-cols-2 lg:items-start transition-opacity", loading && "opacity-50 pointer-events-none")}>
           {groups.map((g) => (
             <LeagueGroupCard key={`${g.leagueId}-${g.ccode}`} g={g} />
           ))}
