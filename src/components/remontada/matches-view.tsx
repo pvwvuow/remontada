@@ -219,11 +219,31 @@ function Skeleton() {
   );
 }
 
-function EmptyState({ favsOnly }: { favsOnly?: boolean }) {
+function EmptyState({ favsOnly, statusFilter }: { favsOnly?: boolean; statusFilter?: "all" | "live" | "finished" }) {
+  let title = "بازی‌ای برای این روز پیدا نشد";
+  let sub = "روز دیگری را از نوار بالا انتخاب کنید";
+  let icon: "ball" | "star" | "live" = "ball";
+  if (statusFilter === "live") {
+    title = "الان بازی زنده‌ای جریان ندارد";
+    sub = "چند دقیقه دیگر دوباره سر بزنید یا فیلتر را روی «همه» بگذارید";
+    icon = "live";
+  } else if (statusFilter === "finished") {
+    title = "هنوز بازی‌ای به پایان نرسیده است";
+    sub = "بازی‌ها معمولاً بعدازظهر و شب به پایان می‌رسند";
+  } else if (favsOnly) {
+    title = "امروز بازی تیم‌های مورد علاقه‌ی شما نیست";
+    sub = "روز دیگری را از نوار بالا امتحان کنید یا فیلتر را بردارید";
+    icon = "star";
+  }
   return (
     <div className="rounded-2xl border border-dashed border-border/70 bg-card/30 px-6 py-14 text-center">
       <div className="mx-auto w-14 h-14 rounded-2xl bg-muted/60 flex items-center justify-center mb-4">
-        {favsOnly ? (
+        {icon === "live" ? (
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-red-400/70" aria-hidden>
+            <circle cx="12" cy="12" r="3" />
+            <path d="M5.6 5.6a9 9 0 0 0 0 12.8M18.4 5.6a9 9 0 0 1 0 12.8" />
+          </svg>
+        ) : icon === "star" ? (
           <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-amber-400/70" aria-hidden>
             <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
           </svg>
@@ -234,17 +254,8 @@ function EmptyState({ favsOnly }: { favsOnly?: boolean }) {
           </svg>
         )}
       </div>
-      {favsOnly ? (
-        <>
-          <p className="font-black text-sm mb-1">امروز بازی تیم‌های مورد علاقه‌ی شما نیست</p>
-          <p className="text-xs text-muted-foreground">روز دیگری را از نوار بالا امتحان کنید یا فیلتر را بردارید</p>
-        </>
-      ) : (
-        <>
-          <p className="font-black text-sm mb-1">بازی‌ای برای این روز پیدا نشد</p>
-          <p className="text-xs text-muted-foreground">روز دیگری را از نوار بالا انتخاب کنید</p>
-        </>
-      )}
+      <p className="font-black text-sm mb-1">{title}</p>
+      <p className="text-xs text-muted-foreground">{sub}</p>
     </div>
   );
 }
@@ -262,22 +273,47 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
   const favs = useFavorites();
   const favIds = useMemo(() => new Set(favs.map((f) => f.id)), [favs]);
   const [onlyFavs, setOnlyFavs] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"all" | "live" | "finished">("all");
 
-  // matches involving favorite teams today (unfiltered count for the chip)
+  // status counts (for the همه/زنده/پایان‌یافته chips)
+  const statusCounts = useMemo(() => {
+    let live = 0, finished = 0, total = 0;
+    for (const g of groups) {
+      for (const m of g.matches) {
+        total++;
+        if (m.live) live++;
+        if (m.finished) finished++;
+      }
+    }
+    return { live, finished, total };
+  }, [groups]);
+
+  // status filter — drop groups left with no matches
+  const statusFiltered = useMemo(() => {
+    if (statusFilter === "all") return groups;
+    return groups
+      .map((g) => ({
+        ...g,
+        matches: g.matches.filter((m) => (statusFilter === "live" ? m.live : m.finished)),
+      }))
+      .filter((g) => g.matches.length > 0);
+  }, [groups, statusFilter]);
+
+  // matches involving favorite teams within the active status scope
   const favMatchCount = useMemo(() => {
     if (favIds.size === 0) return 0;
-    return groups.reduce(
+    return statusFiltered.reduce(
       (acc, g) => acc + g.matches.filter((m) => favIds.has(m.home.id) || favIds.has(m.away.id)).length,
       0
     );
-  }, [groups, favIds]);
+  }, [statusFiltered, favIds]);
 
   const shownGroups = useMemo(() => {
-    if (!onlyFavs || favIds.size === 0) return groups;
-    return groups
+    if (!onlyFavs || favIds.size === 0) return statusFiltered;
+    return statusFiltered
       .map((g) => ({ ...g, matches: g.matches.filter((m) => favIds.has(m.home.id) || favIds.has(m.away.id)) }))
       .filter((g) => g.matches.length > 0);
-  }, [groups, onlyFavs, favIds]);
+  }, [statusFiltered, onlyFavs, favIds]);
 
   const todayISO = offsetDateISO(0);
   const chips = useMemo(
@@ -312,6 +348,45 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
             <span className={cn("text-sm font-black tabular-persian", c.isToday && "text-primary")}>{c.day}</span>
           </button>
         ))}
+      </div>
+
+      {/* ---- status filter: همه / زنده / پایان‌یافته ---- */}
+      <div className="flex items-center gap-1.5 flex-wrap" role="group" aria-label="فیلتر وضعیت بازی‌ها">
+        {([
+          { key: "all", label: "همه" },
+          { key: "live", label: "زنده" },
+          { key: "finished", label: "پایان‌یافته" },
+        ] as const).map((t) => {
+          const active = statusFilter === t.key;
+          const count =
+            t.key === "all" ? statusCounts.total : t.key === "live" ? statusCounts.live : statusCounts.finished;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setStatusFilter(t.key)}
+              aria-pressed={active}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg border px-2.5 py-1.5 transition-all cursor-pointer",
+                active
+                  ? t.key === "live"
+                    ? "text-red-400 bg-red-500/10 border-red-500/40"
+                    : "text-primary bg-primary/10 border-primary/40"
+                  : "text-muted-foreground bg-card/60 border-border/60 hover:text-foreground hover:border-border"
+              )}
+            >
+              {t.key === "live" && <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />}
+              {t.label}
+              <span
+                className={cn(
+                  "rounded-md px-1.5 py-0.5 text-[10px] tabular-persian",
+                  active ? "bg-background/50" : "bg-muted/70 text-muted-foreground"
+                )}
+              >
+                {faDigits(count)}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* ---- selected day title ---- */}
@@ -355,7 +430,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
       {loading && groups.length === 0 ? (
         <Skeleton />
       ) : shownGroups.length === 0 ? (
-        <EmptyState favsOnly={onlyFavs && favIds.size > 0} />
+        <EmptyState favsOnly={onlyFavs && favIds.size > 0} statusFilter={statusFilter} />
       ) : (
         <div className={cn("grid gap-4 lg:grid-cols-2 lg:items-start transition-opacity", loading && "opacity-50 pointer-events-none")}>
           {shownGroups.map((g) => (

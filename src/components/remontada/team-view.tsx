@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch } from "@/lib/fotmob";
-import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
+import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { cn } from "@/lib/utils";
 
@@ -38,6 +38,85 @@ function formChip(c: "W" | "D" | "L") {
   if (c === "W") return "bg-primary/15 text-primary border-primary/30";
   if (c === "D") return "bg-muted text-muted-foreground border-border";
   return "bg-destructive/15 text-destructive border-destructive/30";
+}
+
+/** tick state for live countdowns — 30s cadence, minute precision */
+function useCountdown(iso?: string): { days: number; hours: number; minutes: number } | null {
+  const [now, setNow] = useState<number | null>(null);
+  useEffect(() => {
+    if (!iso) return;
+    setNow(Date.now());
+    const iv = setInterval(() => setNow(Date.now()), 30_000);
+    return () => clearInterval(iv);
+  }, [iso]);
+  if (!iso || now == null) return null;
+  const diff = new Date(iso).getTime() - now;
+  if (Number.isNaN(diff) || diff <= 0) return { days: 0, hours: 0, minutes: 0 };
+  const mins = Math.floor(diff / 60_000);
+  return { days: Math.floor(mins / 1440), hours: Math.floor((mins % 1440) / 60), minutes: mins % 60 };
+}
+
+function SegBox({ v, l }: { v: number; l: string }) {
+  return (
+    <div className="rounded-xl border border-primary/25 bg-primary/10 px-2.5 py-1.5 text-center min-w-[48px]">
+      <p className="text-[15px] font-black tabular-persian text-primary leading-none">{faDigits(String(v).padStart(2, "0"))}</p>
+      <p className="text-[8.5px] font-bold text-muted-foreground mt-1">{l}</p>
+    </div>
+  );
+}
+
+/** «بازی بعدی» — nearest upcoming fixture with Jalali date + live countdown */
+function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
+  const isHome = m.home.id === teamId;
+  const opp = isHome ? m.away : m.home;
+  const us = isHome ? m.home : m.away;
+  const cd = useCountdown(m.utcTime);
+  return (
+    <Link
+      href={`/match/${m.id}`}
+      prefetch={false}
+      className="block rounded-2xl border border-primary/25 bg-gradient-to-l from-primary/[0.12] via-card/70 to-card/40 overflow-hidden hover:border-primary/50 transition-colors"
+    >
+      <div className="px-4 py-2 border-b border-primary/15 bg-primary/[0.08] flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-primary">بازی بعدی</h2>
+        <span className="text-[10px] font-bold text-muted-foreground truncate">
+          {m.leagueFa}{m.round ? ` · ${faRound(m.round)}` : ""}
+        </span>
+      </div>
+      <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2.5 min-w-0 flex-1">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={us.logo} alt="" width={30} height={30} loading="lazy" className="w-[30px] h-[30px] object-contain shrink-0 opacity-80" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <span className="text-[10px] font-bold text-muted-foreground shrink-0">در برابر</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={opp.logo} alt="" width={38} height={38} loading="lazy" className="w-[38px] h-[38px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+          <div className="min-w-0">
+            <p className="text-sm font-black truncate">{opp.fa || opp.name}</p>
+            <p className="text-[10.5px] text-muted-foreground tabular-persian mt-0.5">
+              {tehranDateLong(m.utcTime)} · ساعت {tehranTime(m.utcTime)}
+            </p>
+          </div>
+          <span
+            className={cn(
+              "shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black",
+              isHome ? "bg-primary/10 text-primary border-primary/20" : "bg-sky-500/10 text-sky-500 border-sky-500/20"
+            )}
+          >
+            {isHome ? "خانه" : "بیرون"}
+          </span>
+        </div>
+        {cd ? (
+          <div className="flex items-center gap-1.5 shrink-0" role="timer" aria-label="شمارش معکوس تا شروع بازی">
+            <SegBox v={cd.days} l="روز" />
+            <SegBox v={cd.hours} l="ساعت" />
+            <SegBox v={cd.minutes} l="دقیقه" />
+          </div>
+        ) : (
+          <span className="text-[11px] font-bold text-muted-foreground shrink-0">در حال محاسبه…</span>
+        )}
+      </div>
+    </Link>
+  );
 }
 
 /** "Regular season - 8" / "8" / "هفته 8" → «هفته ۸» */
@@ -358,6 +437,9 @@ export function TeamView({ teamId }: { teamId: number }) {
           )}
         </div>
       </section>
+
+      {/* next match + live countdown */}
+      {data.upcoming.length > 0 && <NextMatchCard m={data.upcoming[0]} teamId={teamId} />}
 
       {/* season stats */}
       {season && season.played > 0 && <SeasonPanel s={season} />}

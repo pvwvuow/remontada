@@ -2,9 +2,10 @@
  * Remontada — light service worker
  * - API (/api/):        network-first, fallback to cached response
  * - fonts/icons/static: cache-first
- * - navigations:        network-first, fallback to cache, then "/"
+ * - navigations:        network-first, fallback to cache, then "/",
+ *                       then the offline fallback page (/offline.html)
  * ------------------------------------------------------------------ */
-const VERSION = "remontada-v1";
+const VERSION = "remontada-v2";
 const SHELL_CACHE = `${VERSION}-shell`;
 const API_CACHE = `${VERSION}-api`;
 const STATIC_CACHE = `${VERSION}-static`;
@@ -14,6 +15,7 @@ const SHELL_ASSETS = [
   "/leagues",
   "/topscorers",
   "/news",
+  "/offline.html",
   "/manifest.webmanifest",
   "/icons/icon-192.png",
   "/icons/icon-512.png",
@@ -93,14 +95,37 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // page navigations: try network, fall back to cache, then home shell
+  // page navigations: try network, fall back to cache, then the offline page
   if (request.mode === "navigate") {
     event.respondWith(
       networkFirst(request, SHELL_CACHE).catch(async () => {
         const cache = await caches.open(SHELL_CACHE);
-        return (await cache.match("/")) || Response.error();
+        return (
+          (await cache.match("/")) ||
+          (await cache.match("/offline.html")) ||
+          offlineResponse()
+        );
       })
     );
   }
   // everything else: default (no interception)
 });
+
+/** last-resort minimal offline page (if /offline.html itself is not cached) */
+function offlineResponse() {
+  const html = `<!doctype html><html lang="fa" dir="rtl"><head><meta charset="utf-8">` +
+    `<meta name="viewport" content="width=device-width, initial-scale=1"><title>آفلاین — رمانتادا</title>` +
+    `<style>body{font-family:Tahoma,sans-serif;background:#0c1310;color:#edf5f0;display:flex;` +
+    `align-items:center;justify-content:center;min-height:100vh;margin:0;text-align:center;padding:24px}` +
+    `h1{font-size:19px;margin:0 0 10px}p{font-size:13px;color:#9fb3a8;line-height:2}` +
+    `button{font:inherit;font-size:13px;font-weight:700;margin-top:18px;background:#4ade80;color:#08130c;` +
+    `border:0;border-radius:12px;padding:10px 22px;cursor:pointer}</style></head>` +
+    `<body><div><h1>اتصال اینترنت قطع است</h1>` +
+    `<p>در حال حاضر آفلاین هستید؛ وقتی اتصال برگردد صفحه خودکار بارگیری می‌شود.</p>` +
+    `<button onclick="location.reload()">تلاش مجدد</button></div>` +
+    `<script>window.addEventListener("online",function(){location.reload()})<\/script></body></html>`;
+  return new Response(html, {
+    status: 200,
+    headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+  });
+}

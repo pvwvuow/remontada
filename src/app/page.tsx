@@ -6,6 +6,7 @@ import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
 import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
+import { faDigits } from "@/lib/format";
 import { SearchBox } from "@/components/remontada/search-box";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { cn } from "@/lib/utils";
@@ -138,7 +139,22 @@ export default function Home() {
       <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
         <div className="max-w-5xl mx-auto px-3 sm:px-5">
           <div className="flex items-center justify-between gap-3 py-3">
-            <Logo />
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Logo />
+              {/* live matches counter — always visible next to the logo */}
+              {liveCount > 0 && (
+                <button
+                  onClick={() => setTab("matches")}
+                  title="نمایش بازی‌های زنده"
+                  aria-label={`${faDigits(liveCount)} بازی زنده در جریان است`}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2.5 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors cursor-pointer shrink-0"
+                >
+                  <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                  <span className="tabular-persian">{faDigits(liveCount)}</span>
+                  <span className="hidden xs:inline">زنده</span>
+                </button>
+              )}
+            </div>
             <div className="flex items-center gap-2">
               <SearchBox />
               <Link
@@ -163,12 +179,6 @@ export default function Home() {
               </Link>
               {tab === "matches" && (
                 <div className="flex items-center gap-2">
-                  {liveCount > 0 && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-lg">
-                      <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-                      <span className="tabular-persian">{liveCount}</span> بازی در جریان
-                    </span>
-                  )}
                   <button
                     onClick={() => fetchMatches()}
                     className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
