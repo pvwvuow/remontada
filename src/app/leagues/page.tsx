@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
+import { FavoritesSection } from "@/components/remontada/favorites-section";
 import { TeamLogo } from "@/components/remontada/team-logo";
 import { LEAGUES } from "@/lib/leagues";
 
@@ -59,6 +60,9 @@ export default function LeaguesPage() {
             </Link>
           ))}
         </div>
+
+        {/* favorite teams (localStorage) */}
+        <FavoritesSection />
 
         {/* popular teams */}
         <section className="mt-7" aria-label="تیم‌های محبوب">

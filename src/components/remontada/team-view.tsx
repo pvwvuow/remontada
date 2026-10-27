@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NormMatch, TeamRowInfo } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
+import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { cn } from "@/lib/utils";
 
 interface TeamData {
@@ -174,7 +175,13 @@ export function TeamView({ teamId }: { teamId: number }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={data.team.logo} alt="" width={64} height={64} className="w-16 h-16 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-black truncate">{data.team.fa || data.team.name}</h1>
+            <div className="flex items-center gap-2 min-w-0">
+              <h1 className="text-xl font-black truncate">{data.team.fa || data.team.name}</h1>
+              <FavoriteStar
+                team={{ id: teamId, fa: data.team.fa || data.team.name, en: data.team.name }}
+                size={20}
+              />
+            </div>
             {st ? (
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 <Link href={`/league/${st.leagueKey}`} className="hover:text-primary transition-colors font-bold">
