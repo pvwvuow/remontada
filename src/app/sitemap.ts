@@ -32,6 +32,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.7,
   }));
 
+  // fix cycle-33 (finding #3 of the cycle-32 bug hunt): popular team pages
+  // belong in the sitemap too. Same verified ids as POPULAR_TEAMS in
+  // /leagues + the two other Persian-gulf clubs validated in cycle-3.
+  const popularTeamIds = [101610, 101614, 176352, 101611, 8633, 8634, 10260];
+  const teamRoutes: MetadataRoute.Sitemap = popularTeamIds.map((id) => ({
+    url: `${SITE_URL}/team/${id}`,
+    lastModified: now,
+    changeFrequency: "daily" as const,
+    priority: 0.6,
+  }));
+
   // player profile URLs — top scorers per league, de-duplicated across
   // competitions (a player can appear in league + cup lists)
   const playerRoutes: MetadataRoute.Sitemap = [];
@@ -51,5 +62,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticRoutes, ...leagueRoutes, ...scorersRoutes, ...playerRoutes];
+  return [...staticRoutes, ...leagueRoutes, ...scorersRoutes, ...teamRoutes, ...playerRoutes];
 }

@@ -14,12 +14,17 @@ import { SITE_URL } from "@/lib/site";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d{1,10}$/.test(id)) {
-    return { title: "صفحه تیم", robots: { index: false, follow: false } };
+    // fix cycle-33: empty alternates suppresses the layout's root canonical —
+    // a noindex page must not advertise a canonical it does not own
+    return { title: "صفحه تیم", robots: { index: false, follow: false }, alternates: {} };
   }
   try {
     const teamId = Number(id);
     const entry = (await getTeamIndex()).find((t) => t.teamId === teamId);
-    if (!entry) return { title: "صفحه تیم" };
+    if (!entry) {
+      // numeric but unknown → empty page; keep it out of the index too
+      return { title: "صفحه تیم", robots: { index: false, follow: false }, alternates: {} };
+    }
     const name = entry.fa || entry.name;
     const title = `${name} — صفحه تیم`;
     const desc = `نتایج اخیر، بازی‌های پیش‌رو، رتبه و فرم ${name}${entry.leagueFa ? ` در ${entry.leagueFa}` : ""} — رمانتادا`;
@@ -30,7 +35,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       openGraph: { title: `${name} — صفحه تیم | رمانتادا`, description: desc },
     };
   } catch {
-    return { title: "صفحه تیم" };
+    // upstream hiccup → in-page error state; keep the empty shell unindexed
+    return { title: "صفحه تیم", robots: { index: false, follow: false }, alternates: {} };
   }
 }
 

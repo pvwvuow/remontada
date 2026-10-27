@@ -12,11 +12,13 @@ import { SITE_URL } from "@/lib/site";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d{4,12}$/.test(id)) {
-    return { title: "جزئیات مسابقه", robots: { index: false, follow: false } };
+    // fix cycle-33: empty alternates suppresses the layout's root canonical
+    return { title: "جزئیات مسابقه", robots: { index: false, follow: false }, alternates: {} };
   }
   try {
     const m = await getMatchLdData(id);
-    if (!m) return { title: "جزئیات مسابقه" };
+    // fix cycle-33: feed has no such match → empty page, keep it unindexed
+    if (!m) return { title: "جزئیات مسابقه", robots: { index: false, follow: false }, alternates: {} };
     const home = m.homeFa || m.homeName;
     const away = m.awayFa || m.awayName;
     const title = `${home} - ${away}`;
@@ -36,7 +38,8 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       openGraph: { title: `${title} | رمانتادا`, description: desc },
     };
   } catch {
-    return { title: "جزئیات مسابقه" };
+    // fix cycle-33: upstream hiccup → keep the empty shell unindexed
+    return { title: "جزئیات مسابقه", robots: { index: false, follow: false }, alternates: {} };
   }
 }
 

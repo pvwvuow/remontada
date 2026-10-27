@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   if (!/^\d{3,12}$/.test(id)) {
-    return { title: "پروفایل بازیکن", robots: { index: false, follow: false } };
+    return { title: "پروفایل بازیکن", robots: { index: false, follow: false }, alternates: {} };
   }
   try {
     const p = await getPlayerData(id);
@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   } catch {
     // missing player / upstream hiccup — page itself handles the UX
-    return { title: "پروفایل بازیکن", robots: { index: false, follow: false } };
+    return { title: "پروفایل بازیکن", robots: { index: false, follow: false }, alternates: {} };
   }
 }
 
