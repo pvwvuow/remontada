@@ -104,7 +104,9 @@ export function LiveFavoriteChip() {
             <span className="text-foreground/90 truncate">{match.otherTeam}</span>
           </span>
           {match.minute && /^\d+/.test(match.minute) && (
-            <span className="text-red-300/90 tabular-persian shrink-0">{faDigits(match.minute)}′</span>
+            <span className="text-red-300/90 tabular-persian shrink-0">
+              {faDigits(match.minute)}{/[′’']/.test(match.minute) ? "" : "′"}
+            </span>
           )}
           {extraCount > 0 && (
             <span className="text-[9.5px] font-bold text-red-300/80 shrink-0 tabular-persian">

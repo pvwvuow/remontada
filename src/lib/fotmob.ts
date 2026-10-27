@@ -114,6 +114,7 @@ interface FotMobMatch {
   statusId: number;
   status: {
     utcTime: string; started: boolean; finished: boolean; cancelled: boolean;
+    ongoing?: boolean;
     liveTime?: { short?: string; long?: string; ongoing?: boolean };
     reason?: { short?: string; long?: string };
   };
@@ -123,11 +124,21 @@ function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
   const groups: LeagueGroup[] = [];
   for (const lg of raw.leagues || []) {
     const matches: NormMatch[] = (lg.matches || []).map((m) => {
-      const live = m.statusId === 2 || (!!m.status?.liveTime?.ongoing && !m.status?.finished);
+      // cycle-22 bug fix: FotMob marks every in-progress match with
+      // status.ongoing=true (statusId 2=1st half, 3=2nd half, 10=half-time,
+      // 8=extra time, 20=penalties). The old second clause read
+      // status.liveTime.ongoing which never exists in the api/data/matches
+      // payload, so everything after the 1st half was classified as not-live.
+      const finished = !!m.status?.finished;
+      const live = (m.status?.ongoing === true || m.statusId === 2) && !finished;
       const halfTime = m.statusId === 10;
-      const minute = live
-        ? (m.status?.liveTime?.short || "در جریان")
-        : halfTime ? "بین دو نیمه" : undefined;
+      const minute = !live
+        ? undefined
+        : halfTime
+          ? "بین دو نیمه"
+          : m.statusId === 20
+            ? "پنالتی"
+            : (m.status?.liveTime?.short || "در جریان");
       const scoreH = typeof m.home?.score === "number" ? m.home.score : null;
       const scoreA = typeof m.away?.score === "number" ? m.away.score : null;
       return {
@@ -353,7 +364,7 @@ function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
 
 export async function getStandings(leagueKey: string): Promise<StandingsData> {
   const { lg, raw } = await getLeagueRaw(leagueKey);
-  const build = () => {
+  const build = async () => {
     // ---- team form (last 5 league results per team, one pass over season fixtures) ----
     const formMap = new Map<number, ("W" | "D" | "L")[]>();
     for (const f of (raw.fixtures?.allMatches || []) as FotMobFixture[]) {
@@ -952,6 +963,7 @@ export interface PlayerCareerEntry {
   goals: number | null;
   assists: number | null;
   transfer: string | null;   // persian transfer note or null
+  kind: "senior" | "national" | "youth";  // cycle-22: declared (was pushed undeclared)
 }
 
 export interface PlayerTrophy {
@@ -1150,11 +1162,11 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
   return {
     id,
     name: raw.name || "",
-    positionFa: faPosition(posEn),
+    positionFa: faPosition(posEn || undefined),
     positionEn: posEn,
     status: raw.status || "",
     team: pt
-      ? { id: pt.teamId as number, name: pt.teamName || "", fa: teamFa(pt.teamName) || pt.teamName || "", logo: fotmobTeamLogo(pt.teamId) }
+      ? { id: pt.teamId as number, name: pt.teamName || "", fa: teamFa(pt.teamName || undefined) || pt.teamName || "", logo: fotmobTeamLogo(pt.teamId ?? 0) }
       : null,
     info,
     season,
@@ -1308,6 +1320,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
       perLeague.push({ leagueKey: lg.key, leagueFa: lg.faName, scorers: st.scorers });
       for (const s of st.scorers) {
         merged.push({
+          rank: 0, // dense global rank assigned after the sort below
           name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
           leagueRank: s.rank || 0,
           ...(s.playerId != null ? { playerId: s.playerId } : {}),
@@ -1322,6 +1335,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
     }
     for (const a of st.assists || []) {
       mergedAssists.push({
+        rank: 0, // dense global rank assigned after the sort below
         name: a.name, team: a.team, teamId: a.teamId, value: a.assists,
         ...(a.playerId != null ? { playerId: a.playerId } : {}),
         leagueKey: lg.key, leagueFa: lg.faName,

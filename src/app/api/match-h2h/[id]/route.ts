@@ -33,7 +33,7 @@ async function fetchJson<T>(url: string, timeoutMs = 12000): Promise<T> {
 interface FMTeamRef { id: number; name: string }
 interface FMH2HMatch {
   matchUrl?: string;
-  league?: { name?: string };
+  league?: { name?: string; id?: number };
   home?: FMTeamRef;
   away?: FMTeamRef;
   status?: {

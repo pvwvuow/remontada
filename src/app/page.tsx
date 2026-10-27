@@ -10,6 +10,7 @@ import { faDigits } from "@/lib/format";
 import { SearchBox } from "@/components/remontada/search-box";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
+import { LiveFavoriteChip } from "@/components/remontada/live-favorite-chip";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -252,6 +253,11 @@ export default function Home() {
             ))}
           </nav>
         </div>
+
+        {/* cycle-22 bug fix: the home page has its own header (not SiteHeader),
+            so the live favorite strip was missing on the most important page —
+            mount it here too (renders nothing unless a favorite team is live) */}
+        <LiveFavoriteChip />
       </header>
 
       {/* ---------- content ---------- */}

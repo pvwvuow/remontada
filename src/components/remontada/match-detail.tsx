@@ -183,7 +183,7 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
 }
 
 // ---------- scoreboard ----------
-function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTheMatch"] }) {
+function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"] }) {
   const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
   return (
     <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden backdrop-blur-sm">
@@ -253,7 +253,7 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
         <div className="px-4 pb-4 pt-1 grid grid-cols-[1fr_auto_1fr] gap-2 text-[11px]">
           <div className="flex flex-col gap-1 items-start ps-2">
             {m.home.score !== null &&
-              m.scorers.filter((s) => s.side === "home").map((s, i) => (
+              scorers.filter((s) => s.side === "home").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
                   <GoalIcon className="text-primary/80" />
                   <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
@@ -266,7 +266,7 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
           <div className="w-px bg-border/40" aria-hidden />
           <div className="flex flex-col gap-1 items-end pe-2">
             {m.away.score !== null &&
-              m.scorers.filter((s) => s.side === "away").map((s, i) => (
+              scorers.filter((s) => s.side === "away").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
                   {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assist})</span>}
                   {s.penalty && " (پ)"}
@@ -855,7 +855,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         بازگشت به نتایج
       </Link>
 
-      <Scoreboard m={m} potm={data.playerOfTheMatch} />
+      <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} />
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (

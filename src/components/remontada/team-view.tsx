@@ -100,7 +100,7 @@ function NextMatchCard({ m, teamId }: { m: NormMatch; teamId: number }) {
       <div className="px-4 py-2 border-b border-primary/15 bg-primary/[0.08] flex items-center justify-between gap-2">
         <h2 className="text-[12.5px] font-black text-primary">بازی بعدی</h2>
         <span className="text-[10px] font-bold text-muted-foreground truncate">
-          {m.leagueFa}{m.round ? ` · ${faRound(m.round)}` : ""}
+          {m.leagueFa}
         </span>
       </div>
       <div className="p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
@@ -425,7 +425,7 @@ function PreMatchPanel({
 
   const metrics: { label: string; a?: string | null; b?: string | null; pa?: number | null; pb?: number | null }[] = [
     { label: "رتبه در جدول", a: rowTxt(ours), b: rowTxt(opp) },
-    { label: "امتیاز", a: pts(ours) ?? null, b: pts(opp) ?? null, pa: pts(ours) ?? null, pb: pts(opp) ?? null },
+    { label: "امتیاز", a: pts(ours) != null ? faDigits(pts(ours)!) : null, b: pts(opp) != null ? faDigits(pts(opp)!) : null, pa: pts(ours) ?? null, pb: pts(opp) ?? null },
     { label: "بازی‌ها", a: playedTxt(ours), b: playedTxt(opp) },
     { label: "برد/مساوی/باخت", a: wdlTxt(ours), b: wdlTxt(opp) },
     { label: "گل زده : خورده", a: gfTxt(ours), b: gfTxt(opp), pa: ours.season?.goalsFor ?? null, pb: opp.season?.goalsFor ?? null },
