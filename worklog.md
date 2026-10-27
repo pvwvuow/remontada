@@ -131,3 +131,21 @@ Stage Summary:
 - هیچ تغییری در کد پرتال؛ فقط این کارت + کامیت اسنپ‌شات worklog داخل مخزن
 - ⛔ برای ایجنت‌های بعدی: هر پشتیبانی که کارتش در worklog نیست، اول تاریخچه git را چک کند (git log --oneline) — نبود کارت به‌خودی‌خود یعنی کار انجام نشده نیست
 - چرخه ۳۱ = اپدیت، ۳۲ = بررسی باگ، ۳۳ = فیکس باگ
+
+---
+Task ID: cycle-31
+Agent: main (Z.ai) — cron self-activation (Job 478741)
+Task: چرخه ۳۱ = «اپدیت» سوم — پیشنهاد کارت cycle-30: ItemList آقای گلان در topscorers
+
+Work Log:
+- topscorers/page.tsx: صفحه سراسری آقای گلان ارتقا یافت — ItemList JSON-LD با اسنپ‌شات سروری ۱۸ گلزن برتر (getAllTopScorers با کش ۶۰ثانیه/دقیقه لیگ‌ها)، هر ListItem با position + name + لینک عمیق /player/[id] (فالبک /team/[id] وقتی playerId نیست)؛ try/catch → بدون شبکه، LD حذف و صفحه سالم می‌ماند
+- مسیر از SSG به ƒ Dynamic رفت تا ItemList در هر درخواست از داده زنده رندر شود (بدون کهنگی بیلدمحور — همان «دقت داده» پیشنهادی)
+- generateMetadata اضافه شد: canonical /topscorers + OpenGraph (fa_IR) — قبلاً metadata ثابت بدون canonical بود
+- پذیرش‌ها: ESLint 0/0، tsc 0، بیلد موفق؛ رگرسیون ۲۷/۲۷ روی 3005 و سپس 3000؛ ItemList زنده (۱۸ آیتم، رتبه ۱: Raphinha) + canonical در HTML هر دو پورت تأیید شد
+- دیپلوی: سرور قدیمی 3005/3000 kill و استندالون نو بالا آمد؛ زنجیره next-dev بوت‌استرپ موجود نبود
+- کامیت d1d9b5b «Update:» پوش شد — ba62d0f..d1d9b5b روی main (با ls-remote تأیید)
+
+Stage Summary:
+- پوشش ItemList کامل شد: آقای گلان سراسری (این چرخه) + لیگ‌ها/Breadcrumb (چرخه ۳۰)
+- پیشنهاد اپدیت‌های بعدی: بهبود empty-state صفحات (فارسی دوستانه + دکمه اقدام)، دقت داده h2h صفحه بازی، بررسی پوشش کامل مسیرها در sitemap.xml
+- چرخه ۳۲ = بررسی باگ (گشت‌زنی صفحات + گزارش)، ۳۳ = فیکس باگ (اصلاح یافته‌های ۳۲)
