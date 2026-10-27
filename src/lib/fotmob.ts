@@ -566,9 +566,125 @@ export async function findTeamInStandings(teamId: number, hintLeagueId?: number)
   return null;
 }
 
+// ---------------- Team season stats (from league season fixtures) ----------------
+export interface TeamSeasonOpponent { id: number; name: string; fa: string; short: string; logo: string }
+export interface TeamFormMatch {
+  id: string;
+  utcTime: string;
+  round?: string;
+  res: "W" | "D" | "L";
+  gf: number;          // goals scored by the team
+  ga: number;          // goals conceded
+  venue: "home" | "away";
+  opponent: TeamSeasonOpponent;
+}
+export interface TeamSeasonSplit { wins: number; draws: number; losses: number; gf: number; ga: number }
+export interface TeamSeasonStats {
+  leagueKey: string;
+  leagueFa: string;
+  season: string;
+  played: number;
+  wins: number; draws: number; losses: number;
+  goalsFor: number; goalsAgainst: number;
+  avgFor: number; avgAgainst: number;
+  home: TeamSeasonSplit;
+  away: TeamSeasonSplit;
+  cleanSheets: number;
+  failedToScore: number;
+  form: TeamFormMatch[];                       // last 5 finished, newest first
+  biggestWin: (TeamFormMatch & { diff: number }) | null;
+  biggestLoss: (TeamFormMatch & { diff: number }) | null;
+  fixtures: NormFixture[];                     // all finished team fixtures, newest first (cap 12)
+}
+
+/**
+ * Build one team's season stats from the league's full-season fixtures.
+ * Reuses the 60-min cached league payload — no extra FotMob load.
+ * Works even when standings are missing (e.g. Persian Gulf Pro League).
+ */
+export async function getTeamSeasonFromLeague(leagueKey: string, teamId: number): Promise<TeamSeasonStats | null> {
+  const { lg, raw } = await getLeagueRaw(leagueKey);
+  const all = ((raw.fixtures?.allMatches || []) as FotMobFixture[])
+    .filter((f) => f?.id && f?.home && f?.away)
+    .map(normalizeFixture);
+  const mine = all.filter((f) => (f.home.id === teamId || f.away.id === teamId) && !f.cancelled);
+  if (mine.length === 0) return null;
+
+  const done = mine
+    .filter((f) => f.finished && f.home.score !== null && f.away.score !== null)
+    .sort((a, b) => b.utcTime.localeCompare(a.utcTime));
+  const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
+
+  const home: TeamSeasonSplit = { wins: 0, draws: 0, losses: 0, gf: 0, ga: 0 };
+  const away: TeamSeasonSplit = { wins: 0, draws: 0, losses: 0, gf: 0, ga: 0 };
+  let goalsFor = 0;
+  let goalsAgainst = 0;
+  let cleanSheets = 0;
+  let failedToScore = 0;
+  const form: TeamFormMatch[] = [];
+  let biggestWin: TeamSeasonStats["biggestWin"] = null;
+  let biggestLoss: TeamSeasonStats["biggestLoss"] = null;
+
+  for (const f of done) {
+    const isHome = f.home.id === teamId;
+    const my = (isHome ? f.home.score : f.away.score) as number;
+    const op = (isHome ? f.away.score : f.home.score) as number;
+    const res: "W" | "D" | "L" = my > op ? "W" : my < op ? "L" : "D";
+    const opponent = isHome ? f.away : f.home;
+    const entry: TeamFormMatch = {
+      id: f.id,
+      utcTime: f.utcTime,
+      round: f.round,
+      res,
+      gf: my,
+      ga: op,
+      venue: isHome ? "home" : "away",
+      opponent: { id: opponent.id, name: opponent.name, fa: opponent.fa, short: opponent.short, logo: opponent.logo },
+    };
+    const bucket = isHome ? home : away;
+    bucket.gf += my;
+    bucket.ga += op;
+    if (res === "W") bucket.wins += 1;
+    else if (res === "D") bucket.draws += 1;
+    else bucket.losses += 1;
+    goalsFor += my;
+    goalsAgainst += op;
+    if (op === 0) cleanSheets += 1;
+    if (my === 0) failedToScore += 1;
+    if (form.length < 5) form.push(entry);
+    const diff = Math.abs(my - op);
+    if (res === "W" && (!biggestWin || diff > biggestWin.diff)) biggestWin = { ...entry, diff };
+    if (res === "L" && (!biggestLoss || diff > biggestLoss.diff)) biggestLoss = { ...entry, diff };
+  }
+
+  const played = done.length;
+  return {
+    leagueKey,
+    leagueFa: lg.faName,
+    season,
+    played,
+    wins: home.wins + away.wins,
+    draws: home.draws + away.draws,
+    losses: home.losses + away.losses,
+    goalsFor,
+    goalsAgainst,
+    avgFor: played ? goalsFor / played : 0,
+    avgAgainst: played ? goalsAgainst / played : 0,
+    home,
+    away,
+    cleanSheets,
+    failedToScore,
+    form,
+    biggestWin,
+    biggestLoss,
+    fixtures: done.slice(0, 12),
+  };
+}
+
 // ---------------- Global top scorers (merged across all leagues) ----------------
 export interface GlobalScorer {
-  rank: number;
+  rank: number;        // global dense rank across all leagues
+  leagueRank: number;  // rank within the scorer's own league (from FotMob)
   name: string;
   team: string;
   teamId: number;
@@ -596,6 +712,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
       for (const s of st.scorers) {
         merged.push({
           name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
+          leagueRank: s.rank || 0,
           leagueKey: lg.key, leagueFa: lg.faName,
         });
       }

@@ -2,6 +2,9 @@
 
 // ------------------------------------------------------------------
 // Remontada — global top scorers page (merged race across 7 leagues)
+// Cycle 10: league filter persists in localStorage; each scorer shows
+// their global rank, and inside a league filter the league-local rank
+// plus a «جهانی #» badge.
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -11,24 +14,25 @@ import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const ALL_KEY = "all";
+const FILTER_STORAGE_KEY = "remontada:topscorers-filter";
 
-function ScorerRow({ s, maxGoals, medal }: { s: GlobalScorer; maxGoals: number; medal: boolean }) {
+function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; maxGoals: number; mainRank: number; showGlobal: boolean }) {
   return (
     <li className="px-3 sm:px-4 py-3 hover:bg-accent/30 transition-colors">
       <div className="flex items-center gap-3">
         <span
           className={cn(
             "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 tabular-persian",
-            medal
+            mainRank <= 3
               ? "bg-chart-3/20 text-chart-3 border border-chart-3/30"
               : "bg-muted text-muted-foreground"
           )}
         >
-          {faDigits(s.rank)}
+          {faDigits(mainRank)}
         </span>
         <div className="min-w-0 flex-1">
           <p className="font-bold text-[13px] truncate">{s.name}</p>
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5">
+          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
             <span className="truncate">{s.team}</span>
             <span aria-hidden>·</span>
             <Link
@@ -37,6 +41,14 @@ function ScorerRow({ s, maxGoals, medal }: { s: GlobalScorer; maxGoals: number; 
             >
               {s.leagueFa}
             </Link>
+            {showGlobal && (
+              <span
+                title={`رتبه جهانی در میان گلزنان همه لیگ‌ها`}
+                className="shrink-0 rounded-md bg-chart-3/10 border border-chart-3/25 text-chart-3 px-1.5 py-px font-bold tabular-persian"
+              >
+                جهانی {faDigits(s.rank)}
+              </span>
+            )}
           </div>
         </div>
         <span className="font-black text-primary tabular-persian text-lg shrink-0">
@@ -73,6 +85,28 @@ export function TopScorersView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>(ALL_KEY);
+  const [filterReady, setFilterReady] = useState(false);
+
+  // restore the persisted league filter once on mount
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem(FILTER_STORAGE_KEY);
+      if (v && (v === ALL_KEY || LEAGUES.some((l) => l.key === v))) setFilter(v);
+    } catch {
+      // storage unavailable — default filter
+    }
+    setFilterReady(true);
+  }, []);
+
+  // persist on every change (after hydration so we don't clobber with the default)
+  useEffect(() => {
+    if (!filterReady) return;
+    try {
+      window.localStorage.setItem(FILTER_STORAGE_KEY, filter);
+    } catch {
+      // quota / private mode — non-critical
+    }
+  }, [filter, filterReady]);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +138,17 @@ export function TopScorersView() {
   }, [data, filter]);
 
   const maxGoals = useMemo(() => visible.reduce((m, s) => Math.max(m, s.goals), 0), [visible]);
+  const showGlobal = filter === ALL_KEY;
+
+  const withMainRank = useMemo(
+    () => visible.map((s, i) => ({ s, mainRank: showGlobal ? s.rank : s.leagueRank || i + 1 })),
+    [visible, showGlobal]
+  );
+
+  const countOf = (key: string) =>
+    key === ALL_KEY
+      ? data?.scorers.length
+      : data?.perLeague.find((p) => p.leagueKey === key)?.scorers.length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -121,7 +166,7 @@ export function TopScorersView() {
         </svg>
       </div>
 
-      {/* filter chips */}
+      {/* filter chips (persisted in localStorage) */}
       <div className="flex gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="فیلتر لیگ">
         <button
           onClick={() => setFilter(ALL_KEY)}
@@ -133,21 +178,26 @@ export function TopScorersView() {
           )}
         >
           همه لیگ‌ها
+          {data?.scorers.length ? <span className="ms-1.5 text-[9px] opacity-60 tabular-persian">{faDigits(data.scorers.length)}</span> : null}
         </button>
-        {(data ? leaguesWithScorers : LEAGUES).map((l) => (
-          <button
-            key={l.key}
-            onClick={() => setFilter(l.key)}
-            className={cn(
-              "shrink-0 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
-              filter === l.key
-                ? "bg-primary/15 border-primary/40 text-primary"
-                : "bg-card/50 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
-            )}
-          >
-            {l.faName}
-          </button>
-        ))}
+        {(data ? leaguesWithScorers : LEAGUES).map((l) => {
+          const n = countOf(l.key);
+          return (
+            <button
+              key={l.key}
+              onClick={() => setFilter(l.key)}
+              className={cn(
+                "shrink-0 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
+                filter === l.key
+                  ? "bg-primary/15 border-primary/40 text-primary"
+                  : "bg-card/50 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+              )}
+            >
+              {l.faName}
+              {n != null && n > 0 ? <span className="ms-1.5 text-[9px] opacity-60 tabular-persian">{faDigits(n)}</span> : null}
+            </button>
+          );
+        })}
       </div>
 
       {error && (
@@ -158,24 +208,24 @@ export function TopScorersView() {
 
       {loading ? (
         <Skeleton />
-      ) : visible.length > 0 ? (
+      ) : withMainRank.length > 0 ? (
         <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
           {/* mobile / tablet: single ranked list */}
           <ol className="divide-y divide-border/25 lg:hidden">
-            {visible.map((s) => (
-              <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+            {withMainRank.map(({ s, mainRank }) => (
+              <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
             ))}
           </ol>
           {/* desktop: two ranked columns (right column = first half, RTL-aware) */}
           <div className="hidden lg:grid lg:grid-cols-2">
             <ol className="divide-y divide-border/25">
-              {visible.slice(0, Math.ceil(visible.length / 2)).map((s) => (
-                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+              {withMainRank.slice(0, Math.ceil(withMainRank.length / 2)).map(({ s, mainRank }) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
               ))}
             </ol>
             <ol className="divide-y divide-border/25 border-s border-border/25">
-              {visible.slice(Math.ceil(visible.length / 2)).map((s) => (
-                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} medal={s.rank <= 3} />
+              {withMainRank.slice(Math.ceil(withMainRank.length / 2)).map(({ s, mainRank }) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
               ))}
             </ol>
           </div>
@@ -188,7 +238,7 @@ export function TopScorersView() {
 
       {data && !loading && (
         <p className="text-[10px] text-muted-foreground px-1">
-          رتبه‌بندی بر اساس تعداد گل ثبت‌شده در فصل جاری هر لیگ است. برای دیدن گلزنان بیشتر، صفحه‌ی همان لیگ را باز کنید.
+          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. فیلتر انتخابی شما برای بازدیدهای بعدی ذخیره می‌ماند.
         </p>
       )}
     </div>

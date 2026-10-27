@@ -1,11 +1,12 @@
 "use client";
 
 // ------------------------------------------------------------------
-// Remontada — team page: profile + standings row + recent + upcoming
+// Remontada — team page: profile + season stats + standings row +
+// recent (with venue & round) + upcoming. Cycle 10 enriched.
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { cn } from "@/lib/utils";
@@ -14,11 +15,14 @@ interface TeamData {
   ok: boolean;
   team: { id: number; name: string; fa: string; logo: string };
   standings: TeamRowInfo | null;
+  season?: TeamSeasonStats | null;
   live: NormMatch[];
-  recent: NormMatch[];
+  recent: (NormMatch & { round?: string })[];
   upcoming: NormMatch[];
   error?: string;
 }
+
+type Row = NormMatch & { round?: string };
 
 function resultOf(m: NormMatch, teamId: number): "W" | "D" | "L" {
   const isHome = m.home.id === teamId;
@@ -36,23 +40,34 @@ function formChip(c: "W" | "D" | "L") {
   return "bg-destructive/15 text-destructive border-destructive/30";
 }
 
-function TeamMatchRow({ m, teamId, label }: { m: NormMatch; teamId: number; label: "recent" | "upcoming" }) {
+/** "Regular season - 8" / "8" / "هفته 8" → «هفته ۸» */
+function faRound(r?: string): string | undefined {
+  if (!r) return undefined;
+  const m = /(\d+)\s*$/.exec(r);
+  if (m) return `هفته ${faDigits(m[1])}`;
+  return faDigits(r);
+}
+
+function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "recent" | "upcoming" }) {
   const isHome = m.home.id === teamId;
   const opponent = isHome ? m.away : m.home;
   const res = m.started && !m.cancelled ? resultOf(m, teamId) : null;
   const j = jalaliShort(m.utcTime);
 
   const inner = (
-    <div className="grid grid-cols-[44px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
+    <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
       {/* date/time */}
-      <div className="flex flex-col items-center">
+      <div className="flex flex-col items-center leading-tight">
         {m.live ? (
           <span className="text-[10px] font-black text-red-400 tabular-persian flex items-center gap-1">
             <span className="live-dot w-1 h-1 rounded-full bg-red-500 inline-block" />
             زنده
           </span>
         ) : m.finished ? (
-          <span className="text-[10px] font-bold text-muted-foreground">پایان</span>
+          <>
+            <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
+            {m.round && <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap">{faRound(m.round)}</span>}
+          </>
         ) : (
           <>
             <span className="text-[10px] font-bold text-muted-foreground">{j.weekday.slice(0, 6)}</span>
@@ -60,15 +75,17 @@ function TeamMatchRow({ m, teamId, label }: { m: NormMatch; teamId: number; labe
           </>
         )}
       </div>
-      {/* teams */}
+      {/* venue + opponent */}
       <div className="flex items-center justify-end gap-2 min-w-0 text-[13px]">
-        <span className={cn("truncate", isHome ? "font-black" : "font-semibold text-foreground/75")}>
-          {isHome ? m.home.fa || m.home.name : m.away.fa || m.away.name}
+        <span
+          className={cn(
+            "shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black",
+            isHome ? "bg-primary/10 text-primary border-primary/20" : "bg-sky-500/10 text-sky-500 border-sky-500/20"
+          )}
+        >
+          {isHome ? "خانه" : "بیرون"}
         </span>
-        <span className="text-[10px] text-muted-foreground/60 font-bold shrink-0">در برابر</span>
-        <span className={cn("truncate", !isHome ? "font-black" : "font-semibold text-foreground/75")}>
-          {opponent.fa || opponent.name}
-        </span>
+        <span className="truncate font-black">{opponent.fa || opponent.name}</span>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={opponent.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
       </div>
@@ -84,7 +101,7 @@ function TeamMatchRow({ m, teamId, label }: { m: NormMatch; teamId: number; labe
               </span>
             )}
             {res && (
-              <span className={cn("w-5.5 h-5.5 w-[22px] h-[22px] rounded-md border text-[10px] font-black flex items-center justify-center", formChip(res))}>
+              <span className={cn("w-[22px] h-[22px] rounded-md border text-[10px] font-black flex items-center justify-center", formChip(res))}>
                 {res === "W" ? "ب" : res === "D" ? "م" : "پ"}
               </span>
             )}
@@ -101,13 +118,108 @@ function TeamMatchRow({ m, teamId, label }: { m: NormMatch; teamId: number; labe
   );
 }
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
+function Section({ title, children, extra }: { title: string; children: React.ReactNode; extra?: React.ReactNode }) {
   return (
     <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25">
+      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
         <h2 className="text-[12.5px] font-black">{title}</h2>
+        {extra}
       </header>
       <div className="divide-y divide-border/25">{children}</div>
+    </section>
+  );
+}
+
+// ---------------- season stats panel ----------------
+
+function SplitBar({ label, d }: { label: string; d: { wins: number; draws: number; losses: number; gf: number; ga: number } }) {
+  const total = d.wins + d.draws + d.losses;
+  const seg = [
+    { n: d.wins, cls: "bg-primary" },
+    { n: d.draws, cls: "bg-muted-foreground/40" },
+    { n: d.losses, cls: "bg-destructive/70" },
+  ];
+  return (
+    <div>
+      <div className="flex items-center justify-between gap-2 text-[10.5px] font-bold mb-1.5">
+        <span>{label}</span>
+        <span className="text-muted-foreground tabular-persian">
+          {faDigits(d.wins)} ب · {faDigits(d.draws)} م · {faDigits(d.losses)} پ
+          <span className="mx-1 text-border">|</span>
+          گل {faDigits(d.gf)}:{faDigits(d.ga)}
+        </span>
+      </div>
+      <div className="flex h-1.5 rounded-full overflow-hidden bg-muted">
+        {total > 0 && seg.map((x, i) => <div key={i} className={x.cls} style={{ width: `${(x.n / total) * 100}%` }} />)}
+      </div>
+    </div>
+  );
+}
+
+function BigMatchCard({ title, m, tone }: { title: string; m: (TeamFormMatch & { diff: number }) | null; tone: "win" | "loss" }) {
+  if (!m) return null;
+  return (
+    <Link
+      href={`/match/${m.id}`}
+      className={cn(
+        "flex-1 min-w-0 rounded-xl border px-3 py-2.5 transition-colors hover:bg-accent/40",
+        tone === "win" ? "border-primary/25 bg-primary/5" : "border-destructive/25 bg-destructive/5"
+      )}
+      prefetch={false}
+    >
+      <p className={cn("text-[9.5px] font-black mb-1", tone === "win" ? "text-primary" : "text-destructive")}>{title}</p>
+      <div className="flex items-center gap-2 min-w-0">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={m.opponent.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        <span className="text-[11px] font-black truncate">{m.opponent.fa || m.opponent.name}</span>
+        <span className="text-[11px] font-black tabular-persian shrink-0 ms-auto">{faDigits(m.gf)} : {faDigits(m.ga)}</span>
+      </div>
+      <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">
+        {m.round ? faRound(m.round) : ""}{m.round ? " · " : ""}{jalaliShort(m.utcTime).day} {jalaliShort(m.utcTime).month}
+      </p>
+    </Link>
+  );
+}
+
+function SeasonPanel({ s }: { s: TeamSeasonStats }) {
+  const kpis = [
+    { l: "گل زده", v: faDigits(s.goalsFor), sub: `میانگین ${faDigits(s.avgFor.toFixed(1))} در بازی` },
+    { l: "گل خورده", v: faDigits(s.goalsAgainst), sub: `میانگین ${faDigits(s.avgAgainst.toFixed(1))} در بازی` },
+    { l: "کلین‌شیت", v: faDigits(s.cleanSheets), sub: s.played ? `${faDigits(Math.round((s.cleanSheets / s.played) * 100))}٪ بازی‌ها` : "—" },
+    { l: "بدون گل", v: faDigits(s.failedToScore), sub: s.played ? `${faDigits(Math.round((s.failedToScore / s.played) * 100))}٪ بازی‌ها` : "—" },
+  ];
+  return (
+    <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black">آمار فصل</h2>
+        <Link href={`/league/${s.leagueKey}`} className="text-[10px] font-bold text-muted-foreground hover:text-primary transition-colors">
+          {s.leagueFa}{s.season ? ` · فصل ${faDigits(s.season)}` : ""}
+        </Link>
+      </header>
+      <div className="p-4 flex flex-col gap-4">
+        {/* KPI grid */}
+        <div className="grid grid-cols-4 gap-2">
+          {kpis.map((k) => (
+            <div key={k.l} className="rounded-xl border border-border/50 bg-muted/25 px-2 py-2.5 text-center">
+              <p className="text-[9px] text-muted-foreground font-bold">{k.l}</p>
+              <p className="text-base font-black tabular-persian leading-tight mt-0.5">{k.v}</p>
+              <p className="text-[8.5px] text-muted-foreground/80 tabular-persian mt-0.5">{k.sub}</p>
+            </div>
+          ))}
+        </div>
+        {/* home / away splits */}
+        <div className="grid sm:grid-cols-2 gap-x-5 gap-y-3">
+          <SplitBar label="در خانه" d={s.home} />
+          <SplitBar label="بیرون از خانه" d={s.away} />
+        </div>
+        {/* biggest win / loss */}
+        {(s.biggestWin || s.biggestLoss) && (
+          <div className="flex flex-col sm:flex-row gap-2">
+            <BigMatchCard title="پرامتیازترین برد فصل" m={s.biggestWin} tone="win" />
+            <BigMatchCard title="سنگین‌ترین باخت فصل" m={s.biggestLoss} tone="loss" />
+          </div>
+        )}
+      </div>
     </section>
   );
 }
@@ -165,7 +277,16 @@ export function TeamView({ teamId }: { teamId: number }) {
 
   if (!data) return null;
   const st = data.standings;
-  const recentForm = data.recent.slice(0, 5).map((m) => resultOf(m, teamId));
+  const season = data.season || null;
+
+  // colored form — prefer the season form (has opponent + score tooltips)
+  const formEntries: { res: "W" | "D" | "L"; title: string }[] = season?.form.length
+    ? season.form.map((f) => ({
+        res: f.res,
+        title: `${f.opponent.fa || f.opponent.name} ${faDigits(f.gf)} - ${faDigits(f.ga)}${f.round ? ` · ${faRound(f.round)}` : ""}`,
+      }))
+    : data.recent.slice(0, 5).map((m) => ({ res: resultOf(m, teamId), title: "" }));
+  const formPts = formEntries.reduce((a, f) => a + (f.res === "W" ? 3 : f.res === "D" ? 1 : 0), 0);
 
   return (
     <div className="flex flex-col gap-4">
@@ -190,17 +311,33 @@ export function TeamView({ teamId }: { teamId: number }) {
                 {" · "}
                 رتبه {faDigits(st.rank)} با {faDigits(st.pts)} امتیاز
               </p>
+            ) : season ? (
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                <Link href={`/league/${season.leagueKey}`} className="hover:text-primary transition-colors font-bold">
+                  {season.leagueFa}
+                </Link>
+                {season.season ? ` · فصل ${faDigits(season.season)}` : ""}
+              </p>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-0.5">اطلاعات لیگ یافت نشد</p>
             )}
-            {recentForm.length > 0 && (
-              <div className="flex items-center gap-1.5 mt-2">
+            {formEntries.length > 0 && (
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                 <span className="text-[10px] text-muted-foreground font-bold">فرم اخیر:</span>
-                {recentForm.map((f, i) => (
-                  <span key={i} className={cn("w-[20px] h-[20px] rounded-md border text-[9px] font-black flex items-center justify-center", formChip(f))}>
-                    {f === "W" ? "ب" : f === "D" ? "م" : "پ"}
+                {formEntries.map((f, i) => (
+                  <span
+                    key={i}
+                    title={f.title}
+                    className={cn("w-[22px] h-[22px] rounded-md border text-[9.5px] font-black flex items-center justify-center cursor-default", formChip(f.res))}
+                  >
+                    {f.res === "W" ? "ب" : f.res === "D" ? "م" : "پ"}
                   </span>
                 ))}
+                {formEntries.length >= 3 && (
+                  <span className="text-[9.5px] text-muted-foreground tabular-persian ms-1">
+                    ({faDigits(formPts)} امتیاز از {faDigits(formEntries.length)} بازی)
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -221,6 +358,9 @@ export function TeamView({ teamId }: { teamId: number }) {
           )}
         </div>
       </section>
+
+      {/* season stats */}
+      {season && season.played > 0 && <SeasonPanel s={season} />}
 
       {data.live.length > 0 && (
         <Section title="در جریان">
@@ -247,7 +387,7 @@ export function TeamView({ teamId }: { teamId: number }) {
       </Section>
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
-        نتایج و برنامه از بازی‌های روزانه‌ی FotMob تجمیع شده است (۳ روز گذشته تا ۱۰ روز آینده).
+        نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.
       </p>
     </div>
   );
