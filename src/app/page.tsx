@@ -42,6 +42,26 @@ function Logo() {
 export default function Home() {
   const [tab, setTab] = useState<Tab>("matches");
 
+  // restore the last visited tab (after hydration to avoid mismatch)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("remontada:home-tab");
+      if (saved === "matches" || saved === "standings" || saved === "news") setTab(saved);
+    } catch {
+      // private mode / storage disabled — default tab stays
+    }
+  }, []);
+
+  // switch tab + remember it for the next visit
+  const changeTab = useCallback((t: Tab) => {
+    setTab(t);
+    try {
+      localStorage.setItem("remontada:home-tab", t);
+    } catch {
+      // ignore persistence failures
+    }
+  }, []);
+
   // --- matches state ---
   const [offset, setOffset] = useState(0);
   const [groups, setGroups] = useState<LeagueGroup[]>([]);
@@ -144,7 +164,7 @@ export default function Home() {
               {/* live matches counter — always visible next to the logo */}
               {liveCount > 0 && (
                 <button
-                  onClick={() => setTab("matches")}
+                  onClick={() => changeTab("matches")}
                   title="نمایش بازی‌های زنده"
                   aria-label={`${faDigits(liveCount)} بازی زنده در جریان است`}
                   className="inline-flex items-center gap-1.5 text-[11px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2.5 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors cursor-pointer shrink-0"
@@ -209,7 +229,7 @@ export default function Home() {
             {TABS.map((t) => (
               <button
                 key={t.key}
-                onClick={() => setTab(t.key)}
+                onClick={() => changeTab(t.key)}
                 aria-current={tab === t.key ? "page" : undefined}
                 className={cn(
                   "relative px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors rounded-t-lg",

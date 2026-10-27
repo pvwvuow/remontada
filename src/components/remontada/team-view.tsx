@@ -9,6 +9,7 @@ import Link from "next/link";
 import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
+import { ShareButton } from "@/components/remontada/share-button";
 import { cn } from "@/lib/utils";
 
 interface TeamData {
@@ -380,6 +381,12 @@ export function TeamView({ teamId }: { teamId: number }) {
               <FavoriteStar
                 team={{ id: teamId, fa: data.team.fa || data.team.name, en: data.team.name }}
                 size={20}
+              />
+              <ShareButton
+                title={`${data.team.fa || data.team.name} | رمانتادا`}
+                path={`/team/${teamId}`}
+                size={24}
+                className="!border-transparent !bg-transparent"
               />
             </div>
             {st ? (

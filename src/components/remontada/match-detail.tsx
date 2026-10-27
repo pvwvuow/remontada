@@ -10,6 +10,7 @@ import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/
 import type { TeamSeasonStats } from "@/lib/fotmob";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
+import { ShareButton } from "@/components/remontada/share-button";
 import { cn } from "@/lib/utils";
 
 // ---------- API shape (mirrors /api/match/[id]) ----------
@@ -181,6 +182,11 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
           {m.leagueFa || m.leagueName}
         </Link>
         {m.round && <span className="text-muted-foreground/70 shrink-0">{m.round}</span>}
+        <ShareButton
+          title={`${m.home.fa || m.home.name} ${m.home.score ?? ""} - ${m.away.score ?? ""} ${m.away.fa || m.away.name} | رمانتادا`}
+          path={`/match/${m.id}`}
+          size={26}
+        />
       </div>
       <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-5 px-3 sm:px-8 py-6">
         {/* home */}

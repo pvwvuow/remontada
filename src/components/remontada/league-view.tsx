@@ -3,13 +3,13 @@
 // ------------------------------------------------------------------
 // Remontada — league page: standings | fixtures | recent | scorers
 // ------------------------------------------------------------------
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
-import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
+import { faDigits, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
@@ -304,6 +304,108 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
   );
 }
 
+// ---------- pre-match preview: today's fixtures enriched from cached standings ----------
+
+/** Tehran date key (YYYY-MM-DD) of an ISO timestamp — mirrors format.ts helpers */
+function tehranDateKey(iso: string): string {
+  return new Date(new Date(iso).getTime() + 3.5 * 3600_000).toISOString().slice(0, 10);
+}
+
+function FormDotsMini({ form }: { form?: ("W" | "D" | "L")[] }) {
+  if (!form || form.length === 0) return null;
+  return (
+    <span className="flex items-center gap-1" title="پنج بازی آخر در لیگ" aria-label="فرم پنج بازی اخیر">
+      {form.slice(-5).map((f, i) => (
+        <span
+          key={i}
+          className={cn(
+            "w-[7px] h-[7px] rounded-full",
+            f === "W" ? "bg-primary/80" : f === "D" ? "bg-muted-foreground/40" : "bg-destructive/70"
+          )}
+        />
+      ))}
+    </span>
+  );
+}
+
+function PreviewSide({
+  team,
+  row,
+}: {
+  team: { id: number; name: string; fa: string; logo: string };
+  row?: StandingsRow;
+}) {
+  return (
+    <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
+      <Link href={`/team/${team.id}`} prefetch={false} className="flex items-center gap-2 min-w-0 group">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={team.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        <span className="font-black text-[12.5px] sm:text-[13px] truncate group-hover:text-primary transition-colors">
+          {team.fa || team.name}
+        </span>
+      </Link>
+      {row ? (
+        <>
+          <span className="text-[10px] font-bold text-muted-foreground tabular-persian whitespace-nowrap">
+            رتبه {faDigits(row.idx)} · {faDigits(row.pts)} امتیاز
+          </span>
+          <div className="flex items-center gap-2">
+            <FormDotsMini form={row.form} />
+            <span className="text-[9.5px] text-muted-foreground tabular-persian" title="گل زده : گل خورده در لیگ">
+              گل {faDigits(row.goalsFor)}:{faDigits(row.goalsAgainst)}
+            </span>
+          </div>
+        </>
+      ) : (
+        <span className="text-[10px] text-muted-foreground/70">خارج از جدول</span>
+      )}
+    </div>
+  );
+}
+
+/** today's not-started fixtures with rank / form / goals from the same cached standings */
+function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; standings: StandingsData | null }) {
+  const rowsById = useMemo(
+    () => new Map((standings?.rows || []).map((r) => [r.teamId, r])),
+    [standings]
+  );
+  const today = offsetDateISO(0);
+  const todays = fixtures.filter((f) => !f.cancelled && !f.started && tehranDateKey(f.utcTime) === today);
+  if (todays.length === 0) return null;
+  const shown = todays.slice(0, 4);
+
+  return (
+    <section className="rounded-2xl border border-primary/25 bg-gradient-to-l from-primary/[0.1] via-card/60 to-card/40 overflow-hidden" aria-label="پیش‌نمایش بازی‌های امروز">
+      <header className="px-4 py-2 border-b border-primary/15 bg-primary/[0.08] flex items-center justify-between gap-2">
+        <h2 className="text-[12.5px] font-black text-primary">پیش‌نمایش بازی‌های امروز</h2>
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(todays.length)} بازی</span>
+      </header>
+      <div className="divide-y divide-border/25">
+        {shown.map((f) => (
+          <div key={f.id} className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 sm:gap-4 px-3 sm:px-5 py-3.5">
+            <PreviewSide team={f.home} row={rowsById.get(f.home.id)} />
+            <Link
+              href={`/match/${f.id}`}
+              prefetch={false}
+              className="flex flex-col items-center gap-1 shrink-0 min-w-[62px] rounded-xl border border-border/50 bg-muted/30 px-2.5 py-2 hover:border-primary/40 hover:bg-primary/5 transition-colors"
+              title="صفحه بازی"
+            >
+              <span className="text-[12px] font-black tabular-persian">{tehranTime(f.utcTime)}</span>
+              <span className="text-[8.5px] text-muted-foreground font-bold">امروز</span>
+            </Link>
+            <PreviewSide team={f.away} row={rowsById.get(f.away.id)} />
+          </div>
+        ))}
+      </div>
+      {todays.length > shown.length && (
+        <p className="text-[10px] text-muted-foreground px-4 py-2 border-t border-border/25 tabular-persian">
+          و {faDigits(todays.length - shown.length)} بازی دیگر امروز — در تب «بازی‌های پیش‌رو»
+        </p>
+      )}
+    </section>
+  );
+}
+
 function StandingsTable({ data }: { data: StandingsData }) {
   return (
     <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
@@ -429,6 +531,9 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {lg.ccode3}
         </span>
       </div>
+
+      {/* pre-match preview for today's fixtures (no extra network calls) */}
+      <PreMatchPreview fixtures={fixtures?.upcoming || []} standings={standings} />
 
       {/* tabs */}
       <nav className="flex items-center gap-1 overflow-x-auto border-b border-border/40 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="بخش‌های لیگ">
