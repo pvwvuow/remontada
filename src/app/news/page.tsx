@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { NewsPageClient } from "@/components/remontada/news-page-client";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 
 export const metadata: Metadata = {
   title: "اخبار فوتبال",
@@ -20,6 +21,7 @@ export default function NewsPage() {
         </div>
         <NewsPageClient />
       </main>
+      <BackToTop />
       <SiteFooter />
     </div>
   );

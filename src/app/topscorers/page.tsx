@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { TopScorersView } from "@/components/remontada/topscorers-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getAllTopScorers, type GlobalScorer } from "@/lib/fotmob";
 import { SITE_URL } from "@/lib/site";
@@ -58,6 +59,7 @@ export default async function TopScorersPage() {
         <JsonLd data={itemListLd} />
         <TopScorersView />
       </main>
+      <BackToTop />
       <SiteFooter />
     </div>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { LeagueView } from "@/components/remontada/league-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LEAGUES } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
@@ -57,6 +58,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ key: st
         <JsonLd data={crumbLd} />
         <LeagueView leagueKey={key} />
       </main>
+      <BackToTop />
       <SiteFooter />
     </div>
   );

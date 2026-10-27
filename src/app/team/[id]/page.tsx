@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { TeamView } from "@/components/remontada/team-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getTeamIndex } from "@/lib/fotmob";
 import { SITE_URL } from "@/lib/site";
@@ -79,6 +80,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
           <p className="text-center text-muted-foreground text-sm py-16">شناسه تیم نامعتبر است.</p>
         )}
       </main>
+      <BackToTop />
       <SiteFooter />
     </div>
   );
