@@ -1,0 +1,38 @@
+// ------------------------------------------------------------------
+// Remontada — /api/topscorers/[leagueKey]
+// Full top-scorers list of ONE league (from the league payload stats,
+// enriched with assists / G+A / xG / rating / minutes by player id).
+// Uses the same 60-min cached getStandings payload — no extra FotMob hit.
+// ------------------------------------------------------------------
+import { NextResponse } from "next/server";
+import { getStandings } from "@/lib/fotmob";
+import { LEAGUES } from "@/lib/leagues";
+
+export const dynamic = "force-dynamic";
+
+const VALID_KEYS = LEAGUES.map((l) => l.key);
+
+export async function GET(_req: Request, { params }: { params: Promise<{ leagueKey: string }> }) {
+  const { leagueKey } = await params;
+
+  if (!VALID_KEYS.includes(leagueKey)) {
+    return NextResponse.json({ ok: false, error: "لیگ ناشناخته است." }, { status: 404 });
+  }
+
+  try {
+    const st = await getStandings(leagueKey);
+    return NextResponse.json({
+      ok: true,
+      leagueKey: st.leagueKey,
+      leagueFa: st.leagueFa,
+      season: st.season,
+      scorers: st.scorers,
+      updatedAt: st.updatedAt,
+    });
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "دریافت گلزنان این لیگ ناموفق بود." },
+      { status: 502 }
+    );
+  }
+}

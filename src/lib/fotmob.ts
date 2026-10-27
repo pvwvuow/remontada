@@ -75,6 +75,7 @@ export interface ScorerEntry {
   gPlusA?: number;    // "Goals + Assists"
   xg?: number;        // "Expected goals (xG)"
   rating?: number;    // "FotMob rating"
+  minutes?: number;   // "Minutes played" (enables minutes-per-goal)
 }
 
 export interface AssistEntry {
@@ -370,6 +371,7 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const gpaMap = new Map(statCategory(raw, /goals \+ assists/i).map((p) => [p.id, p.value ?? 0]));
     const xgMap = new Map(statCategory(raw, /^expected goals \(xg\)$/i).map((p) => [p.id, p.value ?? 0]));
     const ratingMap = new Map(statCategory(raw, /fotmob rating/i).map((p) => [p.id, p.value ?? 0]));
+    const minutesMap = new Map(statCategory(raw, /^minutes played$/i).map((p) => [p.id, p.value ?? 0]));
 
     const scorers: StandingsData["scorers"] = [];
     const gs = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
@@ -382,6 +384,7 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
         ...(gpaMap.has(s.id) ? { gPlusA: gpaMap.get(s.id) } : {}),
         ...(xgMap.has(s.id) ? { xg: xgMap.get(s.id) } : {}),
         ...(ratingMap.has(s.id) ? { rating: ratingMap.get(s.id) } : {}),
+        ...(minutesMap.has(s.id) ? { minutes: minutesMap.get(s.id) } : {}),
       });
     };
     if (gs?.participant) pushScorer(gs.participant, 0);
@@ -768,6 +771,7 @@ export interface GlobalScorer {
   gPlusA?: number;
   xg?: number;
   rating?: number;
+  minutes?: number;
   leagueKey: string;
   leagueFa: string;
 }
@@ -808,6 +812,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
           ...(s.gPlusA != null ? { gPlusA: s.gPlusA } : {}),
           ...(s.xg != null ? { xg: s.xg } : {}),
           ...(s.rating != null ? { rating: s.rating } : {}),
+          ...(s.minutes != null ? { minutes: s.minutes } : {}),
           leagueKey: lg.key, leagueFa: lg.faName,
         });
       }

@@ -273,6 +273,23 @@ export function TopScorersView() {
         })}
       </div>
 
+      {/* dedicated per-league scorers page link (visible when a league filter is active) */}
+      {filter !== ALL_KEY && (
+        <Link
+          href={`/topscorers/${filter}`}
+          className="self-start inline-flex items-center gap-1.5 rounded-xl border border-chart-3/30 bg-chart-3/10 px-3.5 py-2 text-xs font-bold text-chart-3 hover:bg-chart-3/15 transition-all"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden>
+            <circle cx="12" cy="8" r="5" />
+            <path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" />
+          </svg>
+          صفحه اختصاصی گلزنان {LEAGUES.find((l) => l.key === filter)?.faName || ""}
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </Link>
+      )}
+
       {error && (
         <div className="rounded-xl border border-destructive/30 bg-destructive/10 text-destructive text-sm px-4 py-3">
           {error}

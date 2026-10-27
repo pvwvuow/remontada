@@ -15,7 +15,7 @@ function QualBar({ color }: { color?: string }) {
   return <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: color }} aria-hidden />;
 }
 
-/** Last-5 league form chips (ب/م/پ) — desktop only. */
+/** Last-5 league form chips (ب/م/پ) — desktop inline, next to team name. */
 function FormChips({ form }: { form?: ("W" | "D" | "L")[] }) {
   if (!form || form.length === 0) return null;
   return (
@@ -30,6 +30,24 @@ function FormChips({ form }: { form?: ("W" | "D" | "L")[] }) {
         >
           {c === "W" ? "ب" : c === "D" ? "م" : "پ"}
         </span>
+      ))}
+    </span>
+  );
+}
+
+/** Compact form dots under the team name — mobile only. */
+function FormDots({ form }: { form?: ("W" | "D" | "L")[] }) {
+  if (!form || form.length === 0) return null;
+  return (
+    <span className="flex md:hidden items-center gap-[2.5px] mt-[3px]" title="۵ بازی آخر در لیگ (از قدیم به جدید)">
+      {form.map((c, i) => (
+        <span
+          key={i}
+          className={cn(
+            "w-[7px] h-[7px] rounded-[2px] leading-none",
+            c === "W" ? "bg-primary/70" : c === "D" ? "bg-muted-foreground/40" : "bg-destructive/70"
+          )}
+        />
       ))}
     </span>
   );
@@ -70,7 +88,10 @@ function StandingsTable({ data }: { data: StandingsData }) {
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                      <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
+                      <span className="min-w-0 flex flex-col">
+                        <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
+                        <FormDots form={r.form} />
+                      </span>
                     </Link>
                     <FavoriteStar
                       team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
@@ -199,7 +220,7 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange }: Stan
             </div>
             <StandingsTable data={data} />
             <p className="text-[10px] text-muted-foreground px-1">
-              نوار رنگی کنار رتبه‌ها نشان‌دهنده‌ی سهمیه‌های اروپایی / سقوط است. روی نام هر تیم کلیک کنید تا صفحه‌ی تیم باز شود.
+              نوار رنگی کنار رتبه‌ها نشان‌دهنده‌ی سهمیه‌های اروپایی / سقوط است. روی نام هر تیم کلیک کنید تا صفحه‌ی تیم باز شود. نقطه‌های رنگی زیر نام تیم (موبایل) و چیپ‌های ب/م/پ (دسکتاپ) نتیجه ۵ بازی آخر هر تیم در لیگ است.
             </p>
           </div>
           <ScorersCard data={data} />
