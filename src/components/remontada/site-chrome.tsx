@@ -13,7 +13,7 @@ import { LiveFavoriteChip } from "./live-favorite-chip";
 export function SiteLogo({ small = false }: { small?: boolean }) {
   return (
     <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-      <div className="relative w-9 h-9 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center overflow-hidden pitch-lines">
+      <div className="brand-glyph relative w-9 h-9 flex items-center justify-center overflow-hidden pitch-lines">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-primary" aria-hidden>
           <circle cx="12" cy="12" r="10" />
           <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
@@ -72,12 +72,12 @@ function NavIcon({ name }: { name: "live" | "trophy" | "goal" | "news" }) {
 export function SiteHeader({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
+    <header className="glass-bar sticky top-0 z-40">
       <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
         <SiteLogo small />
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 min-w-0">
           <SearchBox />
-          <nav className="flex items-center gap-1 text-[12px] font-bold" aria-label="ناوبری اصلی">
+          <nav className="flex items-center gap-1 text-[12px] font-bold min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="ناوبری اصلی">
           {NAV_ITEMS.map((item) => {
             const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
             return (
@@ -86,7 +86,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg transition-colors",
+                  "inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors",
                   active ? "text-primary bg-primary/10 border border-primary/25" : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
                 )}
               >
@@ -112,7 +112,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto border-t border-border/50 bg-background/60">
+    <footer className="glass-bar-footer mt-auto">
       <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>

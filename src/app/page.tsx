@@ -251,7 +251,7 @@ export default function Home() {
       <GoalNotifier />
 
       {/* ---------- footer ---------- */}
-      <footer className="mt-auto border-t border-border/50 bg-background/60">
+      <footer className="glass-bar-footer mt-auto">
         <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col items-center gap-2 text-center">
           <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
             <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
