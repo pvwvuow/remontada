@@ -301,6 +301,7 @@ export interface MatchDetailNormalized {
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
   playerOfTheMatch?: {
+    id?: number;
     name: string;
     rating?: string | null;
     teamId?: number;
@@ -517,6 +518,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   }
   const playerOfTheMatch = pomName
     ? {
+        id: typeof pom?.id === "number" ? pom.id : undefined,
         name: pomName,
         rating: pomRating,
         teamId: typeof pom?.teamId === "number" ? pom.teamId : undefined,

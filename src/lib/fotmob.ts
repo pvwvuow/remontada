@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "./leagues";
 import { cached } from "./cache";
-import { faDigits } from "./format";
+import { faDigits, jalaliShort } from "./format";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -70,6 +70,7 @@ export interface ScorerEntry {
   team: string;
   teamId: number;
   goals: number;
+  playerId?: number;  // FotMob player id → links to /player/[id]
   ccode?: string;
   assists?: number;   // from the league "Assists" category (matched by player id)
   gPlusA?: number;    // "Goals + Assists"
@@ -84,6 +85,7 @@ export interface AssistEntry {
   team: string;
   teamId: number;
   assists: number;
+  playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
 export interface StandingsData {
@@ -401,6 +403,7 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
       scorers.push({
         rank: s.rank ?? i + 1, name: s.name, team: teamFa(s.teamName, ) || s.teamName || "",
         teamId: s.teamId ?? 0, goals: s.value ?? 0, ccode: s.ccode,
+        ...(s.id ? { playerId: s.id } : {}),
         ...(assistsMap.has(s.id) ? { assists: assistsMap.get(s.id) } : {}),
         ...(gpaMap.has(s.id) ? { gPlusA: gpaMap.get(s.id) } : {}),
         ...(xgMap.has(s.id) ? { xg: xgMap.get(s.id) } : {}),
@@ -419,6 +422,7 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
       .map((p, i) => ({
         rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName, ) || p.teamName || "",
         teamId: p.teamId ?? 0, assists: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
       }))
       .sort((a, b) => b.assists - a.assists || a.name.localeCompare(b.name))
       .map((e, i) => ({ ...e, rank: i + 1 }))
@@ -499,6 +503,8 @@ export interface LeagueFixturesData {
   recent: NormFixture[];
   total: number;
   stats?: LeagueStats;
+  /** Current-week progress (numeric rounds only — cup phases hide it). */
+  progress: { current: number; total: number } | null;
 }
 
 // ---------------- league advanced stats (from full-season fixtures) ----------------
@@ -616,6 +622,33 @@ export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixtur
     .filter((f) => f.finished && !f.cancelled)
     .sort((a, b) => b.utcTime.localeCompare(a.utcTime))
     .slice(0, 10);
+
+  // ---- current-week progress (best-effort, numeric rounds only) ----
+  // total = highest numeric round across the whole season payload;
+  // current = round of the first upcoming fixture, fallback: highest finished
+  const roundNumOf = (r?: string): number | null => {
+    const m = /(\d+)\s*$/.exec(String(r || "").trim());
+    return m ? Number(m[1]) : null;
+  };
+  let progress: LeagueFixturesData["progress"] = null;
+  const allRoundNums = mapped.map((f) => roundNumOf(f.round)).filter((n): n is number => typeof n === "number");
+  if (allRoundNums.length > 0) {
+    const total = Math.max(...allRoundNums);
+    const nextRound = [...mapped]
+      .filter((f) => !f.started && !f.cancelled && f.utcTime)
+      .sort((a, b) => a.utcTime.localeCompare(b.utcTime))
+      .map((f) => roundNumOf(f.round))
+      .find((n): n is number => typeof n === "number") ?? null;
+    const finishedNums = mapped
+      .filter((f) => f.finished)
+      .map((f) => roundNumOf(f.round))
+      .filter((n): n is number => typeof n === "number");
+    const current = nextRound ?? (finishedNums.length > 0 ? Math.max(...finishedNums) : null);
+    if (current !== null && total > 0 && current >= 1 && current <= total) {
+      progress = { current, total };
+    }
+  }
+
   return {
     leagueKey,
     leagueFa: lg.faName,
@@ -624,6 +657,7 @@ export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixtur
     recent,
     total: mapped.length,
     stats: computeLeagueStats(mapped),
+    progress,
   };
 }
 
@@ -848,6 +882,266 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
   return (payload as typeof LD_NOT_FOUND).__remontadaLdNotFound ? null : (payload as MatchLdData);
 }
 
+// ---------------- FotMob: player profile (/player/[id]) ----------------
+// Thrown when FotMob has no player for an id. NOTE (cycle-17/19 finding):
+// FotMob answers HTTP 200 for BOTH nonexistent ids and empty players —
+// body is either `null` or {error:true, message:"Data not found"} — a
+// real network failure must NOT be classified as "not found".
+export class PlayerNotFoundError extends Error {}
+
+const PLAYER_NOT_FOUND = { __remontadaPlayerNotFound: true } as const;
+
+interface FMPlayerInfoEntry {
+  title?: string;
+  value?: { numberValue?: number; fallback?: unknown; key?: string | null; dateValue?: string } | null;
+  icon?: { id?: string } | null;
+}
+interface FMPlayerDetails {
+  id?: number;
+  name?: string;
+  isCoach?: boolean;
+  status?: string;
+  birthDate?: { utcTime?: string } | null;
+  primaryTeam?: { teamId?: number; teamName?: string; onLoan?: boolean } | null;
+  positionDescription?: { primaryPosition?: { label?: string } } | null;
+  playerInformation?: Record<string, FMPlayerInfoEntry> | FMPlayerInfoEntry[];
+  mainLeague?: { leagueId?: number; leagueName?: string; season?: string; stats?: { title?: string; localizedTitleId?: string; value?: number }[] } | null;
+  nextMatch?: { matchId?: number; homeId?: number; awayId?: number; homeName?: string; awayName?: string; matchDate?: string; leagueId?: number; leagueName?: string } | null;
+  recentMatches?: {
+    teamId?: number; teamName?: string;
+    opponentTeamId?: number; opponentTeamName?: string;
+    isHomeTeam?: boolean;
+    id?: number;
+    matchDate?: { utcTime?: string } | null;
+    leagueId?: number; leagueName?: string;
+    homeScore?: number; awayScore?: number;
+    minutesPlayed?: number; goals?: number; assists?: number;
+    yellowCards?: number; redCards?: number;
+    ratingProps?: { rating?: string } | null;
+    playerOfTheMatch?: boolean; onBench?: boolean; playedInMatch?: boolean;
+  }[] | null;
+}
+
+export interface PlayerSeasonStat { title: string; display: string; key: string }
+export interface PlayerRecentMatch {
+  id: string;
+  utcTime: string;
+  leagueFa: string;
+  isHome: boolean;
+  opponent: string;
+  opponentId: number;
+  opponentLogo: string;
+  homeScore: number | null;
+  awayScore: number | null;
+  result: "W" | "D" | "L" | null;   // from the player's team perspective
+  played: boolean;
+  onBench: boolean;
+  minutes: number | null;
+  goals: number;
+  assists: number;
+  yellow: number;
+  red: number;
+  rating: string | null;
+  potm: boolean;
+}
+export interface PlayerData {
+  id: string;
+  name: string;
+  positionFa: string | null;
+  positionEn: string | null;
+  status: string;
+  team: { id: number; name: string; fa: string; logo: string } | null;
+  info: {
+    age?: number; height?: string; shirt?: number; foot?: string;
+    country?: string; countryCcode?: string; marketValue?: string; contractEnd?: string;
+  };
+  season: { leagueFa: string; season: string; stats: PlayerSeasonStat[] } | null;
+  recent: PlayerRecentMatch[];
+  next: { id: string; utcTime: string; opponent: string; opponentId: number; opponentLogo: string; isHome: boolean; leagueFa: string } | null;
+  fetchedAt: string;
+}
+
+function faPosition(label?: string): string | null {
+  const l = (label || "").toLowerCase();
+  if (!l) return null;
+  if (l.includes("goalkeeper")) return "دروازه‌بان";
+  if (l.includes("defensive midfield")) return "هافبک دفاعی";
+  if (l.includes("attacking midfield")) return "هافبک هجومی";
+  if (l.includes("midfield")) return "هافبک";
+  if (l.includes("centre back") || l.includes("center back") || l.includes("centre-back") || l.includes("center-back")) return "مدافع میانی";
+  if (l.includes("back")) return "دفاع کناری";
+  if (l.includes("defend")) return "مدافع";
+  if (l.includes("left winger")) return "وینگر چپ";
+  if (l.includes("right winger")) return "وینگر راست";
+  if (l.includes("winger")) return "وینگر";
+  if (l.includes("striker") || l.includes("forward")) return "مهاجم";
+  return null;
+}
+
+const PLAYER_STAT_FA: Record<string, string> = {
+  goals: "گل",
+  assists: "پاس گل",
+  started: "ترکیب اصلی",
+  matches_uppercase: "بازی",
+  matches: "بازی",
+  minutes_played: "دقیقه",
+  rating: "امتیاز فوت‌ماب",
+  yellow_cards: "کارت زرد",
+  red_cards: "کارت قرمز",
+};
+
+const FOOT_FA: Record<string, string> = { left: "چپ", right: "راست", both: "دو پا" };
+
+function leagueFaById(id?: number, name?: string): string {
+  const lg = LEAGUES.find((l) => l.fotmobId === id);
+  if (lg) return lg.faName;
+  return competitionFa(name || "") || name || "";
+}
+
+function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
+  const pt = raw.primaryTeam && raw.primaryTeam.teamId ? raw.primaryTeam : null;
+  const info: PlayerData["info"] = {};
+  const entries = Array.isArray(raw.playerInformation)
+    ? raw.playerInformation
+    : Object.values(raw.playerInformation || {});
+  for (const e of entries) {
+    const t = (e?.title || "").toLowerCase();
+    const v = e?.value;
+    const fb = v?.fallback;
+    if (t === "age" && typeof v?.numberValue === "number") info.age = v.numberValue;
+    else if (t === "height") info.height = typeof fb === "string" ? fb : undefined;
+    else if (t === "shirt" && typeof v?.numberValue === "number") info.shirt = v.numberValue;
+    else if (t === "preferred foot") {
+      const key = (v?.key || "").toLowerCase();
+      info.foot = FOOT_FA[key] || (typeof fb === "string" ? fb : undefined);
+    } else if (t === "country") {
+      info.country = typeof fb === "string" ? fb : undefined;
+      info.countryCcode = e.icon?.id || undefined;
+    } else if (t === "market value") info.marketValue = typeof fb === "string" ? fb : undefined;
+    else if (t === "contract end") {
+      const iso = typeof v?.dateValue === "string" ? v.dateValue : (fb as { utcTime?: string } | undefined)?.utcTime;
+      if (iso && !Number.isNaN(new Date(iso).getTime())) info.contractEnd = jalaliContract(iso);
+    }
+  }
+
+  // season stats from mainLeague (title → Persian via localizedTitleId)
+  let season: PlayerData["season"] = null;
+  const ml = raw.mainLeague;
+  if (ml?.stats?.length) {
+    const stats: PlayerSeasonStat[] = [];
+    for (const s of ml.stats) {
+      if (typeof s.value !== "number") continue;
+      const key = (s.localizedTitleId || s.title || "").toLowerCase();
+      const titleFa = PLAYER_STAT_FA[key] || s.title || key;
+      const display = key === "rating" ? s.value.toFixed(1) : String(s.value);
+      stats.push({ title: titleFa, display, key });
+    }
+    if (stats.length > 0) {
+      season = {
+        leagueFa: leagueFaById(ml.leagueId, ml.leagueName),
+        season: ml.season || "",
+        stats,
+      };
+    }
+  }
+
+  // recent appearances (already newest-first) — keep the last 10
+  const recent: PlayerRecentMatch[] = [];
+  for (const m of (raw.recentMatches || []).slice(0, 10)) {
+    if (!m?.id) continue;
+    const isHome = !!m.isHomeTeam;
+    const hs = typeof m.homeScore === "number" ? m.homeScore : null;
+    const as = typeof m.awayScore === "number" ? m.awayScore : null;
+    let result: PlayerRecentMatch["result"] = null;
+    if (hs !== null && as !== null) {
+      const my = isHome ? hs : as;
+      const op = isHome ? as : hs;
+      result = my > op ? "W" : my < op ? "L" : "D";
+    }
+    recent.push({
+      id: String(m.id),
+      utcTime: m.matchDate?.utcTime || "",
+      leagueFa: leagueFaById(m.leagueId, m.leagueName),
+      isHome,
+      opponent: teamFa(m.opponentTeamName) || m.opponentTeamName || "",
+      opponentId: m.opponentTeamId ?? 0,
+      opponentLogo: fotmobTeamLogo(m.opponentTeamId ?? 0),
+      homeScore: hs,
+      awayScore: as,
+      result,
+      played: !!m.playedInMatch,
+      onBench: !!m.onBench,
+      minutes: typeof m.minutesPlayed === "number" ? m.minutesPlayed : null,
+      goals: m.goals ?? 0,
+      assists: m.assists ?? 0,
+      yellow: m.yellowCards ?? 0,
+      red: m.redCards ?? 0,
+      rating: m.ratingProps?.rating || null,
+      potm: !!m.playerOfTheMatch,
+    });
+  }
+
+  // next match (opponent relative to the player's current team)
+  let next: PlayerData["next"] = null;
+  const nm = raw.nextMatch;
+  if (nm?.matchId && nm.matchDate && pt?.teamId) {
+    const isHome = nm.homeId === pt.teamId;
+    const oppName = isHome ? nm.awayName : nm.homeName;
+    const oppId = isHome ? nm.awayId : nm.homeId;
+    next = {
+      id: String(nm.matchId),
+      utcTime: nm.matchDate,
+      opponent: teamFa(oppName) || oppName || "",
+      opponentId: oppId ?? 0,
+      opponentLogo: fotmobTeamLogo(oppId ?? 0),
+      isHome,
+      leagueFa: leagueFaById(nm.leagueId, nm.leagueName),
+    };
+  }
+
+  const posEn = raw.positionDescription?.primaryPosition?.label || null;
+  return {
+    id,
+    name: raw.name || "",
+    positionFa: faPosition(posEn),
+    positionEn: posEn,
+    status: raw.status || "",
+    team: pt
+      ? { id: pt.teamId as number, name: pt.teamName || "", fa: teamFa(pt.teamName) || pt.teamName || "", logo: fotmobTeamLogo(pt.teamId) }
+      : null,
+    info,
+    season,
+    recent,
+    next,
+    fetchedAt: new Date().toISOString(),
+  };
+}
+
+function jalaliContract(iso: string): string {
+  const j = jalaliShort(iso);
+  return j.day && j.month ? `${j.day} ${j.month}` : "";
+}
+
+/**
+ * Full player payload for the SSR /player/[id] page + /api/player/[id].
+ * • nonexistent player (FotMob 200 + null / {error:true}) → cached sentinel → PlayerNotFoundError
+ * • network/timeout/HTTP failure → the error propagates (page shows its
+ *   in-page error state; nothing is cached so the next request retries)
+ */
+export async function getPlayerData(id: string): Promise<PlayerData> {
+  if (!/^\d{3,12}$/.test(id)) throw new PlayerNotFoundError(`bad player id: ${id}`);
+  const payload = await cached(`player:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+    const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
+    if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
+    if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
+    return normalizePlayer(raw, id);
+  });
+  if (payload === PLAYER_NOT_FOUND || !payload || typeof payload !== "object") {
+    throw new PlayerNotFoundError(`player ${id} not found`);
+  }
+  return payload as PlayerData;
+}
+
 // ---------------- Global top scorers (merged across all leagues) ----------------
 export interface GlobalScorer {
   rank: number;        // global dense rank across all leagues
@@ -856,6 +1150,7 @@ export interface GlobalScorer {
   team: string;
   teamId: number;
   goals: number;
+  playerId?: number;   // FotMob player id → links to /player/[id]
   assists?: number;
   gPlusA?: number;
   xg?: number;
@@ -871,6 +1166,7 @@ export interface GlobalAssist {
   team: string;
   teamId: number;
   value: number;       // assists
+  playerId?: number;   // FotMob player id → links to /player/[id]
   leagueKey: string;
   leagueFa: string;
 }
@@ -897,6 +1193,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
         merged.push({
           name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
           leagueRank: s.rank || 0,
+          ...(s.playerId != null ? { playerId: s.playerId } : {}),
           ...(s.assists != null ? { assists: s.assists } : {}),
           ...(s.gPlusA != null ? { gPlusA: s.gPlusA } : {}),
           ...(s.xg != null ? { xg: s.xg } : {}),
@@ -909,6 +1206,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
     for (const a of st.assists || []) {
       mergedAssists.push({
         name: a.name, team: a.team, teamId: a.teamId, value: a.assists,
+        ...(a.playerId != null ? { playerId: a.playerId } : {}),
         leagueKey: lg.key, leagueFa: lg.faName,
       });
     }

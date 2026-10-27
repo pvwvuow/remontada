@@ -7,6 +7,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SearchBox } from "./search-box";
+import { LiveFavoriteChip } from "./live-favorite-chip";
 
 export function SiteLogo({ small = false }: { small?: boolean }) {
   return (
@@ -77,7 +78,7 @@ export function SiteHeader() {
           <SearchBox />
           <nav className="flex items-center gap-1 text-[12px] font-bold" aria-label="ناوبری اصلی">
           {NAV_ITEMS.map((item) => {
-            const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") : pathname.startsWith(item.href);
+            const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
@@ -96,6 +97,8 @@ export function SiteHeader() {
           </nav>
         </div>
       </div>
+      {/* live favorite strip — only renders when a favorite team is playing now */}
+      <LiveFavoriteChip />
     </header>
   );
 }

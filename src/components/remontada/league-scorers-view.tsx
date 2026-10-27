@@ -176,7 +176,18 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {faDigits(s.rank || i + 1)}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-bold text-[13px] truncate">{s.name}</p>
+                    {s.playerId ? (
+                      <Link
+                        href={`/player/${s.playerId}`}
+                        prefetch={false}
+                        className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full"
+                        title="مشاهده پروفایل بازیکن"
+                      >
+                        {s.name}
+                      </Link>
+                    ) : (
+                      <p className="font-bold text-[13px] truncate">{s.name}</p>
+                    )}
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
                       {s.team && <span className="truncate">{s.team}</span>}
                       <ScorerBadges s={s} />

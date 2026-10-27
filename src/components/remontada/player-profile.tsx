@@ -1,0 +1,226 @@
+// ------------------------------------------------------------------
+// Remontada — player profile (pure server component, no "use client")
+// Rendered inside the SSR /player/[id] page; all data arrives as props
+// so the markup is present in the initial HTML (SEO + no-JS friendly).
+// ------------------------------------------------------------------
+import Link from "next/link";
+import type { PlayerData } from "@/lib/fotmob";
+import { faDigits, formColor, jalaliShort, tehranTime } from "@/lib/format";
+import { cn } from "@/lib/utils";
+import { ShareButton } from "./share-button";
+import { TeamLogo } from "./team-logo";
+import { JsonLd } from "./json-ld";
+
+function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
+  return (
+    <span
+      className={cn(
+        "w-[18px] h-[18px] rounded-[4px] border text-[9px] font-black flex items-center justify-center leading-none shrink-0",
+        formColor(r)
+      )}
+      title={r === "W" ? "برد" : r === "D" ? "مساوی" : "باخت"}
+    >
+      {r === "W" ? "ب" : r === "D" ? "م" : "پ"}
+    </span>
+  );
+}
+
+function StatBox({ display, title, accent }: { display: string; title: string; accent?: boolean }) {
+  return (
+    <div className="bg-card px-2 py-2.5 text-center">
+      <p className={cn("font-black text-[15px] tabular-persian leading-6", accent && "text-chart-3")} dir="ltr">
+        {faDigits(display)}
+      </p>
+      <p className="text-[9.5px] text-muted-foreground truncate">{title}</p>
+    </div>
+  );
+}
+
+function InfoChip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-1 text-[10.5px]">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-bold">{value}</span>
+    </span>
+  );
+}
+
+export function PlayerProfile({ p }: { p: PlayerData }) {
+  const j = jalaliShort;
+  const teamName = p.team?.fa || p.team?.name || "";
+  const chips: { label: string; value: string }[] = [];
+  if (p.info.age) chips.push({ label: "سن", value: faDigits(p.info.age) });
+  if (p.info.height) chips.push({ label: "قد", value: faDigits(p.info.height) });
+  if (p.info.shirt) chips.push({ label: "پیراهن", value: faDigits(p.info.shirt) });
+  if (p.info.foot) chips.push({ label: "پای ترجیحی", value: p.info.foot });
+  if (p.info.country) chips.push({ label: "کشور", value: p.info.country });
+  if (p.info.marketValue) chips.push({ label: "ارزش بازار", value: p.info.marketValue });
+  if (p.info.contractEnd) chips.push({ label: "پایان قرارداد", value: faDigits(p.info.contractEnd) });
+
+  const personLd = {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: p.name,
+    url: `/player/${p.id}`,
+    ...(p.positionEn ? { jobTitle: p.positionEn } : {}),
+    ...(p.team
+      ? {
+          affiliation: {
+            "@type": "SportsTeam",
+            name: p.team.name,
+            ...(p.team.fa ? { alternateName: p.team.fa } : {}),
+            url: `/team/${p.team.id}`,
+          },
+        }
+      : {}),
+    ...(p.info.country ? { nationality: { "@type": "Country", name: p.info.country } } : {}),
+  };
+
+  return (
+    <div className="flex flex-col gap-4">
+      <JsonLd data={personLd} />
+
+      {/* ---------- header ---------- */}
+      <section className="rounded-2xl border border-border/60 bg-card/70 overflow-hidden">
+        <div className="px-4 py-4 flex items-center gap-3.5">
+          <div className="w-14 h-14 rounded-2xl bg-primary/15 border border-primary/30 flex items-center justify-center shrink-0">
+            <span className="text-xl font-black text-primary" aria-hidden>
+              {(p.name || "؟").trim().charAt(0).toUpperCase()}
+            </span>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="font-black text-lg leading-7 truncate" dir="auto">{p.name}</h1>
+            <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
+              {p.positionFa && <span className="font-bold text-foreground/75">{p.positionFa}</span>}
+              {p.team && (
+                <>
+                  {p.positionFa && <span aria-hidden>·</span>}
+                  <Link
+                    href={`/team/${p.team.id}`}
+                    className="inline-flex items-center gap-1.5 hover:text-primary transition-colors font-bold"
+                    prefetch={false}
+                  >
+                    <TeamLogo id={p.team.id} alt="" size={14} />
+                    <span>{teamName}</span>
+                  </Link>
+                </>
+              )}
+              {p.status && p.status !== "active" && (
+                <span className="rounded-md border border-amber-400/30 bg-amber-400/10 text-amber-400 px-1.5 py-0.5 text-[9.5px] font-black">
+                  {p.status === "injured" ? "مصدمیت" : p.status}
+                </span>
+              )}
+            </p>
+          </div>
+          <ShareButton title={`${p.name} — پروفایل بازیکن | رمانتادا`} path={`/player/${p.id}`} size={28} />
+        </div>
+        {chips.length > 0 && (
+          <div className="px-4 pb-3.5 flex items-center flex-wrap gap-1.5">
+            {chips.map((c) => (
+              <InfoChip key={c.label} label={c.label} value={c.value} />
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* ---------- season stats ---------- */}
+      {p.season && (
+        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="آمار فصل">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center justify-between text-[11px]">
+            <span className="font-black text-[12px]">آمار فصل {faDigits(p.season.season)}</span>
+            <span className="font-bold text-muted-foreground">{p.season.leagueFa}</span>
+          </header>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-border/25">
+            {p.season.stats.map((s, i) => (
+              <StatBox key={`${s.key}-${i}`} display={s.display} title={s.title} accent={s.key === "rating"} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- next match ---------- */}
+      {p.next && (
+        <Link
+          href={`/match/${p.next.id}`}
+          prefetch={false}
+          className="group rounded-2xl border border-primary/25 bg-primary/[0.06] hover:bg-primary/[0.1] transition-colors px-4 py-3 flex items-center gap-3"
+          aria-label="بازی بعدی بازیکن"
+        >
+          <span className="text-[10px] font-black text-primary border border-primary/30 bg-primary/10 rounded-lg px-2 py-1 shrink-0">
+            بازی بعدی
+          </span>
+          <span className="flex items-center gap-2 min-w-0 flex-1 text-[12.5px] font-bold">
+            <TeamLogo id={p.next.opponentId} alt="" size={18} />
+            <span className="truncate">vs {p.next.opponent}</span>
+            <span className="text-[10px] font-bold text-muted-foreground shrink-0">{p.next.isHome ? "(میزبان)" : "(بیرون خانه)"}</span>
+          </span>
+          <span className="text-[10.5px] text-muted-foreground tabular-persian shrink-0">
+            {j(p.next.utcTime).day} {j(p.next.utcTime).month} · {tehranTime(p.next.utcTime)}
+          </span>
+        </Link>
+      )}
+
+      {/* ---------- recent matches ---------- */}
+      <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="بازی‌های اخیر">
+        <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[12px] font-black">
+          بازی‌های اخیر {p.recent.length > 0 && <span className="text-muted-foreground font-bold text-[10.5px]">({faDigits(p.recent.length)} بازی اخیر)</span>}
+        </header>
+        {p.recent.length === 0 ? (
+          <p className="text-center text-muted-foreground text-sm py-8">بازی اخیری برای این بازیکن ثبت نشده است.</p>
+        ) : (
+          <ul className="divide-y divide-border/25">
+            {p.recent.map((m) => {
+              const jd = jalaliShort(m.utcTime);
+              return (
+                <li key={m.id}>
+                  <Link
+                    href={`/match/${m.id}`}
+                    prefetch={false}
+                    className="group flex items-center gap-2.5 px-3 sm:px-4 py-2.5 hover:bg-accent/40 transition-colors"
+                  >
+                    {m.result ? <ResultBadge r={m.result} /> : <span className="w-[18px] shrink-0" aria-hidden />}
+                    <span className="text-[11px] tabular-persian font-black text-muted-foreground w-12 text-center shrink-0" dir="ltr">
+                      {m.homeScore !== null && m.awayScore !== null ? `${faDigits(m.homeScore)} - ${faDigits(m.awayScore)}` : "—"}
+                    </span>
+                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
+                      <TeamLogo id={m.opponentId} alt="" size={16} />
+                      <span className="truncate text-[12px] font-bold group-hover:text-primary transition-colors">
+                        {m.isHome ? "میزبان" : "بیرون"} · {m.opponent}
+                      </span>
+                      {m.onBench && !m.played && (
+                        <span className="text-[8.5px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">روی نیمکت</span>
+                      )}
+                      {m.potm && <span className="text-[9px] font-black text-chart-3 shrink-0" title="بهترین بازیکن زمین">★</span>}
+                    </span>
+                    <span className="hidden sm:flex items-center gap-2 shrink-0 text-[10px] text-muted-foreground tabular-persian">
+                      {m.goals > 0 && (
+                        <span className="font-black text-primary" title="گل">⚽ {faDigits(m.goals)}</span>
+                      )}
+                      {m.assists > 0 && (
+                        <span className="font-bold" title="پاس گل">🅰 {faDigits(m.assists)}</span>
+                      )}
+                      {m.yellow > 0 && <span className="w-2 h-2.5 rounded-[2px] bg-amber-400 inline-block" title="کارت زرد" />}
+                      {m.red > 0 && <span className="w-2 h-2.5 rounded-[2px] bg-red-500 inline-block" title="کارت قرمز" />}
+                      {m.minutes !== null && m.played && <span title="دقیقه بازی">{faDigits(m.minutes)}′</span>}
+                    </span>
+                    <span className="sm:hidden flex items-center gap-1.5 shrink-0 text-[10px] tabular-persian">
+                      {m.goals > 0 && <span className="font-black text-primary">⚽{faDigits(m.goals)}</span>}
+                      {m.rating && <span className="font-black text-chart-3">{faDigits(m.rating)}</span>}
+                    </span>
+                    <span className="text-[9.5px] text-muted-foreground/70 tabular-persian shrink-0 w-14 text-end">
+                      {jd.day} {jd.month}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <p className="text-[10px] text-muted-foreground/60 text-center">
+        آمار از FotMob — امتیازها و ارزش بازار تقریبی است و هر {faDigits(10)} دقیقه به‌روزرسانی می‌شود.
+      </p>
+    </div>
+  );
+}

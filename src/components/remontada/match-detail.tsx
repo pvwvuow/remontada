@@ -53,6 +53,7 @@ interface DetailData {
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
   playerOfTheMatch?: {
+    id?: number;
     name: string; rating?: string | null;
     teamId?: number; teamName?: string; teamLogo?: string;
     minutes?: number; role?: string;
@@ -140,7 +141,18 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
           <p className="text-[9.5px] font-black text-chart-3 flex items-center gap-1">
             <span aria-hidden>★</span> بهترین بازیکن زمین
           </p>
-          <p className="font-black text-[15px] leading-6 truncate">{p.name}</p>
+          {p.id ? (
+            <Link
+              href={`/player/${p.id}`}
+              prefetch={false}
+              className="font-black text-[15px] leading-6 truncate block hover:text-chart-3 transition-colors w-fit max-w-full"
+              title="مشاهده پروفایل بازیکن"
+            >
+              {p.name}
+            </Link>
+          ) : (
+            <p className="font-black text-[15px] leading-6 truncate">{p.name}</p>
+          )}
           <p className="text-[10.5px] text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
             {(p.teamId || p.teamName) && (
               <>
@@ -387,7 +399,13 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
           {t.rows.map((row, ri) => (
             <div key={ri} className="flex justify-center gap-1.5 flex-wrap">
               {row.players.map((p) => (
-                <div key={p.id} className="flex flex-col items-center gap-0.5 min-w-0" title={p.name}>
+                <Link
+                  key={p.id}
+                  href={`/player/${p.id}`}
+                  prefetch={false}
+                  className="flex flex-col items-center gap-0.5 min-w-0 hover:opacity-80 transition-opacity"
+                  title={`${p.name} — پروفایل بازیکن`}
+                >
                   <span
                     className={cn(
                       "w-6 h-6 rounded-full border flex items-center justify-center text-[9px] font-black tabular-persian shrink-0",
@@ -400,7 +418,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   {typeof p.rating === "number" && p.rating > 0 && (
                     <span className="text-[8px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
                   )}
-                </div>
+                </Link>
               ))}
             </div>
           ))}
@@ -415,10 +433,15 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
             </summary>
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {t.subs.map((s) => (
-                <span key={s.id} className="bg-muted/60 border border-border/50 rounded-lg px-2 py-1 text-[10px] flex items-center gap-1.5">
+                <Link
+                  key={s.id}
+                  href={`/player/${s.id}`}
+                  prefetch={false}
+                  className="bg-muted/60 border border-border/50 rounded-lg px-2 py-1 text-[10px] flex items-center gap-1.5 hover:border-primary/40 hover:text-primary transition-colors"
+                >
                   {s.shirt && <span className="text-muted-foreground tabular-persian">{faDigits(s.shirt)}</span>}
                   {s.name}
-                </span>
+                </Link>
               ))}
             </div>
           </details>

@@ -14,6 +14,37 @@ import { cn } from "@/lib/utils";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
 
+/** Current-week progress bar («هفته ۱۲ از ۳۸») — numeric rounds only. */
+function SeasonProgress({ progress }: { progress: { current: number; total: number } }) {
+  const pct = Math.min(100, Math.round((progress.current / progress.total) * 100));
+  return (
+    <section
+      className="rounded-2xl border border-border/60 bg-card/60 px-4 py-3 flex items-center gap-3"
+      aria-label="پیشرفت هفته جاری فصل"
+    >
+      <div className="flex items-center gap-2 shrink-0">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-primary" aria-hidden>
+          <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+          <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+        </svg>
+        <span className="text-[12px] font-black whitespace-nowrap">
+          هفته {faDigits(progress.current)} <span className="text-muted-foreground font-bold">از {faDigits(progress.total)}</span>
+        </span>
+      </div>
+      <div
+        className="flex-1 h-2 rounded-full bg-muted overflow-hidden"
+        role="progressbar"
+        aria-valuemin={1}
+        aria-valuemax={progress.total}
+        aria-valuenow={progress.current}
+      >
+        <div className="h-full bg-primary/70 rounded-full transition-all" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="text-[10.5px] font-bold text-muted-foreground tabular-persian shrink-0">{faDigits(pct)}٪ فصل</span>
+    </section>
+  );
+}
+
 const TABS: { key: Tab; label: string }[] = [
   { key: "standings", label: "جدول" },
   { key: "stats", label: "آمار فصل" },
@@ -526,6 +557,9 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {lg.ccode3}
         </span>
       </div>
+
+      {/* current-week progress (hidden for cup/non-numeric rounds or missing data) */}
+      {fixtures?.progress && <SeasonProgress progress={fixtures.progress} />}
 
       {/* pre-match preview for today's fixtures (no extra network calls) */}
       <PreMatchPreview fixtures={fixtures?.upcoming || []} standings={standings} />
