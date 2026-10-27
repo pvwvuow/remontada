@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { MatchDetail } from "@/components/remontada/match-detail";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getMatchLdData } from "@/lib/fotmob";
 import { SITE_URL } from "@/lib/site";
@@ -86,6 +87,9 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         <JsonLd data={ld} />
         <MatchDetail matchId={id} />
       </main>
+      {/* fix cycle-37: match detail is a long shell (lineups + stats + H2H) — match the
+          back-to-top coverage of the other long pages from cycles 34/35 */}
+      <BackToTop />
       <SiteFooter />
     </div>
   );

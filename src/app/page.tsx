@@ -10,6 +10,7 @@ import { faDigits } from "@/lib/format";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
 import { SiteHeader } from "@/components/remontada/site-chrome";
+import { BackToTop } from "@/components/remontada/back-to-top";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -250,6 +251,10 @@ export default function Home() {
 
       {/* goal notifications for favorite teams (opt-in chip) */}
       <GoalNotifier />
+
+      {/* fix cycle-37: home is the portal's longest page (~17.7k px on mobile) — it was the
+          only long view without the floating back-to-top after the cycle-35 rollout */}
+      <BackToTop />
 
       {/* ---------- footer ---------- */}
       <footer className="glass-bar-footer mt-auto">
