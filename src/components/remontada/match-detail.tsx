@@ -27,11 +27,11 @@ interface DetailMatch {
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
   away: { id: number; name: string; fa: string; logo: string; score: number | null };
 }
-interface DetailScorer { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean }
+interface DetailScorer { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string }
 interface DetailEvent {
   type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
   player?: string; card?: string; ownGoal: boolean; penalty: boolean;
-  swapIn?: string; swapOut?: string; homeScore: number | null; awayScore: number | null;
+  swapIn?: string; swapOut?: string; homeScore: number | null; awayScore: number | null; assist?: string;
 }
 interface DetailStatRow { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }
 interface DetailStatGroup { title: string; rows: DetailStatRow[] }
@@ -50,7 +50,12 @@ interface DetailData {
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
-  playerOfTheMatch?: { name: string; rating?: string | null } | null;
+  playerOfTheMatch?: {
+    name: string; rating?: string | null;
+    teamId?: number; teamName?: string; teamLogo?: string;
+    minutes?: number; role?: string;
+    stats: { title: string; display: string }[];
+  } | null;
   error?: string;
 }
 
@@ -103,12 +108,64 @@ function eventText(e: DetailEvent) {
     const parts = [e.player || ""];
     if (e.penalty) parts.push("(پنالتی)");
     if (e.ownGoal) parts.push("(گل به خودی)");
+    if (e.assist) parts.push(`(پاس: ${e.assist})`);
     return parts.filter(Boolean).join(" ");
   }
   if (e.type === "Substitution") return `${e.swapIn || "?"} ← ${e.swapOut || "?"}`;
   if (e.type === "Card") return e.player || "کارت";
   if (e.type === "MissedPenalty") return `${e.player || ""} (پنالتی از دست رفت)`;
   return e.player || e.typeFa;
+}
+
+const ROLE_FA: Record<string, string> = {
+  Goalkeeper: "دروازه‌بان",
+  Defender: "مدافع",
+  Midfielder: "هافبک",
+  Forward: "مهاجم",
+};
+
+// ---------- best player card ----------
+function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
+  const role = p.role ? ROLE_FA[p.role] || p.role : null;
+  return (
+    <section className="rounded-2xl border border-chart-3/25 bg-gradient-to-bl from-chart-3/[0.09] via-card/70 to-card/70 overflow-hidden" aria-label="بهترین بازیکن زمین">
+      <div className="px-4 py-3.5 flex items-center gap-3.5">
+        <div className="relative w-14 h-14 rounded-full bg-chart-3/15 border border-chart-3/40 flex flex-col items-center justify-center shrink-0" title="امتیاز فوت‌ماب">
+          <span className="text-[15px] font-black text-chart-3 leading-none tabular-persian">{p.rating ? faDigits(p.rating) : "—"}</span>
+          <span className="text-[7.5px] font-bold text-chart-3/70 mt-0.5">امتیاز</span>
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[9.5px] font-black text-chart-3 flex items-center gap-1">
+            <span aria-hidden>★</span> بهترین بازیکن زمین
+          </p>
+          <p className="font-black text-[15px] leading-6 truncate">{p.name}</p>
+          <p className="text-[10.5px] text-muted-foreground flex items-center gap-1.5 flex-wrap mt-0.5">
+            {(p.teamId || p.teamName) && (
+              <>
+                {p.teamLogo && (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={p.teamLogo} alt="" width={13} height={13} className="w-[13px] h-[13px] object-contain inline-block" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                )}
+                <span>{p.teamName}</span>
+              </>
+            )}
+            {role && <span>· {role}</span>}
+            {p.minutes ? <span className="tabular-persian">· {faDigits(p.minutes)} دقیقه</span> : null}
+          </p>
+        </div>
+      </div>
+      {p.stats.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-border/40 bg-card/40">
+          {p.stats.map((s, i) => (
+            <div key={i} className="px-2 py-2 text-center border-b border-border/25 sm:[&:nth-child(-n+4)]:border-b-0 sm:border-e sm:last:border-e-0 [&:nth-child(odd)]:border-s sm:[&:nth-child(odd)]:border-s-0">
+              <p className="font-black text-[13.5px] tabular-persian leading-5" dir="ltr">{faDigits(s.display)}</p>
+              <p className="text-[9px] text-muted-foreground truncate">{s.title}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
 }
 
 // ---------- scoreboard ----------
@@ -183,6 +240,7 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
                   <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assist})</span>}
                 </span>
               ))}
           </div>
@@ -191,9 +249,10 @@ function Scoreboard({ m, potm }: { m: DetailMatch; potm?: DetailData["playerOfTh
             {m.away.score !== null &&
               m.scorers.filter((s) => s.side === "away").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
-                  <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assist})</span>}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
+                  {faDigits(s.minute)} <span className="font-semibold text-foreground/85">{s.player}</span>
                   <GoalIcon className="text-primary/80" />
                 </span>
               ))}
@@ -725,7 +784,12 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       </nav>
 
       <div className={cn(loading && "opacity-50 transition-opacity")}>
-        {tab === "events" && <EventsTimeline events={data.events} match={m} />}
+        {tab === "events" && (
+          <div className="flex flex-col gap-4">
+            {data.playerOfTheMatch && <PotmCard p={data.playerOfTheMatch} />}
+            <EventsTimeline events={data.events} match={m} />
+          </div>
+        )}
         {tab === "stats" && <StatBars groups={data.statGroups} />}
         {tab === "lineups" &&
           (data.lineups ? (

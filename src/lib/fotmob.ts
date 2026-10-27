@@ -5,6 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "./leagues";
 import { cached } from "./cache";
+import { faDigits } from "./format";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -398,6 +399,108 @@ export interface LeagueFixturesData {
   upcoming: NormFixture[];
   recent: NormFixture[];
   total: number;
+  stats?: LeagueStats;
+}
+
+// ---------------- league advanced stats (from full-season fixtures) ----------------
+export interface LeagueTeamWinStat { teamId: number; fa: string; short: string; logo: string; wins: number }
+export interface LeagueRoundStat { round: string; games: number; goals: number; avg: number }
+export interface LeagueStats {
+  finished: number;
+  totalGoals: number;
+  avgGoals: number;
+  homeWins: number;
+  awayWins: number;
+  draws: number;
+  bttsPct: number;
+  topHomeWins: LeagueTeamWinStat[];
+  topAwayWins: LeagueTeamWinStat[];
+  topRounds: LeagueRoundStat[];
+  biggestWin: { id: string; round?: string; utcTime: string; diff: number; home: NormFixture["home"]; away: NormFixture["away"] } | null;
+}
+
+/** Round label → Persian. "Regular season - 8" / "8" → «هفته ۸». */
+function roundFa(round: string | undefined): string | undefined {
+  if (!round) return undefined;
+  const raw = String(round);
+  if (/^\d+$/.test(raw)) return `هفته ${faDigits(raw)}`;
+  const m = /(\d+)\s*$/.exec(raw);
+  if (m) return `هفته ${faDigits(m[1])}`;
+  return raw;
+}
+
+function computeLeagueStats(mapped: NormFixture[]): LeagueStats | undefined {
+  const done = mapped.filter((f) => f.finished && !f.cancelled && f.home.score !== null && f.away.score !== null);
+  if (done.length === 0) return undefined;
+
+  let totalGoals = 0;
+  let homeWins = 0;
+  let awayWins = 0;
+  let draws = 0;
+  let btts = 0;
+  const homeWinCnt = new Map<number, LeagueTeamWinStat>();
+  const awayWinCnt = new Map<number, LeagueTeamWinStat>();
+  const rounds = new Map<string, { games: number; goals: number; raw: string | undefined }>();
+  let biggest: LeagueStats["biggestWin"] = null;
+
+  for (const f of done) {
+    const h = f.home.score as number;
+    const a = f.away.score as number;
+    const goals = h + a;
+    totalGoals += goals;
+    if (h > 0 && a > 0) btts += 1;
+
+    const track = (map: Map<number, LeagueTeamWinStat>, t: NormFixture["home" | "away"]) => {
+      const prev = map.get(t.id);
+      if (prev) prev.wins += 1;
+      else map.set(t.id, { teamId: t.id, fa: t.fa, short: t.short, logo: t.logo, wins: 1 });
+    };
+
+    if (h > a) {
+      homeWins += 1;
+      track(homeWinCnt, f.home);
+    } else if (a > h) {
+      awayWins += 1;
+      track(awayWinCnt, f.away);
+    } else {
+      draws += 1;
+    }
+
+    // weeks/rounds
+    const label = roundFa(f.round) || "—";
+    const r = rounds.get(label) || { games: 0, goals: 0, raw: f.round };
+    r.games += 1;
+    r.goals += goals;
+    rounds.set(label, r);
+
+    // biggest win margin
+    const diff = Math.abs(h - a);
+    if (!biggest || diff > biggest.diff) {
+      biggest = { id: f.id, round: f.round, utcTime: f.utcTime, diff, home: f.home, away: f.away };
+    }
+  }
+
+  const n = done.length;
+  const top = (map: Map<number, LeagueTeamWinStat>) =>
+    [...map.values()].sort((x, y) => y.wins - x.wins || x.short.localeCompare(y.short)).slice(0, 5);
+  const topRounds: LeagueRoundStat[] = [...rounds.entries()]
+    .map(([round, r]) => ({ round, games: r.games, goals: r.goals, avg: r.games ? r.goals / r.games : 0 }))
+    .sort((a, b) => b.goals - a.goals || b.avg - a.avg)
+    .slice(0, 5);
+
+  return {
+    finished: n,
+    totalGoals,
+    avgGoals: totalGoals / n,
+    homeWins,
+    awayWins,
+    draws,
+    bttsPct: (btts / n) * 100,
+    topHomeWins: top(homeWinCnt),
+    topAwayWins: top(awayWinCnt),
+    topRounds,
+    biggestWin: biggest && biggest.diff > 0 ? biggest : null,
+  };
 }
 
 export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixturesData> {
@@ -421,6 +524,7 @@ export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixtur
     upcoming,
     recent,
     total: mapped.length,
+    stats: computeLeagueStats(mapped),
   };
 }
 

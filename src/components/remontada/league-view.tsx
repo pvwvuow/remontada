@@ -5,15 +5,16 @@
 // ------------------------------------------------------------------
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, LeagueFixturesData, NormFixture } from "@/lib/fotmob";
+import type { StandingsData, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
 import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-type Tab = "standings" | "fixtures" | "recent" | "scorers";
+type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
 
 const TABS: { key: Tab; label: string }[] = [
   { key: "standings", label: "جدول" },
+  { key: "stats", label: "آمار فصل" },
   { key: "fixtures", label: "بازی‌های پیش‌رو" },
   { key: "recent", label: "نتایج اخیر" },
   { key: "scorers", label: "آقای گل" },
@@ -106,6 +107,148 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// ---------- season advanced stats ----------
+function WinStatList({ title, items, tone }: { title: string; items: LeagueStats["topHomeWins"]; tone: "home" | "away" }) {
+  const max = Math.max(...items.map((i) => i.wins), 1);
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black flex items-center gap-1.5">
+        <span aria-hidden>{tone === "home" ? "🏟️" : "✈️"}</span>
+        {title}
+      </header>
+      <ol className="divide-y divide-border/25">
+        {items.map((t, i) => (
+          <li key={t.teamId} className="flex items-center gap-3 px-4 py-2.5">
+            <span className="w-5 text-[11px] font-black text-muted-foreground tabular-persian shrink-0">{faDigits(i + 1)}</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={t.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center justify-between gap-2">
+                <Link href={`/team/${t.teamId}`} className="font-bold text-[12.5px] truncate hover:text-primary transition-colors" prefetch={false}>
+                  {t.fa || t.short}
+                </Link>
+                <span className="text-[11px] font-black text-primary tabular-persian shrink-0">{faDigits(t.wins)} برد</span>
+              </div>
+              <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                <div className={cn("h-full rounded-full", tone === "home" ? "bg-primary/70" : "bg-chart-4/70")} style={{ width: `${(t.wins / max) * 100}%` }} />
+              </div>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-2xl border border-border/60 bg-card/60 px-3 py-3 text-center">
+      <p className="text-lg sm:text-xl font-black text-primary tabular-persian leading-6">{value}</p>
+      <p className="text-[10.5px] font-bold mt-0.5">{label}</p>
+      {sub && <p className="text-[9px] text-muted-foreground mt-0.5 tabular-persian">{sub}</p>}
+    </div>
+  );
+}
+
+function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string }) {
+  const n = stats.finished;
+  const pct = (x: number) => (n > 0 ? Math.round((x / n) * 100) : 0);
+  const maxRoundGoals = Math.max(...stats.topRounds.map((r) => r.goals), 1);
+
+  if (n === 0) {
+    return <p className="text-center text-muted-foreground text-sm py-10">هنوز بازی‌ای از این فصل به پایان نرسیده است؛ آمار بعد از شروع لیگ فعال می‌شود.</p>;
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* KPI row */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        <KpiCard label="میانگین گل هر بازی" value={faDigits(stats.avgGoals.toFixed(2))} sub={`${faDigits(stats.totalGoals)} گل در ${faDigits(n)} بازی`} />
+        <KpiCard label="هر دو تیم گل زدند" value={`${faDigits(Math.round(stats.bttsPct))}٪`} sub="از بازی‌های برگزارشده" />
+        <KpiCard label="برد میزبان‌ها" value={`${faDigits(pct(stats.homeWins))}٪`} sub={`${faDigits(stats.homeWins)} بازی`} />
+        <KpiCard label="برد مهمان‌ها" value={`${faDigits(pct(stats.awayWins))}٪`} sub={`${faDigits(stats.awayWins)} بازی`} />
+      </div>
+
+      {/* result split bar */}
+      <section className="rounded-2xl border border-border/60 bg-card/60 p-4">
+        <h3 className="text-[11px] font-black text-muted-foreground mb-3">ترکیب نتایج {leagueFa} این فصل</h3>
+        <div className="flex h-2.5 rounded-full overflow-hidden bg-muted/40" dir="rtl" aria-hidden>
+          <div className="bg-primary/80" style={{ width: `${pct(stats.homeWins)}%` }} />
+          <div className="bg-muted-foreground/30" style={{ width: `${pct(stats.draws)}%` }} />
+          <div className="bg-chart-4/80" style={{ width: `${pct(stats.awayWins)}%` }} />
+        </div>
+        <div className="flex items-center justify-between mt-2 text-[11px] font-bold tabular-persian">
+          <span className="text-primary">{faDigits(stats.homeWins)} برد میزبان</span>
+          <span className="text-muted-foreground">{faDigits(stats.draws)} مساوی</span>
+          <span className="text-chart-4">{faDigits(stats.awayWins)} برد مهمان</span>
+        </div>
+      </section>
+
+      {/* most home/away wins */}
+      <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+        {stats.topHomeWins.length > 0 && <WinStatList title="بیشترین برد در خانه" items={stats.topHomeWins} tone="home" />}
+        {stats.topAwayWins.length > 0 && <WinStatList title="بیشترین برد در بیرون از خانه" items={stats.topAwayWins} tone="away" />}
+      </div>
+
+      {/* highest scoring rounds */}
+      {stats.topRounds.length > 0 && (
+        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black">پرگل‌ترین هفته‌های فصل</header>
+          <ol className="divide-y divide-border/25">
+            {stats.topRounds.map((r, i) => (
+              <li key={r.round} className="flex items-center gap-3 px-4 py-2.5">
+                <span className={cn(
+                  "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shrink-0 tabular-persian",
+                  i === 0 ? "bg-chart-3/20 text-chart-3 border border-chart-3/30" : "bg-muted text-muted-foreground"
+                )}>
+                  {faDigits(i + 1)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-[12.5px] truncate">{r.round}</span>
+                    <span className="text-[11px] font-black tabular-persian shrink-0">{faDigits(r.goals)} گل</span>
+                  </div>
+                  <div className="mt-1 h-1 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full bg-chart-3/60 rounded-full" style={{ width: `${(r.goals / maxRoundGoals) * 100}%` }} />
+                  </div>
+                  <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDigits(r.avg.toFixed(1))} گل</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {/* biggest win */}
+      {stats.biggestWin && (
+        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[11px] font-black">پرامتیازترین برد فصل</header>
+          <Link href={`/match/${stats.biggestWin.id}`} className="flex items-center gap-3 px-4 py-3 hover:bg-accent/30 transition-colors" prefetch={false}>
+            <span className="flex items-center justify-end gap-2 flex-1 min-w-0 font-black text-[12.5px]">
+              <span className="truncate">{stats.biggestWin.home.fa || stats.biggestWin.home.short}</span>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={stats.biggestWin.home.logo} alt="" width={20} height={20} loading="lazy" className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+            </span>
+            <span className="font-black text-sm tabular-persian bg-primary/10 text-primary rounded-lg px-2.5 py-1 shrink-0">
+              {faDigits(stats.biggestWin.home.score ?? 0)} : {faDigits(stats.biggestWin.away.score ?? 0)}
+            </span>
+            <span className="flex items-center gap-2 flex-1 min-w-0 font-semibold text-[12.5px] text-muted-foreground">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={stats.biggestWin.away.logo} alt="" width={20} height={20} loading="lazy" className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+              <span className="truncate">{stats.biggestWin.away.fa || stats.biggestWin.away.short}</span>
+            </span>
+          </Link>
+          {stats.biggestWin.round && <p className="px-4 pb-2.5 text-[9px] text-muted-foreground/70 tabular-persian">{faDigits(stats.biggestWin.round)}</p>}
+        </div>
+      )}
+
+      <p className="text-[10px] text-muted-foreground px-1">
+        آمار فصل از مجموع {faDigits(n)} بازی به‌پایان‌رسیده‌ی {leagueFa} محاسبه می‌شود و با هر بازی جدید به‌روز می‌شود.
+      </p>
     </div>
   );
 }
@@ -286,6 +429,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               {standings.scorers?.length > 0 && <ScorersList data={standings} />}
             </div>
           ) : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}
+          {tab === "stats" && (fixtures?.stats ? <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} /> : <p className="text-center text-muted-foreground text-sm py-10">آماری برای این لیگ ثبت نشده است.</p>)}
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} /> : <p className="text-center text-muted-foreground text-sm py-10">—</p>)}

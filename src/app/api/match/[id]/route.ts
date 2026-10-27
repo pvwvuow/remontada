@@ -42,6 +42,9 @@ interface FMEvent {
   isPenaltyShootoutEvent?: boolean;
   swap?: { name: string; id?: string }[] | null;  // [in, out]
   injuryTimeInMin?: number;
+  assistInput?: string | null;
+  assistPlayerId?: number | null;
+  assistStr?: string | null;
 }
 interface FMStatRow {
   title: string;
@@ -69,6 +72,23 @@ interface FMLineupTeam {
   subs?: FMStarter[];
   coach?: { name?: string; firstName?: string; lastName?: string } | null;
 }
+interface FMPotmStatValue { value?: number | null; total?: number | null; type?: string }
+interface FMPotmStatGroup {
+  title?: string;
+  key?: string;
+  stats?: Record<string, { key?: string | null; stat?: FMPotmStatValue } | undefined>;
+}
+interface FMPotm {
+  id?: number;
+  name?: string | { firstName?: string; lastName?: string; fullName?: string } | null;
+  rating?: { num?: string } | null;
+  teamName?: string;
+  teamId?: number;
+  minutesPlayed?: number;
+  role?: string;
+  isHomeTeam?: boolean;
+  stats?: FMPotmStatGroup[];
+}
 interface FMMatchDetails {
   general?: {
     matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
@@ -94,12 +114,7 @@ interface FMMatchDetails {
         { result?: number; resultString?: string }[],
         { result?: number; resultString?: string }[]
       ];
-      playerOfTheMatch?: {
-        id?: number;
-        name?: string | { firstName?: string; lastName?: string; fullName?: string } | null;
-        rating?: { num?: string } | null;
-        teamName?: string;
-      } | null;
+      playerOfTheMatch?: FMPotm | null;
     };
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
     lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
@@ -132,6 +147,7 @@ const STAT_FA: Record<string, string> = {
   expected_goals_set_play: "xG ضربات ایستگاهی",
   expected_goals_non_penalty: "xG بدون پنالتی",
   expected_goals_on_target: "xG روی در چارچوب",
+  expected_goals_on_target_variant: "xGOT (روی در چارچوب)",
   total_shots: "شوت‌های کل",
   shotsofftarget: "شوت خارج از چارچوب",
   blocked_shots: "شوت بلاک‌شده",
@@ -151,6 +167,23 @@ const STAT_FA: Record<string, string> = {
   offsides: "آفساید",
   "matchstats.headers.tackles": "تکل",
   interceptions: "قطع توپ",
+  rating_title: "امتیاز فوت‌ماب",
+  minutes_played: "دقیقه بازی",
+  goals: "گل",
+  assists: "پاس گل",
+  expected_assists: "پاس گل مورد انتظار (xA)",
+  xg_and_xa: "xG + xA",
+  chances_created: "موقعیت خلق‌شده",
+  shotsontarget: "شوت در چارچوب",
+  shotsofftarget: "شوت خارج از چارچوب",
+  shot_accuracy: "دقت شوت",
+  defensive_actions: "اکشن دفاعی",
+  touches: "لمس توپ",
+  touches_opp_box: "لمس در محوطه حریف",
+  recoveries: "برگرداندن توپ",
+  dribbled_past: "دریبل‌شده",
+  was_fouled: "خطا گرفته",
+  duel_lost: "دوئل باخته",
   shot_blocks: "بلاک (دفاع)",
   clearances: "دفع توپ",
   keeper_saves: "مهار دروازه‌بان",
@@ -246,7 +279,7 @@ export interface MatchDetailNormalized {
     home: { id: number; name: string; fa: string; logo: string; score: number | null };
     away: { id: number; name: string; fa: string; logo: string; score: number | null };
   };
-  scorers: { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean }[];
+  scorers: { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string }[];
   events: {
     type: string;
     typeFa: string;
@@ -260,13 +293,23 @@ export interface MatchDetailNormalized {
     swapOut?: string;
     homeScore: number | null;
     awayScore: number | null;
+    assist?: string;
   }[];
   statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
-  playerOfTheMatch?: { name: string; rating?: string | null } | null;
+  playerOfTheMatch?: {
+    name: string;
+    rating?: string | null;
+    teamId?: number;
+    teamName?: string;
+    teamLogo?: string;
+    minutes?: number;
+    role?: string;
+    stats: { title: string; display: string }[];
+  } | null;
   fetchedAt: string;
 }
 
@@ -333,6 +376,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
       swapOut: e.type === "Substitution" ? e.swap?.[1]?.name : undefined,
       homeScore: typeof e.homeScore === "number" ? e.homeScore : null,
       awayScore: typeof e.awayScore === "number" ? e.awayScore : null,
+      assist: isGoal && !e.ownGoal ? e.assistInput || undefined : undefined,
     });
     if (isGoal) {
       if (side !== "neutral") {
@@ -342,6 +386,9 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
           minute: fmtMinute(e),
           ownGoal: !!e.ownGoal,
           penalty: !!e.isPenalty,
+          // own goals are credited to the attacking side but the defender scoring
+          // is shown by FotMob as the player — keep assist only for real goals
+          assist: (!e.ownGoal && e.assistInput) || undefined,
         });
       }
     }
@@ -445,6 +492,42 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     : null;
   const pomRating = pom?.rating?.num || null;
 
+  // rich best-player card: flatten the "Top stats" group into display rows
+  let pomStats: { title: string; display: string }[] = [];
+  if (pom?.stats?.length) {
+    const grp =
+      pom.stats.find((s) => (s.key || "").toLowerCase() === "top_stats") ||
+      pom.stats.find((s) => (s.title || "").toLowerCase().includes("top")) ||
+      pom.stats[0];
+    for (const [humanTitle, entry] of Object.entries(grp?.stats || {})) {
+      const v = entry?.stat;
+      if (!v || typeof v.value !== "number" || v.type === "boolean") continue;
+      let display: string;
+      if (v.type === "fractionWithPercentage" && typeof v.total === "number") {
+        display = `${Math.round(v.value)}/${Math.round(v.total)}`;
+      } else if (v.type === "double") {
+        display = v.value.toFixed(2);
+      } else {
+        display = String(Math.round(v.value));
+      }
+      const key = (entry?.key || humanTitle || "").toLowerCase();
+      pomStats.push({ title: STAT_FA[key] || humanTitle, display });
+    }
+    pomStats = pomStats.slice(0, 8);
+  }
+  const playerOfTheMatch = pomName
+    ? {
+        name: pomName,
+        rating: pomRating,
+        teamId: typeof pom?.teamId === "number" ? pom.teamId : undefined,
+        teamName: pom?.teamName || undefined,
+        teamLogo: fotmobTeamLogo(typeof pom?.teamId === "number" ? pom.teamId : 0),
+        minutes: typeof pom?.minutesPlayed === "number" ? pom.minutesPlayed : undefined,
+        role: pom?.role || undefined,
+        stats: pomStats,
+      }
+    : null;
+
   return {
     match: {
       id: matchId,
@@ -470,7 +553,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     info,
     form,
     momentum,
-    playerOfTheMatch: pomName ? { name: pomName, rating: pomRating } : null,
+    playerOfTheMatch,
     fetchedAt: new Date().toISOString(),
   };
 }
