@@ -2,14 +2,15 @@
 
 // ------------------------------------------------------------------
 // Remontada — per-league top scorers view (/topscorers/[leagueKey])
-// Full ranked list of one league with goal-share bars and rich badges
-// (assists / G+A / xG / rating / minutes-per-goal). Matches the visual
-// language of the global «مصاف گلزنان» page.
+// Full ranked list of one league with rich badges (assists / G+A / xG
+// / rating / minutes-per-goal). Phase 3 theme: glass scoring-chart
+// poster — leader hero tile + pill-ranked rows (studio look).
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { ScorerEntry } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
+import { ScorerAvatarTile, GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -56,9 +57,9 @@ function ScorerBadges({ s }: { s: ScorerEntry }) {
 
 function Skeleton() {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden" aria-busy="true">
+    <div className="glass-card overflow-hidden" aria-busy="true">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/20 last:border-0">
+        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-[color:var(--glass-hairline)] last:border-0">
           <div className="w-7 h-7 rounded-lg bg-muted animate-pulse shrink-0" />
           <div className="flex-1 flex flex-col gap-1.5">
             <div className="h-3.5 rounded bg-muted animate-pulse" style={{ width: `${30 + ((i * 13) % 45)}%` }} />
@@ -94,10 +95,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
     return () => { cancelled = true; };
   }, [leagueKey]);
 
-  const maxGoals = useMemo(
-    () => (data?.scorers || []).reduce((m, s) => Math.max(m, s.goals), 0),
-    [data]
-  );
+  const lgCfg = LEAGUES.find((l) => l.key === leagueKey);
 
   return (
     <div className="flex flex-col gap-4">
@@ -114,7 +112,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
             همه گلزنان
           </Link>
           <h1 className="text-lg font-black mt-1">
-            آقای گلان {data?.leagueFa || LEAGUES.find((l) => l.key === leagueKey)?.faName || "لیگ"}
+            آقای گلان {data?.leagueFa || lgCfg?.faName || "لیگ"}
           </h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
             {loading
@@ -134,7 +132,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
       <div className="flex gap-2 flex-wrap">
         <Link
           href={`/league/${leagueKey}`}
-          className="rounded-xl border border-border/50 bg-card/50 px-3.5 py-2 text-xs font-bold text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
+          className="rounded-xl border border-glass-border-soft bg-white/[0.035] px-3.5 py-2 text-xs font-bold text-muted-foreground hover:text-primary hover:border-primary/40 transition-all"
         >
           جدول و برنامه
         </Link>
@@ -142,7 +140,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           <Link
             key={l.key}
             href={`/topscorers/${l.key}`}
-            className="shrink-0 rounded-xl border border-border/50 bg-card/50 px-3 py-2 text-[11px] font-bold text-muted-foreground hover:border-border hover:text-foreground transition-all"
+            className="shrink-0 rounded-xl border border-glass-border-soft bg-white/[0.035] px-3 py-2 text-[11px] font-bold text-muted-foreground hover:border-glass-border hover:text-foreground transition-all"
           >
             {l.faName}
           </Link>
@@ -158,52 +156,84 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
       {loading ? (
         <Skeleton />
       ) : data && data.scorers.length > 0 ? (
-        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-          <ol className="divide-y divide-border/25">
-            {data.scorers.map((s, i) => (
-              <li key={`${s.name}-${i}`} className="px-3 sm:px-4 py-3 hover:bg-accent/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span
-                    className={cn(
-                      "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 tabular-persian",
-                      i === 0
-                        ? "bg-chart-3/20 text-chart-3 border border-chart-3/30"
-                        : i <= 2
-                          ? "bg-chart-3/10 text-chart-3/90 border border-chart-3/20"
-                          : "bg-muted text-muted-foreground"
-                    )}
-                  >
-                    {faDigits(s.rank || i + 1)}
-                  </span>
+        <div className="glass-card overflow-hidden">
+          <GlassLeagueHeader
+            leagueId={lgCfg?.fotmobId}
+            title={`آقای گل ${data.leagueFa}`}
+            sub={lgCfg ? `${lgCfg.ccode3} · ${lgCfg.enName}` : undefined}
+            season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+          />
+          <div className="p-2.5 flex flex-col">
+            {/* hero — the studio scoring-chart leader tile */}
+            {(() => {
+              const top = data.scorers[0];
+              return (
+                <div className="glass-scorer-hero p-4 sm:p-5 flex items-center gap-3.5 sm:gap-5">
+                  <ScorerAvatarTile name={top.name} size={60} />
                   <div className="min-w-0 flex-1">
-                    {s.playerId ? (
+                    <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
+                    {top.playerId ? (
                       <Link
-                        href={`/player/${s.playerId}`}
+                        href={`/player/${top.playerId}`}
                         prefetch={false}
-                        className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full"
-                        title="مشاهده پروفایل بازیکن"
+                        className="block text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1 hover:text-primary transition-colors w-fit max-w-full"
+                        title={`پروفایل ${top.name}`}
                       >
-                        {s.name}
+                        {top.name}
                       </Link>
                     ) : (
-                      <p className="font-bold text-[13px] truncate">{s.name}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{top.name}</p>
                     )}
-                    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
-                      {s.team && <span className="truncate">{s.team}</span>}
-                      <ScorerBadges s={s} />
+                    <div className="flex items-center gap-1.5 text-[10.5px] text-[#b1c9e2] mt-1.5 flex-wrap">
+                      {top.team && <span className="truncate">{top.team}</span>}
+                      <ScorerBadges s={top} />
                     </div>
                   </div>
-                  <span className="font-black text-primary tabular-persian text-lg shrink-0">
-                    {faDigits(s.goals)}
-                    <span className="text-[9px] font-bold text-muted-foreground ms-1">گل</span>
-                  </span>
+                  <div className="text-center shrink-0">
+                    <p className="text-[44px] sm:text-[56px] leading-none font-light text-[#dfedff] tabular-persian">
+                      {faDigits(pad2(top.goals))}
+                    </p>
+                    <p className="text-[8.5px] font-bold text-[#c6dcf3] mt-1.5">گل</p>
+                  </div>
                 </div>
-                <div className="mt-1.5 ms-10 h-1 rounded-full bg-muted overflow-hidden">
-                  <div className="h-full bg-chart-3/70 rounded-full" style={{ width: `${maxGoals > 0 ? (s.goals / maxGoals) * 100 : 0}%` }} />
-                </div>
-              </li>
-            ))}
-          </ol>
+              );
+            })()}
+            <ol className="mt-1.5 flex flex-col">
+              {data.scorers.slice(1).map((s, i) => {
+                const rank = s.rank ?? i + 2;
+                const inner = (
+                  <>
+                    <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[11px] font-bold shrink-0 tabular-persian">
+                      {faDigits(pad2(rank))}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[13px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                      <span className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 flex-wrap">
+                        {s.team && <span className="truncate">{s.team}</span>}
+                        <ScorerBadges s={s} />
+                      </span>
+                    </span>
+                    <span className="shrink-0 min-w-[40px] text-center rounded-lg bg-[#a9cdf611] px-2 py-1.5">
+                      <span className="font-semibold text-[#e0efff] tabular-persian text-[15px]">{faDigits(s.goals)}</span>
+                      <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">گل</span>
+                    </span>
+                  </>
+                );
+                const cls = "flex items-center gap-3 px-2 sm:px-3 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+                return (
+                  <li key={`${s.name}-${i}`}>
+                    {s.playerId ? (
+                      <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div className={cls}>{inner}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
         </div>
       ) : (
         !error && (
@@ -215,7 +245,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
 
       {data && !loading && (
         <p className="text-[10px] text-muted-foreground px-1">
-          رتبه‌ها مخصوص همین لیگ است. بج‌ها: پاس گل، مجموع گل+پاس، ریتینگ فوت‌ماب، xG و میانگین دقایق هر گل. نوار زیر هر ردیف سهم گل بازیکن از صدرنشین لیگ را نشان می‌دهد. منبع داده: فوت‌ماب.
+          رتبه‌ها مخصوص همین لیگ است. بج‌ها: پاس گل، مجموع گل+پاس، ریتینگ فوت‌ماب، xG و میانگین دقایق هر گل. منبع داده: فوت‌ماب.
         </p>
       )}
     </div>

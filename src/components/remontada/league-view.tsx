@@ -6,11 +6,12 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
-import { LEAGUES } from "@/lib/leagues";
+import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
 
@@ -19,7 +20,7 @@ function SeasonProgress({ progress }: { progress: { current: number; total: numb
   const pct = Math.min(100, Math.round((progress.current / progress.total) * 100));
   return (
     <section
-      className="rounded-2xl border border-border/60 bg-card/60 px-4 py-3 flex items-center gap-3"
+      className="glass-card px-4 py-3 flex items-center gap-3"
       aria-label="پیشرفت هفته جاری فصل"
     >
       <div className="flex items-center gap-2 shrink-0">
@@ -38,7 +39,7 @@ function SeasonProgress({ progress }: { progress: { current: number; total: numb
         aria-valuemax={progress.total}
         aria-valuenow={progress.current}
       >
-        <div className="h-full bg-primary/70 rounded-full transition-all" style={{ width: `${pct}%` }} />
+        <div className="h-full bg-sky-soft/70 rounded-full transition-all" style={{ width: `${pct}%` }} />
       </div>
       <span className="text-[10.5px] font-bold text-muted-foreground tabular-persian shrink-0">{faDigits(pct)}٪ فصل</span>
     </section>
@@ -287,61 +288,87 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
 }
 
 function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: string }) {
-  if (!data.scorers?.length) {
+  const list = data.scorers;
+  if (!list || list.length === 0) {
     return <p className="text-center text-muted-foreground text-sm py-10">آقای گل این لیگ هنوز ثبت نشده است.</p>;
   }
-  const max = Math.max(...data.scorers.map((s) => s.goals), 1);
+  const lgCfg = LEAGUES.find((l) => l.key === leagueKey);
+  const [top, ...rest] = list;
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/25">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="text-chart-3" aria-hidden>
-          <circle cx="12" cy="8" r="5" />
-          <path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" />
-        </svg>
-        <h3 className="font-black text-[12.5px]">آقای گل</h3>
+    <div className="glass-card overflow-hidden">
+      <GlassLeagueHeader
+        leagueId={lgCfg?.fotmobId}
+        title="آقای گل"
+        sub={lgCfg ? `${lgCfg.ccode3} · ${lgCfg.enName}` : undefined}
+        season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+      >
         <Link
           href={`/topscorers/${leagueKey}`}
-          className="ms-auto inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
+          className="inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
         >
           صفحه کامل گلزنان
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
             <path d="M15 5l-7 7 7 7" />
           </svg>
         </Link>
-      </header>
-      <ol className="divide-y divide-border/25">
-        {data.scorers.map((s, i) => (
-          <li key={`${s.name}-${i}`} className="flex items-center gap-3 px-4 py-3">
-            <span
-              className={cn(
-                "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 tabular-persian",
-                i === 0 ? "bg-chart-3/20 text-chart-3 border border-chart-3/30" : "bg-muted text-muted-foreground"
-              )}
-            >
-              {faDigits(s.rank ?? i + 1)}
-            </span>
-            <div className="min-w-0 flex-1">
-              {s.playerId ? (
-                <Link
-                  href={`/player/${s.playerId}`}
-                  prefetch={false}
-                  className="font-bold text-[13px] truncate hover:text-primary transition-colors w-fit block"
-                  title={`پروفایل ${s.name}`}
-                >
-                  {s.name}
-                </Link>
-              ) : (
-                <p className="font-bold text-[13px] truncate">{s.name}</p>
-              )}
-              {s.team && <p className="text-[10px] text-muted-foreground truncate">{s.team}</p>}
-              <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-chart-3/70 rounded-full" style={{ width: `${(s.goals / max) * 100}%` }} />
-              </div>
-            </div>
-            <span className="font-black text-primary tabular-persian text-lg">{faDigits(s.goals)}</span>
-          </li>
-        ))}
-      </ol>
+      </GlassLeagueHeader>
+      <div className="p-2.5 flex flex-col">
+        {/* hero — the studio scoring-chart leader tile with the big metric */}
+        <div className="glass-scorer-hero p-3.5 flex items-center gap-3">
+          <ScorerAvatarTile name={top.name} size={56} />
+          <div className="min-w-0 flex-1">
+            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
+            {top.playerId ? (
+              <Link
+                href={`/player/${top.playerId}`}
+                prefetch={false}
+                className="block text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5 hover:text-primary transition-colors w-fit max-w-full"
+                title={`پروفایل ${top.name}`}
+              >
+                {top.name}
+              </Link>
+            ) : (
+              <p className="text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.name}</p>
+            )}
+            {top.team && <p className="text-[10px] text-[#92adc9] truncate mt-0.5">{top.team}</p>}
+          </div>
+          <div className="text-center shrink-0 ps-1">
+            <p className="text-[34px] leading-none font-light text-[#dfedff] tabular-persian">{faDigits(pad2(top.goals))}</p>
+            <p className="text-[8px] font-bold text-[#c6dcf3] mt-1">گل</p>
+          </div>
+        </div>
+        <ol className="mt-1 flex flex-col">
+          {rest.map((s, i) => {
+            const rank = s.rank ?? i + 2;
+            const inner = (
+              <>
+                <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                  {faDigits(pad2(rank))}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                  {s.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{s.team}</span>}
+                </span>
+                <span className="shrink-0 min-w-[36px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[14px] font-semibold text-[#e0efff] tabular-persian">
+                  {faDigits(s.goals)}
+                </span>
+              </>
+            );
+            const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+            return (
+              <li key={`${s.name}-${i}`}>
+                {s.playerId ? (
+                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className={cls}>{inner}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </div>
   );
 }
@@ -412,8 +439,8 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
   const shown = todays.slice(0, 4);
 
   return (
-    <section className="rounded-2xl border border-primary/25 bg-gradient-to-l from-primary/[0.1] via-card/60 to-card/40 overflow-hidden" aria-label="پیش‌نمایش بازی‌های امروز">
-      <header className="px-4 py-2 border-b border-primary/15 bg-primary/[0.08] flex items-center justify-between gap-2">
+    <section className="glass-card overflow-hidden" aria-label="پیش‌نمایش بازی‌های امروز">
+      <header className="px-4 py-2 border-b border-[color:var(--glass-hairline)] bg-primary/[0.06] flex items-center justify-between gap-2">
         <h2 className="text-[12.5px] font-black text-primary">پیش‌نمایش بازی‌های امروز</h2>
         <span className="text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(todays.length)} بازی</span>
       </header>
@@ -443,51 +470,81 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
   );
 }
 
-function StandingsTable({ data }: { data: StandingsData }) {
+function StandingsTable({ data, league }: { data: StandingsData; league: LeagueConfig }) {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+    <div className="glass-card overflow-hidden">
+      <GlassLeagueHeader
+        leagueId={league.fotmobId}
+        title={data.leagueFa}
+        sub={`${league.ccode3} · ${league.enName}`}
+        season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+      />
+      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم` : undefined} />
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[480px]">
           <thead>
-            <tr className="text-muted-foreground text-[10px] sm:text-[11px] border-b border-border/40 bg-muted/25">
-              <th className="py-2.5 pe-1 ps-3 font-bold text-start w-8">#</th>
-              <th className="py-2.5 px-1 font-bold text-start">تیم</th>
-              <th className="py-2.5 px-1.5 font-bold text-center">ب</th>
-              <th className="py-2.5 px-1.5 font-bold text-center">بر</th>
-              <th className="py-2.5 px-1.5 font-bold text-center">مس</th>
-              <th className="py-2.5 px-1.5 font-bold text-center">با</th>
-              <th className="py-2.5 px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
-              <th className="py-2.5 px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2.5 px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
-              <th className="py-2.5 px-2.5 font-black text-center">امتیاز</th>
+            <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
+              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start">تیم</th>
+              <th className="py-2 px-1.5 font-bold text-center">ب</th>
+              <th className="py-2 px-1.5 font-bold text-center">بر</th>
+              <th className="py-2 px-1.5 font-bold text-center">مس</th>
+              <th className="py-2 px-1.5 font-bold text-center">با</th>
+              <th className="py-2 px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
+              <th className="py-2 px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
+              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
+              <th className="py-2 px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((r) => (
-              <tr key={r.teamId} className="border-b border-border/25 last:border-0 hover:bg-accent/30 transition-colors">
-                <td className="py-2.5 pe-1 ps-3 relative">
-                  {r.qualColor && <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: r.qualColor }} aria-hidden />}
-                  <span className="font-bold text-muted-foreground tabular-persian">{faDigits(r.idx)}</span>
-                </td>
-                <td className="py-2 px-1">
-                  <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
-                    { }
-                    <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                    <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
-                  </Link>
-                </td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.played)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian">{faDigits(r.wins)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.draws)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.losses)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden lg:table-cell">{faDigits(r.goalsFor)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden lg:table-cell">{faDigits(r.goalsAgainst)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden sm:table-cell">{r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}</td>
-                <td className="py-2 px-2.5 text-center">
-                  <span className="font-black text-primary tabular-persian bg-primary/10 rounded-lg px-2 py-0.5 inline-block min-w-[34px]">{faDigits(r.pts)}</span>
-                </td>
-              </tr>
-            ))}
+            {data.rows.map((r) => {
+              const leader = r.idx === 1;
+              return (
+                <tr
+                  key={r.teamId}
+                  className={cn(
+                    "border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors",
+                    leader && "glass-leader"
+                  )}
+                >
+                  <td className="py-2.5 pe-1 ps-3 relative">
+                    {r.qualColor && <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: r.qualColor }} aria-hidden />}
+                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                      {faDigits(pad2(r.idx))}
+                    </span>
+                  </td>
+                  <td className="py-2 px-1">
+                    <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
+                      <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+                      <span className={cn("font-bold truncate group-hover:text-primary transition-colors", leader && "text-[#f1f7ff]")}>
+                        {r.fa || r.name}
+                      </span>
+                    </Link>
+                  </td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsFor)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsAgainst)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian hidden sm:table-cell">
+                    <span className={cn(r.gd > 0 ? "text-mint" : r.gd < 0 ? "text-rose-soft" : "text-[#8da7c3]/80")}>
+                      {r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2.5 text-center">
+                    <span
+                      className={cn(
+                        "font-black tabular-persian rounded-lg px-2 py-0.5 inline-block min-w-[34px]",
+                        leader ? "text-[#f0f6ff] bg-[#bddcfa26]" : "text-[#e4eefb] bg-[#9ec3e50b]"
+                      )}
+                    >
+                      {faDigits(r.pts)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -609,7 +666,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         <div className={cn("transition-opacity", loading && "opacity-50")}>
           {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
-              <StandingsTable data={standings} />
+              <StandingsTable data={standings} league={lg} />
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}

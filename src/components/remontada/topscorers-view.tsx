@@ -5,11 +5,14 @@
 // Cycle 10: league filter persists in localStorage; each scorer shows
 // their global rank, and inside a league filter the league-local rank
 // plus a «جهانی #» badge.
+// Phase 3 theme: glass scoring-chart poster — leader hero tile with
+// the oversized light metric + pill-ranked rows (studio look).
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalScorersData } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
+import { ScorerAvatarTile, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -39,39 +42,32 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   );
 }
 
-function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; maxGoals: number; mainRank: number; showGlobal: boolean }) {
+function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: number; showGlobal: boolean }) {
   return (
-    <li className="px-3 sm:px-4 py-3 hover:bg-accent/30 transition-colors">
+    <li className="px-2.5 sm:px-3 py-2.5 glass-row-hover">
       <div className="flex items-center gap-3">
-        <span
-          className={cn(
-            "w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black shrink-0 tabular-persian",
-            mainRank <= 3
-              ? "bg-chart-3/20 text-chart-3 border border-chart-3/30"
-              : "bg-muted text-muted-foreground"
-          )}
-        >
-          {faDigits(mainRank)}
+        <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[11px] font-bold shrink-0 tabular-persian">
+          {faDigits(pad2(mainRank))}
         </span>
         <div className="min-w-0 flex-1">
           {s.playerId ? (
             <Link
               href={`/player/${s.playerId}`}
               prefetch={false}
-              className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full"
+              className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
               title="مشاهده پروفایل بازیکن"
             >
               {s.name}
             </Link>
           ) : (
-            <p className="font-bold text-[13px] truncate">{s.name}</p>
+            <p className="font-bold text-[13px] truncate text-[#e5eefb]">{s.name}</p>
           )}
-          <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground mt-0.5 flex-wrap">
+          <div className="flex items-center gap-1.5 text-[10px] text-[#92adc9] mt-0.5 flex-wrap">
             <span className="truncate">{s.team}</span>
             <span aria-hidden>·</span>
             <Link
               href={`/league/${s.leagueKey}`}
-              className="shrink-0 rounded-md border border-border/60 px-1.5 py-px font-bold hover:text-primary hover:border-primary/40 transition-colors"
+              className="shrink-0 rounded-md border border-glass-border-soft bg-white/[0.03] px-1.5 py-px font-bold hover:text-primary hover:border-primary/40 transition-colors"
             >
               {s.leagueFa}
             </Link>
@@ -86,13 +82,10 @@ function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; max
             <ScorerBadges s={s} />
           </div>
         </div>
-        <span className="font-black text-primary tabular-persian text-lg shrink-0">
-          {faDigits(s.goals)}
-          <span className="text-[9px] font-bold text-muted-foreground ms-1">گل</span>
+        <span className="shrink-0 min-w-[44px] text-center rounded-lg bg-[#a9cdf611] px-2 py-1.5">
+          <span className="font-semibold text-[#e0efff] tabular-persian text-[15px]">{faDigits(s.goals)}</span>
+          <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">گل</span>
         </span>
-      </div>
-      <div className="mt-1.5 ms-10 h-1 rounded-full bg-muted overflow-hidden">
-        <div className="h-full bg-chart-3/70 rounded-full" style={{ width: `${maxGoals > 0 ? (s.goals / maxGoals) * 100 : 0}%` }} />
       </div>
     </li>
   );
@@ -101,55 +94,46 @@ function ScorerRow({ s, maxGoals, mainRank, showGlobal }: { s: GlobalScorer; max
 function AssistsCard({ data }: { data: GlobalScorersData }) {
   const list = data.assists || [];
   if (list.length === 0) return null;
-  const max = list.reduce((m, a) => Math.max(m, a.value), 0);
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/25">
+    <div className="glass-card overflow-hidden">
+      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
           <path d="M4 19h16" />
           <path d="M5 15l5-5 4 3 5-7" />
         </svg>
         <h2 className="text-[12.5px] font-black">مسابقه پاس گل</h2>
-        <span className="ms-auto text-[10px] text-muted-foreground tabular-persian">{faDigits(list.length)} بازیکن برتر</span>
+        <span className="ms-auto text-[10px] text-steel tabular-persian">{faDigits(list.length)} بازیکن برتر</span>
       </header>
-      <ol className="divide-y divide-border/25">
+      <ol className="p-1.5 flex flex-col">
         {list.slice(0, 8).map((a) => (
-          <li key={`${a.leagueKey}-${a.name}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5 hover:bg-accent/30 transition-colors">
-            <span
-              className={cn(
-                "w-[26px] h-[26px] rounded-lg flex items-center justify-center text-[10.5px] font-black shrink-0 tabular-persian",
-                a.rank <= 3 ? "bg-chart-2/15 text-chart-2 border border-chart-2/30" : "bg-muted text-muted-foreground"
-              )}
-            >
-              {faDigits(a.rank)}
+          <li key={`${a.leagueKey}-${a.name}`} className="flex items-center gap-3 px-2 sm:px-2.5 py-2.5 rounded-lg glass-row-hover">
+            <span className="w-[26px] h-[26px] rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+              {faDigits(pad2(a.rank))}
             </span>
             <div className="min-w-0 flex-1">
               {a.playerId ? (
                 <Link
                   href={`/player/${a.playerId}`}
                   prefetch={false}
-                  className="font-bold text-[12.5px] truncate block hover:text-primary transition-colors w-fit max-w-full"
+                  className="font-bold text-[12.5px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
                   title="مشاهده پروفایل بازیکن"
                 >
                   {a.name}
                 </Link>
               ) : (
-                <p className="font-bold text-[12.5px] truncate">{a.name}</p>
+                <p className="font-bold text-[12.5px] truncate text-[#e5eefb]">{a.name}</p>
               )}
-              <div className="flex items-center gap-1.5 text-[9.5px] text-muted-foreground mt-0.5 min-w-0">
+              <div className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 min-w-0">
                 <span className="truncate">{a.team}</span>
                 <span aria-hidden>·</span>
                 <Link href={`/league/${a.leagueKey}`} className="shrink-0 hover:text-primary transition-colors font-bold">
                   {a.leagueFa}
                 </Link>
               </div>
-              <div className="mt-1 h-[3px] rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-chart-2/70 rounded-full" style={{ width: `${max > 0 ? (a.value / max) * 100 : 0}%` }} />
-              </div>
             </div>
-            <span className="font-black text-chart-2 tabular-persian text-base shrink-0">
-              {faDigits(a.value)}
-              <span className="text-[9px] font-bold text-muted-foreground ms-1">پاس</span>
+            <span className="shrink-0 min-w-[38px] text-center rounded-lg bg-[#a9cdf611] px-2 py-1">
+              <span className="font-semibold text-[#e0efff] tabular-persian text-[14px]">{faDigits(a.value)}</span>
+              <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">پاس</span>
             </span>
           </li>
         ))}
@@ -160,9 +144,9 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
 
 function Skeleton() {
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/40 overflow-hidden" aria-busy="true">
+    <div className="glass-card overflow-hidden" aria-busy="true">
       {Array.from({ length: 10 }).map((_, i) => (
-        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-border/20 last:border-0">
+        <div key={i} className="flex items-center gap-3 px-4 py-3 border-b border-[color:var(--glass-hairline)] last:border-0">
           <div className="w-7 h-7 rounded-lg bg-muted animate-pulse shrink-0" />
           <div className="flex-1 flex flex-col gap-1.5">
             <div className="h-3.5 rounded bg-muted animate-pulse" style={{ width: `${35 + ((i * 11) % 40)}%` }} />
@@ -252,13 +236,15 @@ export function TopScorersView() {
     return data.scorers.filter((s) => s.leagueKey === filter);
   }, [data, filter]);
 
-  const maxGoals = useMemo(() => visible.reduce((m, s) => Math.max(m, s.goals), 0), [visible]);
   const showGlobal = filter === ALL_KEY;
 
   const withMainRank = useMemo(
     () => visible.map((s, i) => ({ s, mainRank: showGlobal ? s.rank : s.leagueRank || i + 1 })),
     [visible, showGlobal]
   );
+
+  const heroScorer = withMainRank.length > 0 ? withMainRank[0] : null;
+  const restRank = withMainRank.slice(1);
 
   const countOf = (key: string) =>
     key === ALL_KEY
@@ -288,8 +274,8 @@ export function TopScorersView() {
           className={cn(
             "shrink-0 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
             filter === ALL_KEY
-              ? "bg-primary/15 border-primary/40 text-primary"
-              : "bg-card/50 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+              ? "bg-primary/15 border-primary/40 text-primary shadow-[inset_0_1px_0_oklch(0.88_0.05_232/22%)]"
+              : "bg-white/[0.035] border-glass-border-soft text-muted-foreground hover:border-glass-border hover:text-foreground"
           )}
         >
           همه لیگ‌ها
@@ -304,8 +290,8 @@ export function TopScorersView() {
               className={cn(
                 "shrink-0 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
                 filter === l.key
-                  ? "bg-primary/15 border-primary/40 text-primary"
-                  : "bg-card/50 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                  ? "bg-primary/15 border-primary/40 text-primary shadow-[inset_0_1px_0_oklch(0.88_0.05_232/22%)]"
+                  : "bg-white/[0.035] border-glass-border-soft text-muted-foreground hover:border-glass-border hover:text-foreground"
               )}
             >
               {l.faName}
@@ -341,23 +327,68 @@ export function TopScorersView() {
       {loading ? (
         <Skeleton />
       ) : withMainRank.length > 0 ? (
-        <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+        <div className="glass-card overflow-hidden">
+          {/* hero — the studio scoring-chart leader tile */}
+          {heroScorer && (
+            <>
+              <GlassPosterMeta
+                className="mt-3"
+                right="رتبه‌بندی گلزنان"
+                left={`${faDigits(withMainRank.length)} بازیکن`}
+              />
+              <div className="m-3 mt-2 glass-scorer-hero p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-5">
+                <ScorerAvatarTile name={heroScorer.s.name} size={56} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
+                    {showGlobal ? "GLOBAL TOP SCORER" : "LEAGUE LEADER"}
+                  </p>
+                  {heroScorer.s.playerId ? (
+                    <Link
+                      href={`/player/${heroScorer.s.playerId}`}
+                      prefetch={false}
+                      className="block text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1 hover:text-primary transition-colors w-fit max-w-full"
+                      title="مشاهده پروفایل بازیکن"
+                    >
+                      {heroScorer.s.name}
+                    </Link>
+                  ) : (
+                    <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{heroScorer.s.name}</p>
+                  )}
+                  <div className="flex items-center gap-1.5 text-[10.5px] text-[#b1c9e2] mt-1.5 flex-wrap">
+                    <span className="truncate">{heroScorer.s.team}</span>
+                    {showGlobal && (
+                      <span className="shrink-0 rounded-md border border-glass-border-soft bg-white/[0.04] px-1.5 py-px text-[9px] font-bold">
+                        {heroScorer.s.leagueFa}
+                      </span>
+                    )}
+                    <ScorerBadges s={heroScorer.s} />
+                  </div>
+                </div>
+                <div className="text-center shrink-0">
+                  <p className="text-[44px] sm:text-[56px] leading-none font-light text-[#dfedff] tabular-persian">
+                    {faDigits(pad2(heroScorer.s.goals))}
+                  </p>
+                  <p className="text-[8.5px] font-bold text-[#c6dcf3] mt-1.5">گل</p>
+                </div>
+              </div>
+            </>
+          )}
           {/* mobile / tablet: single ranked list */}
-          <ol className="divide-y divide-border/25 lg:hidden">
-            {withMainRank.map(({ s, mainRank }) => (
-              <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
+          <ol className="lg:hidden mt-1">
+            {restRank.map(({ s, mainRank }) => (
+              <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} mainRank={mainRank} showGlobal={showGlobal} />
             ))}
           </ol>
           {/* desktop: two ranked columns (right column = first half, RTL-aware) */}
-          <div className="hidden lg:grid lg:grid-cols-2">
-            <ol className="divide-y divide-border/25">
-              {withMainRank.slice(0, Math.ceil(withMainRank.length / 2)).map(({ s, mainRank }) => (
-                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
+          <div className="hidden lg:grid lg:grid-cols-2 mt-1">
+            <ol>
+              {restRank.slice(0, Math.ceil(restRank.length / 2)).map(({ s, mainRank }) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} mainRank={mainRank} showGlobal={showGlobal} />
               ))}
             </ol>
-            <ol className="divide-y divide-border/25 border-s border-border/25">
-              {withMainRank.slice(Math.ceil(withMainRank.length / 2)).map(({ s, mainRank }) => (
-                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} maxGoals={maxGoals} mainRank={mainRank} showGlobal={showGlobal} />
+            <ol className="border-s border-[color:var(--glass-hairline)]">
+              {restRank.slice(Math.ceil(restRank.length / 2)).map(({ s, mainRank }) => (
+                <ScorerRow key={`${s.leagueKey}-${s.name}`} s={s} mainRank={mainRank} showGlobal={showGlobal} />
               ))}
             </ol>
           </div>

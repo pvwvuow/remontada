@@ -2,11 +2,13 @@
 
 // ------------------------------------------------------------------
 // Remontada — league standings + top scorers view
+// Phase 3 theme: glass statistics poster (studio table/scorers look)
 // ------------------------------------------------------------------
 import Link from "next/link";
 import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
+import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { faDigits, formColor } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -53,68 +55,108 @@ function FormDots({ form }: { form?: ("W" | "D" | "L")[] }) {
   );
 }
 
-function StandingsTable({ data }: { data: StandingsData }) {
+function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: string }) {
+  const lg = LEAGUES.find((l) => l.key === leagueKey);
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+    <div className="glass-card overflow-hidden">
+      <GlassLeagueHeader
+        leagueId={lg?.fotmobId}
+        titleTag="h2"
+        title={data.leagueFa}
+        sub={lg ? `${lg.ccode3} · ${lg.enName}` : undefined}
+        season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+      />
+      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم` : undefined} />
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[520px]">
           <thead>
-            <tr className="text-muted-foreground text-[10px] sm:text-[11px] border-b border-border/40 bg-muted/25">
-              <th className="py-2.5 pe-1 ps-3 font-bold text-start w-8">#</th>
-              <th className="py-2.5 px-1 font-bold text-start">تیم</th>
-              <th className="py-2.5 px-1.5 font-bold text-center" title="بازی">ب</th>
-              <th className="py-2.5 px-1.5 font-bold text-center" title="برد">بر</th>
-              <th className="py-2.5 px-1.5 font-bold text-center" title="مساوی">مس</th>
-              <th className="py-2.5 px-1.5 font-bold text-center" title="باخت">با</th>
-              <th className="py-2.5 px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
-              <th className="py-2.5 px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2.5 px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
-              <th className="py-2.5 px-2.5 font-black text-center" title="امتیاز">امتیاز</th>
+            <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
+              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start">تیم</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="بازی">ب</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="برد">بر</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="مساوی">مس</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="باخت">با</th>
+              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
+              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
+              <th className="py-2 px-2.5 font-black text-center text-[#d6e8fb]" title="امتیاز">امتیاز</th>
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((r) => (
-              <tr key={r.teamId} className="border-b border-border/25 last:border-0 hover:bg-accent/30 transition-colors relative">
-                <td className="py-2.5 pe-1 ps-3 relative">
-                  <QualBar color={r.qualColor || undefined} />
-                  <span className="font-bold text-muted-foreground tabular-persian">{faDigits(r.idx)}</span>
-                </td>
-                <td className="py-2 px-1">
-                  <div className="flex items-center gap-0.5 min-w-0">
-                    <Link
-                      href={`/team/${r.teamId}`}
-                      className="flex items-center gap-2 min-w-0 flex-1 rounded-lg px-1 -mx-1 py-0.5 hover:bg-primary/10 transition-colors group"
-                      prefetch={false}
+            {data.rows.map((r) => {
+              const leader = r.idx === 1;
+              return (
+                <tr
+                  key={r.teamId}
+                  className={cn(
+                    "border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors relative",
+                    leader && "glass-leader"
+                  )}
+                >
+                  <td className="py-2.5 pe-1 ps-3 relative">
+                    <QualBar color={r.qualColor || undefined} />
+                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                      {faDigits(pad2(r.idx))}
+                    </span>
+                  </td>
+                  <td className="py-2 px-1">
+                    <div className="flex items-center gap-0.5 min-w-0">
+                      <Link
+                        href={`/team/${r.teamId}`}
+                        className="flex items-center gap-2 min-w-0 flex-1 rounded-lg px-1 -mx-1 py-0.5 hover:bg-primary/10 transition-colors group"
+                        prefetch={false}
+                      >
+                        <img
+                          src={r.logo}
+                          alt=""
+                          width={18}
+                          height={18}
+                          loading="lazy"
+                          className="w-[18px] h-[18px] object-contain shrink-0"
+                          onError={(e) => {
+                            e.currentTarget.style.visibility = "hidden";
+                          }}
+                        />
+                        <span className="min-w-0 flex flex-col">
+                          <span className={cn("font-bold truncate group-hover:text-primary transition-colors", leader && "text-[#f1f7ff]")}>
+                            {r.fa || r.name}
+                          </span>
+                          <FormDots form={r.form} />
+                        </span>
+                      </Link>
+                      <FavoriteStar
+                        team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
+                        size={13}
+                        className="opacity-70 hover:opacity-100"
+                      />
+                      <FormChips form={r.form} />
+                    </div>
+                  </td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsFor)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsAgainst)}</td>
+                  <td className="py-2 px-1.5 text-center tabular-persian">
+                    <span className={cn(r.gd > 0 ? "text-mint" : r.gd < 0 ? "text-rose-soft" : "text-[#8da7c3]/80")}>
+                      {r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}
+                    </span>
+                  </td>
+                  <td className="py-2 px-2.5 text-center">
+                    <span
+                      className={cn(
+                        "font-black tabular-persian rounded-lg px-2 py-0.5 inline-block min-w-[34px]",
+                        leader ? "text-[#f0f6ff] bg-[#bddcfa26]" : "text-[#e4eefb] bg-[#9ec3e50b]"
+                      )}
                     >
-                      { }
-                      <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                      <span className="min-w-0 flex flex-col">
-                        <span className="font-bold truncate group-hover:text-primary transition-colors">{r.fa || r.name}</span>
-                        <FormDots form={r.form} />
-                      </span>
-                    </Link>
-                    <FavoriteStar
-                      team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
-                      size={13}
-                      className="opacity-70 hover:opacity-100"
-                    />
-                    <FormChips form={r.form} />
-                  </div>
-                </td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.played)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian">{faDigits(r.wins)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.draws)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{faDigits(r.losses)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden sm:table-cell">{faDigits(r.goalsFor)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground hidden sm:table-cell">{faDigits(r.goalsAgainst)}</td>
-                <td className="py-2 px-1.5 text-center tabular-persian text-muted-foreground">{r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}</td>
-                <td className="py-2 px-2.5 text-center">
-                  <span className="font-black text-primary tabular-persian bg-primary/10 rounded-lg px-2 py-0.5 inline-block min-w-[34px]">
-                    {faDigits(r.pts)}
-                  </span>
-                </td>
-              </tr>
-            ))}
+                      {faDigits(r.pts)}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -123,56 +165,91 @@ function StandingsTable({ data }: { data: StandingsData }) {
 }
 
 function ScorersCard({ data }: { data: StandingsData }) {
-  if (!data.scorers || data.scorers.length === 0) return null;
+  const list = data.scorers;
+  if (!list || list.length === 0) return null;
+  const [top, ...rest] = list;
   return (
-    <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-3 border-b border-border/40 bg-muted/25">
+    <div className="glass-card overflow-hidden">
+      <header className="flex items-center gap-2 px-4 py-3 border-b border-[color:var(--glass-hairline)]">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="text-chart-3" aria-hidden>
           <circle cx="12" cy="8" r="5" />
           <path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" />
         </svg>
         <h3 className="font-black text-sm">آقای گل</h3>
-        <span className="ms-auto text-[10px] text-muted-foreground">{data.leagueFa}</span>
+        <span className="ms-auto text-[10px] text-steel">{data.leagueFa}</span>
       </header>
-      <ol className="p-1.5 flex flex-col">
-        {data.scorers.map((s, i) => (
-          <li key={`${s.name}-${i}`} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-accent/30 transition-colors">
-            <span
-              className={cn(
-                "w-6 h-6 rounded-lg flex items-center justify-center text-[11px] font-black shrink-0 tabular-persian",
-                i === 0 ? "bg-chart-3/20 text-chart-3 border border-chart-3/30" : "bg-muted text-muted-foreground"
-              )}
-            >
-              {faDigits(s.rank)}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-bold text-[13px] truncate">{s.name}</p>
-              {s.team && <p className="text-[10px] text-muted-foreground truncate">{s.team}</p>}
-            </div>
-            <span className="font-black text-sm text-primary tabular-persian">
-              {faDigits(s.goals)}
-              <span className="text-[9px] font-bold text-muted-foreground ms-1">گل</span>
-            </span>
-          </li>
-        ))}
-      </ol>
+      <div className="p-2.5 flex flex-col">
+        {/* mini hero — the studio scoring-chart leader tile */}
+        <div className="glass-scorer-hero p-3 flex items-center gap-3">
+          <ScorerAvatarTile name={top.name} size={46} rounded="rounded-xl" />
+          <div className="min-w-0 flex-1">
+            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
+            {top.playerId ? (
+              <Link
+                href={`/player/${top.playerId}`}
+                prefetch={false}
+                className="block text-[13px] font-bold text-[#f1f7fd] truncate mt-0.5 hover:text-primary transition-colors w-fit max-w-full"
+                title={`پروفایل ${top.name}`}
+              >
+                {top.name}
+              </Link>
+            ) : (
+              <p className="text-[13px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.name}</p>
+            )}
+            {top.team && <p className="text-[9.5px] text-[#92adc9] truncate mt-0.5">{top.team}</p>}
+          </div>
+          <div className="text-center shrink-0 ps-1">
+            <p className="text-[28px] leading-none font-light text-[#dfedff] tabular-persian">{faDigits(pad2(top.goals))}</p>
+            <p className="text-[8px] font-bold text-[#c6dcf3] mt-1">گل</p>
+          </div>
+        </div>
+        <ol className="mt-1 flex flex-col">
+          {rest.map((s, i) => {
+            const rank = s.rank ?? i + 2;
+            const inner = (
+              <>
+                <span className="w-6 h-6 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10px] font-bold shrink-0 tabular-persian">
+                  {faDigits(pad2(rank))}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[12px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                  {s.team && <span className="block text-[9px] text-[#92adc9] truncate">{s.team}</span>}
+                </span>
+                <span className="shrink-0 min-w-[34px] text-center rounded-md bg-[#a9cdf611] px-1.5 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                  {faDigits(s.goals)}
+                </span>
+              </>
+            );
+            const cls = "flex items-center gap-2.5 px-1.5 py-2 rounded-lg glass-row-hover w-full min-w-0 text-start";
+            return (
+              <li key={`${s.name}-${i}`}>
+                {s.playerId ? (
+                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                    {inner}
+                  </Link>
+                ) : (
+                  <div className={cls}>{inner}</div>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </div>
   );
 }
 
 function Skeleton() {
   return (
-    <div className="flex flex-col gap-4" aria-busy="true">
-      <div className="rounded-2xl border border-border/60 bg-card/40 p-4 flex flex-col gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-3">
-            <div className="w-5 h-4 rounded bg-muted animate-pulse" />
-            <div className="w-[18px] h-[18px] rounded bg-muted animate-pulse" />
-            <div className="h-4 rounded bg-muted animate-pulse" style={{ width: `${45 + ((i * 13) % 30)}%` }} />
-            <div className="h-4 w-10 rounded bg-muted animate-pulse ms-auto" />
-          </div>
-        ))}
-      </div>
+    <div className="glass-card p-4 flex flex-col gap-3" aria-busy="true">
+      {Array.from({ length: 8 }).map((_, i) => (
+        <div key={i} className="flex items-center gap-3">
+          <div className="w-5 h-4 rounded bg-muted animate-pulse" />
+          <div className="w-[18px] h-[18px] rounded bg-muted animate-pulse" />
+          <div className="h-4 rounded bg-muted animate-pulse" style={{ width: `${45 + ((i * 13) % 30)}%` }} />
+          <div className="h-4 w-10 rounded bg-muted animate-pulse ms-auto" />
+        </div>
+      ))}
     </div>
   );
 }
@@ -196,8 +273,8 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange }: Stan
             className={cn(
               "shrink-0 rounded-xl border px-3.5 py-2 text-xs font-bold transition-all",
               l.key === leagueKey
-                ? "bg-primary/15 border-primary/40 text-primary"
-                : "bg-card/50 border-border/50 text-muted-foreground hover:border-border hover:text-foreground"
+                ? "bg-primary/15 border-primary/40 text-primary shadow-[inset_0_1px_0_oklch(0.88_0.05_232/22%)]"
+                : "bg-white/[0.035] border-glass-border-soft text-muted-foreground hover:border-glass-border hover:text-foreground"
             )}
           >
             {l.faName}
@@ -210,15 +287,7 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange }: Stan
       ) : data ? (
         <div className={cn("grid gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_330px] items-start transition-opacity", loading && "opacity-50")}>
           <div className="flex flex-col gap-3 min-w-0">
-            <div className="flex items-center justify-between px-1">
-              <h2 className="text-sm font-black">{data.leagueFa}</h2>
-              {data.season && (
-                <span className="text-[10px] text-muted-foreground border border-border rounded-md px-1.5 py-0.5 tabular-persian">
-                  فصل {faDigits(data.season)}
-                </span>
-              )}
-            </div>
-            <StandingsTable data={data} />
+            <StandingsTable data={data} leagueKey={leagueKey} />
             <p className="text-[10px] text-muted-foreground px-1">
               نوار رنگی کنار رتبه‌ها نشان‌دهنده‌ی سهمیه‌های اروپایی / سقوط است. روی نام هر تیم کلیک کنید تا صفحه‌ی تیم باز شود. نقطه‌های رنگی زیر نام تیم (موبایل) و چیپ‌های ب/م/پ (دسکتاپ) نتیجه ۵ بازی آخر هر تیم در لیگ است.
             </p>
