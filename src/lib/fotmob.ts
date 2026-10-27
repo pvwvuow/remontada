@@ -920,6 +920,45 @@ interface FMPlayerDetails {
     ratingProps?: { rating?: string } | null;
     playerOfTheMatch?: boolean; onBench?: boolean; playedInMatch?: boolean;
   }[] | null;
+  // cycle-20: career path + trophies (both optional — many players lack them)
+  careerHistory?: {
+    careerItems?: Partial<Record<"senior" | "youth" | "national team", { teamEntries?: FMCareerEntry[] | null } | null>> | null;
+  } | null;
+  trophies?: {
+    playerTrophies?: {
+      teamName?: string; ccode?: string;
+      tournaments?: { leagueName?: string; leagueId?: number; seasonsWon?: string[]; seasonsRunnerUp?: string[] }[] | null;
+    }[] | null;
+  } | null;
+}
+
+interface FMCareerEntry {
+  teamId?: number; team?: string;
+  startDate?: string; endDate?: string | null;
+  active?: boolean;
+  appearances?: string; goals?: string; assists?: string;
+  transferType?: { text?: string; localizationKey?: string } | null;
+}
+
+export interface PlayerCareerEntry {
+  teamId: number;
+  team: string;      // english name
+  fa: string;        // persian name (teamFa map) or english fallback
+  logo: string;
+  from: string;      // gregorian year "2022" (faDigits applied in UI)
+  to: string;        // gregorian year or "" when active
+  active: boolean;
+  apps: number | null;
+  goals: number | null;
+  assists: number | null;
+  transfer: string | null;   // persian transfer note or null
+}
+
+export interface PlayerTrophy {
+  teamName: string;
+  leagueName: string;
+  seasonsWon: string[];
+  runnerUp: number;
 }
 
 export interface PlayerSeasonStat { title: string; display: string; key: string }
@@ -958,6 +997,9 @@ export interface PlayerData {
   season: { leagueFa: string; season: string; stats: PlayerSeasonStat[] } | null;
   recent: PlayerRecentMatch[];
   next: { id: string; utcTime: string; opponent: string; opponentId: number; opponentLogo: string; isHome: boolean; leagueFa: string } | null;
+  career: PlayerCareerEntry[];       // senior + national-team stops, newest first
+  careerYouth: PlayerCareerEntry[];  // youth/academy stops (hidden section when empty)
+  trophies: PlayerTrophy[];          // honours (league/team + winning seasons)
   fetchedAt: string;
 }
 
@@ -1100,6 +1142,11 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
   }
 
   const posEn = raw.positionDescription?.primaryPosition?.label || null;
+  const careerItems = raw.careerHistory?.careerItems || {};
+  const career = [
+    ...normalizeCareerEntries(careerItems.senior?.teamEntries, "senior"),
+    ...normalizeCareerEntries(careerItems["national team"]?.teamEntries, "national"),
+  ];
   return {
     id,
     name: raw.name || "",
@@ -1113,6 +1160,9 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     season,
     recent,
     next,
+    career,
+    careerYouth: normalizeCareerEntries(careerItems.youth?.teamEntries, "youth"),
+    trophies: normalizeTrophies(raw.trophies),
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -1120,6 +1170,73 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
 function jalaliContract(iso: string): string {
   const j = jalaliShort(iso);
   return j.day && j.month ? `${j.day} ${j.month}` : "";
+}
+
+// ---- cycle-20: career path + trophies parsing (all best-effort) ----
+const TRANSFER_FA: Record<string, string> = {
+  on_loan: "انتقال قرضی",
+  free_transfer: "انتقال آزاد",
+  back_from_loan: "بازگشت از قرضی",
+  loan_end: "پایان قرضی",
+};
+
+function yearOf(iso?: string | null): string {
+  if (!iso) return "";
+  const y = /^(\d{4})/.exec(iso);
+  return y ? y[1] : "";
+}
+
+function numOr(s?: string): number | null {
+  if (!s) return null;
+  const n = parseInt(s.replace(/[^0-9-]/g, ""), 10);
+  return Number.isFinite(n) ? n : null;
+}
+
+function normalizeCareerEntries(
+  entries: FMCareerEntry[] | null | undefined,
+  kind: "senior" | "national" | "youth",
+): PlayerCareerEntry[] {
+  const out: PlayerCareerEntry[] = [];
+  for (const e of entries || []) {
+    if (!e?.teamId || !e.team) continue;
+    out.push({
+      teamId: e.teamId,
+      team: e.team,
+      fa: teamFa(e.team) || e.team,
+      logo: fotmobTeamLogo(e.teamId),
+      from: yearOf(e.startDate),
+      to: e.active ? "" : yearOf(e.endDate),
+      active: !!e.active,
+      apps: numOr(e.appearances),
+      goals: numOr(e.goals),
+      assists: numOr(e.assists),
+      transfer: e.transferType?.localizationKey
+        ? TRANSFER_FA[e.transferType.localizationKey] || e.transferType.text || null
+        : e.transferType?.text || null,
+      kind,
+    });
+  }
+  // newest first: active club first, then by start year desc
+  out.sort((a, b) => {
+    if (a.active !== b.active) return a.active ? -1 : 1;
+    return (b.from || "").localeCompare(a.from || "");
+  });
+  return out;
+}
+
+function normalizeTrophies(raw?: FMPlayerDetails["trophies"]): PlayerTrophy[] {
+  const out: PlayerTrophy[] = [];
+  for (const pt of raw?.playerTrophies || []) {
+    for (const t of pt.tournaments || []) {
+      const won = t.seasonsWon || [];
+      const runnerUp = (t.seasonsRunnerUp || []).length;
+      if (won.length === 0 && runnerUp === 0) continue;
+      out.push({ teamName: pt.teamName || "", leagueName: t.leagueName || "", seasonsWon: won, runnerUp });
+    }
+  }
+  // most-winning first, cap at 12 to keep the page light
+  out.sort((a, b) => b.seasonsWon.length - a.seasonsWon.length);
+  return out.slice(0, 12);
 }
 
 /**

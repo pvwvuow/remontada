@@ -160,6 +160,120 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         </Link>
       )}
 
+      {/* ---------- career path (cycle-20) ---------- */}
+      {p.career.length > 0 && (
+        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="مسیر حرفه‌ای">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-primary" aria-hidden>
+              <path d="M12 12h.01" />
+              <path d="M5 3h14v5a7 7 0 0 1-14 0V3z" />
+              <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
+              <path d="M8 21h8M12 15v6" />
+            </svg>
+            مسیر حرفه‌ای
+            <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.career.length)} دوره</span>
+          </header>
+          <ul className="divide-y divide-border/25">
+            {p.career.map((c, i) => (
+              <li key={`${c.teamId}-${c.from}-${i}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
+                {c.kind === "senior" ? (
+                  <Link href={`/team/${c.teamId}`} prefetch={false} className="shrink-0" aria-label={c.fa}>
+                    <TeamLogo id={c.teamId} alt={c.fa} size={22} />
+                  </Link>
+                ) : (
+                  <TeamLogo id={c.teamId} alt={c.fa} size={22} />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-1.5 min-w-0">
+                    <span className="font-bold text-[12.5px] truncate">{c.fa}</span>
+                    {c.kind === "national" && (
+                      <span className="text-[8.5px] font-black text-primary border border-primary/25 bg-primary/10 rounded px-1 py-px shrink-0">
+                        تیم ملی
+                      </span>
+                    )}
+                    {c.active && (
+                      <span className="text-[8.5px] font-black text-green-600 dark:text-green-400 border border-green-500/30 bg-green-500/10 rounded px-1 py-px shrink-0">
+                        اکنون
+                      </span>
+                    )}
+                    {c.transfer && (
+                      <span className="hidden sm:inline text-[8.5px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">
+                        {c.transfer}
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5">
+                    {c.from ? faDigits(c.from) : "؟"}
+                    {c.to ? ` – ${faDigits(c.to)}` : c.from ? " – اکنون" : ""}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2.5 shrink-0 text-[10px] font-bold text-muted-foreground tabular-persian">
+                  {c.apps !== null && <span title="بازی">{faDigits(c.apps)}<span className="hidden sm:inline"> بازی</span></span>}
+                  {c.goals !== null && <span title="گل" className="text-primary font-black">{faDigits(c.goals)}<span className="hidden sm:inline"> گل</span></span>}
+                  {c.assists !== null && <span title="پاس گل">{faDigits(c.assists)}<span className="hidden sm:inline"> پاس</span></span>}
+                </div>
+              </li>
+            ))}
+          </ul>
+          {p.careerYouth.length > 0 && (
+            <div className="border-t border-border/30 px-3 sm:px-4 py-2.5">
+              <p className="text-[10px] font-black text-muted-foreground mb-1.5">سطح پایه</p>
+              <p className="flex flex-wrap gap-x-3 gap-y-1">
+                {p.careerYouth.map((y, i) => (
+                  <span key={`${y.teamId}-${i}`} className="text-[10.5px] text-muted-foreground">
+                    {y.fa}
+                    <span className="tabular-persian text-muted-foreground/60">
+                      {" "}({y.from ? faDigits(y.from) : "؟"}{y.to ? `–${faDigits(y.to)}` : ""})
+                    </span>
+                  </span>
+                ))}
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ---------- trophies (cycle-20) ---------- */}
+      {p.trophies.length > 0 && (
+        <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="افتخارات">
+          <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <path d="M8 21h8M12 17v4" />
+              <path d="M7 4h10v5a5 5 0 0 1-10 0V4z" />
+              <path d="M17 5h3a2 2 0 0 1-2 4h-1M7 5H4a2 2 0 0 0 2 4h1" />
+            </svg>
+            افتخارات
+            <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.trophies.length)} جام</span>
+          </header>
+          <ul className="divide-y divide-border/25">
+            {p.trophies.map((t, i) => (
+              <li key={`${t.leagueName}-${t.teamName}-${i}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
+                <span className="w-7 h-7 rounded-lg bg-chart-3/15 border border-chart-3/25 flex items-center justify-center shrink-0 text-chart-3" aria-hidden>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round">
+                    <path d="M7 4h10v5a5 5 0 0 1-10 0V4zM5 5H3.5a1.5 1.5 0 1 0 1.9 1.9M19 5h1.5a1.5 1.5 0 1 1-1.9 1.9" />
+                  </svg>
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-[12.5px] truncate">{t.leagueName}</p>
+                  <p className="text-[10px] text-muted-foreground truncate">{t.teamName}</p>
+                </div>
+                <div className="text-end shrink-0">
+                  {t.seasonsWon.length > 0 && (
+                    <p className="text-[10.5px] font-black text-chart-3 tabular-persian">
+                      {t.seasonsWon.slice(0, 4).map((s) => faDigits(s.slice(0, 4))).join("، ")}
+                      {t.seasonsWon.length > 4 ? "…" : ""}
+                    </p>
+                  )}
+                  {t.runnerUp > 0 && (
+                    <p className="text-[9.5px] text-muted-foreground tabular-persian">{faDigits(t.runnerUp)} نایب‌قهرمانی</p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* ---------- recent matches ---------- */}
       <section className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden" aria-label="بازی‌های اخیر">
         <header className="px-4 py-2.5 border-b border-border/40 bg-muted/25 text-[12px] font-black">

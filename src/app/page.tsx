@@ -9,6 +9,7 @@ import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view"
 import { faDigits } from "@/lib/format";
 import { SearchBox } from "@/components/remontada/search-box";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
+import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -265,6 +266,8 @@ export default function Home() {
                 </button>
               </div>
             )}
+            {/* upcoming fixtures of favorited teams (cycle-20, renders nothing without favorites) */}
+            <FavoriteFixtures />
             <MatchesView
               groups={groups}
               loading={matchesLoading}

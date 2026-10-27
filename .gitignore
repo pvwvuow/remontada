@@ -18,3 +18,4 @@ tests/
 *.db
 *.sqlite
 prisma/dev.db*
+*.tsbuildinfo

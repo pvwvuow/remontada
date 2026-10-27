@@ -321,7 +321,18 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
               {faDigits(s.rank ?? i + 1)}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="font-bold text-[13px] truncate">{s.name}</p>
+              {s.playerId ? (
+                <Link
+                  href={`/player/${s.playerId}`}
+                  prefetch={false}
+                  className="font-bold text-[13px] truncate hover:text-primary transition-colors w-fit block"
+                  title={`پروفایل ${s.name}`}
+                >
+                  {s.name}
+                </Link>
+              ) : (
+                <p className="font-bold text-[13px] truncate">{s.name}</p>
+              )}
               {s.team && <p className="text-[10px] text-muted-foreground truncate">{s.team}</p>}
               <div className="mt-1.5 h-1 rounded-full bg-muted overflow-hidden">
                 <div className="h-full bg-chart-3/70 rounded-full" style={{ width: `${(s.goals / max) * 100}%` }} />
