@@ -160,24 +160,44 @@ export function TopScorersView() {
   const [filter, setFilter] = useState<string>(ALL_KEY);
   const [filterReady, setFilterReady] = useState(false);
 
-  // restore the persisted league filter once on mount
+  // restore the league filter once on mount — URL ?league= takes precedence over localStorage
   useEffect(() => {
+    let restored = false;
     try {
-      const v = window.localStorage.getItem(FILTER_STORAGE_KEY);
-      if (v && (v === ALL_KEY || LEAGUES.some((l) => l.key === v))) setFilter(v);
+      const q = new URLSearchParams(window.location.search).get("league");
+      if (q && (q === ALL_KEY || LEAGUES.some((l) => l.key === q))) {
+        setFilter(q);
+        restored = true;
+      }
     } catch {
-      // storage unavailable — default filter
+      // URL parsing unavailable — fall back to storage
+    }
+    if (!restored) {
+      try {
+        const v = window.localStorage.getItem(FILTER_STORAGE_KEY);
+        if (v && (v === ALL_KEY || LEAGUES.some((l) => l.key === v))) setFilter(v);
+      } catch {
+        // storage unavailable — default filter
+      }
     }
     setFilterReady(true);
   }, []);
 
-  // persist on every change (after hydration so we don't clobber with the default)
+  // persist on every change: localStorage + shareable ?league= URL (after hydration)
   useEffect(() => {
     if (!filterReady) return;
     try {
       window.localStorage.setItem(FILTER_STORAGE_KEY, filter);
     } catch {
       // quota / private mode — non-critical
+    }
+    try {
+      const url = new URL(window.location.href);
+      if (filter === ALL_KEY) url.searchParams.delete("league");
+      else url.searchParams.set("league", filter);
+      window.history.replaceState(null, "", url.toString());
+    } catch {
+      // history API unavailable — non-critical
     }
   }, [filter, filterReady]);
 
@@ -330,7 +350,7 @@ export function TopScorersView() {
 
       {data && !loading && (
         <p className="text-[10px] text-muted-foreground px-1">
-          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. بج‌های سبز/فیروزه‌ای پاس گل و گل+پاس و xG هر گلزن را نشان می‌دهند. فیلتر انتخابی شما برای بازدیدهای بعدی ذخیره می‌ماند.
+          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. بج‌های سبز/فیروزه‌ای پاس گل و گل+پاس و xG هر گلزن را نشان می‌دهند. فیلتر انتخابی شما ذخیره می‌ماند و در آدرس صفحه هم منعکس می‌شود تا بتوانید لینک مستقیم هر لیگ را به‌اشتراک بگذارید.
         </p>
       )}
     </div>

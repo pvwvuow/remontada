@@ -8,6 +8,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
+import { SITE_URL } from "@/lib/site";
+import { JsonLd } from "@/components/remontada/json-ld";
 import { cn } from "@/lib/utils";
 
 // ---------- API shape (mirrors /api/match/[id]) ----------
@@ -813,8 +815,33 @@ export function MatchDetail({ matchId }: { matchId: string }) {
   if (!data) return null;
   const m = data.match;
 
+  // JSON-LD: SportsEvent for search engines
+  const matchLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": `${m.home.fa || m.home.name} در برابر ${m.away.fa || m.away.name}`,
+    "alternateName": `${m.home.name} vs ${m.away.name}`,
+    "sport": "Football",
+    "url": `${SITE_URL}/match/${m.id}`,
+    "eventStatus": m.cancelled ? "https://schema.org/EventCancelled" : "https://schema.org/EventScheduled",
+    "competitor": [
+      { "@type": "SportsTeam", "name": m.home.name, "alternateName": m.home.fa || m.home.name },
+      { "@type": "SportsTeam", "name": m.away.name, "alternateName": m.away.fa || m.away.name },
+    ],
+    "location": data.info?.stadium
+      ? {
+          "@type": "Place",
+          "name": data.info.stadium,
+          ...(data.info.city ? { "address": data.info.city } : {}),
+        }
+      : undefined,
+    ...(m.utcTime ? { "startDate": m.utcTime } : {}),
+    ...(m.leagueFa ? { "superEvent": { "@type": "SportsEvent", "name": m.leagueFa } } : {}),
+  };
+
   return (
     <div className="flex flex-col gap-4">
+      <JsonLd data={matchLd} />
       {/* back link */}
       <Link href="/" className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-primary transition-colors w-fit">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>

@@ -19,5 +19,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
-  return [...staticRoutes, ...leagueRoutes];
+  const scorersRoutes: MetadataRoute.Sitemap = LEAGUES.map((l) => ({
+    url: `${SITE_URL}/topscorers/${l.key}`,
+    lastModified: now,
+    changeFrequency: "daily" as const,
+    priority: 0.7,
+  }));
+
+  return [...staticRoutes, ...leagueRoutes, ...scorersRoutes];
 }

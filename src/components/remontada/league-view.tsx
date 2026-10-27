@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { StandingsData, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
 import { LEAGUES } from "@/lib/leagues";
+import { SITE_URL } from "@/lib/site";
+import { JsonLd } from "@/components/remontada/json-ld";
 import { faDigits, jalaliShort, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -253,13 +255,29 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
   );
 }
 
-function ScorersList({ data }: { data: StandingsData }) {
+function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: string }) {
   if (!data.scorers?.length) {
     return <p className="text-center text-muted-foreground text-sm py-10">آقای گل این لیگ هنوز ثبت نشده است.</p>;
   }
   const max = Math.max(...data.scorers.map((s) => s.goals), 1);
   return (
     <div className="rounded-2xl border border-border/60 bg-card/60 overflow-hidden">
+      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-border/40 bg-muted/25">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="text-chart-3" aria-hidden>
+          <circle cx="12" cy="8" r="5" />
+          <path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" />
+        </svg>
+        <h3 className="font-black text-[12.5px]">آقای گل</h3>
+        <Link
+          href={`/topscorers/${leagueKey}`}
+          className="ms-auto inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
+        >
+          صفحه کامل گلزنان
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </Link>
+      </header>
       <ol className="divide-y divide-border/25">
         {data.scorers.map((s, i) => (
           <li key={`${s.name}-${i}`} className="flex items-center gap-3 px-4 py-3">
@@ -375,8 +393,29 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
     return <p className="text-center text-muted-foreground text-sm py-16">لیگ مورد نظر یافت نشد.</p>;
   }
 
+  // JSON-LD: standings table as ItemList of SportsTeam (client-rendered, read by crawlers)
+  const standingsLd = standings?.rows?.length
+    ? {
+        "@context": "https://schema.org",
+        "@type": "ItemList",
+        "name": `جدول رده‌بندی ${lg.faName}`,
+        "numberOfItems": standings.rows.length,
+        "itemListElement": standings.rows.map((r, i) => ({
+          "@type": "ListItem",
+          "position": i + 1,
+          "item": {
+            "@type": "SportsTeam",
+            "name": r.name,
+            "alternateName": r.fa || r.name,
+            "url": `${SITE_URL}/team/${r.teamId}`,
+          },
+        })),
+      }
+    : null;
+
   return (
     <div className="flex flex-col gap-4">
+      <JsonLd data={standingsLd} />
       {/* league header */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
@@ -426,13 +465,13 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
               <StandingsTable data={standings} />
-              {standings.scorers?.length > 0 && <ScorersList data={standings} />}
+              {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <p className="text-center text-muted-foreground text-sm py-10">جدولی برای این لیگ ثبت نشده است.</p>)}
           {tab === "stats" && (fixtures?.stats ? <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} /> : <p className="text-center text-muted-foreground text-sm py-10">آماری برای این لیگ ثبت نشده است.</p>)}
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
-          {tab === "scorers" && (standings ? <ScorersList data={standings} /> : <p className="text-center text-muted-foreground text-sm py-10">—</p>)}
+          {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <p className="text-center text-muted-foreground text-sm py-10">—</p>)}
         </div>
       )}
     </div>
