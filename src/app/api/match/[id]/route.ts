@@ -60,6 +60,20 @@ interface FMStatGroup {
   key?: string;
   stats?: FMStatRow[];
 }
+// update cycle-46: one raw shot from content.shotmap.shots
+interface FMShot {
+  eventType?: string;
+  teamId?: number;
+  playerName?: string;
+  x?: number;
+  y?: number;
+  min?: number;
+  minAdded?: number | null;
+  isBlocked?: boolean;
+  isOnTarget?: boolean;
+  expectedGoals?: number;
+}
+
 interface FMStarter {
   id: number; name: string; shirtNumber?: string;
   positionId?: number; usualPlayingPositionId?: number;
@@ -120,6 +134,8 @@ interface FMMatchDetails {
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
     lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
     momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
+    // update cycle-46: shotmap (per-shot locations, outcome, xG)
+    shotmap?: { shots?: FMShot[] };
   };
 }
 
@@ -305,6 +321,19 @@ export interface MatchDetailNormalized {
     away: number;
     attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
   } | null;
+  // update cycle-46: normalized shotmap (null when the match has no shot data)
+  shots?: {
+    side: "home" | "away";
+    minute: string;
+    player?: string;
+    x: number;
+    y: number;
+    isGoal: boolean;
+    onTarget: boolean;
+    blocked: boolean;
+    post: boolean;
+    xg?: number;
+  }[] | null;
   playerOfTheMatch?: {
     id?: number;
     name: string;
@@ -409,6 +438,30 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
 
   // fix cycle-45: penalty shootout block (score + attempts), null on quiet path
   const shootout = shootoutRaw.length > 0 ? buildShootout(shootoutRaw) : null;
+
+  // ---------------- shots (shotmap, update cycle-46) ----------------
+  // side comes from teamId vs the general home/away ids; x/y are 0..100 with
+  // x ≈ 100 = the shooting team's target goal
+  const rawShots = raw.content?.shotmap?.shots;
+  let shots: MatchDetailNormalized["shots"] = null;
+  if (Array.isArray(rawShots) && rawShots.length > 0) {
+    const homeId = g.homeTeam?.id;
+    const awayId = g.awayTeam?.id;
+    shots = rawShots
+      .filter((s) => typeof s?.x === "number" && typeof s?.y === "number")
+      .map((s) => ({
+        side: (awayId != null && s.teamId === awayId) ? ("away" as const) : ("home" as const),
+        minute: fmtMinute({ type: "Shot", time: s.min, addedTime: s.minAdded } as FMEvent),
+        player: s.playerName || undefined,
+        x: s.x as number,
+        y: s.y as number,
+        isGoal: s.eventType === "Goal",
+        onTarget: !!s.isOnTarget,
+        blocked: !!s.isBlocked,
+        post: s.eventType === "Post",
+        xg: typeof s.expectedGoals === "number" ? Math.round(s.expectedGoals * 100) / 100 : undefined,
+      }));
+  }
 
   // ---------------- stats ----------------
   // Shape: Periods.All.stats = [ { title: groupName, stats: [ {row}, {titleRow}, ... ] }, ... ]
@@ -570,6 +623,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     form,
     momentum,
     shootout,
+    shots,
     playerOfTheMatch,
     fetchedAt: new Date().toISOString(),
   };

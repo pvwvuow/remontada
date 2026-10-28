@@ -59,6 +59,19 @@ interface DetailData {
     away: number;
     attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
   } | null;
+  // update cycle-46: normalized shotmap (null when the match has no shot data)
+  shots?: {
+    side: "home" | "away";
+    minute: string;
+    player?: string;
+    x: number;
+    y: number;
+    isGoal: boolean;
+    onTarget: boolean;
+    blocked: boolean;
+    post: boolean;
+    xg?: number;
+  }[] | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -69,10 +82,11 @@ interface DetailData {
   error?: string;
 }
 
-type Tab = "events" | "stats" | "lineups" | "info" | "h2h";
+type Tab = "events" | "shots" | "stats" | "lineups" | "info" | "h2h";
 
 const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: "events", label: "رویدادها" },
+  { key: "shots", label: "شوت‌ها" },
   { key: "stats", label: "آمار" },
   { key: "lineups", label: "ترکیب" },
   { key: "h2h", label: "رو در رو" },
@@ -375,6 +389,66 @@ function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["s
       </div>
       <div className="px-4 py-2 text-[10px] text-steel/60 border-t border-glass-border-soft">
         {match.home.fa || match.home.name} — سمت راست | {match.away.fa || match.away.name} — سمت چپ
+      </div>
+    </div>
+  );
+}
+
+// ---------- shotmap pitch (update cycle-46) ----------
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", color)} aria-hidden />
+      {label}
+    </span>
+  );
+}
+function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]>; match: DetailMatch }) {
+  const homeCount = shots.filter((s) => s.side === "home").length;
+  const awayCount = shots.filter((s) => s.side === "away").length;
+  return (
+    <div className="glass-card p-3">
+      <div className="flex items-center justify-between text-[10.5px] text-steel/80 mb-2 tabular-persian">
+        <span className="font-bold">{match.away.fa || match.away.name} ({faDigits(awayCount)})</span>
+        <span className="text-steel/50">جهت حمله →</span>
+        <span className="font-bold">({faDigits(homeCount)}) {match.home.fa || match.home.name}</span>
+      </div>
+      <div dir="ltr" className="relative w-full aspect-[105/68] rounded-lg border border-glass-border-soft bg-[oklch(0.24_0.04_150/30%)] overflow-hidden">
+        {/* markings */}
+        <div className="absolute inset-y-0 left-1/2 w-px bg-white/15" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[14%] aspect-square rounded-full border border-white/15" />
+        <div className="absolute inset-y-[24%] left-0 w-[10%] border border-white/15 border-l-0" />
+        <div className="absolute inset-y-[24%] right-0 w-[10%] border border-white/15 border-r-0" />
+        {/* dots — home attacks right (x→100); away mirrored to attack left */}
+        {shots.map((s, i) => {
+          const isHome = s.side === "home";
+          const left = isHome ? s.x : 100 - s.x;
+          const top = isHome ? s.y : 100 - s.y;
+          const color = s.isGoal
+            ? "bg-emerald-400 border-emerald-100 shadow-[0_0_7px_oklch(0.72_0.17_160)]"
+            : s.post
+              ? "bg-rose-400 border-rose-100"
+              : s.blocked
+                ? "bg-amber-400/90 border-amber-100"
+                : s.onTarget
+                  ? "bg-sky-400 border-sky-100"
+                  : "bg-slate-400/80 border-slate-200/70";
+          return (
+            <span
+              key={i}
+              title={`${s.player || ""} ${s.minute} — xG ${s.xg ?? "؟"}`}
+              className={cn("absolute w-[9px] h-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border", color)}
+              style={{ left: `${left}%`, top: `${top}%` }}
+            />
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2 text-[10px] text-steel/80">
+        <Legend color="bg-emerald-400" label="گل" />
+        <Legend color="bg-sky-400" label="در چارچوب" />
+        <Legend color="bg-amber-400/90" label="بلوکه" />
+        <Legend color="bg-rose-400" label="تیرک" />
+        <Legend color="bg-slate-400/80" label="بیرون" />
       </div>
     </div>
   );
@@ -970,14 +1044,14 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       )}
 
       {/* tabs */}
-      <nav className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1" aria-label="بخش‌های مسابقه">
+      <nav className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1 overflow-x-auto" aria-label="بخش‌های مسابقه">
         {TAB_LABELS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             aria-current={tab === t.key ? "page" : undefined}
             className={cn(
-              "relative px-3.5 py-2 text-[12.5px] font-bold transition-colors",
+              "relative shrink-0 px-3.5 py-2 text-[12.5px] font-bold transition-colors",
               tab === t.key ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -996,6 +1070,10 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           </div>
         )}
         {tab === "stats" && <StatBars groups={data.statGroups} />}
+        {tab === "shots" && data.shots && data.shots.length > 0 && <ShotmapPitch shots={data.shots} match={m} />}
+        {tab === "shots" && (!data.shots || data.shots.length === 0) && (
+          <p className="glass-card text-center text-steel text-sm py-10">شوتی برای این مسابقه ثبت نشده است.</p>
+        )}
         {tab === "lineups" &&
           (data.lineups ? (
             <LineupsPitch lineups={data.lineups} match={m} />
