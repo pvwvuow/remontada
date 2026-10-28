@@ -2107,6 +2107,10 @@ interface FMStatBlock {
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[] };
+  fixtures?: {
+    allFixtures?: { fixtures?: FMTeamFixtureRaw[] };
+    primaryTournamentId?: number | string;
+  };
   history?: {
     trophyList?: FMTeamTrophyRaw[];
     historicalTableData?: { ranks?: FMHistoryRankRaw[] };
@@ -2140,6 +2144,21 @@ interface FMHistoryRankRaw {
   position?: number;
   numberOfTeams?: number;
   stats?: { points?: number; wins?: number; draws?: number; loss?: number };
+}
+
+interface FMTeamFixtureRaw {
+  id?: number;
+  home?: { id?: number; name?: string; score?: number | null };
+  away?: { id?: number; name?: string; score?: number | null };
+  tournament?: { name?: string; leagueId?: number };
+  status?: {
+    utcTime?: string;
+    finished?: boolean;
+    started?: boolean;
+    cancelled?: boolean;
+    scoreStr?: string;
+  };
+  notStarted?: boolean;
 }
 
 const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
@@ -2669,4 +2688,83 @@ export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHi
   if (items.length === 0) return null;
   items.sort((a, b) => b.season.localeCompare(a.season));
   return { total: items.length, items: items.slice(0, SEASON_HISTORY_SHOWN) };
+}
+
+// ---------------- FotMob: team full-season fixtures (data/teams endpoint, cycle-81) ----------------
+// Probed live (2026-10-29, UA Chrome/124): fixtures.allFixtures on the SAME
+// data/teams payload — { fixtures: [ { id, home/away {id, name, score},
+// tournament {name, leagueId}, status {utcTime, finished, started, cancelled,
+// scoreStr}, notStarted } ], lastMatch, nextMatch }; 49 entries on Celtic 9925
+// (league + cups + friendlies, whole season) — far beyond the 10-result /
+// 8-upcoming windows the team page already shows.
+
+export interface TeamSeasonFixture {
+  id: number;
+  utcTime: string; // ISO
+  home: { id: number; name: string; fa: string; score: number | null };
+  away: { id: number; name: string; fa: string; score: number | null };
+  tournamentFa: string;
+  finished: boolean;
+  started: boolean;
+}
+
+export interface TeamFixturesAll {
+  total: number; // everything in the source (results + upcoming)
+  results: TeamSeasonFixture[]; // finished, newest first
+  upcoming: TeamSeasonFixture[]; // not finished (incl. live), soonest first
+}
+
+/**
+ * Full season fixture archive («همهٔ بازی‌های فصل», cycle-81) from the shared
+ * cached data/teams raw fetch — no extra upstream hit. Cancelled rows are
+ * dropped; results sorted newest-first, upcoming soonest-first; null when the
+ * payload has no list so the UI hides the section (same contract as the other
+ * lazy team reads).
+ */
+export async function getTeamFixturesAll(teamId: number): Promise<TeamFixturesAll | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.fixtures?.allFixtures?.fixtures;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const results: TeamSeasonFixture[] = [];
+  const upcoming: TeamSeasonFixture[] = [];
+  for (const f of list) {
+    const id = Number(f?.id);
+    const utcTime = String(f?.status?.utcTime || "");
+    const home = f?.home;
+    const away = f?.away;
+    if (!id || !utcTime || !home?.name || !away?.name) continue;
+    if (f?.status?.cancelled) continue;
+    const row: TeamSeasonFixture = {
+      id,
+      utcTime,
+      home: {
+        id: Number(home.id || 0),
+        name: home.name,
+        fa: teamFa(home.name) || home.name,
+        score: typeof home.score === "number" ? home.score : null,
+      },
+      away: {
+        id: Number(away.id || 0),
+        name: away.name,
+        fa: teamFa(away.name) || away.name,
+        score: typeof away.score === "number" ? away.score : null,
+      },
+      // exact league names first (TROPHY_FA carries «Premiership»/«Premier
+      // League»/… which competitionFa deliberately keeps English when the
+      // country is unknown), then the general competition map, then the raw
+      tournamentFa:
+        TROPHY_FA[String(f?.tournament?.name || "")] ||
+        competitionFa(String(f?.tournament?.name || "")) ||
+        "بازی",
+      finished: Boolean(f?.status?.finished),
+      started: Boolean(f?.status?.started),
+    };
+    if (row.finished) results.push(row);
+    else upcoming.push(row);
+  }
+  if (results.length === 0 && upcoming.length === 0) return null;
+  results.sort((a, b) => b.utcTime.localeCompare(a.utcTime));
+  upcoming.sort((a, b) => a.utcTime.localeCompare(b.utcTime));
+  return { total: results.length + upcoming.length, results, upcoming };
 }

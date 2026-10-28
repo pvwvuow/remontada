@@ -27,6 +27,8 @@ export const LEAGUES: LeagueConfig[] = [
 const COMPETITION_FA: Record<string, string> = {
   "champions league": "لیگ قهرمانان اروپا",
   "uefa champions league": "لیگ قهرمانان اروپا",
+  "champions league qualification": "مقدماتی لیگ قهرمانان اروپا",
+  "uefa champions league qualification": "مقدماتی لیگ قهرمانان اروپا",
   "europa league": "لیگ اروپا",
   "uefa europa league": "لیگ اروپا",
   "conference league": "لیگ کنفرانس اروپا",
@@ -47,6 +49,8 @@ const COMPETITION_FA: Record<string, string> = {
   "dfb pokal": "جام حذفی آلمان",
   "supercopa": "سوپرکاپ اسپانیا",
   "community shield": "سوپرکاپ انگلیس",
+  "club friendlies": "بازی دوستانه باشگاهی",
+  "friendlies": "بازی دوستانه",
   "saudi pro league": "لیگ حرفه‌ای عربستان",
   "pro league": "لیگ حرفه‌ای عربستان",
   "eredivisie": "اردیویزه هلند",

@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -923,6 +923,118 @@ function TeamHistorySection({ data }: { data: TeamSeasonHistory }) {
   );
 }
 
+// ---------------- team full-season fixtures («همهٔ بازی‌های فصل», cycle-81) ----------------
+// Whole-season archive from the shared team payload (league + cups +
+// friendlies) — far beyond the 10-result / 8-upcoming windows above. Two
+// groups (پیش‌رو soonest-first, نتایج newest-first), each collapsed to a few
+// rows with a «نمایش همه» toggle; rows reuse the match-row visual language.
+function SeasonFixtureRow({ f, teamId }: { f: TeamSeasonFixture; teamId: number }) {
+  const isHome = f.home.id === teamId;
+  const opp = isHome ? f.away : f.home;
+  const j = jalaliShort(f.utcTime);
+  const res =
+    f.finished && f.home.score != null && f.away.score != null
+      ? f.home.score === f.away.score
+        ? ("D" as const)
+        : (isHome ? f.home.score > f.away.score : f.away.score > f.home.score)
+          ? ("W" as const)
+          : ("L" as const)
+      : null;
+  return (
+    <Link href={`/match/${f.id}`} prefetch={false} className="glass-row-hover block">
+      <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
+        <div className="flex flex-col items-center leading-tight min-w-0">
+          <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
+          <span className="text-[9px] text-muted-foreground/60 truncate max-w-[56px]">{f.tournamentFa}</span>
+        </div>
+        <div className="flex items-center justify-end gap-2 min-w-0 text-[13px]">
+          <span
+            className={cn(
+              "shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black",
+              isHome ? "bg-sky-soft/10 text-sky-soft border-sky-soft/20" : "bg-steel/10 text-steel border-steel/20"
+            )}
+          >
+            {isHome ? "خانه" : "بیرون"}
+          </span>
+          <span className="truncate font-black">{opp.fa || opp.name}</span>
+          <img src={fotmobTeamLogo(opp.id)} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+        </div>
+        <div className="flex justify-end">
+          {f.finished ? (
+            <div className="flex items-center gap-1.5">
+              {f.home.score != null && f.away.score != null && (
+                <span className="font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
+                  {faDigits(f.home.score)} : {faDigits(f.away.score)}
+                </span>
+              )}
+              {res && (
+                <span className={cn("w-[22px] h-[22px] rounded-md border text-[10px] font-black flex items-center justify-center", formChip(res))}>
+                  {res === "W" ? "ب" : res === "D" ? "م" : "پ"}
+                </span>
+              )}
+            </div>
+          ) : f.started ? (
+            <span className="text-[10px] font-black text-red-400 flex items-center gap-1 whitespace-nowrap">
+              <span className="live-dot w-1 h-1 rounded-full bg-red-500 inline-block" />
+              زنده
+            </span>
+          ) : (
+            <span className="text-[11px] font-black text-foreground/85 tabular-persian">{tehranTime(f.utcTime)}</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+const FIXTURE_GROUP_SHOWN = 6;
+
+function FixtureGroup({ label, items, teamId }: { label: string; items: TeamSeasonFixture[]; teamId: number }) {
+  const [all, setAll] = useState(false);
+  if (items.length === 0) return null;
+  const shown = all ? items : items.slice(0, FIXTURE_GROUP_SHOWN);
+  return (
+    <div>
+      <p className="text-[10px] font-bold text-steel/70 px-1 mb-1.5">
+        {label}
+        <span className="text-[9px] font-bold text-steel/50 tabular-persian"> ({faDigits(items.length)})</span>
+      </p>
+      <div className="flex flex-col gap-1">
+        {shown.map((f) => (
+          <SeasonFixtureRow key={f.id} f={f} teamId={teamId} />
+        ))}
+      </div>
+      {items.length > FIXTURE_GROUP_SHOWN && (
+        <button
+          type="button"
+          onClick={() => setAll((v) => !v)}
+          className="mt-2 mx-auto block text-[10.5px] font-bold text-sky-soft hover:text-foreground transition-colors cursor-pointer"
+        >
+          {all ? "نمایش کمتر" : `نمایش همهٔ ${faDigits(items.length)} بازی`}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function TeamFixturesSection({ data, teamId }: { data: TeamFixturesAll; teamId: number }) {
+  return (
+    <Section
+      title="همهٔ بازی‌های فصل"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+          {faDigits(data.total)} بازی
+        </span>
+      }
+    >
+      <div className="flex flex-col gap-3.5" data-testid="team-fixtures">
+        <FixtureGroup label="پیش‌رو" items={data.upcoming} teamId={teamId} />
+        <FixtureGroup label="نتایج" items={data.results} teamId={teamId} />
+      </div>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1032,6 +1144,25 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* history stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-81: lazy team full-season fixtures («همهٔ بازی‌های فصل») — same
+  // data/teams source (shared upstream cache), fetched after mount; stays
+  // null → section hidden.
+  const [fixturesAll, setFixturesAll] = useState<TeamFixturesAll | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-fixtures/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.fixtures) setFixturesAll(j.fixtures as TeamFixturesAll);
+      })
+      .catch(() => {
+        /* fixtures stay null → section hidden */
       });
     return () => {
       alive = false;
@@ -1239,6 +1370,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-80: team league history («سوابق لیگ») — lazily probed, hidden when absent */}
       {seasonHistory && seasonHistory.items.length > 0 && <TeamHistorySection data={seasonHistory} />}
+
+      {/* cycle-81: team full-season fixtures («همهٔ بازی‌های فصل») — lazily probed, hidden when absent */}
+      {fixturesAll && fixturesAll.total > 0 && <TeamFixturesSection data={fixturesAll} teamId={teamId} />}
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
         نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.
