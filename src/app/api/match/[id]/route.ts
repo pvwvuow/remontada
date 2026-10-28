@@ -8,6 +8,7 @@ import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
 import { roundFa } from "@/lib/fotmob";
+import { playerFa } from "@/lib/player-names-fa";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -318,12 +319,16 @@ function fmtMinute(e: FMEvent): string {
 }
 
 // ---------------- lineup row clustering ----------------
-interface Chip { id: number; name: string; shirt?: string; rating?: number; _y?: number }
+// cycle-106: chips/subs/coach carry nameFa — the honest Persian display name
+// (curated PLAYER_NAME_FA hit, else the raw upstream English name), same
+// contract as the cycle-104/105 name-map extensions; `name` stays upstream.
+interface Chip { id: number; name: string; nameFa: string; shirt?: string; rating?: number; _y?: number }
 
 function toChip(p: FMStarter): Chip {
   return {
     id: p.id,
     name: p.name,
+    nameFa: playerFa(p.name),
     shirt: p.shirtNumber || undefined,
     rating: p.performance?.rating ?? undefined,
     _y: p.verticalLayout?.y ?? 0,
@@ -355,8 +360,9 @@ interface LineupSide {
   fa: string;
   formation?: string;
   coach?: string;
+  coachFa?: string; // cycle-106 honest map (present only when a coach name exists)
   rows: { players: Omit<Chip, "_y">[] }[];
-  subs: { id: number; name: string; shirt?: string }[];
+  subs: { id: number; name: string; nameFa: string; shirt?: string }[];
 }
 
 // ---------------- normalizer ----------------
@@ -378,21 +384,25 @@ export interface MatchDetailNormalized {
     home: { id: number; name: string; fa: string; logo: string; score: number | null };
     away: { id: number; name: string; fa: string; logo: string; score: number | null };
   };
-  scorers: { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string }[];
+  scorers: { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string }[];
   events: {
     type: string;
     typeFa: string;
     minute: string;
     side: "home" | "away" | "neutral";
     player?: string;
+    playerFa?: string;
     card?: string;
     ownGoal: boolean;
     penalty: boolean;
     swapIn?: string;
+    swapInFa?: string;
     swapOut?: string;
+    swapOutFa?: string;
     homeScore: number | null;
     awayScore: number | null;
     assist?: string;
+    assistFa?: string;
   }[];
   statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
@@ -432,13 +442,14 @@ export interface MatchDetailNormalized {
   shootout?: {
     home: number;
     away: number;
-    attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
+    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; scored: boolean; noteFa: string }[];
   } | null;
   // update cycle-46: normalized shotmap (null when the match has no shot data)
   shots?: {
     side: "home" | "away";
     minute: string;
     player?: string;
+    playerFa?: string;
     x: number;
     y: number;
     isGoal: boolean;
@@ -470,6 +481,7 @@ export interface MatchDetailNormalized {
   playerOfTheMatch?: {
     id?: number;
     name: string;
+    nameFa: string; // cycle-106 honest map (falls back to the raw name)
     rating?: string | null;
     teamId?: number;
     teamName?: string;
@@ -485,6 +497,7 @@ export interface MatchDetailNormalized {
 export interface PlayerStatRow {
   id: number;
   name: string;
+  nameFa: string; // cycle-106 honest map (falls back to the raw name)
   shirt?: string;
   side: "home" | "away";
   isGk: boolean;
@@ -565,26 +578,32 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
       minute: fmtMinute(e),
       side,
       player: e.player?.name || undefined,
+      ...(e.player?.name ? { playerFa: playerFa(e.player.name) } : {}),
       card: e.card || undefined,
       ownGoal: !!e.ownGoal,
       penalty: e.type === "MissedPenalty" || (!!isGoal && !!e.isPenalty),
       swapIn: e.type === "Substitution" ? e.swap?.[0]?.name : undefined,
+      swapInFa: e.type === "Substitution" && e.swap?.[0]?.name ? playerFa(e.swap[0].name) : undefined,
       swapOut: e.type === "Substitution" ? e.swap?.[1]?.name : undefined,
+      swapOutFa: e.type === "Substitution" && e.swap?.[1]?.name ? playerFa(e.swap[1].name) : undefined,
       homeScore: typeof e.homeScore === "number" ? e.homeScore : null,
       awayScore: typeof e.awayScore === "number" ? e.awayScore : null,
       assist: isGoal && !e.ownGoal ? e.assistInput || undefined : undefined,
+      assistFa: isGoal && !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
     });
     if (isGoal) {
       if (side !== "neutral") {
         scorers.push({
           side,
           player: e.player?.name || "",
+          playerFa: playerFa(e.player?.name || ""),
           minute: fmtMinute(e),
           ownGoal: !!e.ownGoal,
           penalty: !!e.isPenalty,
           // own goals are credited to the attacking side but the defender scoring
           // is shown by FotMob as the player — keep assist only for real goals
           assist: (!e.ownGoal && e.assistInput) || undefined,
+          assistFa: !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
         });
       }
     }
@@ -608,6 +627,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         side: (awayId != null && s.teamId === awayId) ? ("away" as const) : ("home" as const),
         minute: fmtMinute({ type: "Shot", time: s.min, addedTime: s.minAdded } as FMEvent),
         player: s.playerName || undefined,
+        playerFa: s.playerName ? playerFa(s.playerName) : undefined,
         x: s.x as number,
         y: s.y as number,
         isGoal: s.eventType === "Goal",
@@ -691,6 +711,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         return {
           id: p.id as number,
           name: p.name || "?",
+          nameFa: playerFa(p.name || "?"),
           shirt: p.shirtNumber || undefined,
           side: (awayId != null && p.teamId === awayId) ? ("away" as const) : ("home" as const),
           isGk: !!p.isGoalkeeper,
@@ -761,14 +782,16 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   if (lu?.homeTeam?.starters?.length && lu?.awayTeam?.starters?.length) {
     const build = (t?: FMLineupTeam): LineupSide | null => {
       if (!t?.starters?.length) return null;
+      const coachName = t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined;
       return {
         teamId: t.id,
         name: t.name,
         fa: teamFa(t.name) || t.name,
         formation: t.formation || undefined,
-        coach: t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined,
+        coach: coachName,
+        coachFa: coachName ? playerFa(coachName) : undefined,
         rows: clusterRows(t.starters),
-        subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, shirt: s.shirtNumber || undefined })),
+        subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, nameFa: playerFa(s.name), shirt: s.shirtNumber || undefined })),
       };
     };
     lineups = { home: build(lu.homeTeam), away: build(lu.awayTeam) };
@@ -895,6 +918,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     ? {
         id: typeof pom?.id === "number" ? pom.id : undefined,
         name: pomName,
+        nameFa: playerFa(pomName),
         rating: pomRating,
         teamId: typeof pom?.teamId === "number" ? pom.teamId : undefined,
         teamName: pom?.teamName || undefined,

@@ -8,10 +8,17 @@
 // This pure helper turns raw shootout events into a normalized structure.
 // It lives in lib (not inside the route module) so a plain bun script can
 // unit-test it without the Next.js runtime.
+//
+// cycle-106: attempts gain playerFa — the honest Persian display name
+// (curated map hit, else the raw upstream English name), same contract as
+// the cycle-104/105 name map extensions.
+
+import { playerFa } from "./player-names-fa";
 
 export interface ShootoutAttempt {
   side: "home" | "away" | "neutral";
   player?: string;
+  playerFa?: string;
   scored: boolean;
   noteFa: string;
 }
@@ -52,9 +59,11 @@ export function buildShootout(rawEvents: unknown[]): Shootout | null {
       if (side === "home") home += 1;
       else if (side === "away") away += 1;
     }
+    const playerName = ev.player?.name || undefined;
     attempts.push({
       side,
-      player: ev.player?.name || undefined,
+      player: playerName,
+      ...(playerName ? { playerFa: playerFa(playerName) } : {}),
       scored,
       noteFa: scored ? "گل" : MISS_FA[type] || "ناموفق",
     });

@@ -1772,6 +1772,7 @@ export interface PlayerPitch {
 export interface PlayerData {
   id: string;
   name: string;
+  nameFa: string; // cycle-106: honest Persian display name for the profile h1 (curated map hit, else the raw upstream name)
   positionFa: string | null;
   positionEn: string | null;
   status: string;
@@ -2180,6 +2181,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
   return {
     id,
     name: raw.name || "",
+    nameFa: playerFa(raw.name || ""),
     positionFa: faPosition(posEn || undefined),
     positionEn: posEn,
     status: raw.status || "",
@@ -2442,7 +2444,10 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // cycle-96: key bumped to v4 — output gained the injury block so the L2
   // SQLite cache cannot serve older injury-less shapes (same convention as
   // cycle-52/86/87)
-  const payload = await cached(`player:v4:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-106: key bumped to v5 — output gained the root nameFa (profile h1
+  // display name); older shapes would violate the required field (same
+  // convention as cycle-52/86/87/96)
+  const payload = await cached(`player:v5:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

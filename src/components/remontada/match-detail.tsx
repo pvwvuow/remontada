@@ -30,18 +30,18 @@ interface DetailMatch {
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
   away: { id: number; name: string; fa: string; logo: string; score: number | null };
 }
-interface DetailScorer { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string }
+interface DetailScorer { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string }
 interface DetailEvent {
   type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
-  player?: string; card?: string; ownGoal: boolean; penalty: boolean;
-  swapIn?: string; swapOut?: string; homeScore: number | null; awayScore: number | null; assist?: string;
+  player?: string; playerFa?: string; card?: string; ownGoal: boolean; penalty: boolean;
+  swapIn?: string; swapInFa?: string; swapOut?: string; swapOutFa?: string; homeScore: number | null; awayScore: number | null; assist?: string; assistFa?: string;
 }
 interface DetailStatRow { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }
 interface DetailStatGroup { title: string; rows: DetailStatRow[] }
 interface LineupSide {
-  teamId: number; name: string; fa: string; formation?: string; coach?: string;
-  rows: { players: { id: number; name: string; shirt?: string; rating?: number }[] }[];
-  subs: { id: number; name: string; shirt?: string }[];
+  teamId: number; name: string; fa: string; formation?: string; coach?: string; coachFa?: string;
+  rows: { players: { id: number; name: string; nameFa: string; shirt?: string; rating?: number }[] }[];
+  subs: { id: number; name: string; nameFa: string; shirt?: string }[];
 }
 interface DetailData {
   ok: boolean;
@@ -57,13 +57,14 @@ interface DetailData {
   shootout?: {
     home: number;
     away: number;
-    attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
+    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; scored: boolean; noteFa: string }[];
   } | null;
   // update cycle-46: normalized shotmap (null when the match has no shot data)
   shots?: {
     side: "home" | "away";
     minute: string;
     player?: string;
+    playerFa?: string;
     x: number;
     y: number;
     isGoal: boolean;
@@ -107,7 +108,7 @@ interface DetailData {
   } | null;
   playerOfTheMatch?: {
     id?: number;
-    name: string; rating?: string | null;
+    name: string; nameFa: string; rating?: string | null;
     teamId?: number; teamName?: string; teamLogo?: string;
     minutes?: number; role?: string;
     stats: { title: string; display: string }[];
@@ -118,6 +119,7 @@ interface DetailData {
 interface PlayerStatRow {
   id: number;
   name: string;
+  nameFa: string;
   shirt?: string;
   side: "home" | "away";
   isGk: boolean;
@@ -182,17 +184,19 @@ function eventIcon(e: DetailEvent) {
 }
 
 function eventText(e: DetailEvent) {
+  // cycle-106: honest Persian names when mapped, raw English otherwise
+  const p = e.playerFa || e.player || "";
   if (e.type === "Goal") {
-    const parts = [e.player || ""];
+    const parts = [p];
     if (e.penalty) parts.push("(پنالتی)");
     if (e.ownGoal) parts.push("(گل به خودی)");
-    if (e.assist) parts.push(`(پاس: ${e.assist})`);
+    if (e.assist) parts.push(`(پاس: ${e.assistFa || e.assist})`);
     return parts.filter(Boolean).join(" ");
   }
-  if (e.type === "Substitution") return `${e.swapIn || "?"} ← ${e.swapOut || "?"}`;
-  if (e.type === "Card") return e.player || "کارت";
-  if (e.type === "MissedPenalty") return `${e.player || ""} (پنالتی از دست رفت)`;
-  return e.player || e.typeFa;
+  if (e.type === "Substitution") return `${e.swapInFa || e.swapIn || "?"} ← ${e.swapOutFa || e.swapOut || "?"}`;
+  if (e.type === "Card") return p || "کارت";
+  if (e.type === "MissedPenalty") return `${p} (پنالتی از دست رفت)`;
+  return p || e.typeFa;
 }
 
 const ROLE_FA: Record<string, string> = {
@@ -221,12 +225,12 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
               href={`/player/${p.id}`}
               prefetch={false}
               className="font-black text-[15px] leading-6 truncate block text-[#f1f7fd] hover:text-sky-soft transition-colors w-fit max-w-full"
-              title="مشاهده پروفایل بازیکن"
+              title={p.nameFa && p.nameFa !== p.name ? p.name : "مشاهده پروفایل بازیکن"}
             >
-              {p.name}
+              {p.nameFa || p.name}
             </Link>
           ) : (
-            <p className="font-black text-[15px] leading-6 truncate text-[#f1f7fd]">{p.name}</p>
+            <p className="font-black text-[15px] leading-6 truncate text-[#f1f7fd]">{p.nameFa || p.name}</p>
           )}
           <p className="text-[10.5px] text-steel/85 flex items-center gap-1.5 flex-wrap mt-0.5">
             {(p.teamId || p.teamName) && (
@@ -384,10 +388,10 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
               scorers.filter((s) => s.side === "home").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
                   <GoalIcon className="text-primary/80" />
-                  <span className="font-semibold text-foreground/85">{s.player}</span> {faDigits(s.minute)}
+                  <span className="font-semibold text-foreground/85">{s.playerFa || s.player}</span> {faDigits(s.minute)}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assist})</span>}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assistFa || s.assist})</span>}
                 </span>
               ))}
           </div>
@@ -396,10 +400,10 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.away.score !== null &&
               scorers.filter((s) => s.side === "away").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assist})</span>}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assistFa || s.assist})</span>}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {faDigits(s.minute)} <span className="font-semibold text-foreground/85">{s.player}</span>
+                  {faDigits(s.minute)} <span className="font-semibold text-foreground/85">{s.playerFa || s.player}</span>
                   <GoalIcon className="text-primary/80" />
                 </span>
               ))}
@@ -411,7 +415,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
         <div className="border-t border-glass-border-soft px-4 py-2.5 flex items-center justify-center gap-2 text-[11px] bg-white/[0.02]">
           <span className="text-chart-3">★</span>
           <span className="text-muted-foreground">بهترین بازیکن زمین:</span>
-          <span className="font-black">{potm.name}</span>
+          <span className="font-black">{potm.nameFa || potm.name}</span>
           {potm.rating && <span className="text-primary font-bold tabular-persian">({faDigits(potm.rating)})</span>}
         </div>
       )}
@@ -435,14 +439,14 @@ function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["s
             {/* home side (right in RTL) */}
             <div className={cn("flex items-center gap-2 justify-start", a.side !== "home" && "invisible")}>
               <PenDot scored={a.scored} />
-              <span className="font-semibold">{a.player}</span>
+              <span className="font-semibold">{a.playerFa || a.player}</span>
               {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
             </div>
             <span className="text-[10px] text-muted-foreground tabular-persian">{faDigits(i + 1)}</span>
             {/* away side */}
             <div className={cn("flex items-center gap-2 justify-end", a.side !== "away" && "invisible")}>
               {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
-              <span className="font-semibold">{a.player}</span>
+              <span className="font-semibold">{a.playerFa || a.player}</span>
               <PenDot scored={a.scored} />
             </div>
           </div>
@@ -581,7 +585,7 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
           return (
             <span
               key={i}
-              title={`${s.player || ""} ${s.minute} — xG ${s.xg ?? "؟"}`}
+              title={`${s.playerFa || s.player || ""} ${s.minute} — xG ${s.xg ?? "؟"}`}
               className={cn("absolute w-[9px] h-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border", color)}
               style={{ left: `${left}%`, top: `${top}%` }}
             />
@@ -662,8 +666,8 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
               {faDigits(p.shirt)}
             </span>
           )}
-          <Link href={`/player/${p.id}`} prefetch={false} className="truncate hover:text-sky-soft transition-colors max-w-full">
-            {p.name}
+          <Link href={`/player/${p.id}`} prefetch={false} className="truncate hover:text-sky-soft transition-colors max-w-full" title={p.nameFa && p.nameFa !== p.name ? p.name : undefined}>
+            {p.nameFa || p.name}
           </Link>
           {p.isGk && <span className="shrink-0 text-[9px] font-bold text-amber-300/80 bg-amber-400/10 rounded px-1 py-px">دروازه‌بان</span>}
         </p>
@@ -901,7 +905,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   href={`/player/${p.id}`}
                   prefetch={false}
                   className="flex flex-col items-center gap-0.5 min-w-0 hover:opacity-80 transition-opacity"
-                  title={`${p.name} — پروفایل بازیکن`}
+                  title={p.nameFa && p.nameFa !== p.name ? p.name : `${p.name} — پروفایل بازیکن`}
                 >
                   <span
                     className={cn(
@@ -911,7 +915,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   >
                     {p.shirt ? faDigits(p.shirt) : "–"}
                   </span>
-                  <span className="text-[8.5px] text-muted-foreground max-w-[64px] truncate leading-3">{p.name}</span>
+                  <span className="text-[8.5px] text-muted-foreground max-w-[64px] truncate leading-3">{p.nameFa || p.name}</span>
                   {typeof p.rating === "number" && p.rating > 0 && (
                     <span className="text-[8px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
                   )}
@@ -921,7 +925,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
           ))}
         </div>
         {t.coach && (
-          <p className="text-[10px] text-muted-foreground text-center">سرمربی: <span className="font-bold text-foreground/80">{t.coach}</span></p>
+          <p className="text-[10px] text-muted-foreground text-center">سرمربی: <span className="font-bold text-foreground/80">{t.coachFa || t.coach}</span></p>
         )}
         {t.subs.length > 0 && (
           <details className="text-[11px]">
@@ -937,7 +941,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   className="border border-glass-border-soft bg-white/[0.03] rounded-lg px-2 py-1 text-[10px] flex items-center gap-1.5 hover:border-sky-soft/40 hover:text-sky-soft transition-colors"
                 >
                   {s.shirt && <span className="text-muted-foreground tabular-persian">{faDigits(s.shirt)}</span>}
-                  {s.name}
+                  {s.nameFa || s.name}
                 </Link>
               ))}
             </div>

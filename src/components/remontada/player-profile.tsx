@@ -180,7 +180,8 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         <div className="px-4 py-4 flex items-center gap-3.5">
           <ScorerAvatarTile name={p.name || "؟"} size={60} />
           <div className="min-w-0 flex-1">
-            <h1 className="font-black text-lg leading-7 truncate text-[#f1f7fd]" dir="auto">{p.name}</h1>
+            {/* cycle-106: honest Persian display name (English kept as tooltip when mapped) */}
+            <h1 className="font-black text-lg leading-7 truncate text-[#f1f7fd]" dir="auto" title={p.nameFa && p.nameFa !== p.name ? p.name : undefined}>{p.nameFa || p.name}</h1>
             <p className="text-[11px] text-steel flex items-center gap-1.5 flex-wrap mt-0.5">
               {p.positionFa && <span className="font-bold text-[#ecf3fa]/85">{p.positionFa}</span>}
               {p.team && (
