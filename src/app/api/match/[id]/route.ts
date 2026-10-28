@@ -355,6 +355,20 @@ export interface MatchDetailNormalized {
     post: boolean;
     xg?: number;
   }[] | null;
+  // update cycle-51: complete team xG («اسکوآپ تیم») — official FotMob xG stat
+  // row (key=expected_goals) with the per-shot sum as fallback; shot breakdown
+  // counts come from the shotmap. null when neither source has any xG data.
+  xg?: {
+    home: number | null;
+    away: number | null;
+    source: "stats" | "shotmap";
+    homeBreakdown: {
+      total: number; onTarget: number; blocked: number; post: number; goals: number;
+    } | null;
+    awayBreakdown: {
+      total: number; onTarget: number; blocked: number; post: number; goals: number;
+    } | null;
+  } | null;
   // update cycle-47: per-player match stats, starters first then subs, each
   // sorted by FotMob rating desc (players with no data are filtered out)
   playerStats?: {
@@ -510,6 +524,49 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         post: s.eventType === "Post",
         xg: typeof s.expectedGoals === "number" ? Math.round(s.expectedGoals * 100) / 100 : undefined,
       }));
+  }
+
+  // ---------------- team xG (update cycle-51) ----------------
+  // Official xG lives in a stats row (key=expected_goals, the dedicated
+  // "Expected goals (xG)" group repeats it); when that row is absent the sum of
+  // per-shot xG is used instead. Breakdown counts come from the shotmap.
+  const r2dp = (v: number) => Math.round(v * 100) / 100;
+  let xg: MatchDetailNormalized["xg"] = null;
+  {
+    const allGroups = raw.content?.stats?.Periods?.All?.stats;
+    const statRows: FMStatRow[] = (Array.isArray(allGroups) ? allGroups : []).flatMap(
+      (grp: FMStatGroup) => grp?.stats || []
+    );
+    const xgRow = statRows.find((s) => s?.key === "expected_goals" && s.type !== "title");
+    const oh = parseFloat(String(xgRow?.stats?.[0] ?? ""));
+    const oa = parseFloat(String(xgRow?.stats?.[1] ?? ""));
+    const officialHome = Number.isNaN(oh) ? null : oh;
+    const officialAway = Number.isNaN(oa) ? null : oa;
+    const breakdown = (side: "home" | "away") => {
+      const arr = (shots || []).filter((s) => s.side === side);
+      if (arr.length === 0) return null;
+      return {
+        total: arr.length,
+        onTarget: arr.filter((s) => s.onTarget).length,
+        blocked: arr.filter((s) => s.blocked).length,
+        post: arr.filter((s) => s.post).length,
+        goals: arr.filter((s) => s.isGoal).length,
+      };
+    };
+    const hasXgOn = (side: "home" | "away") => (shots || []).some((s) => s.side === side && s.xg != null);
+    const sumXg = (side: "home" | "away") =>
+      (shots || []).filter((s) => s.side === side).reduce((acc, s) => acc + (s.xg ?? 0), 0);
+    const homeVal = officialHome ?? (hasXgOn("home") ? r2dp(sumXg("home")) : null);
+    const awayVal = officialAway ?? (hasXgOn("away") ? r2dp(sumXg("away")) : null);
+    if (homeVal != null || awayVal != null) {
+      xg = {
+        home: homeVal,
+        away: awayVal,
+        source: officialHome != null || officialAway != null ? "stats" : "shotmap",
+        homeBreakdown: breakdown("home"),
+        awayBreakdown: breakdown("away"),
+      };
+    }
   }
 
   // ---------------- player stats (update cycle-47) ----------------
@@ -734,6 +791,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     momentum,
     shootout,
     shots,
+    xg,
     playerStats,
     playerOfTheMatch,
     fetchedAt: new Date().toISOString(),
