@@ -106,6 +106,21 @@ const ICON_STROKE: Record<EmptyStateIcon, { path: React.ReactNode; cls: string }
   },
 };
 
+/** ui-quest 8 — decorative fantasy flavor line per icon, rendered under
+    the factual title/sub. Purely ambient (aria-hidden) — never replaces
+    the honest empty-state facts. */
+const FLAVOR: Partial<Record<EmptyStateIcon, string>> = {
+  ball: "توپ در مرکز زمین ایستاده و منتظر است…",
+  star: "ستاره‌های این بخش هنوز خاموش‌اند…",
+  live: "هم‌اکنون هیچ نبردی در جریان نیست…",
+  calendar: "این روز از دفتر بازی‌ها خالی است…",
+  medal: "هنوز کسی به این نشان نرسیده…",
+  shirt: "ترکیب رازآلود هنوز فاش نشده…",
+  trophy: "جام همچنان در راه است…",
+  news: "جارچی‌ها هنوز خبری نیاورده‌اند…",
+  search: "در هیچ دفتری این نام ثبت نشده…",
+};
+
 export function EmptyState({ icon = "ball", title, sub, action, compact }: EmptyStateProps) {
   const ic = ICON_STROKE[icon];
   const size = compact ? 20 : 26;
@@ -120,8 +135,8 @@ export function EmptyState({ icon = "ball", title, sub, action, compact }: Empty
       <div
         className={
           compact
-            ? "mx-auto w-11 h-11 rounded-xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-3"
-            : "mx-auto w-14 h-14 rounded-2xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-4"
+            ? "rune-ring mx-auto w-11 h-11 rounded-xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-3"
+            : "rune-ring mx-auto w-14 h-14 rounded-2xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-4"
         }
       >
         <svg
@@ -141,11 +156,16 @@ export function EmptyState({ icon = "ball", title, sub, action, compact }: Empty
       </div>
       <p className="font-black text-sm mb-1">{title}</p>
       {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
+      {FLAVOR[icon] ? (
+        <p aria-hidden className="text-[10.5px] mt-2 opacity-80" style={{ color: "oklch(0.72 0.13 295 / 65%)" }}>
+          {FLAVOR[icon]}
+        </p>
+      ) : null}
       {action ? (
         action.href ? (
           <Link
             href={action.href}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs font-bold px-4 py-2 hover:bg-primary/25 transition-colors"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs font-bold px-4 py-2 hover:bg-primary/25 transition-colors press-fx"
           >
             {action.label}
           </Link>
@@ -153,7 +173,7 @@ export function EmptyState({ icon = "ball", title, sub, action, compact }: Empty
           <button
             type="button"
             onClick={action.onClick}
-            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs font-bold px-4 py-2 hover:bg-primary/25 transition-colors cursor-pointer"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-primary/15 border border-primary/40 text-primary text-xs font-bold px-4 py-2 hover:bg-primary/25 transition-colors press-fx cursor-pointer"
           >
             {action.label}
           </button>

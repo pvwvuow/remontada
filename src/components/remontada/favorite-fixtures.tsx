@@ -142,7 +142,7 @@ export function FavoriteFixtures() {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className="text-amber-400 shrink-0" aria-hidden>
           <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
         </svg>
-        <h2 className="font-black text-[12.5px]">بازی‌های بعدی تیم‌های من</h2>
+        <h2 className="rune-title font-black text-[12.5px]">بازی‌های بعدی تیم‌های من</h2>
         <span className="text-[10px] font-bold text-amber-300/90 bg-amber-400/10 border border-amber-400/25 rounded-md px-1.5 py-0.5 tabular-persian">
           {faDigits(items.length)} بازی
         </span>

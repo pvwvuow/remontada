@@ -443,7 +443,7 @@ export function TopScorersView() {
                 right="رتبه‌بندی گلزنان"
                 left={`${faDigits(withMainRank.length)} بازیکن`}
               />
-              <div className="m-3 mt-2 glass-scorer-hero p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-5">
+              <div className="m-3 mt-2 glass-scorer-hero hero-legend p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-5">
                 <ScorerAvatarTile name={heroScorer.s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
@@ -456,7 +456,13 @@ export function TopScorersView() {
                       className="block text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1 hover:text-primary transition-colors w-fit max-w-full"
                       title="مشاهده پروفایل بازیکن"
                     >
-                      {heroScorer.s.name}
+                      {/* cycle-65: the league's top gun wears the crown */}
+                      <span className="inline-flex items-center gap-1.5 max-w-full">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-gold shrink-0 drop-shadow-[0_0_6px_oklch(0.84_0.12_85/50%)]" aria-label="آقای گل">
+                          <path d="M3 8l4.5 3L12 5l4.5 6L21 8l-1.6 9H4.6L3 8z" />
+                        </svg>
+                        <span className="truncate">{heroScorer.s.name}</span>
+                      </span>
                     </Link>
                   ) : (
                     <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{heroScorer.s.name}</p>
@@ -472,7 +478,7 @@ export function TopScorersView() {
                   </div>
                 </div>
                 <div className="text-center shrink-0">
-                  <p className="text-[44px] sm:text-[56px] leading-none font-light text-[#dfedff] tabular-persian">
+                  <p className="text-[44px] sm:text-[56px] leading-none font-light arcane-text tabular-persian">
                     {faDigits(pad2(heroScorer.s.goals))}
                   </p>
                   <p className="text-[8.5px] font-bold text-[#c6dcf3] mt-1.5">گل</p>

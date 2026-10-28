@@ -186,7 +186,10 @@ function FeaturedMatch({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
         <div className="flex flex-col items-center gap-1 min-w-[64px] sm:min-w-[86px]">
           {showScore ? (
             <>
-              <span className={cn("font-black text-[26px] sm:text-3xl leading-none tabular-persian tracking-wide", m.live ? "text-red-200 live-glow" : "text-foreground")}>
+              <span className={cn(
+                "font-black text-[26px] sm:text-3xl leading-none tabular-persian tracking-wide",
+                m.live ? "text-red-200 live-glow score-battle" : "score-forge"
+              )}>
                 {faDigits(m.home.score ?? "—")} : {faDigits(m.away.score ?? "—")}
               </span>
               <span className={cn("text-[10.5px] font-bold tabular-persian whitespace-nowrap", m.live ? "text-red-300 live-glow" : "text-muted-foreground")}>
@@ -195,7 +198,7 @@ function FeaturedMatch({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
             </>
           ) : (
             <>
-              <span className="text-base sm:text-lg text-steel/70 font-semibold tracking-widest">vs</span>
+              <span className="fx-arcane-text text-base sm:text-lg font-semibold tracking-widest">vs</span>
               <span className="text-xl sm:text-2xl font-light text-sky-soft/95 tabular-persian leading-none">
                 {tehranTime(m.utcTime)}
               </span>
@@ -246,7 +249,7 @@ function LeagueGroupCard({ g, favIds }: { g: LeagueGroup; favIds: Set<number> })
   }, [g.matches, favIds]);
 
   return (
-    <section className="glass-card overflow-hidden">
+    <section className="glass-card lift overflow-hidden">
       <header className="flex items-center gap-2.5 px-3 sm:px-4 py-2.5 border-b border-glass-border-soft bg-white/[0.02]">
         {/* league chip: crest over a glyph tile (crest hides on error) */}
         <div className="relative w-8 h-8 shrink-0 flex items-center justify-center">
@@ -266,7 +269,7 @@ function LeagueGroupCard({ g, favIds }: { g: LeagueGroup; favIds: Set<number> })
             onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
           />
         </div>
-        <h3 className="font-extrabold text-sm sm:text-[15px] truncate">{g.leagueFa || g.leagueName}</h3>
+        <h3 className="rune-title font-extrabold text-sm sm:text-[15px] truncate">{g.leagueFa || g.leagueName}</h3>
         <span className="text-[10px] text-steel font-bold border border-glass-border-soft bg-white/[0.03] rounded-md px-1.5 py-0.5 tracking-wide">
           {g.ccode}
         </span>
@@ -296,8 +299,13 @@ function Skeleton() {
       {[0, 1, 2].map((g) => (
         <div key={g} className="rounded-2xl border border-glass-border-soft bg-white/[0.03] overflow-hidden">
           <div className="px-4 py-3 border-b border-glass-border-soft flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white/[0.05] animate-pulse" />
-            <div className="h-4 w-36 rounded bg-white/[0.05] animate-pulse" />
+            <div className={cn(
+              "w-8 h-8 rounded-lg bg-white/[0.05] animate-pulse summon-glyph",
+              g === 0 && "flex items-center justify-center"
+            )}>
+              {g === 0 && <span className="rune-spin text-[10px]" aria-hidden>◆</span>}
+            </div>
+            <div className="h-4 w-36 rounded bg-white/[0.05] animate-pulse summon-glyph" />
           </div>
           <div className="py-1 flex flex-col">
             {Array.from({ length: 3 + (g % 2) }).map((_, i) => (
@@ -458,7 +466,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
             onClick={() => onOffsetChange(c.offset)}
             aria-pressed={c.offset === offset}
             className={cn(
-              "shrink-0 flex flex-col items-center gap-0.5 rounded-xl border px-3.5 py-2 min-w-[62px] transition-all",
+              "shrink-0 flex flex-col items-center gap-0.5 rounded-xl border px-3.5 py-2 min-w-[62px] transition-all press-fx",
               c.offset === offset
                 ? "bg-primary/15 border-primary/40 text-primary shadow-[inset_0_1px_0_oklch(0.88_0.05_232/22%)]"
                 : "bg-white/[0.03] border-glass-border-soft text-muted-foreground hover:border-glass-border hover:text-foreground"
@@ -486,7 +494,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
               onClick={() => setStatusFilter(t.key)}
               aria-pressed={active}
               className={cn(
-                "inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg border px-2.5 py-1.5 transition-all cursor-pointer",
+                "inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg border px-2.5 py-1.5 transition-all press-fx cursor-pointer",
                 active
                   ? t.key === "live"
                     ? "text-red-300 bg-red-500/[0.08] border-red-400/35"
@@ -523,7 +531,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
               onClick={() => setOnlyFavs((v) => !v)}
               aria-pressed={onlyFavs}
               className={cn(
-                "inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg border px-2.5 py-1.5 transition-all tabular-persian cursor-pointer",
+                "inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg border px-2.5 py-1.5 transition-all press-fx tabular-persian cursor-pointer",
                 onlyFavs
                   ? "text-amber-300 bg-amber-400/[0.08] border-amber-400/35 shadow-[inset_0_1px_0_oklch(0.88_0.05_232/18%)]"
                   : "text-muted-foreground bg-white/[0.03] border-glass-border-soft hover:text-amber-300/90 hover:border-amber-400/30"

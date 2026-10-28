@@ -20,7 +20,7 @@ export function FavoritesSection() {
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" className="text-amber-400" aria-hidden>
             <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
           </svg>
-          <h2 className="text-sm font-black">تیم‌های مورد علاقه</h2>
+          <h2 className="rune-title text-sm font-black">تیم‌های مورد علاقه</h2>
         </div>
         <div className="glass-card border-dashed border-[color:var(--glass-border-soft)] px-4 py-5 flex items-center gap-3">
           <span className="text-amber-400/80 shrink-0" aria-hidden>
@@ -44,7 +44,7 @@ export function FavoritesSection() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className="text-amber-400" aria-hidden>
           <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
         </svg>
-        <h2 className="text-sm font-black">تیم‌های مورد علاقه</h2>
+        <h2 className="rune-title text-sm font-black">تیم‌های مورد علاقه</h2>
         <span className="text-[10px] font-bold text-amber-400/90 bg-amber-400/10 border border-amber-400/25 rounded-md px-1.5 py-0.5 tabular-persian">
           {new Intl.NumberFormat("fa-IR").format(favs.length)} تیم
         </span>

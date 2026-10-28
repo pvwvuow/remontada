@@ -310,10 +310,10 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
         {/* score */}
         <div className="flex flex-col items-center gap-2">
           {m.started && !m.cancelled ? (
-            <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live && "text-red-200 live-glow")}>
-              <span>{m.home.score != null ? faDigits(m.home.score) : "—"}</span>
+            <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live ? "text-red-200 live-glow score-battle" : "")}>
+              <span className={m.live ? undefined : "score-forge"}>{m.home.score != null ? faDigits(m.home.score) : "—"}</span>
               <span className="text-muted-foreground/40 text-2xl">:</span>
-              <span>{m.away.score != null ? faDigits(m.away.score) : "—"}</span>
+              <span className={m.live ? undefined : "score-forge"}>{m.away.score != null ? faDigits(m.away.score) : "—"}</span>
             </div>
           ) : (
             <div className="font-black text-2xl sm:text-3xl text-muted-foreground tabular-persian">
@@ -1252,11 +1252,13 @@ export function MatchDetail({ matchId }: { matchId: string }) {
     return (
       <div className="flex flex-col gap-4" aria-busy="true">
         <div className="glass-card p-8 flex flex-col items-center gap-4">
-          <div className="w-14 h-14 rounded bg-white/[0.05] animate-pulse" />
-          <div className="h-8 w-32 rounded bg-white/[0.05] animate-pulse" />
-          <div className="h-4 w-48 rounded bg-white/[0.05] animate-pulse" />
+          <div className="w-14 h-14 rounded-2xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center">
+            <span className="rune-spin text-lg" aria-hidden>◆</span>
+          </div>
+          <div className="h-8 w-32 rounded bg-white/[0.05] animate-pulse summon-glyph" />
+          <div className="h-4 w-48 rounded bg-white/[0.05] animate-pulse summon-glyph" />
         </div>
-        <div className="glass-card h-48 animate-pulse" />
+        <div className="glass-card h-48 animate-pulse summon-glyph" />
       </div>
     );
   }
@@ -1322,12 +1324,11 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             onClick={() => setTab(t.key)}
             aria-current={tab === t.key ? "page" : undefined}
             className={cn(
-              "relative shrink-0 px-3.5 py-2 text-[12.5px] font-bold transition-colors",
+              "relative shrink-0 px-3.5 py-2 text-[12.5px] font-bold transition-colors press-fx tab-rune",
               tab === t.key ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
             {t.label}
-            {tab === t.key && <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />}
           </button>
         ))}
       </nav>
