@@ -172,8 +172,15 @@ interface FMMatchDetails {
     // {temperature, windSpeed, windDirectionCardinal, iconCode,
     // relativeHumidity, precipChance?, precipitation, snow, cloudCover,
     // description, apiUsed, lastUpdated, localizedKey, defaultTitle}.
-    // localizedKey observed set (5): weather_condition_{clear,
-    // partly_cloudy, cloudy, light_rain, thunderstorms}.
+    // update cycle-101 probed: the COMPLETE localizedKey vocabulary (12 keys)
+    // was read from FotMob's own i18n bundle in their match-page HTML —
+    // weather_condition_{clear, sunny, partly_cloudy, cloudy, foggy,
+    // light_rain, heavy_rain, rain, thunderstorms, stormy, snowy, windy}.
+    // windUnit verdict (cycle-101): FotMob's own surfaces NEVER display wind
+    // — their match widget renders temperature + icon only ("11°C"), 0 "km/h"
+    // occurrences in the rendered page, all 21 "m/s" hits are URL false
+    // positives (hreflang/links) → the windSpeed unit is permanently
+    // unassertable from FotMob itself; temperature IS Celsius (their widget).
     weather?: {
       temperature?: number;
       windSpeed?: number;
@@ -207,15 +214,24 @@ const EVENT_FA: Record<string, string> = {
 };
 
 // update cycle-100: Persian weather condition labels keyed by the upstream
-// localizedKey (5 values observed across a 28-sample live sweep, 0 nulls).
-// Unknown keys fall back to the upstream defaultTitle (English) — the same
-// honesty convention as the cycle-96 injury names.
+// localizedKey. update cycle-101: the map was completed 5 → 12 — the FULL
+// vocabulary read from FotMob's own i18n bundle in their match-page HTML
+// (live-fetched, UA Chrome/124), so every key FotMob can emit now renders in
+// Persian; the defaultTitle (English) fallback remains as the honest guard
+// for any future key FotMob adds (same convention as the cycle-96 names).
 const WEATHER_FA: Record<string, string> = {
   weather_condition_clear: "صاف",
+  weather_condition_sunny: "آفتابی",
   weather_condition_partly_cloudy: "تا حدی ابری",
   weather_condition_cloudy: "ابری",
+  weather_condition_foggy: "مه‌آلود",
   weather_condition_light_rain: "باران سبک",
+  weather_condition_heavy_rain: "باران سنگین",
+  weather_condition_rain: "بارانی",
   weather_condition_thunderstorms: "رعدوبرق",
+  weather_condition_stormy: "طوفانی",
+  weather_condition_snowy: "برفی",
+  weather_condition_windy: "پرباد",
 };
 
 const STAT_FA: Record<string, string> = {
@@ -389,14 +405,16 @@ export interface MatchDetailNormalized {
   } | null;
   // update cycle-100: match weather («وضعیت هوا») — ONLY the honestly
   // displayable subset: condition (localizedKey→Persian, unknown→upstream
-  // defaultTitle), temperature (°C), relativeHumidity/cloudCover (inherent
-  // percentages) and precipChance (inherent percentage, forecast-only).
-  // windSpeed / precipitation / snow / iconCode are deliberately NOT
-  // normalized for display: windSpeed carries no verified unit (0–5 across
-  // all 28 live samples — km/h vs m/s undecidable → honest omission,
-  // registered for a future probe), precipitation/snow units unverified,
-  // iconCode not exhaustively mapped. null when the block is missing or
-  // carries no displayable value (defensive — probe showed 0 nulls).
+  // defaultTitle), temperature (°C — verified from FotMob's own widget),
+  // relativeHumidity/cloudCover (inherent percentages) and precipChance
+  // (inherent percentage, forecast-only). windSpeed / precipitation / snow /
+  // iconCode are deliberately NOT normalized for display: windSpeed carries
+  // no displayable unit — cycle-101 probe verdict: FotMob never displays
+  // wind on any surface (widget = temperature + icon only; 0 km/h, all m/s
+  // hits URL false positives) → PERMANENT honest omission (closed, not
+  // deferred); precipitation/snow units unverified, iconCode never mapped.
+  // null when the block is missing or carries no displayable value
+  // (defensive — probe showed 0 nulls).
   weather?: {
     condition: string;
     conditionSource: "localized" | "upstream";

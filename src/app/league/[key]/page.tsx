@@ -56,7 +56,18 @@ export default async function LeaguePage({ params }: { params: Promise<{ key: st
       <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={leagueLd} />
         <JsonLd data={crumbLd} />
-        <LeagueView leagueKey={key} />
+        {/* update cycle-101: key={key} remounts LeagueView on a client-side
+            league switch (/league/pl → /league/ucl). Before this, ALL local
+            state survived the navigation — the registered cycle-99 candidate:
+            a season picked on one league silently carried into the next
+            (e.g. pl?season=2024/2025 → ucl kept showing 2024/2025 with NO
+            ?season in the URL, so the selector/label contradicted the address
+            bar and a refresh snapped back). A league switch is a new browsing
+            intent: the remount re-runs the cycle-99 seed pass against the NEW
+            URL (no ?season → current season), resets the tab and clears
+            league-local data — one fetch per navigation, same as a fresh
+            deep link. */}
+        <LeagueView leagueKey={key} key={key} />
       </main>
       <BackToTop />
       <SiteFooter />
