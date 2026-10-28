@@ -2688,12 +2688,38 @@ interface FMTeamDataRaw {
     // different coaches (Strasbourg: 8 coaches over 14 seasons).
     coachHistory?: FMCoachHistoryRaw[];
   };
-  overview?: { venue?: FMVenueRaw };
+  overview?: {
+    venue?: FMVenueRaw;
+    // cycle-95 probed (UA Chrome/124, 2026-10-29): topPlayers = three league-
+    // scoped rankings of the club's own players for the primary season —
+    // byRating / byGoals / byAssists, each ≤3 rows {id (player id-space),
+    // name, rank (league-wide rank in that stat), value, stat{format,
+    // fractions}} + a seeAllUrl (unused — portal links /player/{id} instead).
+    topPlayers?: FMTopPlayersRaw;
+  };
   stats?: {
     players?: FMStatBlock[];
     teams?: FMStatBlock[];
     primarySeasonId?: string | number;
   };
+}
+
+interface FMTopPlayersRaw {
+  byRating?: FMTopPlayerBlockRaw;
+  byGoals?: FMTopPlayerBlockRaw;
+  byAssists?: FMTopPlayerBlockRaw;
+}
+
+interface FMTopPlayerBlockRaw {
+  players?: FMTopPlayerRowRaw[];
+}
+
+interface FMTopPlayerRowRaw {
+  id?: number;
+  name?: string;
+  rank?: number;
+  value?: number;
+  stat?: { name?: string; value?: number; format?: string; fractions?: number };
 }
 
 interface FMVenueRaw {
@@ -3444,6 +3470,64 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
   if (tenures.length === 0) return null;
   tenures.reverse(); // newest bench first
   return { total: rows.length, tenures };
+}
+
+// ---------------- FotMob: team key players («بازیکنان کلیدی فصل», cycle-95) ----------------
+// Three league-scoped rankings of the club's own players for the primary
+// season, read from the SAME cached data/teams payload (overview.topPlayers,
+// probed cycle-95) — zero extra upstream. Null → section hidden.
+export interface TeamTopPlayerRow {
+  playerId: number;
+  name: string;
+  rank: number | null; // league-wide rank in this stat (Haaland = 1 PL rating)
+  value: number;
+  fmt: "fraction" | "number";
+  fractions: number; // decimals for fraction format
+}
+
+export interface TeamTopPlayers {
+  rating: TeamTopPlayerRow[];
+  goals: TeamTopPlayerRow[];
+  assists: TeamTopPlayerRow[];
+}
+
+export async function getTeamTopPlayers(teamId: number): Promise<TeamTopPlayers | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const tp = raw?.overview?.topPlayers;
+  if (!tp || typeof tp !== "object") return null;
+  const mapBlock = (block: FMTopPlayerBlockRaw | undefined): TeamTopPlayerRow[] => {
+    const list = Array.isArray(block?.players) ? block.players : [];
+    const rows: TeamTopPlayerRow[] = [];
+    const seen = new Set<number>();
+    for (const p of list.slice(0, 3)) {
+      // payload gives ≤3 per block; slice defensively anyway
+      const id = Number(p?.id);
+      const name = String(p?.name || "");
+      if (!Number.isFinite(id) || id <= 0 || !name || seen.has(id)) continue;
+      seen.add(id);
+      const value = Number(p?.value);
+      if (!Number.isFinite(value)) continue;
+      const fmt = String(p?.stat?.format || "") === "fraction" ? "fraction" : "number";
+      const fr = Number(p?.stat?.fractions);
+      rows.push({
+        playerId: id,
+        name,
+        rank: Number(p?.rank) > 0 && Number.isFinite(Number(p?.rank)) ? Number(p.rank) : null,
+        value,
+        fmt,
+        fractions: Number.isFinite(fr) ? fr : fmt === "fraction" ? 2 : 0,
+      });
+    }
+    return rows;
+  };
+  const out: TeamTopPlayers = {
+    rating: mapBlock(tp.byRating),
+    goals: mapBlock(tp.byGoals),
+    assists: mapBlock(tp.byAssists),
+  };
+  if (out.rating.length === 0 && out.goals.length === 0 && out.assists.length === 0) return null;
+  return out;
 }
 
 // ---------------- FotMob: team full-season fixtures (data/teams endpoint, cycle-81) ----------------

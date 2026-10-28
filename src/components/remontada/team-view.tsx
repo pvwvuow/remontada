@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -989,6 +989,82 @@ function TeamCoachesSection({ data }: { data: TeamCoachHistory }) {
   );
 }
 
+// ---------------- team key players («بازیکنان کلیدی فصل», cycle-95) ----------------
+// Three league-scoped rankings from the shared team payload — rating /
+// goals / assists, ≤3 rows each. Rows link /player/{id}; the rank chip is
+// the player's LEAGUE-WIDE rank in that stat (not the team-internal order).
+const TOP_PLAYER_GROUPS: { key: keyof TeamTopPlayers; label: string; hint: string }[] = [
+  { key: "rating", label: "امتیاز فوت‌ماب", hint: "میانگین امتیاز فصل" },
+  { key: "goals", label: "گل", hint: "گل‌های فصل" },
+  { key: "assists", label: "پاس گل", hint: "پاس‌گل‌های فصل" },
+];
+
+function TopPlayerRowItem({ r, fmt }: { r: TeamTopPlayerRow; fmt: "fraction" | "number" }) {
+  const valueText =
+    fmt === "fraction" ? faDigits(r.value.toFixed(Math.min(r.fractions, 2) || 2)) : faDigits(Math.round(r.value));
+  return (
+    <li>
+      <Link
+        href={`/player/${r.playerId}`}
+        prefetch={false}
+        className="flex items-center gap-2.5 px-3 sm:px-4 py-2.5 glass-row-hover"
+      >
+        {r.rank != null && (
+          <span
+            className={cn(
+              "shrink-0 w-6 text-center rounded-md border px-1 py-px text-[9px] font-black tabular-persian",
+              r.rank === 1
+                ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                : "bg-white/[0.04] text-muted-foreground border-transparent"
+            )}
+            title={`رتبهٔ ${faDigits(r.rank)} در لیگ`}
+          >
+            {faDigits(r.rank)}
+          </span>
+        )}
+        <span className="truncate font-black text-[12.5px] min-w-0 flex-1">{r.name}</span>
+        <span className="shrink-0 font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
+          {valueText}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+function TeamTopPlayersSection({ data }: { data: TeamTopPlayers }) {
+  return (
+    <Section
+      title="بازیکنان کلیدی فصل"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">۳ نفر برتر هر دسته</span>
+      }
+    >
+      <div className="flex flex-col gap-3" data-testid="team-top-players" aria-label="بازیکنان کلیدی فصل">
+        {TOP_PLAYER_GROUPS.map((g) => {
+          const rows = data[g.key];
+          if (!rows || rows.length === 0) return null; // missing category → group hidden
+          return (
+            <div key={g.key} className="glass-card overflow-hidden">
+              <div className="flex items-center justify-between px-3 sm:px-4 pt-2.5 pb-1">
+                <span className="text-[11px] font-black text-foreground">{g.label}</span>
+                <span className="text-[9px] font-bold text-muted-foreground">{g.hint}</span>
+              </div>
+              <ul className="flex flex-col">
+                {rows.map((r) => (
+                  <TopPlayerRowItem key={r.playerId} r={r} fmt={r.fmt} />
+                ))}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[9.5px] text-muted-foreground mt-2 px-1">
+        رتبهٔ کنار هر بازیکن، جایگاه او میان همهٔ بازیکنان لیگ در همان آمار است. دادهٔ FotMob.
+      </p>
+    </Section>
+  );
+}
+
 // ---------------- team full-season fixtures («همهٔ بازی‌های فصل», cycle-81) ----------------
 // Whole-season archive from the shared team payload (league + cups +
 // friendlies) — far beyond the 10-result / 8-upcoming windows above. Two
@@ -1247,6 +1323,25 @@ export function TeamView({ teamId }: { teamId: number }) {
     };
   }, [teamId]);
 
+  // cycle-95: lazy team key players («بازیکنان کلیدی فصل») — same data/teams
+  // source (shared upstream cache), fetched after mount; stays null → section
+  // hidden when the source has no ranking (same contract as above).
+  const [topPlayers, setTopPlayers] = useState<TeamTopPlayers | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-top-players/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.topPlayers) setTopPlayers(j.topPlayers as TeamTopPlayers);
+      })
+      .catch(() => {
+        /* topPlayers stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
   // cycle-81: lazy team full-season fixtures («همهٔ بازی‌های فصل») — same
   // data/teams source (shared upstream cache), fetched after mount; stays
   // null → section hidden.
@@ -1470,6 +1565,7 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-91: team coach history («تاریخچهٔ نیمکت») — lazily probed, hidden when absent */}
       {coaches && coaches.tenures.length > 0 && <TeamCoachesSection data={coaches} />}
+      {topPlayers && <TeamTopPlayersSection data={topPlayers} />}
 
       {/* cycle-81: team full-season fixtures («همهٔ بازی‌های فصل») — lazily probed, hidden when absent */}
       {fixturesAll && fixturesAll.total > 0 && <TeamFixturesSection data={fixturesAll} teamId={teamId} />}
