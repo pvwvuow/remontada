@@ -85,7 +85,20 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={ld} />
-        <MatchDetail matchId={id} />
+        {/* fix cycle-89: the page body had no id guard at all — a numeric id
+            outside the API's \d{3,12} contract (e.g. 20 digits) SSR-rendered
+            the bare MatchDetail client skeleton with zero h1, while the
+            client-side 400 fallback only arrives after hydration. Render the
+            same sr-only Persian h1 pattern as the cycle-59/84 shells so every
+            page state has exactly one h1 even without JS */}
+        {/^\d{3,12}$/.test(id) ? (
+          <MatchDetail matchId={id} />
+        ) : (
+          <>
+            <h1 className="sr-only">جزئیات مسابقه</h1>
+            <p className="text-center text-muted-foreground text-sm py-16">شناسه مسابقه نامعتبر است.</p>
+          </>
+        )}
       </main>
       {/* fix cycle-37: match detail is a long shell (lineups + stats + H2H) — match the
           back-to-top coverage of the other long pages from cycles 34/35 */}

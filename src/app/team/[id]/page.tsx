@@ -74,7 +74,13 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={teamLd} />
-        {Number.isFinite(teamId) && teamId > 0 ? (
+        {/* fix cycle-89: the body guard accepted numeric ids of ANY length
+            (Number("99999999999999999999") = 1e20 is finite and > 0) so a
+            20-digit id SSR-rendered the bare TeamView skeleton with zero h1,
+            while generateMetadata + /api/team/[id] already reject anything
+            outside \d{1,10} — align the body with the same regex so the
+            invalid-id shell (sr-only h1, cycle-84) renders at SSR time */}
+        {Number.isFinite(teamId) && teamId > 0 && /^\d{1,10}$/.test(id) ? (
           <TeamView teamId={teamId} />
         ) : (
           <>
