@@ -26,10 +26,12 @@ export function PortalGate() {
     } catch {
       return; // storage disabled → stay invisible, never annoy
     }
-    setPhase("in");
+    // cycle-63 lint fix: setState must not fire synchronously inside the
+    // effect body (react-hooks/set-state-in-effect) — defer one tick
+    const t0 = setTimeout(() => setPhase("in"), 0);
     const t1 = setTimeout(() => setPhase("out"), 1450);
     const t2 = setTimeout(() => setPhase("hidden"), 2150);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
   if (phase === "hidden") return null;

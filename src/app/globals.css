@@ -137,30 +137,14 @@
   body {
     @apply bg-background text-foreground;
     /* cycle-60 fantasy night — the navy field keeps its studio pools but
-       the light turns arcane: violet bloom up top, aurora teal from below */
+       the light turns arcane: violet bloom up top, aurora teal from below.
+       cycle-63: the twinkling star tile moved out — the richer layered
+       FantasyBackdrop (aurora + twin starfields) owns the ambience now. */
     background-image:
       radial-gradient(ellipse 85% 55% at 50% -8%, oklch(0.34 0.07 295 / 26%), transparent 70%),
       radial-gradient(ellipse 60% 42% at 88% 108%, oklch(0.3 0.06 200 / 15%), transparent),
       radial-gradient(ellipse 45% 35% at 8% 85%, oklch(0.31 0.06 265 / 13%), transparent);
     background-attachment: fixed;
-  }
-
-  /* cycle-60 starfield — a fixed, tiled dot-grid that slowly twinkles.
-     Pure CSS (one pseudo-element, tiny tile), sits under all content. */
-  body::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    z-index: -1;
-    pointer-events: none;
-    background-image:
-      radial-gradient(1.2px 1.2px at 22px 34px, oklch(0.95 0.02 250 / 45%), transparent 100%),
-      radial-gradient(1px 1px at 120px 90px, oklch(0.9 0.04 300 / 38%), transparent 100%),
-      radial-gradient(1.4px 1.4px at 190px 160px, oklch(0.95 0.03 200 / 33%), transparent 100%),
-      radial-gradient(1px 1px at 60px 180px, oklch(0.92 0.02 250 / 30%), transparent 100%),
-      radial-gradient(1.1px 1.1px at 160px 30px, oklch(0.9 0.05 85 / 22%), transparent 100%);
-    background-size: 240px 240px;
-    animation: star-twinkle 7s ease-in-out infinite;
   }
 }
 
@@ -371,7 +355,9 @@
   animation: live-pulse 1.4s ease-in-out infinite;
 }
 
-/* cycle-60 — the night sky breathes: slow opacity drift over the star tile */
+/* cycle-60 — the night sky breathes: slow opacity drift over the star tile
+   (keyframes kept for the campaign's ambient layers; the body tile itself
+   was retired in cycle-63 in favor of FantasyBackdrop) */
 @keyframes star-twinkle {
   0%, 100% { opacity: 0.85; }
   50% { opacity: 0.45; }
@@ -588,6 +574,11 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+/* arcane-tinted inline glyphs (vs marks / footer separators) */
+.fx-arcane-text {
+  color: var(--arcane);
+  filter: drop-shadow(0 0 6px var(--arcane-soft));
 }
 
 /* ---- UI-5: quest tabs (diamond + glow beam on the active tab) ----

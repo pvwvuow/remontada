@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/remontada/pwa-register";
+import { NavDock } from "@/components/remontada/nav-dock";
 import { FantasyBackdrop } from "@/components/remontada/fantasy-backdrop";
 import { PortalGate } from "@/components/remontada/portal-gate";
 import { JsonLd } from "@/components/remontada/json-ld";
@@ -113,6 +114,7 @@ export default function RootLayout({
         <JsonLd data={SITE_LD} />
         <FantasyBackdrop />
         {children}
+        <NavDock />
         <PortalGate />
         <Toaster />
         <PwaRegister />

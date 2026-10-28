@@ -73,78 +73,48 @@ function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news
 export function SiteHeader({ children }: { children?: ReactNode }) {
   const pathname = usePathname();
   return (
-    <header className="glass-bar sticky top-0 z-40">
-      <div className="max-w-5xl mx-auto px-3 sm:px-5 py-2.5 flex items-center justify-between gap-3">
-        <SiteLogo small />
-        <div className="flex items-center gap-1.5 min-w-0">
-          <SearchBox />
-          {/* cycle-62: the inline nav steps aside on phones — the floating
-              game-menu dock below owns small-screen navigation */}
-          <nav className="hidden sm:flex items-center gap-1 text-[12px] font-bold min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="ناوبری اصلی">
-          {NAV_ITEMS.map((item) => {
-            const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors",
-                  active ? "text-primary bg-primary/10 border border-primary/25" : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
-                )}
-              >
-                <NavIcon name={item.icon} />
-                {item.label}
-              </Link>
-            );
-          })}
-          </nav>
+    /* cycle-63 — HUD header: the chrome floats as a rounded glass slab
+       below the top edge instead of a full-width bar (game-menu feel).
+       The dock moved to the root layout, so no fixed descendants remain. */
+    <header className="sticky top-0 z-40 px-2.5 sm:px-4 pt-2.5">
+      <div className="glass-popover rounded-2xl max-w-5xl mx-auto">
+        <div className="px-2.5 sm:px-4 py-2.5 flex items-center justify-between gap-3">
+          <SiteLogo small />
+          <div className="flex items-center gap-1.5 min-w-0">
+            <SearchBox />
+            {/* cycle-62: the inline nav steps aside on phones — the floating
+                game-menu dock (root layout) owns small-screen navigation */}
+            <nav className="hidden sm:flex items-center gap-1 text-[12px] font-bold min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="ناوبری اصلی">
+            {NAV_ITEMS.map((item) => {
+              const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  aria-current={active ? "page" : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg whitespace-nowrap shrink-0 transition-colors press-fx tab-rune",
+                    active ? "text-primary bg-primary/10 border border-primary/25" : "text-muted-foreground hover:text-foreground hover:bg-accent/50 border border-transparent"
+                  )}
+                >
+                  <NavIcon name={item.icon} />
+                  {item.label}
+                </Link>
+              );
+            })}
+            </nav>
+          </div>
         </div>
+        {/* optional page-specific row (e.g. home tabs + refresh controls) —
+            keeps the shared chrome single-source while letting each page
+            extend the sticky header with its own controls */}
+        {children != null && (
+          <div className="px-2.5 sm:px-4">{children}</div>
+        )}
+        {/* live favorite strip — only renders when a favorite team is playing now */}
+        <LiveFavoriteChip />
       </div>
-      {/* optional page-specific row (e.g. home tabs + refresh controls) —
-          keeps the shared chrome single-source while letting each page
-          extend the sticky header with its own controls */}
-      {children != null && (
-        <div className="max-w-5xl mx-auto px-3 sm:px-5">{children}</div>
-      )}
-      {/* live favorite strip — only renders when a favorite team is playing now */}
-      <LiveFavoriteChip />
-      {/* cycle-62 — the game-menu dock: fixed glass pill at the thumb zone,
-          phones only; the desktop header keeps its inline nav */}
-      <NavDock />
     </header>
-  );
-}
-
-function NavDock() {
-  const pathname = usePathname();
-  return (
-    <nav
-      aria-label="منوی بازی"
-      className="sm:hidden fixed z-40 inset-x-3 [bottom:calc(0.75rem+env(safe-area-inset-bottom))]"
-    >
-      <div className="glass-popover rounded-2xl flex items-stretch justify-between px-1.5 py-1.5">
-        {NAV_ITEMS.map((item) => {
-          const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={active ? "page" : undefined}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1.5 min-w-0 flex-1 transition-all duration-200",
-                active
-                  ? "text-primary bg-primary/10 border border-primary/30 shadow-[0_0_16px_oklch(0.7_0.1_300/0.28)]"
-                  : "text-muted-foreground border border-transparent hover:text-foreground active:scale-95"
-              )}
-            >
-              <NavIcon name={item.icon} size={17} />
-              <span className="text-[9.5px] font-black whitespace-nowrap">{item.label}</span>
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
   );
 }
 
@@ -154,11 +124,11 @@ export function SiteFooter() {
       <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
-          <span aria-hidden>·</span>
+          <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
         </div>
         <p className="text-[10px] text-muted-foreground/70">
