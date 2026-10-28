@@ -5,27 +5,14 @@
 // ------------------------------------------------------------------
 import Link from "next/link";
 import type { PlayerData } from "@/lib/fotmob";
-import { faDigits, formColor, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
+import { faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
 import { countryFa, teamFa } from "@/lib/leagues";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "./share-button";
 import { TeamLogo } from "./team-logo";
 import { JsonLd } from "./json-ld";
 import { ScorerAvatarTile } from "./glass-stats";
-
-function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
-  return (
-    <span
-      className={cn(
-        "w-[18px] h-[18px] rounded-[4px] border text-[9px] font-black flex items-center justify-center leading-none shrink-0",
-        formColor(r)
-      )}
-      title={r === "W" ? "برد" : r === "D" ? "مساوی" : "باخت"}
-    >
-      {r === "W" ? "ب" : r === "D" ? "م" : "پ"}
-    </span>
-  );
-}
+import { RecentMatchesSection } from "./player-recent";
 
 function StatBox({ display, title, accent }: { display: string; title: string; accent?: boolean }) {
   return (
@@ -67,6 +54,8 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
   if (p.info.shirt) chips.push({ label: "پیراهن", value: faDigits(p.info.shirt) });
   if (p.info.foot) chips.push({ label: "پای ترجیحی", value: p.info.foot });
   if (p.info.country) chips.push({ label: "کشور", value: countryFa(p.info.country) });
+  // cycle-86: probed playerData.isCaptain — explicit false when not captain
+  if (p.isCaptain) chips.push({ label: "کاپیتان", value: "بله" });
   if (p.info.marketValue) chips.push({ label: "ارزش بازار", value: marketValueFa(p.info.marketValue) });
   if (p.info.contractEnd) chips.push({ label: "پایان قرارداد", value: faDigits(p.info.contractEnd) });
 
@@ -422,63 +411,9 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         </section>
       )}
 
-      {/* ---------- recent matches ---------- */}
-      <section className="glass-card overflow-hidden" aria-label="بازی‌های اخیر">
-        <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[12px] font-black">
-          بازی‌های اخیر {p.recent.length > 0 && <span className="text-muted-foreground font-bold text-[10.5px]">({faDigits(p.recent.length)} بازی اخیر)</span>}
-        </header>
-        {p.recent.length === 0 ? (
-          <p className="text-center text-muted-foreground text-sm py-8">بازی اخیری برای این بازیکن ثبت نشده است.</p>
-        ) : (
-          <ul className="glass-list">
-            {p.recent.map((m) => {
-              const jd = jalaliShort(m.utcTime);
-              return (
-                <li key={m.id}>
-                  <Link
-                    href={`/match/${m.id}`}
-                    prefetch={false}
-                    className="glass-row-hover group flex items-center gap-2.5 px-3 sm:px-4 py-2.5"
-                  >
-                    {m.result ? <ResultBadge r={m.result} /> : <span className="w-[18px] shrink-0" aria-hidden />}
-                    <span className="text-[11px] tabular-persian font-black text-muted-foreground w-12 text-center shrink-0" dir="ltr">
-                      {m.homeScore !== null && m.awayScore !== null ? `${faDigits(m.homeScore)} - ${faDigits(m.awayScore)}` : "—"}
-                    </span>
-                    <span className="flex items-center gap-1.5 min-w-0 flex-1">
-                      <TeamLogo id={m.opponentId} alt="" size={16} />
-                      <span className="truncate text-[12px] font-bold group-hover:text-sky-soft transition-colors">
-                        {m.isHome ? "میزبان" : "بیرون"} · {m.opponent}
-                      </span>
-                      {m.onBench && !m.played && (
-                        <span className="text-[8.5px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">روی نیمکت</span>
-                      )}
-                      {m.potm && <span className="text-[9px] font-black text-chart-3 shrink-0" title="بهترین بازیکن زمین">★</span>}
-                    </span>
-                    <span className="hidden sm:flex items-center gap-2 shrink-0 text-[10px] text-muted-foreground tabular-persian">
-                      {m.goals > 0 && (
-                        <span className="font-black text-mint" title="گل">⚽ {faDigits(m.goals)}</span>
-                      )}
-                      {m.assists > 0 && (
-                        <span className="font-bold" title="پاس گل">🅰 {faDigits(m.assists)}</span>
-                      )}
-                      {m.yellow > 0 && <span className="w-2 h-2.5 rounded-[2px] bg-amber-400 inline-block" title="کارت زرد" />}
-                      {m.red > 0 && <span className="w-2 h-2.5 rounded-[2px] bg-red-500 inline-block" title="کارت قرمز" />}
-                      {m.minutes !== null && m.played && <span title="دقیقه بازی">{faDigits(m.minutes)}′</span>}
-                    </span>
-                    <span className="sm:hidden flex items-center gap-1.5 shrink-0 text-[10px] tabular-persian">
-                      {m.goals > 0 && <span className="font-black text-mint">⚽{faDigits(m.goals)}</span>}
-                      {m.rating && <span className="font-black text-chart-3">{faDigits(m.rating)}</span>}
-                    </span>
-                    <span className="text-[9.5px] text-muted-foreground/70 tabular-persian shrink-0 w-14 text-end">
-                      {jd.day} {jd.month}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
+      {/* ---------- recent matches (cycle-86: full archive island —
+          side filter club vs national + show-all toggle, SSR-friendly) ---------- */}
+      <RecentMatchesSection recent={p.recent} teams={p.recentTeams} />
 
       <p className="text-[10px] text-muted-foreground/60 text-center">
         آمار از FotMob — امتیازها و ارزش بازار تقریبی است و هر {faDigits(10)} دقیقه به‌روزرسانی می‌شود.

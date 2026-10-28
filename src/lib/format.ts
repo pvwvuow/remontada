@@ -83,7 +83,7 @@ export function tehranDateLong(iso: string): string {
 }
 
 /** "۵ آبان" — short Jalali month/day (for day chips) */
-export function jalaliShort(iso: string): { day: string; month: string; weekday: string } {
+export function jalaliShort(iso: string): { day: string; month: string; weekday: string; year: string } {
   const utc = new Date(new Date(iso).getTime() + 3.5 * 3600_000);
   const y = utc.getUTCFullYear();
   const m = utc.getUTCMonth() + 1;
@@ -93,6 +93,8 @@ export function jalaliShort(iso: string): { day: string; month: string; weekday:
     day: faDigits(jd),
     month: FA_JALALI_MONTHS[jm - 1],
     weekday: FA_WEEKDAYS[utc.getUTCDay()],
+    // cycle-86 additive: «۱۴۱۳» — long-horizon dates (contract end) need the year
+    year: faDigits(jy),
   };
 }
 

@@ -1338,6 +1338,8 @@ interface FMPlayerDetails {
   id?: number;
   name?: string;
   isCoach?: boolean;
+  // cycle-86 probed: explicit false for non-captains, absent on some payloads
+  isCaptain?: boolean;
   status?: string;
   birthDate?: { utcTime?: string } | null;
   primaryTeam?: { teamId?: number; teamName?: string; onLoan?: boolean } | null;
@@ -1448,7 +1450,12 @@ export interface PlayerRecentMatch {
   red: number;
   rating: string | null;
   potm: boolean;
+  // cycle-86: which of the player's sides this appearance was for (club vs
+  // national team) — powers the recent-matches side filter
+  sideId: number;
+  sideName: string;
 }
+export interface PlayerRecentSide { id: number; fa: string }
 export interface PlayerData {
   id: string;
   name: string;
@@ -1462,6 +1469,12 @@ export interface PlayerData {
   };
   season: { leagueFa: string; season: string; stats: PlayerSeasonStat[] } | null;
   recent: PlayerRecentMatch[];
+  // cycle-86: sides appearing in `recent` (club + national), first-seen order;
+  // single-element when the archive only covers the current club
+  recentTeams: PlayerRecentSide[];
+  // cycle-86: probed playerData.isCaptain (explicit false when not captain,
+  // absent for some payloads → mapped to false)
+  isCaptain: boolean;
   next: { id: string; utcTime: string; opponent: string; opponentId: number; opponentLogo: string; isHome: boolean; leagueFa: string } | null;
   career: PlayerCareerEntry[];       // senior + national-team stops, newest first
   careerYouth: PlayerCareerEntry[];  // youth/academy stops (hidden section when empty)
@@ -1770,9 +1783,13 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     }
   }
 
-  // recent appearances (already newest-first) — keep the last 10
+  // recent appearances (already newest-first) — cycle-86: full archive instead
+  // of the old 10-row window (probed: 68 entries on Haaland, 70 on Sinisalo;
+  // bounded upstream, 120 safety cap) with the side (club vs national team)
+  // kept per row so the UI can filter
   const recent: PlayerRecentMatch[] = [];
-  for (const m of (raw.recentMatches || []).slice(0, 10)) {
+  const recentTeams: PlayerRecentSide[] = [];
+  for (const m of (raw.recentMatches || []).slice(0, 120)) {
     if (!m?.id) continue;
     const isHome = !!m.isHomeTeam;
     const hs = typeof m.homeScore === "number" ? m.homeScore : null;
@@ -1803,7 +1820,12 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
       red: m.redCards ?? 0,
       rating: m.ratingProps?.rating || null,
       potm: !!m.playerOfTheMatch,
+      sideId: m.teamId ?? 0,
+      sideName: teamFa(m.teamName || undefined) || m.teamName || "",
     });
+    if (m.teamId && !recentTeams.some((t) => t.id === m.teamId)) {
+      recentTeams.push({ id: m.teamId, fa: teamFa(m.teamName || undefined) || m.teamName || "" });
+    }
   }
 
   // next match (opponent relative to the player's current team)
@@ -1842,6 +1864,8 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     info,
     season,
     recent,
+    recentTeams,
+    isCaptain: !!raw.isCaptain,
     next,
     career,
     careerYouth: normalizeCareerEntries(careerItems.youth?.teamEntries, "youth"),
@@ -1855,7 +1879,9 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
 
 function jalaliContract(iso: string): string {
   const j = jalaliShort(iso);
-  return j.day && j.month ? `${j.day} ${j.month}` : "";
+  // cycle-86: the year is the essential part for long contracts («۹ تیر ۱۴۱۳»
+  // for 2034-06-30 — day+month alone was ambiguous)
+  return j.day && j.month ? `${j.day} ${j.month} ${j.year}` : "";
 }
 
 // ---- cycle-20: career path + trophies parsing (all best-effort) ----
@@ -1933,7 +1959,10 @@ function normalizeTrophies(raw?: FMPlayerDetails["trophies"]): PlayerTrophy[] {
  */
 export async function getPlayerData(id: string): Promise<PlayerData> {
   if (!/^\d{3,12}$/.test(id)) throw new PlayerNotFoundError(`bad player id: ${id}`);
-  const payload = await cached(`player:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-86: key bumped to v2 — output gained recentTeams/isCaptain/sideId
+  // (and the full archive replacing the 10-row window) so the L2 SQLite cache
+  // cannot serve the old shape for its TTL (same convention as cycle-52)
+  const payload = await cached(`player:v2:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

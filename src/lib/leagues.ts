@@ -265,6 +265,9 @@ export function teamFa(...candidates: (string | undefined)[]): string {
     if (!c) continue;
     const key = c.toLowerCase().trim();
     if (TEAM_FA[key]) return TEAM_FA[key];
+    // cycle-86: national teams («Norway» → «نروژ») ride the country map —
+    // probed via player recentMatches sides (club vs national team rows)
+    if (COUNTRY_FA[key]) return COUNTRY_FA[key];
   }
   // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
   for (const c of candidates) {
