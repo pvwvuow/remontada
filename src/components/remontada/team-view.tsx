@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -749,6 +749,44 @@ function TeamTrophiesSection({ data }: { data: TeamTrophiesData }) {
   );
 }
 
+// ---------------- team venue («ورزشگاه خانه», cycle-75) ----------------
+// Compact home-ground card in the same game-menu language: stadium name +
+// city on the first row, stat chips (ظرفیت with Persian thousands separator,
+// سطح چمن, سال افتتاح) below — same chip grid as the header mini-stats.
+const SURFACE_FA_UI: Record<string, string> = {
+  grass: "چمن طبیعی",
+  artificial: "چمن مصنوعی",
+};
+
+function TeamVenueCard({ v }: { v: TeamVenue }) {
+  const chips: { l: string; val: string }[] = [];
+  if (typeof v.capacity === "number") {
+    chips.push({ l: "ظرفیت", val: faDigits(v.capacity.toLocaleString("en-US")).replace(/,/g, "٬") });
+  }
+  if (v.surface) chips.push({ l: "سطح چمن", val: SURFACE_FA_UI[v.surface.toLowerCase()] || v.surface });
+  if (typeof v.opened === "number") chips.push({ l: "سال افتتاح", val: faDigits(v.opened) });
+  return (
+    <Section title="ورزشگاه خانه">
+      <div className="px-3 py-3 flex flex-col gap-2.5" data-testid="team-venue">
+        <div className="flex items-baseline justify-between gap-2 min-w-0">
+          <p className="text-[13.5px] font-black truncate">{v.name}</p>
+          {v.city && <p className="text-[10.5px] text-muted-foreground font-bold shrink-0">{v.city}</p>}
+        </div>
+        {chips.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {chips.map((c) => (
+              <div key={c.l} className="rounded-xl border border-glass-border-soft bg-white/[0.03] px-2 py-2 text-center">
+                <p className="text-[9px] text-steel/70 font-bold">{c.l}</p>
+                <p className="text-[12.5px] font-black tabular-persian mt-0.5">{c.val}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -804,6 +842,24 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* trophies stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-75: lazy team venue («ورزشگاه خانه») — same data/teams source
+  // (shared upstream cache), fetched after mount; stays null → section hidden.
+  const [venue, setVenue] = useState<TeamVenue | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-venue/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.venue) setVenue(j.venue as TeamVenue);
+      })
+      .catch(() => {
+        /* venue stays null → section hidden */
       });
     return () => {
       alive = false;
@@ -969,6 +1025,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* season stats */}
       {season && season.played > 0 && <SeasonPanel s={season} />}
+
+      {/* cycle-75: home ground («ورزشگاه خانه») — lazily probed, hidden when absent */}
+      {venue && venue.name && <TeamVenueCard v={venue} />}
 
       {data.live.length > 0 && (
         <Section title="در جریان">

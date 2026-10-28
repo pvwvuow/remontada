@@ -2076,13 +2076,19 @@ interface FMTeamTransferRaw {
   onLoan?: boolean;
 }
 
-/** Raw api/data/teams payload — shared by the squad (cycle-70) and the
- * transfers (cycle-71) + trophies (cycle-72) feeds so all read ONE upstream
+/** Raw api/data/teams payload — shared by the squad (cycle-70), transfers
+ * (cycle-71), trophies (cycle-72) and venue (cycle-75) reads — ONE upstream
  * fetch per hour. */
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[] };
   history?: { trophyList?: FMTeamTrophyRaw[] };
+  overview?: { venue?: FMVenueRaw };
+}
+
+interface FMVenueRaw {
+  widget?: { name?: string; city?: string };
+  statPairs?: [string, string | number | null][];
 }
 
 interface FMTeamTrophyRaw {
@@ -2302,4 +2308,52 @@ export async function getTeamTrophies(teamId: number): Promise<TeamTrophiesData 
   if (items.length === 0) return null;
   items.sort((a, b) => b.won - a.won || b.runnerup - a.runnerup || a.name.localeCompare(b.name));
   return { totalWon: items.reduce((a, t) => a + t.won, 0), items };
+}
+
+// ---------------- FotMob: team venue (data/teams endpoint, cycle-75) ----------------
+// Probed live (2026-10-29, UA Chrome/124): overview.venue on the SAME
+// data/teams payload — { widget: {name, city}, statPairs: [["Surface",
+// "Grass"], ["Capacity", 60832], ["Opened", 1892]] }. Identical shape on
+// Celtic 9925 (Celtic Park) and Palace 9826 (Selhurst Park).
+
+export interface TeamVenue {
+  name: string;
+  city?: string;
+  capacity?: number;
+  surface?: string; // raw source text ("Grass")
+  opened?: number;
+}
+
+const SURFACE_FA: Record<string, string> = {
+  grass: "چمن طبیعی",
+  artificial: "چمن مصنوعی",
+};
+
+/**
+ * Home ground of a team («ورزشگاه خانه», cycle-75) from the shared cached
+ * data/teams raw fetch — no extra upstream hit. Returns null when the payload
+ * carries no venue so the UI hides the section (same contract as the other
+ * lazy team reads).
+ */
+export async function getTeamVenue(teamId: number): Promise<TeamVenue | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const v = raw?.overview?.venue;
+  const name = v?.widget?.name;
+  if (!name) return null;
+  const pairs = Array.isArray(v?.statPairs) ? v.statPairs : [];
+  const pick = (label: string): string | number | null => {
+    const hit = pairs.find((p) => String(p?.[0] || "").toLowerCase() === label);
+    return hit ? hit[1] : null;
+  };
+  const capacity = pick("capacity");
+  const opened = pick("opened");
+  const surface = pick("surface");
+  return {
+    name,
+    ...(v?.widget?.city ? { city: v.widget.city } : {}),
+    ...(typeof capacity === "number" && capacity > 0 ? { capacity } : {}),
+    ...(typeof surface === "string" && surface ? { surface } : {}),
+    ...(typeof opened === "number" && opened > 0 ? { opened } : {}),
+  };
 }
