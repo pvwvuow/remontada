@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard } from "@/lib/fotmob";
 import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
@@ -202,6 +202,124 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
       <p className="text-[10.5px] font-bold mt-0.5">{label}</p>
       {sub && <p className="text-[9px] text-muted-foreground mt-0.5 tabular-persian">{sub}</p>}
     </div>
+  );
+}
+
+// ---------------- upstream season boards («برترین‌های رسمی فصل», cycle-92) ----------------
+// Podiums from the SAME leagueRaw payload's stats blocks (team + player),
+// formatted with the payload's own stat.format/stat.fractions hints so the
+// numbers stay honest (percent/number/currency/kph/fraction).
+function boardValue(v: number, fmt: string, fractions: number): string {
+  if (fmt === "percent") return `${faDigits(v.toFixed(1))}٪`;
+  if (fmt === "kph") return faDigits(v.toFixed(1));
+  if (fmt === "currency") {
+    const abs = Math.abs(v);
+    if (abs >= 1e9) return `${faDigits((v / 1e9).toFixed(2))} میلیارد`;
+    if (abs >= 1e6) return `${faDigits((v / 1e6).toFixed(1))} میلیون`;
+    return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
+  }
+  if (fmt === "number") {
+    return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
+  }
+  return faDigits(v.toFixed(Math.max(0, Math.min(fractions, 2))));
+}
+
+function BoardRow({ row, kind }: { row: LeagueBoard["rows"][number] & { _v: string }; kind: "team" | "player" }) {
+  const first = row.rank === 1;
+  const href = kind === "player" && row.playerId ? `/player/${row.playerId}` : row.teamId ? `/team/${row.teamId}` : null;
+  const body = (
+    <>
+      <span
+        className={cn(
+          "shrink-0 w-6 h-6 rounded-md grid place-items-center text-[10px] font-black tabular-persian border",
+          first ? "glass-leader" : "text-[#c3d4ea] border-[color:var(--glass-border-soft)] bg-white/[0.05]"
+        )}
+        aria-hidden
+      >
+        {faDigits(row.rank)}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate">{row.name}</p>
+        {kind === "player" && row.teamFa && (
+          <p className="text-[10px] text-muted-foreground truncate mt-0.5">{row.teamFa}</p>
+        )}
+      </div>
+      <p className="shrink-0 text-[13px] font-black tabular-persian" aria-label="مقدار آماره">
+        {row._v}
+      </p>
+    </>
+  );
+  const cls = cn(
+    "flex items-center gap-2.5 rounded-xl px-2.5 py-2",
+    first ? "glass-leader" : "bg-white/[0.03] border border-[color:var(--glass-border-soft)]"
+  );
+  return href ? (
+    <Link href={href} prefetch={false} className={cn(cls, "glass-row-hover block")}>
+      {body}
+    </Link>
+  ) : (
+    <div className={cls}>{body}</div>
+  );
+}
+
+function SeasonBoards({ boards }: { boards: LeagueBoard[] }) {
+  const kinds: ("team" | "player")[] = [];
+  if (boards.some((b) => b.kind === "team")) kinds.push("team");
+  if (boards.some((b) => b.kind === "player")) kinds.push("player");
+  const [kind, setKind] = useState<"team" | "player">(kinds[0] || "team");
+  const [header, setHeader] = useState<string | null>(null);
+  const avail = boards.filter((b) => b.kind === kind);
+  const active = avail.find((b) => b.header === header) || avail[0] || null;
+  if (!active) return null;
+  return (
+    <section className="glass-card p-4" data-testid="league-boards" aria-label="برترین‌های رسمی فصل">
+      <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+        <h3 className="text-[11px] font-black text-[#b6cce3]">برترین‌های رسمی فصل</h3>
+        {kinds.length > 1 && (
+          <div className="flex gap-1" role="tablist" aria-label="نوع برترین‌ها">
+            {kinds.map((k) => (
+              <button
+                key={k}
+                role="tab"
+                aria-selected={kind === k}
+                onClick={() => {
+                  setKind(k);
+                  setHeader(null);
+                }}
+                className={cn(
+                  "rounded-full border px-2.5 py-1 text-[10px] font-black transition-colors",
+                  kind === k ? "text-sky-soft border-sky-soft/30 bg-sky-soft/10" : "text-muted-foreground border-[color:var(--glass-border-soft)] bg-white/[0.03] hover:text-foreground"
+                )}
+              >
+                {k === "team" ? "تیم‌ها" : "بازیکنان"}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="flex gap-1.5 flex-wrap mb-3" role="tablist" aria-label="دستهٔ آماری">
+        {avail.map((b) => (
+          <button
+            key={b.header}
+            role="tab"
+            aria-selected={active.header === b.header}
+            onClick={() => setHeader(b.header)}
+            className={cn(
+              "rounded-full border px-2.5 py-1 text-[10px] font-black transition-colors",
+              active.header === b.header ? "text-foreground border-gold/30 bg-gold/10" : "text-muted-foreground border-[color:var(--glass-border-soft)] bg-white/[0.03] hover:text-foreground"
+            )}
+          >
+            {b.headerFa}
+          </button>
+        ))}
+      </div>
+      <p className="text-[10px] text-muted-foreground mb-2">{active.subFa || ""}{active.subFa ? " · " : ""}سه نفر برتر فصل طبق دادهٔ FotMob</p>
+      <div className="flex flex-col gap-1.5">
+        {active.rows.map((r) => (
+          <BoardRow key={`${r.rank}:${r.name}`} row={{ ...r, _v: boardValue(r.value, active.fmt, active.fractions) }} kind={active.kind} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -868,7 +986,16 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
-          {tab === "stats" && (fixtures?.stats ? <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} /> : <EmptyState icon="ball" compact title="آماری برای این لیگ ثبت نشده است" sub="آمار فصل از بازی‌های پایان‌یافته محاسبه می‌شود." />)}
+          {tab === "stats" && (
+            <div className="flex flex-col gap-4">
+              {standings?.boards && standings.boards.length > 0 && <SeasonBoards boards={standings.boards} />}
+              {fixtures?.stats ? (
+                <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} />
+              ) : (
+                <EmptyState icon="ball" compact title="آماری برای این لیگ ثبت نشده است" sub="آمار فصل از بازی‌های پایان‌یافته محاسبه می‌شود." />
+              )}
+            </div>
+          )}
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}

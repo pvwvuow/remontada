@@ -108,6 +108,9 @@ export interface StandingsData {
   away?: StandingsRow[];
   scorers: ScorerEntry[];
   assists: AssistEntry[];
+  /** cycle-92 additive: curated upstream season leaderboards (team + player
+   *  podiums from raw.stats blocks) — hidden when the feed lacks them. */
+  boards?: LeagueBoard[];
   updatedAt: string;
 }
 
@@ -315,7 +318,10 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
 }
 
 // ---------------- FotMob: standings + top scorers ----------------
-interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }
+// cycle-92 probed: every stats row also carries a nested `stat` hint
+// {value, format: fraction|percent|number|currency|kph, fractions} alongside
+// the legacy flat `value` field.
+interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number; stat?: { name?: string; value?: number; format?: string; fractions?: number } }
 interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
   allAvailableSeasons?: string[];
@@ -401,6 +407,149 @@ function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
   for (const t of cat.topThree || []) if (t?.name) out.push(t);
   const seen = new Set<number>();
   return out.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
+}
+
+// ---------------- FotMob: league season boards («برترین‌های رسمی فصل», cycle-92) ----------------
+// Probed live (2026-10-29, UA Chrome/124): raw.stats carries 40+ PLAYER and
+// 30 TEAM leaderboard blocks {header, participant, topThree:[{name/teamId/
+// id, stat:{value, format, fractions}}]} — the app only ever read the scorer/
+// assist/rating/minutes categories as scorer-table enrichment. The curated
+// boards below surface the rest (possession, clean sheets, attendance, squad
+// value, top speed, dribbles, GK goals-prevented…) on the league stats tab.
+// Categories are hidden when a league's feed lacks them (e.g. Top speed is
+// PL-only) and the whole section hides when the payload has none.
+
+export type LeagueBoardFmt = "fraction" | "percent" | "number" | "currency" | "kph";
+
+export interface LeagueBoardRow {
+  rank: number;
+  name: string;
+  teamFa?: string; // player rows: their club (fa when known)
+  teamId?: number;
+  value: number;
+  playerId?: number; // player rows → /player/{id}
+}
+
+export interface LeagueBoard {
+  kind: "team" | "player";
+  header: string; // upstream header (stable React key)
+  headerFa: string;
+  subFa?: string;
+  fmt: LeagueBoardFmt; // from the payload's stat.format hint
+  fractions: number; // from the payload's stat.fractions hint
+  rows: LeagueBoardRow[]; // podium (≤3), payload order = ranking order
+}
+
+/** Curated board catalog: upstream header → Persian title (+subtitle). */
+const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: string; sub?: string }>>> = {
+  team: {
+    "Average possession": { fa: "میانگین مالکیت توپ", sub: "درصد مالکیت در بازی‌های فصل" },
+    "Clean sheets": { fa: "کلین‌شیت", sub: "بازی‌های بدون گل خورده" },
+    Attendance: { fa: "میانگین تماشاگر خانه", sub: "میانگین حضور در ورزشگاه" },
+    "Squad value": { fa: "ارزش بازار ترکیب", sub: "جمع ارزش نقل‌وانتقالی بازیکنان" },
+    "FotMob rating": { fa: "امتیاز فوت‌ماب تیم", sub: "میانگین نمره بازی‌ها" },
+    "Goals per match": { fa: "گل زده در هر بازی", sub: "قدرت آفنسیو فصل" },
+  },
+  player: {
+    "FotMob rating": { fa: "امتیاز فوت‌ماب", sub: "میانگین نمره بازی‌ها" },
+    "Top speed": { fa: "بیشترین سرعت", sub: "بر حسب کیلومتر بر ساعت" },
+    "Big chances created": { fa: "موقعیت طلایی ساخته", sub: "پاس‌های منجر به موقعیت پنهان" },
+    "Successful dribbles per 90": { fa: "دریبل موفق در هر ۹۰ دقیقه", sub: "میانگین دریبل‌های برنده" },
+    "Goals prevented": { fa: "گل مهارشده", sub: "دروازه‌بان‌ها؛ منفی = بیش از انتظار گل خورده" },
+    "Accurate passes per 90": { fa: "پاس دقیق در هر ۹۰ دقیقه", sub: "میانگین پاس‌های درست" },
+  },
+};
+
+/** Team-block row of the stats payload: name=team name, teamId, stat hint. */
+interface FMStatTeamRow {
+  name?: string;
+  teamId?: number;
+  stat?: { value?: number; format?: string; fractions?: number };
+}
+
+interface FMStatBlockTeam {
+  header?: string;
+  participant?: FMStatTeamRow;
+  topThree?: FMStatTeamRow[];
+}
+
+/**
+ * Extract the curated season boards («برترین‌های رسمی فصل», cycle-92) from
+ * the SAME cached leagueRaw payload — zero extra upstream hit. Podium rows =
+ * participant (the leader) + topThree deduped, capped at 3, payload order
+ * preserved (it is the ranking order). Boards missing from the feed are
+ * skipped; empty result → section hidden upstream of the UI.
+ */
+function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
+  const src = raw.stats as
+    | { players?: (FMStatBlock & { participant?: FMStatPlayer })[]; teams?: FMStatBlockTeam[] }
+    | undefined;
+  const boards: LeagueBoard[] = [];
+  const pick = (
+    kind: "team" | "player",
+    blocks: (FMStatBlock | FMStatBlockTeam)[] | undefined,
+    idOf: (r: FMStatPlayer | FMStatTeamRow) => number | undefined
+  ) => {
+    const catalog = LEAGUE_BOARD_FA[kind] || {};
+    for (const block of blocks || []) {
+      const header = String(block?.header || "");
+      const label = catalog[header];
+      if (!label) continue; // not curated → skip
+      const rowsRaw = [block.participant, ...(block.topThree || [])].filter(
+        (r): r is FMStatPlayer | FMStatTeamRow => !!r && !!r.name
+      );
+      const seen = new Set<number>();
+      const rows: LeagueBoardRow[] = [];
+      for (const r of rowsRaw) {
+        const id = idOf(r);
+        if (id != null && seen.has(id)) continue;
+        if (id != null) seen.add(id);
+        const stat = r.stat || {};
+        const value = Number(stat.value);
+        if (!Number.isFinite(value)) continue;
+        const fmt = String(stat.format || "fraction");
+        // player rows carry their club (teamId + fa name) separately from the
+        // player id (which powers the /player/{id} link); team rows ARE clubs
+        const row =
+          kind === "player"
+            ? {
+                rank: rows.length + 1,
+                name: String(r.name),
+                ...((r as FMStatPlayer).teamName
+                  ? { teamFa: teamFa((r as FMStatPlayer).teamName) || (r as FMStatPlayer).teamName }
+                  : {}),
+                ...((r as FMStatPlayer).teamId != null && Number((r as FMStatPlayer).teamId) > 0
+                  ? { teamId: Number((r as FMStatPlayer).teamId) }
+                  : {}),
+                ...(id != null && id > 0 ? { playerId: id } : {}),
+                value,
+              }
+            : {
+                rank: rows.length + 1,
+                name: String(r.name),
+                ...(id != null && id > 0 ? { teamId: id } : {}),
+                value,
+              };
+        rows.push(row);
+      }
+      if (rows.length === 0) continue;
+      const hint = rowsRaw[0]?.stat || {};
+      boards.push({
+        kind,
+        header,
+        headerFa: label.fa,
+        ...(label.sub ? { subFa: label.sub } : {}),
+        fmt: (["fraction", "percent", "number", "currency", "kph"].includes(hint.format || "")
+          ? hint.format
+          : "fraction") as LeagueBoardFmt,
+        fractions: Number.isFinite(Number(hint.fractions)) ? Number(hint.fractions) : 1,
+        rows,
+      });
+    }
+  };
+  pick("team", src?.teams, (r) => (r as FMStatTeamRow).teamId);
+  pick("player", src?.players as unknown as (FMStatBlock | FMStatBlockTeam)[] | undefined, (r) => (r as FMStatPlayer).id);
+  return boards;
 }
 
 /**
@@ -634,12 +783,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     const allSeasons = Array.isArray(raw.allAvailableSeasons)
       ? raw.allAvailableSeasons.filter((s) => SEASON_PARAM_RE.test(s)).slice(0, 12)
       : undefined;
+    // cycle-92: curated upstream season boards (same leagueRaw, zero extra hit)
+    const boards = extractLeagueBoards(raw);
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
       ...(selectedSeason ? { selectedSeason } : {}),
       ...(allSeasons && allSeasons.length > 1 ? { allSeasons } : {}),
       ...(homeRows ? { home: homeRows } : {}),
       ...(awayRows ? { away: awayRows } : {}),
+      ...(boards.length > 0 ? { boards } : {}),
       scorers: mergedScorers,
       assists: assistEntries,
       updatedAt: new Date().toISOString(),
@@ -651,7 +803,9 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // current season, so existing cache entries stay valid)
   // v3 (cycle-90): mapped row shape gained the optional xg/xga/xPts fields —
   // old v2 entries (without them) would keep the xG section hidden for an hour
-  return cached(`standings:v3:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
+  // v4 (cycle-92): mapped shape gained the optional `boards` field (upstream
+  // season leaderboards) — old v3 entries would keep the section hidden an hour
+  return cached(`standings:v4:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------
