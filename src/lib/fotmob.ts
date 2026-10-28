@@ -126,6 +126,12 @@ export interface StandingsData {
   /** cycle-102 additive metadata: effective cache TTL in minutes (15 matchday
    *  / 60 quiet) so callers (and checks) can verify the freshness contract. */
   ttlMinutes?: number;
+  /** cycle-111 additive: standings zone legend («راهنمای سهمیه‌ها») — the
+   *  upstream table legend (qualification/relegation zones) rendered through
+   *  the curated Persian tKey map; explains the per-row qualColor strips.
+   *  Absent on feeds without a legend (persiangulf) and on pre-111 cached
+   *  entries (self-heals at the next TTL — UI hides the section). */
+  legend?: { fa: string; color: string }[];
   updatedAt: string;
 }
 
@@ -337,10 +343,43 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
 // {value, format: fraction|percent|number|currency|kph, fractions} alongside
 // the legacy flat `value` field.
 interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number; stat?: { name?: string; value?: number; format?: string; fractions?: number } }
+
+// cycle-111: standings zone legend row (see STANDINGS_LEGEND_FA)
+interface FMTableLegendRow {
+  title?: string;
+  tKey?: string;
+  color?: string;
+  indices?: number[];
+  targetLeague?: { id?: number; name?: string; tKey?: string };
+}
+// cycle-111: standings zone legend — upstream tKey → curated Persian title
+// (probed live, UA Chrome/124, 2026-10-29: 8 distinct tKeys across the 6
+// table-carrying leagues; persiangulf has no table/legend — empty-state
+// design). Unknown tKeys never render (honest convention).
+const STANDINGS_LEGEND_FA: Record<string, string> = {
+  "championsleague": "لیگ قهرمانان اروپا",
+  "europaleague": "لیگ اروپا",
+  "europa_conference_league": "سهمیهٔ کنفرانس‌لیگ",
+  "clqual": "سهمیهٔ لیگ قهرمانان",
+  "q1of8finals": "صعود به یک‌هشتم نهایی",
+  "q1of16finals": "صعود به یک‌شانزدهم نهایی",
+  "relegationqual": "سهمیهٔ سقوط",
+  "relegation": "سقوط",
+};
+
 interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
   allAvailableSeasons?: string[];
-  table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] }; selectedSeason?: string } };
+  table?: { data?: {
+    table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] };
+    selectedSeason?: string;
+    // cycle-111 probed (UA Chrome/124, 2026-10-29, 6 leagues): zone legend of
+    // the standings — {title, tKey, color, indices} (+ targetLeague on
+    // relegation rows). PL: championsleague[0-3]/europaleague[4]/relegation[17-19];
+    // UCL league phase: q1of8finals/q1of16finals; Bundesliga/Ligue1 add
+    // relegationqual; laliga/seriea add europa_conference_league.
+    legend?: FMTableLegendRow[];
+  } };
   // cycle-102: hasOngoingMatch typed (probed: boolean; null on persiangulf's
   // null fixtures block) — the matchday detector reads it for free
   fixtures?: { allMatches?: unknown[]; hasOngoingMatch?: boolean | null };
@@ -805,6 +844,20 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     const rows: StandingsRow[] = (fmTable?.all || []).map((r) => mapRow(r, true));
     if (rows.length === 0) throw new Error("No standings data");
 
+    // update cycle-111: zone legend («راهنمای سهمیه‌ها») — the upstream table
+    // legend explains the per-row qualColor strips the portal has rendered
+    // since the beginning with no explanation. tKey → curated Persian title;
+    // unknown tKeys drop (honest convention). Additive optional field
+    // (cycle-102 precedent: no cache-key bump — pre-111 entries lack it, the
+    // UI hides the section, and it self-heals at the next TTL).
+    const legendRows = raw.table?.[0]?.data?.legend || [];
+    const legend: NonNullable<StandingsData["legend"]> = legendRows
+      .map((l) => {
+        const fa = l.tKey ? STANDINGS_LEGEND_FA[l.tKey] : undefined;
+        return fa && l.color ? { fa, color: l.color } : null;
+      })
+      .filter((x): x is { fa: string; color: string } => x !== null);
+
     // cycle-90: join the xG table variant by team id — the SAME cached league
     // payload mirrors the table with expected-goals metrics (xg / xgConceded /
     // xPoints; live-probed 2026-10-28). Optional: only the big leagues + UCL
@@ -916,6 +969,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ttlMinutes: matchday ? 15 : 60,
       scorers: mergedScorers,
       assists: assistEntries,
+      ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
     };
   };

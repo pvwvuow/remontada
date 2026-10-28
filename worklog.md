@@ -1390,3 +1390,15 @@ Stage Summary:
 - افزودنیِ خالص: هیچ سطوح موجود شکسته یا تکرار نشد؛ فیچر جدید «بینش‌ها» سومین سطوح داستانی مسابقه کنار هوا (۱۰۰) و زون‌ها (۹۷)
 - پذیرش: bunx eslint src (0/0) ← rm -rf .next/types && tsc --noEmit (0) ← build ✓ ← استارت رسمی scripts/start-remontada.sh (pid=22310، HTTP 200) ← رگرسیون BASE=http://localhost:3000 ۲۸/۲۸ ← DOMPROOF یک‌پاس سبز
 - نوبت گردشی بعدی طبق فرمول کاربر: چرخهٔ ۱۱۱ = آپدیت، ۱۱۲ = آپدیت، ۱۱۳ = بررسی باگ
+
+## Task ID: cycle-111 — Update: راهنمای سهمیه‌های جدول («راهنمای سهمیه‌ها») — legend ناحیه‌های صعود/سقوط با نگاشت فارسی
+تاریخ: ۱۴۰۸/۰۸/۰۷ (2026-10-29) — نوع: آپدیت (فرمول ((111 mod 5)+1)=2)
+- امکان‌سنجی زندهٔ اول (UA Chrome/124): پویش payloadهای استفاده‌نشده — مسابقه (buzz/superlive/heatmapUrl ارزش نمایشی پایین)، بازیکن (statSeasons فقط شناسهٔ تورنمنت می‌دهد؛ آمار در اندپوینت جدا = مسیر سنگین) → شکاف واقعی انتخابی: legend جدول رده‌بندی — payload لیگ (سطح بالای table[0].data.legend) متادیتای ناحیه‌ها {title، tKey، color، indices} (+ targetLeague برای سقوط) را می‌دهد، در حالی که پرتال از ابتدا نوار رنگی qualColor هر ردیف را بدون هیچ توضیحی رندر می‌کرد
+- شمارش tKeyها از ۶ لیگِ جدول‌دار: ۸ متمایز — championsleague/europaleague/europa_conference_league/relegation (pl/laliga/seriea)، relegationqual (بوندسلیگا/لیگ ۱)، clqual (لیگ ۱)، q1of8finals/q1of16finals (فاز لیگی UCL) → STANDINGS_LEGEND_FA در src/lib/fotmob.ts؛ tKey ناشناخته → حذف صادق (قرارداد کلیدهای هوا/بینش‌ها)؛ خلیج فارس بدون جدول/legend = طراحی empty-state موجود
+- پیاده‌سازی افزودنی: legend به StandingsData (اختیاری، پیش‌نمونهٔ چرخهٔ ۱۰۲: بدون bump کلید کش — ردیف‌های pre-111 بدون legend، بخش پنهان، خودبه‌خود در TTL بعدی تازه) + فوتر «راهنمای سهمیه‌ها» (testid=standings-legend، چیپ رنگ + عنوان فارسی) روی هر دو سطح جدول: StandingsTable صفحهٔ لیگ (league-view) و StandingsView صفحهٔ خانه (standings-view)
+- رفع اشکال حین اجرا: (۱) خطای تایپ legend possibly-undefined (NonNullable)؛ (۲) دام اختی مصرف‌کنندهٔ اشتباه — /league از StandingsTable خودش استفاده می‌کند نه StandingsView مشترک (مصرف‌کنندهٔ StandingsView فقط خانه است) — فوتر به هر دو سطح داده شد؛ (۳) مسیر API پروب: /api/standings?league= (نه مسیر پارامتری)؛ (۴) ردیف‌های کش L2 کهنهٔ pre-111 (pl/ucl، TTL ۶۰) عمداً پاک شدند تا اثبات قطعی و فوری باشد (کش disposable؛ بازسازی = یک fetch آپستریم)
+- اثبات DOM (scripts/cycle111-domproof.sh، 390×844، یک‌پاس سبز): API — pl [لیگ قهرمانان اروپا/لیگ اروپا/سقوط]، seriea [+ سهمیهٔ کنفرانس‌لیگ]، ucl [صعود به یک‌هشتم/یک‌شانزدهم نهایی]، خلیج فارس []؛ DOM — فوتر legend روی هر سه صفحهٔ لیگ با چیپ‌های درست (3/4/2)، خلیج فارس بدون legend؛ همه: sw=cw=390، دقیقاً ۱ h1، صفر تصویر شکسته، کنسول=۰، خطای اپ=۰
+Stage Summary:
+- افزودنیِ خالص: هیچ سطح موجود شکسته یا تکرار نشد؛ legend توضیح‌دهندهٔ رنگ‌های ۲۰سالهٔ جدول است
+- پذیرش: bunx eslint src (0/0) ← rm -rf .next/types && tsc --noEmit (0) ← build ✓ ← استارت رسمی scripts/start-remontada.sh (pid=24848، HTTP 200) ← رگرسیون BASE=http://localhost:3000 ۲۸/۲۸ ← DOMPROOF یک‌پاس سبز
+- نوبت گردشی بعدی طبق فرمول کاربر: چرخهٔ ۱۱۲ = آپدیت، ۱۱۳ = بررسی باگ، ۱۱۴ = فیکس

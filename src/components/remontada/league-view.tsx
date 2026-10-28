@@ -701,6 +701,24 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
           </tbody>
         </table>
       </div>
+      {/* update cycle-111: zone legend («راهنمای سهمیه‌ها») — explains the
+          per-row qualColor strips; curated Persian titles, unknown tKeys
+          never reach here (honest drop in the lib). Hidden when the feed
+          lacks a legend (persiangulf) or the cached entry predates 111. */}
+      {data.legend && data.legend.length > 0 && (
+        <div
+          className="px-3.5 py-2.5 border-t border-[color:var(--glass-hairline)] flex flex-wrap items-center gap-x-4 gap-y-1.5"
+          data-testid="standings-legend"
+          aria-label="راهنمای سهمیه‌ها"
+        >
+          {data.legend.map((l) => (
+            <span key={l.fa} className="flex items-center gap-1.5 text-[10px] font-bold text-[#92adc9]">
+              <span aria-hidden className="h-2 w-2 rounded-[3px] shrink-0" style={{ backgroundColor: l.color }} />
+              {l.fa}
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
