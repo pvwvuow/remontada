@@ -57,7 +57,13 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         {!valid ? (
-          <p className="text-center text-muted-foreground text-sm py-16">شناسه بازیکن نامعتبر است.</p>
+          <>
+            {/* fix cycle-84: the invalid-id error shell had no h1 (cycle-83 patrol
+                finding) — same sr-only Persian h1 pattern as the cycle-74
+                unknown-team shell so every page state has exactly one h1 */}
+            <h1 className="sr-only">پروفایل بازیکن</h1>
+            <p className="text-center text-muted-foreground text-sm py-16">شناسه بازیکن نامعتبر است.</p>
+          </>
         ) : failed ? (
           <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-8 text-center flex flex-col items-center gap-3" role="alert">
             <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="text-destructive" aria-hidden>

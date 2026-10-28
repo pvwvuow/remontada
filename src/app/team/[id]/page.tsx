@@ -77,7 +77,13 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
         {Number.isFinite(teamId) && teamId > 0 ? (
           <TeamView teamId={teamId} />
         ) : (
-          <p className="text-center text-muted-foreground text-sm py-16">شناسه تیم نامعتبر است.</p>
+          <>
+            {/* fix cycle-84: the invalid-id error shell had no h1 (cycle-83 patrol
+                finding) — same sr-only Persian h1 pattern as the cycle-74
+                unknown-team shell so every page state has exactly one h1 */}
+            <h1 className="sr-only">صفحه تیم</h1>
+            <p className="text-center text-muted-foreground text-sm py-16">شناسه تیم نامعتبر است.</p>
+          </>
         )}
       </main>
       <BackToTop />
