@@ -101,12 +101,39 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     const teamName = first.home.id === teamId ? first.home : first.away;
     const logo = teamName.logo;
 
-    // standings lookup (best-effort; never fails the request)
-    const row = await findTeamInStandings(teamId, hintLeagueId).catch(() => null);
+    // ---- cycle-54 fix: league-context selection ----
+    // Bug (cycle-53 finding): hintLeagueId is the league of the FIRST feed match
+    // in the -3..+10d window — often a cup not present in LEAGUES (e.g. League
+    // Cup), so findTeamInStandings' hint boost was a no-op and its candidate
+    // order (LEAGUES array, UCL first) handed back the UCL row for any team
+    // that also plays in Europe. Arsenal then showed UCL rank/season/recent
+    // while their PL context (rank 2, next fixture PL) was missing entirely.
+    // Fix: prefer the NEXT fixture's league (the competition the user is
+    // heading into), then the first feed match's league. Accept a standings
+    // row only if it actually came from one of the hinted leagues; otherwise
+    // fall back to the array-order row (old behavior) and finally to the raw
+    // hint → LEAGUES mapping (leagues without standings rows).
+    const resolveLeagueContext = async (): Promise<{ row: TeamRowInfo | null; leagueKey?: string }> => {
+      const hints = [...new Set([upcoming[0]?.leagueId, hintLeagueId].filter(
+        (x): x is number => typeof x === "number",
+      ))];
+      let firstRow: TeamRowInfo | null = null;
+      for (const h of hints) {
+        const r = await findTeamInStandings(teamId, h).catch(() => null);
+        if (!r) continue;
+        if (!firstRow) firstRow = r;
+        const hintedKey = LEAGUES.find((l) => l.fotmobId === h)?.key;
+        if (hintedKey && r.leagueKey === hintedKey) return { row: r, leagueKey: hintedKey };
+      }
+      if (firstRow) return { row: firstRow, leagueKey: firstRow.leagueKey };
+      return { row: null, leagueKey: undefined };
+    };
+    const ctx = await resolveLeagueContext();
+    const row = ctx.row;
 
     // season stats from the team's league fixtures (best-effort too).
     // leagueKey: prefer standings row, fall back to the daily-feed league id.
-    let leagueKey = row?.leagueKey;
+    let leagueKey = ctx.leagueKey ?? row?.leagueKey;
     if (!leagueKey && hintLeagueId) {
       leagueKey = LEAGUES.find((l) => l.fotmobId === hintLeagueId)?.key;
     }
