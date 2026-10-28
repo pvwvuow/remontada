@@ -105,6 +105,20 @@ export function cacheGet<T>(key: string): { value: T; stale: boolean } | null {
   return { value: e.value, stale: Date.now() > e.expiresAt };
 }
 
+/**
+ * Cycle 42: deep lookup for last-known-good fallbacks — checks L1 first,
+ * then L2. Unlike `cached()` this never triggers the producer, so callers
+ * can decide themselves whether a (possibly stale) snapshot is usable
+ * after a cold start (fresh process, empty L1 but a surviving SQLite row).
+ */
+export async function cacheGetDeep<T>(key: string): Promise<{ value: T; stale: boolean } | null> {
+  const mem = memGet<T>(key);
+  if (mem) return { value: mem.value, stale: Date.now() > mem.expiresAt };
+  const disk = await dbGet(key);
+  if (disk) return { value: disk.value as T, stale: Date.now() > disk.expiresAt };
+  return null;
+}
+
 export function cacheSet<T>(key: string, value: T, ttlMs: number): void {
   memSet(key, value, ttlMs);
   void dbSet(key, value, ttlMs);

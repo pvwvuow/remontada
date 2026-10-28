@@ -1379,6 +1379,10 @@ export interface GlobalScorersData {
   assists: GlobalAssist[];
   perLeague: { leagueKey: string; leagueFa: string; scorers: StandingsData["scorers"] }[];
   updatedAt: string;
+  /** cycle-42: true when the response comes from the last-known-good snapshot
+   *  (cold start / upstream outage) instead of a fresh live merge — the UI
+   *  shows an honest «آخرین داده‌های ذخیره‌شده» notice in that case. */
+  stale?: boolean;
 }
 
 export async function getAllTopScorers(): Promise<GlobalScorersData> {
