@@ -158,6 +158,13 @@ interface FMMatchDetails {
     shotmap?: { shots?: FMShot[] };
     // update cycle-47: per-player match stats (dict keyed by player id)
     playerStats?: Record<string, FMPlayerEntry>;
+    // update cycle-97 probed (UA Chrome/124, 2026-10-29): present for
+    // started/finished matches, null for upcoming ones; per side it carries
+    // total/firstHalf/secondHalf × left/center/right integer shares
+    attackingZones?: {
+      home?: { total?: { left?: number; center?: number; right?: number } } | null;
+      away?: { total?: { left?: number; center?: number; right?: number } } | null;
+    } | null;
   };
 }
 
@@ -336,6 +343,13 @@ export interface MatchDetailNormalized {
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
+  // team's attacking output across the three pitch lanes; null when upstream
+  // lacks the block (upcoming matches) or both sides are all-zero
+  zones?: {
+    home: { left: number; center: number; right: number };
+    away: { left: number; center: number; right: number };
+  } | null;
   // fix cycle-45: shootout attempts were dropped entirely before — the
   // decisive phase of knockout matches was invisible to the user
   shootout?: {
@@ -701,6 +715,24 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     round: roundFa(roundRaw || undefined),
   };
 
+  // ---------------- attacking zones (update cycle-97) ----------------
+  // TOTAL split only in v1 (firstHalf/secondHalf stay unrendered); every value
+  // coerced defensively, all-zero → null → the stats tab hides the block.
+  let zones: MatchDetailNormalized["zones"] = null;
+  const az = raw.content?.attackingZones;
+  const zoneOf = (s?: { total?: { left?: number; center?: number; right?: number } } | null) => ({
+    left: typeof s?.total?.left === "number" ? s.total.left : 0,
+    center: typeof s?.total?.center === "number" ? s.total.center : 0,
+    right: typeof s?.total?.right === "number" ? s.total.right : 0,
+  });
+  if (az?.home && az?.away) {
+    const zh = zoneOf(az.home);
+    const za = zoneOf(az.away);
+    if (zh.left + zh.center + zh.right > 0 || za.left + za.center + za.right > 0) {
+      zones = { home: zh, away: za };
+    }
+  }
+
   // ---------------- team form ----------------
   const tf = raw.content?.matchFacts?.teamForm;
   let form: MatchDetailNormalized["form"] = null;
@@ -790,6 +822,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     info,
     form,
     momentum,
+    zones,
     shootout,
     shots,
     xg,

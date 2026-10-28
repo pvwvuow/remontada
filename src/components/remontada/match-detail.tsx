@@ -89,6 +89,11 @@ interface DetailData {
     home: PlayerStatRow[];
     away: PlayerStatRow[];
   } | null;
+  // update cycle-97: attacking zones («جهت حملات») — mirrors /api/match/[id]
+  zones?: {
+    home: { left: number; center: number; right: number };
+    away: { left: number; center: number; right: number };
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -814,6 +819,54 @@ function StatBars({ groups, started }: { groups: DetailStatGroup[]; started?: bo
   );
 }
 
+// update cycle-97: attacking zones («جهت حملات») — stacked three-lane bar per
+// team (چپ/مرکز/راست shares of the team's attacking output, TOTAL split).
+// Same hue convention as StatBars: home = primary, away = chart-4, with an
+// opacity ramp distinguishing the lanes; values restated under each bar so
+// the ramp alone never carries the meaning.
+function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; match: DetailMatch }) {
+  const LANES = [
+    { key: "left" as const, fa: "چپ" },
+    { key: "center" as const, fa: "مرکز" },
+    { key: "right" as const, fa: "راست" },
+  ];
+  const row = (z: { left: number; center: number; right: number }, name: string, base: string) => (
+    <div className="flex flex-col gap-1.5">
+      <p className="text-[11.5px] font-black text-[#e6f0fb] truncate">{name}</p>
+      <div className="flex h-2 rounded-full overflow-hidden gap-px" dir="ltr">
+        {LANES.map((l, i) => (
+          <div
+            key={l.key}
+            className={cn(i === 0 ? base : i === 1 ? `${base} opacity-60` : `${base} opacity-30`, "h-full")}
+            style={{ width: `${(z[l.key] / (z.left + z.center + z.right || 1)) * 100}%` }}
+            title={`${l.fa}: ${z[l.key]}٪`}
+          />
+        ))}
+      </div>
+      <p className="text-[9.5px] text-muted-foreground tabular-persian">
+        {LANES.map((l, i) => (
+          <span key={l.key}>
+            {i > 0 && " · "}
+            {faDigits(z[l.key])}٪ {l.fa}
+          </span>
+        ))}
+      </p>
+    </div>
+  );
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-zones">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa]">جهت حملات</span>
+        <span className="font-bold text-steel/80">سهم از کل حملات</span>
+      </header>
+      <div className="p-3 flex flex-col gap-3.5">
+        {row(zones.home, match.home.fa || match.home.name, "bg-primary")}
+        {row(zones.away, match.away.fa || match.away.name, "bg-chart-4")}
+      </div>
+    </div>
+  );
+}
+
 // ---------- lineups ----------
 function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lineups"]>; match: DetailMatch }) {
   const side = (t: LineupSide | null, isHome: boolean) => {
@@ -1341,7 +1394,12 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             <EventsTimeline events={data.events} match={m} />
           </div>
         )}
-        {tab === "stats" && <StatBars groups={data.statGroups} started={m.started && !m.cancelled} />}
+        {tab === "stats" && (
+          <>
+            <StatBars groups={data.statGroups} started={m.started && !m.cancelled} />
+            {data.zones && <ZoneCard zones={data.zones} match={m} />}
+          </>
+        )}
         {tab === "shots" && (data.xg || (data.shots && data.shots.length > 0)) && (
           <div className="flex flex-col gap-4">
             {data.xg && <TeamXgStrip xg={data.xg} match={m} />}
