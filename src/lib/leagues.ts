@@ -92,16 +92,17 @@ const TEAM_FA: Record<string, string> = {
   "osasuna": "اوساسونا", "rayo vallecano": "رایووایکانو", "real madrid": "رئال‌مادرید",
   "real oviedo": "رئال اویدو", "real sociedad": "رئال‌سوسیداد", "sevilla": "سویا",
   "valencia": "والنسیا", "villarreal": "ویارئال",
+  "deportivo a coruña": "دپورتیوو لاکرونیا", "racing de santander": "راسینگ سانتاندر",
   // ---- Serie A ----
   "atalanta": "آتالانتا", "bologna": "بولونیا", "cagliari": "کالیاری", "como": "کومو",
-  "cremonese": "کرمونزه", "fiorentina": "فیورنتینا", "genoa": "جنوا",
-  "hellas verona": "هلاس‌ورونا", "inter": "اینتر", "inter milan": "اینتر",
+  "cremonese": "کرمونزه", "fiorentina": "فیورنتینا", "frosinone": "فروزینونه", "genoa": "جنوا",
+  "hellas verona": "هلاس‌ورونا", "inter": "اینتر", "inter milan": "اینتر", "internazionale": "اینتر",
   "juventus": "یوونتوس", "lazio": "لاتزیو", "lecce": "لچه", "milan": "آث‌میلان",
   "napoli": "ناپولی", "parma": "پارما", "pisa": "پیزا", "roma": "رم", "as roma": "رم",
   "sassuolo": "ساسوولو", "torino": "تورینو", "udinese": "اودینزه",
   // ---- Bundesliga ----
   "augsburg": "آگزبورگ", "bayern munich": "بایرن‌مونیخ", "bayern": "بایرن‌مونیخ",
-  "union berlin": "یونیون‌برلین", "werder bremen": "وردربرمن", "borussia dortmund": "بروسیادورتموند",
+  "union berlin": "یونیون‌برلین", "werder bremen": "وردربرمن", "sv werder bremen": "وردربرمن", "borussia dortmund": "بروسیادورتموند",
   "dortmund": "دورتموند", "eintracht frankfurt": "اینتراخت‌فرانکفورت", "frankfurt": "فرانکفورت",
   "freiburg": "فرایبورگ", "hamburger sv": "هامبورگ", "hamburg": "هامبورگ",
   "heidenheim": "هایدنهایم", "hoffenheim": "هوفنهایم", "fc cologne": "کلن",
@@ -116,6 +117,7 @@ const TEAM_FA: Record<string, string> = {
   "monaco": "موناکو", "nantes": "نانت", "nice": "نیس", "paris fc": "پاریس‌اف‌سی",
   "paris saint germain": "پاری‌سن‌ژرمن", "paris sg": "پاری‌سن‌ژرمن", "psg": "پاری‌سن‌ژرمن",
   "rennes": "رن", "strasbourg": "استراسبورگ", "toulouse": "تولوز", "auxerre": "اوشر",
+  "le mans": "لومان",
   // ---- Iranian Persian Gulf Pro League ----
   "persepolis": "پرسپولیس", "esteghlal": "استقلال", "tractor": "تراکتور",
   "tractor sazi": "تراکتور", "sepahan": "سپاهان", "foolad": "فولاد خوزستان",

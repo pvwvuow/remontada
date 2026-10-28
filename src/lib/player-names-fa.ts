@@ -368,6 +368,22 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   // — ucl-side pool (probe matches 5802972/5868109) —
   "mika godts": "میکا گوتس",
   "samuel mbangula": "ساموئل مبانگولا",
+  // — cycle-109 pool (live /topscorers sweep, 2026-10-29): the last unmapped
+  // names of the current merged pool (35 scorers + 10 assists across the 7
+  // leagues). Routine phonetic transliterations per the Iranian sports-media
+  // convention; anything doubtful stays honestly English per the cycle-104 rule.
+  "estéban lepaul": "استبان لوپل",
+  "cameron archer": "کامرون آرچر",
+  "alphadjo cissè": "آلفادیو سیسه",
+  "ché adams": "چی آدامز",
+  "tijjani noslin": "تیانی نوسلین",
+  "franco mastantuono": "فرانکو ماستانتوانو",
+  "giorgi kvernadze": "گیورگی کورنادزه",
+  "jurgen ekkelenkamp": "یورگن اکلنکامپ",
+  "javi hernández": "خاوی هرناندس",
+  "antonio nusa": "آنتونیو نوسا",
+  "cristian cásseres": "کریستیان کاسرس",
+  "alberto moleiro": "آلبرتو مولیرو",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

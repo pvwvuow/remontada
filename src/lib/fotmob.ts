@@ -669,7 +669,8 @@ export async function getLeagueCardLeaders(
   limit = 15,
 ): Promise<Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[]> {
   try {
-    return await cached(`cards:${leagueKey}:${kind}`, 60 * 60_000, async () => {
+    return freshCardNames(
+      await cached(`cards:${leagueKey}:${kind}`, 60 * 60_000, async () => {
       const { raw } = await getLeagueRaw(leagueKey);
       const re = kind === "yellow" ? /^yellow cards$/i : /^red cards$/i;
       const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
@@ -710,10 +711,55 @@ export async function getLeagueCardLeaders(
         }
       }
       return out;
-    });
+    })
+    );
   } catch {
     return [];  // unavailable league / upstream hiccup — never break the merge
   }
+}
+
+// cycle-109: read-time honest-name freshening. The L2 (SQLite) cache stores
+// payloads whose nameFa/team strings were computed with WHATEVER the curated
+// maps said at BUILD time — a map addition used to stay invisible for up to a
+// full TTL generation (seen live this cycle: the per-league scorers page kept
+// raw English rows while the global page, which maps at read time, was
+// already Persian). Re-applying the maps on EVERY read makes the curated
+// maps always-current regardless of cache age. Idempotent by construction:
+// an already-Persian string never matches the English-keyed maps and falls
+// back to itself (teamFa returns the input on miss).
+function freshenHonestNames(st: StandingsData): StandingsData {
+  const rowFa = (r: StandingsRow): StandingsRow => ({ ...r, fa: teamFa(r.name) || r.fa });
+  return {
+    ...st,
+    rows: st.rows.map(rowFa),
+    ...(st.home ? { home: st.home.map(rowFa) } : {}),
+    ...(st.away ? { away: st.away.map(rowFa) } : {}),
+    scorers: st.scorers.map((s) => ({ ...s, nameFa: playerFa(s.name), team: teamFa(s.team) || s.team })),
+    assists: st.assists.map((a) => ({ ...a, team: teamFa(a.team) || a.team })),
+    ...(st.boards
+      ? {
+          boards: st.boards.map((b) =>
+            b.kind === "player"
+              ? {
+                  ...b,
+                  rows: b.rows.map((r) => ({
+                    ...r,
+                    nameFa: playerFa(r.name),
+                    ...(r.teamFa ? { teamFa: teamFa(r.teamFa) || r.teamFa } : {}),
+                  })),
+                }
+              : b,
+          ),
+        }
+      : {}),
+  };
+}
+
+/** cycle-109: same read-time freshening for the cards cache family (60-min TTL) —
+ * a map addition must not stay invisible for a full generation on the
+ * «آقای کارت» section either. Idempotent like freshenHonestNames. */
+function freshCardNames<T extends { name: string; nameFa: string; team: string }>(rows: T[]): T[] {
+  return rows.map((r) => ({ ...r, nameFa: playerFa(r.name), team: teamFa(r.team) || r.team }));
 }
 
 export async function getStandings(leagueKey: string, season?: string): Promise<StandingsData> {
@@ -895,8 +941,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // would collide the current season and EVERY historical season of a league
   // into `:cur` for the whole 60-min TTL. Verified: 2020/2021 and current
   // responses stay distinct end-to-end (honest rows/boards/xG both ways).
-  return cached(`standings:v5:${leagueKey}:${season || "cur"}`, (mapped) =>
-    typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build);
+  return freshenHonestNames(
+    await cached(`standings:v5:${leagueKey}:${season || "cur"}`, (mapped) =>
+      typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build),
+  );
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------
