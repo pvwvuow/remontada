@@ -786,3 +786,15 @@ Work Log:
 - پذیرش: eslint 0/0 ← tsc 0 ← build ✓ ← pid 9934 ← رگرسیون ۲۸/۲۸ ← DOM 390×844: داک fixed/۴ آیتم/درخشش فعال روی «نتایج زنده»/فوتر قابل‌مشاهده در اسکرول پایین/sw=390؛ دسکتاپ 1280×800: داک none + ناوبری flex؛ کنسول تمیز
 Stage Summary:
 - تسک بعدی کمپین: تسک ۴/۱۰ = هدر شناور HUD (تیلهٔ گرد با هاله، جدا از لبهٔ صفحه)
+
+Task ID: cycle-63
+Agent: main (Z.ai) — کمپین UI/UX تسک ۴ از ۱۰ «هدر شناور HUD»
+Work Log:
+- هدر از نوار تمام-عرض glass-bar به تیلهٔ شیشه‌ای گرد شناور زیر لبهٔ بالایی تبدیل شد (wrapper با pt-2.5، pill گرد-۲ با glass-popover؛ ردیف‌های صفحه داخل تیله)
+- NavDock به کامپوننت مستقل nav-dock.tsx منتقل و در layout ریشه (بعد از children) mount شد — داک از حیث سازه‌ای همیشه به ویوپورت لنگر است (دیگر داخل جد هدر نیست)
+- ستارهٔ تکراری cycle-60 (body::before) بازنشسته شد — لایهٔ غنی‌تر FantasyBackdrop (نشست موازی، ui-quest 1) صاحب فضا؛ توضیح: فایل‌های portal-gate/fantasy-backdrop/layout آن نشست ناخواسته در کامیت قبلی من (cycle-62 با add -A) رفت — اینجا مستند شد
+- رفع lint فایل مشترک portal-gate (setState در effect → defer یک tick)
+- نشست موازی همین حالا روی match-detail/matches-view کار می‌کند (score-forge/rune-spin) — WIP آن عمداً کامیت نشد؛ فقط add هدفمند (۵ فایل خودم)
+- پذیرش: eslint 0/0 ← tsc 0 ← build ✓ ← pid 11022 ← رگرسیون ۲۸/۲۸ ← DOM 390×844: pill شناور top≥8/گرد 16px در خانه و لیگ، داک چسبیده به پایین ویوپورت، body::before none، sw=390، کنسول تمیز
+Stage Summary:
+- تسک بعدی کمپین: تسک ۵/۱۰ = کارت‌های بازی به سبک کارت کوئست (ورود پله‌ای + هاور.lift) — قبل از شروع، درخت را دوباره چک کن
