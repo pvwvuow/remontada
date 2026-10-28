@@ -916,3 +916,15 @@ Work Log:
 Stage Summary:
 - نوبت گردشی بعدی طبق فرمول کاربر: چرخهٔ ۷۵ = آپدیت، ۷۶ = آپدیت، ۷۷ = آپدیت
 - شکاف بالقوهٔ بعدی برای آپدیت‌ها: آمار تیم (stats) یا ورزشگاه/سرمربی‌های قبلی از data/teams — اول پروب زنده
+
+Task ID: cycle-75
+Agent: main (Z.ai) — لوپ گردشی (نوع ۱ = آپدیت، بستن شکاف واقعی فوت‌ماب)
+Work Log:
+- پروب زنده (UA Chrome/124): overview.venue در همان payload data/teams — {widget:{name,city}, statPairs:[[Surface,Grass],[Capacity,60832],[Opened,1892]]}؛ شکل یکسان روی Celtic Park و Selhurst Park
+- getTeamVenue در fotmob.ts (همان getTeamDataRaw مشترک — بدون upstream اضافه): تطبیق برچسب statPairs، سطح چمن با نگاشت چمن طبیعی/مصنوعی، null → سکشن مخفی
+- route تنبل جدید /api/team-venue/[id]
+- کارت فشردهٔ «ورزشگاه خانه» در صفحهٔ تیم (بعد از آمار فصل): نام ورزشگاه + شهر، ۳ چیپ آماری (ظرفیت با جداکنندهٔ هزار فارسی ۶۰٬۸۳۲ / سطح چمن / سال افتتاح) با همان گرید چیپ هدر؛ data-testid=team-venue
+- پذیرش: eslint 0/0 ← tsc 0 ← build ✓ ← pid 20451 ← رگرسیون ۲۸/۲۸ ← DOM 390×844: /team/9925 (Celtic Park/Glasgow، ۶۰٬۸۳۲/چمن طبیعی/۱۸۹۲)، /team/9826 (Selhurst Park، ۲۵٬۴۸۶/۱۹۲۴)، sw=cw=390، ۰ تصویر شکستهٔ نمایان، کنسول/خطا خالی
+Stage Summary:
+- نوبت گردشی بعدی طبق فرمول کاربر: چرخهٔ ۷۶ = آپدیت، ۷۷ = آپدیت، ۷۸ = بررسی باگ
+- شکاف بالقوهٔ بعدی برای آپدیت‌ها: آمار برتر تیم (stats.players/teams: آقای گل/پاس‌ده/امتیاز فوت‌ماب تیم) از data/teams — اول پروب زنده و گزینش هوشمند دسته‌ها
