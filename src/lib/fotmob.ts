@@ -1997,3 +1997,99 @@ export function dateKeyToYYYYMMDD(offsetFromToday: number): string {
   const now = new Date(Date.now() + 3.5 * 3600_000 + offsetFromToday * 86400_000);
   return now.toISOString().slice(0, 10).replace(/-/g, "");
 }
+
+// ---------------- FotMob: team squad (data/teams endpoint, cycle-70) ----------------
+// Probed live (2026-10-29, UA Chrome/124): https://www.fotmob.com/api/data/teams?id={teamId}
+// is BACK — /api/team/[id] still carries the old comment "Team endpoint is gone"
+// (true in cycle 10, no longer true). The payload carries squad.squad = groups:
+// [{ title: "coach"|"keepers"|"defenders"|"midfielders"|"attackers", members: [...] }]
+// with per-player season numbers (rating/goals/assists/cards), shirt, age,
+// nationality (cname), injury flag and height. ccode3 is optional (works without).
+
+export interface TeamSquadPlayer {
+  id: number;
+  name: string;
+  shirt?: number;
+  age?: number;
+  nationality?: string;
+  rating?: number;
+  goals?: number;
+  assists?: number;
+  injured: boolean;
+  height?: number;
+}
+
+export interface TeamSquad {
+  coach: { id: number; name: string; age?: number; nationality?: string } | null;
+  groups: {
+    key: "keepers" | "defenders" | "midfielders" | "attackers";
+    titleFa: string;
+    players: TeamSquadPlayer[];
+  }[];
+}
+
+const SQUAD_GROUP_FA: Record<string, string> = {
+  keepers: "دروازه‌بان‌ها",
+  defenders: "مدافعان",
+  midfielders: "هافبک‌ها",
+  attackers: "مهاجمان",
+};
+
+interface FMSquadMember {
+  id?: number;
+  name?: string;
+  shirtNumber?: number | null;
+  age?: number | null;
+  cname?: string | null;
+  rating?: number | null;
+  goals?: number | null;
+  assists?: number | null;
+  injury?: unknown;
+  height?: number | null;
+  excludeFromRanking?: boolean;
+}
+
+export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  return cached(`teamSquad:${teamId}`, 60 * 60_000, async () => {
+    const raw = await fetchJson<{ squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] } }>(
+      `https://www.fotmob.com/api/data/teams?id=${teamId}`,
+      15000
+    );
+    const list = raw?.squad?.squad;
+    if (!Array.isArray(list) || list.length === 0) return null;
+
+    let coach: TeamSquad["coach"] = null;
+    const groups: TeamSquad["groups"] = [];
+    for (const g of list) {
+      const title = String(g?.title || "");
+      const members = Array.isArray(g?.members) ? g.members : [];
+      if (title === "coach") {
+        const c = members[0];
+        if (c?.id && c.name) {
+          coach = { id: c.id, name: c.name, ...(c.age != null ? { age: c.age } : {}), ...(c.cname ? { nationality: c.cname } : {}) };
+        }
+        continue;
+      }
+      if (!SQUAD_GROUP_FA[title] || members.length === 0) continue;
+      const players = members
+        .filter((m) => m?.id && m.name)
+        .map((m) => ({
+          id: m.id as number,
+          name: m.name as string,
+          ...(m.shirtNumber != null ? { shirt: m.shirtNumber } : {}),
+          ...(m.age != null ? { age: m.age } : {}),
+          ...(m.cname ? { nationality: m.cname } : {}),
+          ...(m.rating != null && m.rating > 0 ? { rating: m.rating } : {}),
+          ...(m.goals ? { goals: m.goals } : {}),
+          ...(m.assists ? { assists: m.assists } : {}),
+          injured: Boolean(m.injury),
+          ...(m.height ? { height: m.height } : {}),
+        }));
+      if (players.length === 0) continue;
+      groups.push({ key: title as TeamSquad["groups"][number]["key"], titleFa: SQUAD_GROUP_FA[title], players });
+    }
+    if (groups.length === 0 && !coach) return null;
+    return { coach, groups };
+  });
+}

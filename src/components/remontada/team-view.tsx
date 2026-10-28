@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
@@ -498,10 +498,138 @@ function PreMatchPanel({
   );
 }
 
+// ---------------- cycle-70: team squad («ترکیب تیم») ----------------
+// Fantasy-minimal roster: legend-gold shirt numbers like a game menu party
+// list, group rules, rating chips that glow when a player is in form.
+
+function SquadRow({ p }: { p: TeamSquadPlayer }) {
+  const inForm = (p.rating ?? 0) >= 7.5;
+  return (
+    <div className="flex items-center gap-2.5 rounded-xl border border-glass-border-soft bg-white/[0.02] px-2.5 py-2">
+      <span
+        className={cn(
+          "w-7 text-center text-[12.5px] font-black tabular-persian shrink-0",
+          inForm ? "text-gold" : "text-steel/80"
+        )}
+      >
+        {p.shirt != null ? faDigits(p.shirt) : "—"}
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[12.5px] font-bold truncate text-[#e6f0fb] flex items-center gap-1.5">
+          {p.name}
+          {p.injured && (
+            <span className="text-[8.5px] font-black text-red-400 bg-red-400/10 border border-red-400/30 rounded-md px-1 py-px shrink-0">
+              مصدوم
+            </span>
+          )}
+        </p>
+        <p className="text-[9.5px] text-steel/70 tabular-persian truncate">
+          {[p.nationality, p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
+            .filter(Boolean)
+            .join(" · ")}
+        </p>
+      </div>
+      <div className="flex items-center gap-1.5 shrink-0 tabular-persian">
+        {(p.goals ?? 0) > 0 && (
+          <span className="text-[9.5px] font-black text-mint" title="گل در فصل جاری">
+            {faDigits(p.goals as number)} گل
+          </span>
+        )}
+        {(p.assists ?? 0) > 0 && (
+          <span className="text-[9.5px] font-black text-sky-soft" title="پاس گل در فصل جاری">
+            {faDigits(p.assists as number)} پاس
+          </span>
+        )}
+        {p.rating != null && (
+          <span
+            className={cn(
+              "text-[10px] font-black rounded-md border px-1.5 py-0.5",
+              inForm
+                ? "text-gold border-gold/40 bg-gold/10"
+                : "text-steel border-glass-border-soft bg-white/[0.03]"
+            )}
+            title="میانگین امتیاز فصل"
+          >
+            {faDigits(p.rating.toFixed(1))}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SquadSection({ squad }: { squad: TeamSquad }) {
+  const total = squad.groups.reduce((a, g) => a + g.players.length, 0);
+  return (
+    <Section
+      title="ترکیب تیم"
+      extra={
+        total > 0 ? (
+          <span className="text-[10px] text-steel/60 tabular-persian">
+            {faDigits(total)} بازیکن
+          </span>
+        ) : undefined
+      }
+    >
+      <div className="flex flex-col gap-3.5" data-testid="team-squad">
+        {squad.coach && (
+          <div className="flex items-center gap-2.5 rounded-xl border border-gold/25 bg-gold/[0.06] px-3 py-2">
+            <span className="text-gold text-[11px] font-black shrink-0">سرمربی</span>
+            <span className="h-3 w-px bg-gold/30 shrink-0" aria-hidden="true" />
+            <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#e6f0fb]">
+              {squad.coach.name}
+            </p>
+            <p className="text-[9.5px] text-steel/70 tabular-persian shrink-0">
+              {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
+                .filter(Boolean)
+                .join(" · ")}
+            </p>
+          </div>
+        )}
+        {squad.groups.map((g) => (
+          <div key={g.key}>
+            <p className="text-[10.5px] font-black text-steel/85 mb-1.5 flex items-center gap-2">
+              {g.titleFa}
+              <span className="text-[9px] font-bold text-steel/50 tabular-persian">
+                ({faDigits(g.players.length)})
+              </span>
+              <span className="h-px flex-1 bg-glass-border-soft/70" aria-hidden="true" />
+            </p>
+            <div className="flex flex-col gap-1.5">
+              {g.players.map((p) => (
+                <SquadRow key={p.id} p={p} />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // cycle-70: lazy squad («ترکیب تیم») — independent endpoint, fetched after
+  // mount so the first paint stays fast; stays null → section hidden when the
+  // source has no squad data (and on fetch failure the page must not break).
+  const [squad, setSquad] = useState<TeamSquad | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-squad/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.squad) setSquad(j.squad as TeamSquad);
+      })
+      .catch(() => {
+        /* squad stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
 
   const fetchTeam = useCallback(async () => {
     setLoading(true);
@@ -682,6 +810,9 @@ export function TeamView({ teamId }: { teamId: number }) {
           <EmptyState icon="ball" compact title="بازی پایان‌یافته‌ای در بازه‌ی اخیر یافت نشد" sub="بازی‌های قبلی تیم پس از به‌روزرسانی فید روزانه نمایش داده می‌شوند." />
         )}
       </Section>
+
+      {/* cycle-70: team squad («ترکیب تیم») — lazily probed, hidden when absent */}
+      {squad && <SquadSection squad={squad} />}
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
         نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.
