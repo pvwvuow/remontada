@@ -214,6 +214,47 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         )}
       </section>
 
+      {/* ---------- injury status (cycle-96) ---------- */}
+      {p.injury && (
+        <section className="glass-card overflow-hidden" aria-label="وضعیت مصدومیت" data-testid="player-injury">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 8v8" />
+              <path d="M8 12h8" />
+            </svg>
+            وضعیت مصدومیت
+            <span className="ms-auto text-[9.5px] font-bold text-muted-foreground">وضعیت اعلامی فوت‌ماب</span>
+          </header>
+          <div className="px-4 py-3.5 flex flex-col gap-2.5">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[10.5px] font-black text-steel shrink-0">نوع آسیب</span>
+              <span
+                className="text-[12.5px] font-black text-amber-400 text-end"
+                title={p.injury.nameEn || p.injury.nameFa}
+              >
+                {p.injury.nameFa}
+              </span>
+            </div>
+            {p.injury.returnFa && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10.5px] font-black text-steel shrink-0">بازگشت پیش‌بینی‌شده</span>
+                <span className="text-[12px] font-bold text-[#e8f2fc] text-end">{p.injury.returnFa}</span>
+              </div>
+            )}
+            {p.injury.updatedFa && (
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[10.5px] font-black text-steel shrink-0">آخرین به‌روزرسانی</span>
+                <span className="text-[12px] font-bold text-[#e8f2fc] text-end tabular-persian">{p.injury.updatedFa}</span>
+              </div>
+            )}
+            <p className="text-[9px] text-muted-foreground leading-4">
+              جزئیات غیبت بر اساس گزارش فوت‌ماب؛ زمان بازگشت تخمینی است و ممکن است تغییر کند.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* ---------- season stats ---------- */}
       {p.season && (
         <section className="glass-card overflow-hidden" aria-label="آمار فصل">

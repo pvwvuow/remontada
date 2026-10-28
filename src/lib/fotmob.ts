@@ -1601,6 +1601,26 @@ interface FMPlayerDetails {
       teamId?: number; teamName?: string;
     }[] | null;
   } | null;
+  // cycle-96 probed (UA Chrome/124, 23 live samples over 6 squads, 2026-10-29):
+  // present ONLY for currently-unavailable players — a single object (never an
+  // array), null for every available player. Shape: {name ("Thigh injury",
+  // "Knock", "Physical discomfort", "Cruciate ligament injury"…), key
+  // (injury_NN), expectedReturn {expectedReturnKey enum: expected_return_date_
+  // early|mid|late + expectedReturnDateParam as MONTH TEXT ("November 2026",
+  // never ISO) | expected_return_date_doubtful | expected_return_date_back_
+  // in_training, both without a dateParam), lastUpdated {utcTime}}.
+  // Complements the bare «مصدوم» squad flag (data/teams members[].injury) with
+  // the WHY/until-WHEN the portal nowhere showed.
+  injuryInformation?: {
+    name?: string;
+    key?: string;
+    expectedReturn?: {
+      expectedReturnKey?: string;
+      expectedReturnDateParam?: string | null;
+      expectedReturnFallback?: string;
+    } | null;
+    lastUpdated?: { utcTime?: string } | null;
+  } | null;
 }
 
 interface FMCareerEntry {
@@ -1707,7 +1727,17 @@ export interface PlayerData {
   deepStats: PlayerDeepGroup[] | null; // cycle-82: «عملکرد فصل» grouped detailed season stats
   traits: PlayerTraits | null;         // cycle-82: percentile comparison vs positional peers
   market: PlayerMarket | null;         // cycle-82: market-value history sparkline
+  // cycle-96: current availability status from injuryInformation (null → the
+  // whole section is hidden; most players carry null)
+  injury: PlayerInjury | null;
   fetchedAt: string;
+}
+
+export interface PlayerInjury {
+  nameFa: string;       // Persian type of the injury (raw upstream text when unmapped)
+  nameEn?: string;      // kept only when a Persian mapping exists (UI title attr)
+  returnFa: string | null;   // expected return in Persian; null → row omitted (honest absence)
+  updatedFa: string | null;  // Jalali last-updated date, null when upstream lacks it
 }
 
 export interface PlayerDeepStat { fa: string; value: string; per90: string | null; pct: number | null }
@@ -2083,6 +2113,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     positionFa: faPosition(posEn || undefined),
     positionEn: posEn,
     status: raw.status || "",
+    injury: buildInjury(raw),
     team: pt
       ? { id: pt.teamId as number, name: pt.teamName || "", fa: teamFa(pt.teamName || undefined) || pt.teamName || "", logo: fotmobTeamLogo(pt.teamId ?? 0) }
       : null,
@@ -2100,6 +2131,93 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     traits: buildTraits(raw),
     market: buildMarket(raw),
     fetchedAt: new Date().toISOString(),
+  };
+}
+
+// ---- cycle-96: player injury status («وضعیت مصدومیت») ----
+// Persian names for the probed injury vocabulary (23 live samples). Unknown
+// names fall back to the raw upstream text (honest), with nameEn kept for the
+// UI title attr so the original wording is never lost.
+const PLAYER_INJURY_FA: Record<string, string> = {
+  "injured": "آسیب‌دیدگی",
+  "knock": "ضربه",
+  "illness": "بیماری",
+  "physical discomfort": "ناراحتی جسمی",
+  "suspension": "محرومیت",
+  "red card suspension": "محرومیت با کارت قرمز",
+  "ankle injury": "آسیب‌دیدگی مچ پا",
+  "knee injury": "آسیب‌دیدگی زانو",
+  "thigh injury": "آسیب‌دیدگی ران",
+  "calf injury": "آسیب‌دیدگی ساق پا",
+  "groin injury": "آسیب‌دیدگی کشالهٔ ران",
+  "hamstring injury": "آسیب‌دیدگی همسترینگ",
+  "foot injury": "آسیب‌دیدگی پا",
+  "leg injury": "آسیب‌دیدگی پا",
+  "back injury": "آسیب‌دیدگی کمر",
+  "hip injury": "آسیب‌دیدگی لگن",
+  "shoulder injury": "آسیب‌دیدگی شانه",
+  "wrist injury": "آسیب‌دیدگی مچ دست",
+  "toe injury": "آسیب‌دیدگی انگشت پا",
+  "muscle injury": "آسیب‌دیدگی عضلانی",
+  "tendon injury": "آسیب‌دیدگی تاندون",
+  "ligament injury": "آسیب‌دیدگی رباط",
+  "cruciate ligament injury": "پارگی رباط صلیبی",
+  "achilles tendon injury": "آسیب‌دیدگی تاندون آشیل",
+  "meniscus injury": "آسیب‌دیدگی منیسک",
+  "concussion": "آسیب‌دیدگی سر",
+  "coronavirus": "کرونا",
+};
+// expectedReturnKey enum observed live: early/mid/late ride with a month-text
+// param, doubtful / back_in_training stand alone. Unknown keys WITH a param
+// still render the date; unknown keys without one stay null (honest omission).
+const RETURN_PREFIX_FA: Record<string, string> = {
+  expected_return_date_early: "اوایل",
+  expected_return_date_mid: "اواسط",
+  expected_return_date_late: "اواخر",
+};
+const PLAYER_RETURN_KEY_FA: Record<string, string> = {
+  expected_return_date_doubtful: "مشارکت مشکوک",
+  expected_return_date_back_in_training: "بازگشت به تمرین",
+};
+// expectedReturnDateParam is month TEXT ("November 2026", "Early November
+// 2026"-style prefixes already extracted by the key) — transliterated, digits
+// Persianized. Unknown month words pass through untouched.
+const MONTH_FA: Record<string, string> = {
+  january: "ژانویه", february: "فوریه", march: "مارس", april: "آوریل",
+  may: "مه", june: "ژوئن", july: "ژوئیه", august: "اوت",
+  september: "سپتامبر", october: "اکتبر", november: "نوامبر", december: "دسامبر",
+};
+
+function buildInjury(raw: FMPlayerDetails): PlayerInjury | null {
+  const inj = raw.injuryInformation;
+  if (!inj || !inj.name) return null;
+  const nameEn = inj.name;
+  const nameFa = PLAYER_INJURY_FA[nameEn.toLowerCase()] || nameEn;
+  let returnFa: string | null = null;
+  const er = inj.expectedReturn || {};
+  const key = er.expectedReturnKey || "";
+  const param = typeof er.expectedReturnDateParam === "string" ? er.expectedReturnDateParam.trim() : "";
+  const paramFa = param
+    ? param.split(/\s+/).map((w) => MONTH_FA[w.toLowerCase()] || faDigits(w)).join(" ")
+    : "";
+  if (PLAYER_RETURN_KEY_FA[key]) {
+    returnFa = PLAYER_RETURN_KEY_FA[key];
+  } else if (RETURN_PREFIX_FA[key] && paramFa) {
+    returnFa = `${RETURN_PREFIX_FA[key]} ${paramFa}`;
+  } else if (paramFa) {
+    returnFa = `بازگشت: ${paramFa}`;
+  }
+  let updatedFa: string | null = null;
+  const lu = inj.lastUpdated?.utcTime;
+  if (lu && !Number.isNaN(new Date(lu).getTime())) {
+    const j = jalaliShort(lu);
+    if (j.day && j.month) updatedFa = `${j.day} ${j.month} ${j.year}`;
+  }
+  return {
+    nameFa,
+    ...(nameFa !== nameEn ? { nameEn } : {}),
+    returnFa,
+    updatedFa,
   };
 }
 
@@ -2251,7 +2369,10 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // cycle-87: key bumped to v3 — output gained the pitch block (shot map +
   // heatmap) so the L2 SQLite cache cannot serve the older shapes
   // (same convention as cycle-52/86)
-  const payload = await cached(`player:v3:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-96: key bumped to v4 — output gained the injury block so the L2
+  // SQLite cache cannot serve older injury-less shapes (same convention as
+  // cycle-52/86/87)
+  const payload = await cached(`player:v4:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
