@@ -1878,12 +1878,22 @@ export function normalizeQuery(q: string): string {
 let teamIndexCache: { at: number; data: TeamIndexEntry[] } | null = null;
 
 // Teams whose league page is unavailable via FotMob keyless API (e.g. Persian Gulf Pro
-// League returns `null`), but which must still be searchable. Ids verified from match feed.
+// League returns `null`) or which sit outside the portal's 7 leagues entirely, but
+// which must still be searchable — the 404 page sends users to the header search, so
+// any team with a working /team/ page has to be findable. Ids verified from match
+// feed (persiangulf) and live data/teams probes (cycle-79: Ibrox / Tynecastle resolve).
 const SEARCH_FALLBACK_TEAMS: { teamId: number; name: string; fa: string; leagueKey: string; leagueFa: string }[] = [
   { teamId: 101610, name: "Persepolis FC", fa: "پرسپولیس", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
   { teamId: 101614, name: "Esteghlal FC", fa: "استقلال", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
   { teamId: 176352, name: "Tractor SC", fa: "تراکتور", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
   { teamId: 101611, name: "Sepahan SC", fa: "سپاهان", leagueKey: "persiangulf", leagueFa: "لیگ خلیج فارس ایران" },
+  // fix cycle-79: Glasgow clubs + Hearts have fully working team pages (the
+  // stats/transfer/trophy/venue feeds all resolve) but the Scottish Premiership
+  // is not a portal league, so the standings-built index never contained them
+  // and the header search answered «تیمی با این نام پیدا نشد» for سلتیک/Celtic.
+  { teamId: 9925, name: "Celtic FC", fa: "سلتیک", leagueKey: "scotland", leagueFa: "لیگ برتر اسکاتلند" },
+  { teamId: 8548, name: "Rangers FC", fa: "رنجرز", leagueKey: "scotland", leagueFa: "لیگ برتر اسکاتلند" },
+  { teamId: 9860, name: "Heart of Midlothian FC", fa: "هارت", leagueKey: "scotland", leagueFa: "لیگ برتر اسکاتلند" },
 ];
 
 /** Flat index of every team in our 7 league standings (getStandings is cached, so this is cheap). */
