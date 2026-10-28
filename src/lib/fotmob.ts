@@ -92,6 +92,10 @@ export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
   season: string;
+  /** cycle-55 additive: the season this payload actually shows (FotMob's own label). */
+  selectedSeason?: string;
+  /** cycle-55 additive: seasons FotMob offers for this league (newest first, capped 12). */
+  allSeasons?: string[];
   rows: StandingsRow[];
   home?: StandingsRow[];   // cycle-52 additive: FotMob per-side split (optional — hidden when absent)
   away?: StandingsRow[];
@@ -307,7 +311,8 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
 interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }
 interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
-  table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] } } };
+  allAvailableSeasons?: string[];
+  table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] }; selectedSeason?: string } };
   fixtures?: { allMatches?: unknown[] };
   stats?: {
     players?: {
@@ -350,15 +355,20 @@ export class LeagueUnavailableError extends Error {
   }
 }
 
+// cycle-55: historical seasons are fetched with the same endpoint +
+// `&season=YYYY/YYYY` (probed: selectedSeason label + full table/stats/matches
+// come back for e.g. 2024/2025). Cache key separates per season.
+export const SEASON_PARAM_RE = /^(19|20)\d{2}\/(19|20)\d{2}$/;
+
 // Fetch + cache the (heavy) league payload once; standings & fixtures share it
-async function getLeagueRaw(leagueKey: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {
+async function getLeagueRaw(leagueKey: string, season?: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   if (!lg) throw new Error(`Unknown league: ${leagueKey}`);
   // NOTE: the null/invalid guard lives INSIDE the cached producer so an
   // unusable payload is never cached — each request retries upstream.
-  const raw = await cached(`leagueRaw:${leagueKey}`, 60 * 60_000, async () => {
+  const raw = await cached(`leagueRaw:${leagueKey}:${season || "cur"}`, 60 * 60_000, async () => {
     const data = await fetchJson<FotMobLeague>(
-      `https://www.fotmob.com/api/data/leagues?id=${lg.fotmobId}&ccode3=${lg.ccode3}&lang=en`
+      `https://www.fotmob.com/api/data/leagues?id=${lg.fotmobId}&ccode3=${lg.ccode3}&lang=en${season ? `&season=${encodeURIComponent(season)}` : ""}`
     );
     if (data == null || typeof data !== "object") {
       throw new LeagueUnavailableError(leagueKey);
@@ -485,8 +495,8 @@ export async function getLeagueCardLeaders(
   }
 }
 
-export async function getStandings(leagueKey: string): Promise<StandingsData> {
-  const { lg, raw } = await getLeagueRaw(leagueKey);
+export async function getStandings(leagueKey: string, season?: string): Promise<StandingsData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey, season);
   const build = async () => {
     // ---- team form (last 5 league results per team, one pass over season fixtures) ----
     const formMap = new Map<number, ("W" | "D" | "L")[]>();
@@ -587,8 +597,16 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
       .slice(0, 6);
 
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
+    // cycle-55: FotMob's own selected-season label + the seasons it offers —
+    // additive fields so the v2 cache shape stays backward compatible
+    const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+    const allSeasons = Array.isArray(raw.allAvailableSeasons)
+      ? raw.allAvailableSeasons.filter((s) => SEASON_PARAM_RE.test(s)).slice(0, 12)
+      : undefined;
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
+      ...(selectedSeason ? { selectedSeason } : {}),
+      ...(allSeasons && allSeasons.length > 1 ? { allSeasons } : {}),
       ...(homeRows ? { home: homeRows } : {}),
       ...(awayRows ? { away: awayRows } : {}),
       scorers: mergedScorers,
@@ -598,7 +616,9 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
   };
   // cycle-52: payload shape gained additive `home`/`away` → key bumped to v2
   // so the L2 (SQLite) cache cannot serve the old shape for its 60-min TTL
-  return cached(`standings:v2:${leagueKey}`, 60 * 60_000, build);
+  // cycle-55: per-season cache keys ("cur" keeps the old key string for the
+  // current season, so existing cache entries stay valid)
+  return cached(`standings:v2:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------
@@ -661,6 +681,8 @@ export interface LeagueFixturesData {
   leagueKey: string;
   leagueFa: string;
   season: string;
+  /** cycle-55 additive: season this payload actually shows. */
+  selectedSeason?: string;
   upcoming: NormFixture[];
   recent: NormFixture[];
   total: number;
@@ -770,10 +792,10 @@ function computeLeagueStats(mapped: NormFixture[]): LeagueStats | undefined {
   };
 }
 
-export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixturesData> {
-  const { lg, raw } = await getLeagueRaw(leagueKey);
+export async function getLeagueFixtures(leagueKey: string, season?: string): Promise<LeagueFixturesData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey, season);
   const all = (raw.fixtures?.allMatches || []) as FotMobFixture[];
-  const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
+  const activeSeason = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
   const now = Date.now();
   const mapped = all.filter((f) => f?.id && f?.home && f?.away).map(normalizeFixture);
   const upcoming = mapped
@@ -811,10 +833,12 @@ export async function getLeagueFixtures(leagueKey: string): Promise<LeagueFixtur
     }
   }
 
+  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
   return {
     leagueKey,
     leagueFa: lg.faName,
-    season,
+    season: activeSeason || season || "",
+    ...(selectedSeason ? { selectedSeason } : {}),
     upcoming,
     recent,
     total: mapped.length,

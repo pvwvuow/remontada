@@ -56,6 +56,12 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "scorers", label: "آقای گل" },
 ];
 
+/** cycle-55: "2024/2025" → «۲۰۲۴/۲۵» — Persian digits, short second year. */
+function faSeasonShort(s: string): string {
+  const m = /^(\d{4})\/(\d{4})$/.exec(s);
+  return m ? faDigits(`${m[1]}/${m[2].slice(2)}`) : faDigits(s);
+}
+
 function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) {
   const j = jalaliShort(f.utcTime);
   return (
@@ -309,7 +315,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
         leagueId={lgCfg?.fotmobId}
         title="آقای گل"
         sub={lgCfg ? `${lgCfg.ccode3} · ${lgCfg.enName}` : undefined}
-        season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+        season={(data.selectedSeason || data.season) ? `فصل ${faDigits(data.selectedSeason || data.season)}` : undefined}
       >
         <Link
           href={`/topscorers/${leagueKey}`}
@@ -495,7 +501,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
         leagueId={league.fotmobId}
         title={data.leagueFa}
         sub={`${league.ccode3} · ${league.enName}`}
-        season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
+        season={(data.selectedSeason || data.season) ? `فصل ${faDigits(data.selectedSeason || data.season)}` : undefined}
       />
       <GlassPosterMeta right={modeLabel} left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
       {hasSides && (
@@ -583,6 +589,8 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0); // «تلاش دوباره» re-runs the fetch effect
+  // cycle-55: selected historical season ("2024/2025") — null = current season
+  const [season, setSeason] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -590,9 +598,10 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
     setError(null);
     (async () => {
       try {
+        const sp = season ? `&season=${encodeURIComponent(season)}` : "";
         const [stRes, fxRes] = await Promise.allSettled([
-          fetch(`/api/standings?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json()),
-          fetch(`/api/league-fixtures?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json()),
+          fetch(`/api/standings?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
+          fetch(`/api/league-fixtures?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
@@ -607,7 +616,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [leagueKey, attempt]);
+  }, [leagueKey, attempt, season]);
 
   if (!lg) {
     return (
@@ -640,6 +649,10 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       }
     : null;
 
+  // cycle-55: season label follows the payload's own selected-season marker
+  const shownSeason = standings?.selectedSeason || standings?.season || "";
+  const allSeasons = standings?.allSeasons || [];
+
   return (
     <div className="flex flex-col gap-4">
       <JsonLd data={standingsLd} />
@@ -648,7 +661,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         <div>
           <h1 className="text-lg font-black">{lg.faName}</h1>
           <p className="text-[11px] text-muted-foreground">
-            {standings?.season && <>فصل {faDigits(standings.season)} · </>}
+            {shownSeason && <>فصل {faDigits(shownSeason)} · </>}
             {fixtures && <>در مجموع {faDigits(fixtures.total)} بازی</>}
           </p>
         </div>
@@ -656,6 +669,35 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {lg.ccode3}
         </span>
       </div>
+
+      {/* cycle-55: season selector — options come from the payload itself, so
+          leagues without a season list simply hide the control */}
+      {allSeasons.length > 1 && (
+        <div className="flex items-center gap-2 px-1">
+          <label htmlFor="season-select" className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+              <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+              <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            </svg>
+            فصل
+          </label>
+          <select
+            id="season-select"
+            value={season ?? allSeasons[0]}
+            onChange={(e) => setSeason(e.target.value === allSeasons[0] ? null : e.target.value)}
+            className="text-[12px] font-bold text-foreground bg-white/[0.04] border border-[color:var(--glass-border-soft)] rounded-lg px-2 py-1.5 outline-none focus:border-sky-soft/50 cursor-pointer"
+          >
+            {allSeasons.map((s) => (
+              <option key={s} value={s} className="bg-[#10161f] text-foreground">
+                {faSeasonShort(s)}{s === allSeasons[0] ? " (فعلی)" : ""}
+              </option>
+            ))}
+          </select>
+          {loading && season != null && (
+            <span className="text-[10px] text-muted-foreground animate-pulse">در حال بارگذاری…</span>
+          )}
+        </div>
+      )}
 
       {/* current-week progress (hidden for cup/non-numeric rounds or missing data) */}
       {fixtures?.progress && <SeasonProgress progress={fixtures.progress} />}
@@ -704,7 +746,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         <div className={cn("transition-opacity", loading && "opacity-50")}>
           {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
-              <StandingsTable key={leagueKey} data={standings} league={lg} />
+              <StandingsTable key={`${leagueKey}:${standings.selectedSeason || season || "cur"}`} data={standings} league={lg} />
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
