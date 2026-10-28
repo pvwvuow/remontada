@@ -932,14 +932,18 @@ function SeasonFixtureRow({ f, teamId }: { f: TeamSeasonFixture; teamId: number 
   const isHome = f.home.id === teamId;
   const opp = isHome ? f.away : f.home;
   const j = jalaliShort(f.utcTime);
-  const res =
-    f.finished && f.home.score != null && f.away.score != null
+  // cycle-85: the upstream verdict (f.verdict) is authoritative — a penalty
+  // shootout (e.g. City 1-1, pens 2-4) must show پ, not م; score compare is
+  // only the legacy fallback when the verdict field is missing.
+  const res: "W" | "D" | "L" | null =
+    f.verdict ??
+    (f.finished && f.home.score != null && f.away.score != null
       ? f.home.score === f.away.score
         ? ("D" as const)
         : (isHome ? f.home.score > f.away.score : f.away.score > f.home.score)
           ? ("W" as const)
           : ("L" as const)
-      : null;
+      : null);
   return (
     <Link href={`/match/${f.id}`} prefetch={false} className="glass-row-hover block">
       <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
@@ -965,6 +969,14 @@ function SeasonFixtureRow({ f, teamId }: { f: TeamSeasonFixture; teamId: number 
               {f.home.score != null && f.away.score != null && (
                 <span className="font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
                   {faDigits(f.home.score)} : {faDigits(f.away.score)}
+                </span>
+              )}
+              {f.pens && (
+                <span
+                  className="text-[9px] font-black text-gold border border-gold/25 bg-gold/10 rounded-md px-1 py-px tabular-persian whitespace-nowrap"
+                  title="نتیجه در ضربات پنالتی"
+                >
+                  پن {faDigits(f.pens.h)}-{faDigits(f.pens.a)}
                 </span>
               )}
               {res && (

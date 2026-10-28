@@ -2395,15 +2395,23 @@ interface FMHistoryRankRaw {
 
 interface FMTeamFixtureRaw {
   id?: number;
+  // probed (cycle-85): on penalty shootouts home/away.score carry the SHOOTOUT
+  // score while status.scoreStr keeps the regulation+ET score (City friendly
+  // 5406269: entry 2-4 vs scoreStr «1 - 1», reason penalties_short)
   home?: { id?: number; name?: string; score?: number | null };
   away?: { id?: number; name?: string; score?: number | null };
   tournament?: { name?: string; leagueId?: number };
+  // probed (cycle-85): result = verdict from the TEAM's perspective (1 win /
+  // 0 draw / -1 loss) — present on every started fixture (53/53 across the
+  // three reference clubs, zero semantics mismatches)
+  result?: number;
   status?: {
     utcTime?: string;
     finished?: boolean;
     started?: boolean;
     cancelled?: boolean;
     scoreStr?: string;
+    reason?: { short?: string; shortKey?: string; long?: string; longKey?: string };
   };
   notStarted?: boolean;
 }
@@ -2953,6 +2961,12 @@ export interface TeamSeasonFixture {
   tournamentFa: string;
   finished: boolean;
   started: boolean;
+  /** cycle-85: upstream verdict from the team's perspective (W/D/L) — scoreStr
+   *  alone mislabels penalty shootouts as draws; null when undecidable. */
+  verdict: "W" | "D" | "L" | null;
+  /** cycle-85: shootout score when the tie went to penalties (home-away order,
+   *  same direction as the main score). */
+  pens?: { h: number; a: number };
 }
 
 export interface TeamFixturesAll {
@@ -2982,6 +2996,25 @@ export async function getTeamFixturesAll(teamId: number): Promise<TeamFixturesAl
     const away = f?.away;
     if (!id || !utcTime || !home?.name || !away?.name) continue;
     if (f?.status?.cancelled) continue;
+    const finished = Boolean(f?.status?.finished);
+    // cycle-85 score provenance: for finished matches status.scoreStr is the
+    // canonical regulation+ET score, while the entry home/away scores carry
+    // the SHOOTOUT score on penalty ties (probed: City friendly 5406269 entry
+    // 2-4 vs scoreStr «1 - 1», reason penalties_short — 52 normal finished
+    // rows have entry == scoreStr, zero mismatches). Unfinished rows keep the
+    // entry scores (live/none).
+    const sm = /^\s*(\d+)\s*-\s*(\d+)\s*$/.exec(String(f?.status?.scoreStr || ""));
+    const reasonKey = String(f?.status?.reason?.shortKey || "");
+    let hs = typeof home.score === "number" ? home.score : null;
+    let as = typeof away.score === "number" ? away.score : null;
+    let pens: { h: number; a: number } | undefined;
+    if (finished && sm) {
+      if (reasonKey === "penalties_short" && hs != null && as != null) {
+        pens = { h: hs, a: as }; // entry scores = shootout outcome
+      }
+      hs = Number(sm[1]); // pill = regulation+ET score
+      as = Number(sm[2]);
+    }
     const row: TeamSeasonFixture = {
       id,
       utcTime,
@@ -2989,13 +3022,13 @@ export async function getTeamFixturesAll(teamId: number): Promise<TeamFixturesAl
         id: Number(home.id || 0),
         name: home.name,
         fa: teamFa(home.name) || home.name,
-        score: typeof home.score === "number" ? home.score : null,
+        score: hs,
       },
       away: {
         id: Number(away.id || 0),
         name: away.name,
         fa: teamFa(away.name) || away.name,
-        score: typeof away.score === "number" ? away.score : null,
+        score: as,
       },
       // exact league names first (TROPHY_FA carries «Premiership»/«Premier
       // League»/… which competitionFa deliberately keeps English when the
@@ -3004,9 +3037,28 @@ export async function getTeamFixturesAll(teamId: number): Promise<TeamFixturesAl
         TROPHY_FA[String(f?.tournament?.name || "")] ||
         competitionFa(String(f?.tournament?.name || "")) ||
         "بازی",
-      finished: Boolean(f?.status?.finished),
+      finished,
       started: Boolean(f?.status?.started),
+      verdict: null,
     };
+    if (pens) row.pens = pens;
+    // verdict: the upstream result field (1/0/-1, team perspective — probed
+    // 53/53 started fixtures across the reference clubs) is authoritative;
+    // scoreStr alone mislabels shootout ties as draws. Fallback: score compare.
+    if (finished) {
+      const rv = f?.result;
+      if (rv === 1 || rv === 0 || rv === -1) {
+        row.verdict = rv === 1 ? "W" : rv === 0 ? "D" : "L";
+      } else if (row.home.score != null && row.away.score != null) {
+        const isHome = Number(home.id || 0) === teamId;
+        row.verdict =
+          row.home.score === row.away.score
+            ? "D"
+            : (isHome ? row.home.score > row.away.score : row.away.score > row.home.score)
+              ? "W"
+              : "L";
+      }
+    }
     if (row.finished) results.push(row);
     else upcoming.push(row);
   }
