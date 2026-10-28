@@ -89,6 +89,20 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
     ...(p.info.country ? { nationality: { "@type": "Country", name: p.info.country } } : {}),
   };
 
+  // cycle-82: market-value sparkline geometry (x 1..99, y 3..27 in a 101×30 viewBox)
+  let marketPts: string | null = null;
+  let marketLastY = 0;
+  if (p.market && p.market.points.length > 1) {
+    const vals = p.market.points;
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const span = max - min || 1;
+    marketPts = vals
+      .map((v, i) => `${(1 + (i / (vals.length - 1)) * 98).toFixed(2)},${(27 - ((v - min) / span) * 24).toFixed(2)}`)
+      .join(" ");
+    marketLastY = 27 - ((vals[vals.length - 1] - min) / span) * 24;
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <JsonLd data={personLd} />
@@ -159,6 +173,116 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
               ))}
             </div>
           )}
+        </section>
+      )}
+
+      {/* ---------- deep season performance (cycle-82) ---------- */}
+      {p.deepStats && p.deepStats.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label="عملکرد فصل" data-testid="player-deep-stats">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
+              <path d="M3 3v18h18" />
+              <path d="M7 15l4-5 3 3 5-7" />
+            </svg>
+            عملکرد فصل
+            <span className="ms-auto text-[9.5px] font-bold text-muted-foreground">صدک فوت‌ماب · مقایسه با هم‌پست‌ها</span>
+          </header>
+          <div className="px-3 sm:px-4 py-3.5 flex flex-col gap-4">
+            {p.deepStats.map((g) => (
+              <div key={g.fa}>
+                <p className="text-[11px] font-black text-sky-soft mb-2">{g.fa}</p>
+                <div className="grid sm:grid-cols-2 gap-x-6 gap-y-3">
+                  {g.stats.map((s, i) => (
+                    <div key={`${s.fa}-${i}`}>
+                      <div className="flex items-baseline justify-between gap-2">
+                        <span className="text-[11.5px] font-bold text-[#dcebf9] truncate">{s.fa}</span>
+                        <span className="text-[12.5px] font-black tabular-persian text-[#e8f2fc] shrink-0">{s.value}</span>
+                      </div>
+                      {s.pct !== null && (
+                        <div className="flex items-center gap-2 mt-1">
+                          <div className="h-1 flex-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
+                            <div className="h-full rounded-full bg-gold/70" style={{ width: `${s.pct}%` }} />
+                          </div>
+                          <span className="text-[8.5px] text-muted-foreground tabular-persian shrink-0 whitespace-nowrap">
+                            صدک {faDigits(s.pct)}
+                            {s.per90 !== null ? ` · هر ۹۰ دقیقه ${s.per90}` : ""}
+                          </span>
+                        </div>
+                      )}
+                      {s.pct === null && s.per90 !== null && (
+                        <p className="text-[8.5px] text-muted-foreground tabular-persian mt-0.5">هر ۹۰ دقیقه {s.per90}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ---------- traits vs positional peers (cycle-82) ---------- */}
+      {p.traits && p.traits.items.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label={p.traits.titleFa} data-testid="player-traits">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3 2" />
+            </svg>
+            {p.traits.titleFa}
+          </header>
+          <ul className="glass-list">
+            {p.traits.items.map((t, i) => (
+              <li key={`${t.fa}-${i}`} className="px-3 sm:px-4 py-2 flex items-center gap-3">
+                <span className="text-[11.5px] font-bold w-28 sm:w-36 shrink-0 truncate">{t.fa}</span>
+                <div className="h-1.5 flex-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
+                  <div className="h-full rounded-full bg-gold/70" style={{ width: `${t.pct}%` }} />
+                </div>
+                <span className="text-[10px] font-black text-gold tabular-persian w-12 text-end shrink-0">صدک {faDigits(t.pct)}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {/* ---------- market value trend (cycle-82) ---------- */}
+      {p.market && marketPts && (
+        <section className="glass-card overflow-hidden" aria-label="روند ارزش بازار" data-testid="player-market">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
+              <path d="M3 17l6-6 4 4 8-8" />
+              <path d="M15 7h6v6" />
+            </svg>
+            روند ارزش بازار
+            <span className="ms-auto text-[9.5px] font-bold text-muted-foreground tabular-persian">{faDigits(p.market.points.length)} نقطهٔ ثبت‌شده</span>
+          </header>
+          <div className="px-4 py-3.5">
+            <div className="flex items-end justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[26px] font-light text-[#dfedff] leading-none tabular-persian">{p.market.current}</p>
+                {p.market.currentTeamFa && <p className="text-[10px] text-muted-foreground mt-1.5">ارزش فعلی در {p.market.currentTeamFa}</p>}
+              </div>
+              <p className="text-[9.5px] text-muted-foreground tabular-persian text-end shrink-0 leading-5">
+                شروع ثبت: {p.market.sinceValue}
+                {p.market.sinceTeamFa ? ` · ${p.market.sinceTeamFa}` : ""}
+                {p.market.sinceYear ? ` · ${faDigits(p.market.sinceYear)}` : ""}
+              </p>
+            </div>
+            <div dir="ltr" className="mt-3 text-sky-soft">
+              <svg viewBox="0 0 101 30" preserveAspectRatio="none" className="w-full h-12" aria-hidden="true">
+                <polyline
+                  points={marketPts}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+                <circle cx="99" cy={marketLastY} r="1.5" fill="currentColor" className="text-gold" />
+              </svg>
+            </div>
+          </div>
         </section>
       )}
 

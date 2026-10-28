@@ -1368,6 +1368,33 @@ interface FMPlayerDetails {
       tournaments?: { leagueName?: string; leagueId?: number; seasonsWon?: string[]; seasonsRunnerUp?: string[] }[] | null;
     }[] | null;
   } | null;
+  // cycle-82: deep season performance, peer traits, market-value history (all optional)
+  firstSeasonStats?: {
+    statsSection?: {
+      title?: string;
+      items?: {
+        title?: string;
+        items?: {
+          localizedTitleId?: string;
+          title?: string;
+          statValue?: string | number | null;
+          per90?: number | null;
+          percentileRank?: number | null;
+          statFormat?: string;
+        }[] | null;
+      }[] | null;
+    } | null;
+  } | null;
+  traits?: {
+    key?: string; title?: string;
+    items?: { key?: string; title?: string; value?: number }[] | null;
+  } | null;
+  marketValues?: {
+    values?: {
+      date?: string; value?: number; currency?: string;
+      teamId?: number; teamName?: string;
+    }[] | null;
+  } | null;
 }
 
 interface FMCareerEntry {
@@ -1439,7 +1466,19 @@ export interface PlayerData {
   career: PlayerCareerEntry[];       // senior + national-team stops, newest first
   careerYouth: PlayerCareerEntry[];  // youth/academy stops (hidden section when empty)
   trophies: PlayerTrophy[];          // honours (league/team + winning seasons)
+  deepStats: PlayerDeepGroup[] | null; // cycle-82: «عملکرد فصل» grouped detailed season stats
+  traits: PlayerTraits | null;         // cycle-82: percentile comparison vs positional peers
+  market: PlayerMarket | null;         // cycle-82: market-value history sparkline
   fetchedAt: string;
+}
+
+export interface PlayerDeepStat { fa: string; value: string; per90: string | null; pct: number | null }
+export interface PlayerDeepGroup { fa: string; stats: PlayerDeepStat[] }
+export interface PlayerTraits { titleFa: string; items: { fa: string; pct: number }[] }
+export interface PlayerMarket {
+  current: string; currentTeamFa: string | null;
+  sinceValue: string; sinceTeamFa: string | null; sinceYear: string;
+  points: number[];  // chronological EUR values for the sparkline
 }
 
 function faPosition(label?: string): string | null {
@@ -1477,6 +1516,211 @@ function leagueFaById(id?: number, name?: string): string {
   const lg = LEAGUES.find((l) => l.fotmobId === id);
   if (lg) return lg.faName;
   return competitionFa(name || "") || name || "";
+}
+
+// ---------------- cycle-82: player deep season stats / traits / market history ----------------
+
+const PLAYER_DEEP_GROUP_FA: Record<string, string> = {
+  shooting: "شوت",
+  physical: "فیزیک",
+  passing: "پاس",
+  possession: "مالکیت توپ",
+  defending: "دفاع",
+  discipline: "انضباط",
+  goalkeeping: "دروازه‌بانی",
+  distribution: "توزیع توپ",
+};
+
+const PLAYER_DEEP_STAT_FA: Record<string, string> = {
+  goals: "گل",
+  expected_goals: "xG",
+  expected_goals_on_target: "xGOT",
+  non_penalty_xg: "xG بدون پنالتی",
+  shots: "شوت",
+  ShotsOnTarget: "شوت در چارچوب",
+  headed_shots: "شوت با سر",
+  physical_metrics_topspeed: "بیشترین سرعت",
+  physical_metrics_distance_covered: "مسافت پیموده‌شده",
+  physical_metrics_running: "دویدن",
+  physical_metrics_sprinting: "اسپرینت",
+  physical_metrics_number_of_sprints: "تعداد اسپرینت",
+  assists: "پاس گل",
+  expected_assists: "xA",
+  successful_passes: "پاس صحیح",
+  successful_passes_accuracy: "دقت پاس",
+  long_balls_accurate: "توپ بلند صحیح",
+  long_ball_succeeeded_accuracy: "دقت توپ بلند",
+  line_breaking_passes: "پاس خط‌شکن",
+  chances_created: "سانس‌سازی",
+  big_chance_created_team_title: "سانس بزرگ خلق‌شده",
+  dribbles_succeeded: "دریبل موفق",
+  won_contest_subtitle: "نرخ موفقیت دریبل",
+  duel_won: "دوئل برده",
+  duel_won_percent: "درصد دوئل برده",
+  aerials_won: "دوئل هوایی برده",
+  aerials_won_percent: "درصد دوئل هوایی",
+  touches: "لمس توپ",
+  touches_opp_box: "لمس در محوطهٔ حریف",
+  dispossessed: "از دست دادن توپ",
+  fouls_won: "خطای گرفته‌شده",
+  defensive_actions: "عمل دفاعی",
+  "matchstats.headers.tackles": "تکل",
+  interceptions: "قطع توپ",
+  blocked_shots: "شوت بلاک‌شده",
+  fouls: "خطای انجام‌شده",
+  recoveries: "بازپس‌گیری توپ",
+  poss_won_att_3rd_team_title: "بردهٔ توپ در ثلث پایانی",
+  dribbled_past: "دریبل خورده",
+  clearances: "دفع توپ",
+  clean_sheet_team_title: "دروازهٔ بسته",
+  goals_conceded_while_on_pitch: "گل خورده در زمین",
+  expected_goals_against_while_on_pitch: "xG خورده در زمین",
+  yellow_cards: "کارت زرد",
+  red_cards: "کارت قرمز",
+  saves: "مهار",
+  save_percentage: "درصد مهار",
+  goals_conceded: "گل خورده",
+  goals_prevented: "گل پیشگیری‌شده",
+  penalty_saves: "مهار پنالتی",
+  penalty_goals_conceded: "پنالتی خورده",
+  penalty_save_percent: "درصد مهار پنالتی",
+  error_led_to_goal: "خطا منجر به گل",
+  keeper_sweeper: "خروج اسوئیپر",
+  keeper_high_claim: "گرفتن توپ بلند",
+};
+
+const PLAYER_TRAIT_FA: Record<string, string> = {
+  chances_created: "سانس‌سازی",
+  aerials_won: "دوئل هوایی",
+  defensive_actions: "عمل دفاعی",
+  goals: "گل",
+  shot_attempts: "شوت",
+  goals_conceded: "گل خورده",
+  save_percentage: "درصد مهار",
+  clean_sheet: "دروازهٔ بسته",
+  keeper_sweeper_actions: "خروج اسوئیپر",
+  keeper_high_claim: "گرفتن توپ بلند",
+  long_ball_succeeeded_accuracy: "دقت توپ بلند",
+  touches: "لمس توپ",
+  dribbles_succeeded: "دریبل موفق",
+  successful_passes: "پاس صحیح",
+  duels_won: "دوئل برده",
+  duel_won: "دوئل برده",
+  assists: "پاس گل",
+  xg: "xG",
+  xa: "xA",
+  interceptions: "قطع توپ",
+  tackles: "تکل",
+  recoveries: "بازپس‌گیری توپ",
+  fouls: "خطای انجام‌شده",
+  yellow_cards: "کارت زرد",
+};
+
+const PLAYER_TRAITS_TITLE_FA: Record<string, string> = {
+  stats_comparison_forwards: "مقایسهٔ آمار با سایر مهاجمان",
+  stats_comparison_midfielders: "مقایسهٔ آمار با سایر هافبک‌ها",
+  stats_comparison_defenders: "مقایسهٔ آمار با سایر مدافعان",
+  stats_comparison_keepers: "مقایسهٔ آمار با سایر دروازه‌بان‌ها",
+};
+
+/** ≤2-decimal Persian number, trailing zeros trimmed */
+function deepNumFa(n: number): string {
+  return faDigits((Math.round(n * 100) / 100).toString());
+}
+
+function deepStatValueFa(v: string, format?: string): string {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return "";
+  if (format === "percent") return `${deepNumFa(n)}٪`;
+  if (format === "kph") return `${deepNumFa(n)} کیلومتر بر ساعت`;
+  if (format === "meter") {
+    return n >= 1000 ? `${deepNumFa(Math.round(n / 100) / 10)} کیلومتر` : `${deepNumFa(n)} متر`;
+  }
+  return deepNumFa(n);
+}
+
+/** «۱۵۹.۳ میلیون یورو» / «۱۱۰ هزار یورو» — EUR market values */
+function marketNumFa(n: number): string {
+  if (n >= 1e9) return `${deepNumFa(Math.round(n / 1e8) / 10)} میلیارد یورو`;
+  if (n >= 1e6) return `${deepNumFa(Math.round(n / 1e5) / 10)} میلیون یورو`;
+  if (n >= 1e3) return `${deepNumFa(Math.round(n / 1e3))} هزار یورو`;
+  return `${faDigits(n)} یورو`;
+}
+
+function buildDeepStats(raw: FMPlayerDetails): PlayerDeepGroup[] | null {
+  const groups = raw.firstSeasonStats?.statsSection?.items;
+  if (!Array.isArray(groups)) return null;
+  const out: PlayerDeepGroup[] = [];
+  for (const g of groups) {
+    const rows: PlayerDeepStat[] = [];
+    for (const it of Array.isArray(g.items) ? g.items : []) {
+      const v = it.statValue;
+      if (v === null || v === undefined || v === "") continue;
+      const value = deepStatValueFa(String(v), it.statFormat);
+      if (!value) continue;
+      const id = it.localizedTitleId || "";
+      // per90 only makes sense for count/rate stats — skip percent/physical and zeros
+      const per90 =
+        it.per90 != null &&
+        Number.isFinite(it.per90) &&
+        it.per90 > 0 &&
+        (it.statFormat === "number" || it.statFormat === "fraction")
+          ? deepNumFa(it.per90)
+          : null;
+      rows.push({
+        fa: PLAYER_DEEP_STAT_FA[id] || it.title || id || "؟",
+        value,
+        per90,
+        pct:
+          it.percentileRank != null && Number.isFinite(it.percentileRank)
+            ? Math.max(0, Math.min(100, Math.round(it.percentileRank)))
+            : null,
+      });
+    }
+    if (rows.length > 0) {
+      out.push({ fa: PLAYER_DEEP_GROUP_FA[(g.title || "").toLowerCase()] || g.title || "؟", stats: rows });
+    }
+  }
+  return out.length > 0 ? out : null;
+}
+
+function buildTraits(raw: FMPlayerDetails): PlayerTraits | null {
+  const items = raw.traits?.items;
+  if (!Array.isArray(items) || items.length === 0) return null;
+  const rows = items
+    .filter((t) => typeof t.value === "number" && Number.isFinite(t.value as number))
+    .map((t) => ({
+      fa: PLAYER_TRAIT_FA[t.key || ""] || t.title || "؟",
+      pct: Math.max(0, Math.min(100, Math.round((t.value as number) * 100))),
+    }));
+  if (rows.length === 0) return null;
+  return {
+    titleFa: PLAYER_TRAITS_TITLE_FA[raw.traits?.key || ""] || "مقایسهٔ آمار با هم‌پست‌ها",
+    items: rows,
+  };
+}
+
+function buildMarket(raw: FMPlayerDetails): PlayerMarket | null {
+  const vals = raw.marketValues?.values;
+  if (!Array.isArray(vals)) return null;
+  const pts = vals.filter((v) => typeof v.value === "number" && Number.isFinite(v.value as number));
+  if (pts.length < 2) return null;
+  const first = pts[0];
+  const last = pts[pts.length - 1];
+  const yearOf = (iso?: string): string => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    return Number.isNaN(d.getTime()) ? "" : String(d.getUTCFullYear());
+  };
+  const tFa = (name?: string): string | null => (name ? teamFa(name) || name : null);
+  return {
+    current: marketNumFa(last.value as number),
+    currentTeamFa: tFa(last.teamName),
+    sinceValue: marketNumFa(first.value as number),
+    sinceTeamFa: tFa(first.teamName),
+    sinceYear: yearOf(first.date),
+    points: pts.map((v) => v.value as number),
+  };
 }
 
 function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
@@ -1602,6 +1846,9 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     career,
     careerYouth: normalizeCareerEntries(careerItems.youth?.teamEntries, "youth"),
     trophies: normalizeTrophies(raw.trophies),
+    deepStats: buildDeepStats(raw),
+    traits: buildTraits(raw),
+    market: buildMarket(raw),
     fetchedAt: new Date().toISOString(),
   };
 }
