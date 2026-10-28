@@ -121,7 +121,23 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
 export function SiteFooter() {
   return (
     <footer className="glass-bar-footer mt-auto">
-      <div className="max-w-5xl mx-auto px-4 py-5 flex flex-col items-center gap-1.5 text-center">
+      {/* cycle-68 — credits head: ornament rule + arcane wordmark above the
+          link row (the parallel ui-quest stream's ✦ separators kept intact) */}
+      <div className="max-w-5xl mx-auto px-4 pt-5 pb-1 flex flex-col items-center gap-2 text-center" aria-hidden>
+        <div className="flex items-center gap-2 w-full max-w-xs">
+          <span className="h-px flex-1" style={{ background: "linear-gradient(to left, transparent, oklch(0.7 0.09 300 / 35%), transparent)" }} />
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-arcane shrink-0">
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
+          </svg>
+          <span className="h-px flex-1" style={{ background: "linear-gradient(to right, transparent, oklch(0.7 0.09 300 / 35%), transparent)" }} />
+        </div>
+        <p className="text-[11px] font-black">
+          <span className="arcane-text">رمانتادا</span>
+          <span className="text-gold">.</span>
+        </p>
+      </div>
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-5 flex flex-col items-center gap-1.5 text-center">
         <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
