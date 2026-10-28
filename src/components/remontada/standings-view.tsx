@@ -5,11 +5,13 @@
 // Phase 3 theme: glass statistics poster (studio table/scorers look)
 // ------------------------------------------------------------------
 import Link from "next/link";
+import { useState } from "react";
 import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 import { faDigits, formColor, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +60,13 @@ function FormDots({ form }: { form?: ("W" | "D" | "L")[] }) {
 
 function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: string }) {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
+  // cycle-52: internal mode state — StandingsView keys this component by
+  // leagueKey, so switching league remounts and resets to «کل فصل» cleanly
+  const [mode, setMode] = useState<TableMode>("all");
+  // same additive per-side rows; switch only when both splits exist
+  const hasSides = !!(data.home?.length && data.away?.length);
+  const rows = mode === "home" && hasSides ? data.home! : mode === "away" && hasSides ? data.away! : data.rows;
+  const modeLabel = hasSides && mode === "home" ? "جدول خانه" : hasSides && mode === "away" ? "جدول بیرون" : "جدول رده‌بندی";
   return (
     <div className="glass-card overflow-hidden">
       <GlassLeagueHeader
@@ -67,7 +76,12 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
         sub={lg ? `${lg.ccode3} · ${lg.enName}` : undefined}
         season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
       />
-      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
+      <GlassPosterMeta right={modeLabel} left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
+      {hasSides && (
+        <div className="px-4 pb-2.5">
+          <TableModeSwitch mode={mode} onChange={setMode} />
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[520px]">
           <thead>
@@ -85,7 +99,7 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
             </tr>
           </thead>
           <tbody>
-            {data.rows.map((r) => {
+            {rows.map((r) => {
               const leader = r.idx === 1;
               return (
                 <tr
@@ -289,9 +303,9 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange, onRetr
       ) : data ? (
         <div className={cn("grid gap-4 lg:grid-cols-[1fr_300px] xl:grid-cols-[1fr_330px] items-start transition-opacity", loading && "opacity-50")}>
           <div className="flex flex-col gap-3 min-w-0">
-            <StandingsTable data={data} leagueKey={leagueKey} />
+            <StandingsTable key={leagueKey} data={data} leagueKey={leagueKey} />
             <p className="text-[10px] text-muted-foreground px-1">
-              نوار رنگی کنار رتبه‌ها نشان‌دهنده‌ی سهمیه‌های اروپایی / سقوط است. روی نام هر تیم کلیک کنید تا صفحه‌ی تیم باز شود. نقطه‌های رنگی زیر نام تیم (موبایل) و چیپ‌های ب/م/پ (دسکتاپ) نتیجه ۵ بازی آخر هر تیم در لیگ است.
+              نوار رنگی کنار رتبه‌ها نشان‌دهنده‌ی سهمیه‌های اروپایی / سقوط است. روی نام هر تیم کلیک کنید تا صفحه‌ی تیم باز شود. نقطه‌های رنگی زیر نام تیم (موبایل) و چیپ‌های ب/م/پ (دسکتاپ) نتیجه ۵ بازی آخر هر تیم در لیگ است. سوییچ «کل فصل / خانه / بیرون» رده‌بندی را فقط بر اساس بازی‌های خانگی یا خارج از خانه‌ی هر تیم نشان می‌دهد.
             </p>
           </div>
           <ScorersCard data={data} />

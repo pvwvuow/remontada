@@ -53,6 +53,42 @@ interface DetailData {
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // fix cycle-45: penalty shootout (was dropped entirely before)
+  shootout?: {
+    home: number;
+    away: number;
+    attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
+  } | null;
+  // update cycle-46: normalized shotmap (null when the match has no shot data)
+  shots?: {
+    side: "home" | "away";
+    minute: string;
+    player?: string;
+    x: number;
+    y: number;
+    isGoal: boolean;
+    onTarget: boolean;
+    blocked: boolean;
+    post: boolean;
+    xg?: number;
+  }[] | null;
+  // update cycle-51: complete team xG («اسکوآپ تیم») — mirrors /api/match/[id]
+  xg?: {
+    home: number | null;
+    away: number | null;
+    source: "stats" | "shotmap";
+    homeBreakdown: {
+      total: number; onTarget: number; blocked: number; post: number; goals: number;
+    } | null;
+    awayBreakdown: {
+      total: number; onTarget: number; blocked: number; post: number; goals: number;
+    } | null;
+  } | null;
+  // update cycle-47: per-player match stats (mirrors /api/match/[id])
+  playerStats?: {
+    home: PlayerStatRow[];
+    away: PlayerStatRow[];
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -63,10 +99,32 @@ interface DetailData {
   error?: string;
 }
 
-type Tab = "events" | "stats" | "lineups" | "info" | "h2h";
+interface PlayerStatRow {
+  id: number;
+  name: string;
+  shirt?: string;
+  side: "home" | "away";
+  isGk: boolean;
+  starter: boolean;
+  rating?: number;
+  minutes?: number;
+  goals?: number;
+  assists?: number;
+  passesAcc?: number;
+  passesTotal?: number;
+  chances?: number;
+  defActions?: number;
+  saves?: number;
+  conceded?: number;
+  goalsPrevented?: number;
+}
+
+type Tab = "events" | "shots" | "players" | "stats" | "lineups" | "info" | "h2h";
 
 const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: "events", label: "رویدادها" },
+  { key: "shots", label: "شوت‌ها" },
+  { key: "players", label: "بازیکن‌ها" },
   { key: "stats", label: "آمار" },
   { key: "lineups", label: "ترکیب" },
   { key: "h2h", label: "رو در رو" },
@@ -214,8 +272,8 @@ function KickoffCountdown({ utcTime }: { utcTime: string }) {
 }
 
 // ---------- scoreboard ----------
-function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"] }) {
-  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
+function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"]; shootout?: DetailData["shootout"] }) {
+  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : "پیش از شروع";
   return (
     <section className="glass-card glass-hero overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-glass-border-soft bg-white/[0.02] text-[11px]">
@@ -246,9 +304,9 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
         <div className="flex flex-col items-center gap-2">
           {m.started && !m.cancelled ? (
             <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live && "text-red-200 live-glow")}>
-              <span>{m.home.score ?? "—"}</span>
+              <span>{m.home.score != null ? faDigits(m.home.score) : "—"}</span>
               <span className="text-muted-foreground/40 text-2xl">:</span>
-              <span>{m.away.score ?? "—"}</span>
+              <span>{m.away.score != null ? faDigits(m.away.score) : "—"}</span>
             </div>
           ) : (
             <div className="font-black text-2xl sm:text-3xl text-muted-foreground tabular-persian">
@@ -281,6 +339,19 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
           </Link>
         </div>
       </div>
+
+      {/* fix cycle-45: shootout score strip (decisive phase made visible) */}
+      {shootout && (
+        <div className="px-4 py-2 border-t border-glass-border-soft bg-amber-400/[0.05] flex items-center justify-center gap-2 text-[11px] text-amber-200/90 tabular-persian">
+          <span>ضربات پنالتی:</span>
+          <span className="font-black">{faDigits(shootout.home)}–{faDigits(shootout.away)}</span>
+          {shootout.home !== shootout.away && (
+            <span className="text-steel/80">
+              ({shootout.home > shootout.away ? m.home.fa || m.home.name : m.away.fa || m.away.name} برنده شد)
+            </span>
+          )}
+        </div>
+      )}
 
       {/* scorers + POTM */}
       {m.started && !m.cancelled && (
@@ -325,10 +396,325 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
   );
 }
 
+// ---------- penalty shootout card (fix cycle-45) ----------
+function PenDot({ scored }: { scored: boolean }) {
+  return <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", scored ? "bg-emerald-400" : "bg-red-400/70")} aria-hidden />;
+}
+function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["shootout"]>; match: DetailMatch }) {
+  return (
+    <div className="glass-card overflow-hidden">
+      <div className="px-4 py-2 border-b border-glass-border-soft bg-white/[0.02] text-[11px] font-black text-amber-200/90 tabular-persian">
+        ضربات پنالتی — {faDigits(shootout.home)}–{faDigits(shootout.away)}
+      </div>
+      <div className="glass-list">
+        {shootout.attempts.map((a, i) => (
+          <div key={i} className="glass-row-hover grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-[12px]">
+            {/* home side (right in RTL) */}
+            <div className={cn("flex items-center gap-2 justify-start", a.side !== "home" && "invisible")}>
+              <PenDot scored={a.scored} />
+              <span className="font-semibold">{a.player}</span>
+              {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
+            </div>
+            <span className="text-[10px] text-muted-foreground tabular-persian">{faDigits(i + 1)}</span>
+            {/* away side */}
+            <div className={cn("flex items-center gap-2 justify-end", a.side !== "away" && "invisible")}>
+              {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
+              <span className="font-semibold">{a.player}</span>
+              <PenDot scored={a.scored} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="px-4 py-2 text-[10px] text-steel/60 border-t border-glass-border-soft">
+        {match.home.fa || match.home.name} — سمت راست | {match.away.fa || match.away.name} — سمت چپ
+      </div>
+    </div>
+  );
+}
+
+// ---------- shotmap pitch (update cycle-46) ----------
+function Legend({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", color)} aria-hidden />
+      {label}
+    </span>
+  );
+}
+// ---------- team xG strip (update cycle-51) ----------
+// «اسکوآپ تیم»: official FotMob xG (fallback = per-shot sum) + shot breakdown
+// chips. Sides align with the pitch below (home left / away right): in this RTL
+// layout the first flex child renders on the right, so away comes first; the
+// split bar itself is dir=ltr with the same bg-primary/bg-chart-4 as StatBars.
+function TeamXgStrip({ xg, match }: { xg: NonNullable<DetailData["xg"]>; match: DetailMatch }) {
+  const h = xg.home ?? 0;
+  const a = xg.away ?? 0;
+  const sum = h + a;
+  const hp = sum > 0 ? (h / sum) * 100 : 50;
+  const team = (s: "home" | "away") => (s === "home" ? match.home : match.away);
+  const val = (s: "home" | "away") => (s === "home" ? xg.home : xg.away);
+  const bd = (s: "home" | "away") => (s === "home" ? xg.homeBreakdown : xg.awayBreakdown);
+  const chip = (label: string, value: string) => (
+    <span
+      key={label}
+      className="inline-flex items-center gap-1 rounded-md bg-white/[0.045] border border-glass-border-soft px-1.5 py-0.5 text-[10px] text-steel tabular-persian leading-4"
+    >
+      <span className="text-steel/60">{label}</span>
+      <span className="font-bold text-[#dcebfa]">{value}</span>
+    </span>
+  );
+  const sideBlock = (s: "home" | "away") => {
+    const t = team(s);
+    const v = val(s);
+    const b = bd(s);
+    return (
+      <div key={s} className="flex-1 min-w-0 flex flex-col items-center gap-1.5">
+        <div className="flex items-center gap-1.5 max-w-full">
+          <img
+            src={t.logo}
+            alt=""
+            width={18}
+            height={18}
+            loading="lazy"
+            className="w-[18px] h-[18px] object-contain shrink-0"
+            onError={(e) => {
+              e.currentTarget.style.visibility = "hidden";
+            }}
+          />
+          <span className="text-[11.5px] font-bold text-[#eef5fc] truncate">{t.fa || t.name}</span>
+        </div>
+        <span
+          className="text-[20px] font-black text-[#ecf3fa] tabular-persian leading-6"
+          title="اسکوآپ (گل‌های مورد انتظار)"
+        >
+          {v != null ? faDigits(v.toFixed(2)) : "—"}
+        </span>
+        <div className="flex flex-wrap items-center justify-center gap-1">
+          {b ? (
+            <>
+              {chip("شوت", faDigits(b.total))}
+              {b.onTarget > 0 && chip("در چارچوب", faDigits(b.onTarget))}
+              {b.blocked > 0 && chip("بلوکه", faDigits(b.blocked))}
+              {b.post > 0 && chip("تیرک", faDigits(b.post))}
+              {b.goals > 0 && chip("گل", faDigits(b.goals))}
+            </>
+          ) : (
+            <span className="text-[10px] text-steel/50">شوتی ثبت نشده</span>
+          )}
+        </div>
+      </div>
+    );
+  };
+  return (
+    <div className="glass-card p-3 flex flex-col gap-2.5">
+      <div className="flex items-start justify-between gap-2">
+        {sideBlock("away")}
+        {sideBlock("home")}
+      </div>
+      <div className="flex h-2 rounded-full overflow-hidden gap-0.5 bg-white/[0.04]" dir="ltr">
+        <div className="bg-primary h-full rounded-full transition-all" style={{ width: `${hp}%` }} />
+        <div className="flex-1" />
+        <div className="bg-chart-4 h-full rounded-full transition-all" style={{ width: `${100 - hp}%` }} />
+      </div>
+      <p className="text-[10px] text-steel/55 text-center leading-4">
+        {xg.source === "stats"
+          ? "اسکوآپ رسمی فوت‌ماب · سهم هر تیم در نوار نسبت اسکوآپ‌هاست"
+          : "اسکوآپ حاصل مجموع شوت‌های ثبت‌شده است (ردیف رسمی فوت‌ماب موجود نبود)"}
+      </p>
+    </div>
+  );
+}
+
+function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]>; match: DetailMatch }) {
+  const homeCount = shots.filter((s) => s.side === "home").length;
+  const awayCount = shots.filter((s) => s.side === "away").length;
+  return (
+    <div className="glass-card p-3">
+      <div className="flex items-center justify-between text-[10.5px] text-steel/80 mb-2 tabular-persian">
+        <span className="font-bold">{match.away.fa || match.away.name} ({faDigits(awayCount)})</span>
+        <span className="text-steel/50">جهت حمله →</span>
+        <span className="font-bold">({faDigits(homeCount)}) {match.home.fa || match.home.name}</span>
+      </div>
+      <div dir="ltr" className="relative w-full aspect-[105/68] rounded-lg border border-glass-border-soft bg-[oklch(0.24_0.04_150/30%)] overflow-hidden">
+        {/* markings */}
+        <div className="absolute inset-y-0 left-1/2 w-px bg-white/15" />
+        <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[14%] aspect-square rounded-full border border-white/15" />
+        <div className="absolute inset-y-[24%] left-0 w-[10%] border border-white/15 border-l-0" />
+        <div className="absolute inset-y-[24%] right-0 w-[10%] border border-white/15 border-r-0" />
+        {/* dots — home attacks right (x→100); away mirrored to attack left */}
+        {shots.map((s, i) => {
+          const isHome = s.side === "home";
+          const left = isHome ? s.x : 100 - s.x;
+          const top = isHome ? s.y : 100 - s.y;
+          const color = s.isGoal
+            ? "bg-emerald-400 border-emerald-100 shadow-[0_0_7px_oklch(0.72_0.17_160)]"
+            : s.post
+              ? "bg-rose-400 border-rose-100"
+              : s.blocked
+                ? "bg-amber-400/90 border-amber-100"
+                : s.onTarget
+                  ? "bg-sky-400 border-sky-100"
+                  : "bg-slate-400/80 border-slate-200/70";
+          return (
+            <span
+              key={i}
+              title={`${s.player || ""} ${s.minute} — xG ${s.xg ?? "؟"}`}
+              className={cn("absolute w-[9px] h-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border", color)}
+              style={{ left: `${left}%`, top: `${top}%` }}
+            />
+          );
+        })}
+      </div>
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 mt-2 text-[10px] text-steel/80">
+        <Legend color="bg-emerald-400" label="گل" />
+        <Legend color="bg-sky-400" label="در چارچوب" />
+        <Legend color="bg-amber-400/90" label="بلوکه" />
+        <Legend color="bg-rose-400" label="تیرک" />
+        <Legend color="bg-slate-400/80" label="بیرون" />
+      </div>
+    </div>
+  );
+}
+
+// ---------- per-player match stats (update cycle-47) ----------
+// «بازیکن‌ها» tab: one card per team, starters first then substitutes, sorted
+// by FotMob rating. Rows are chip-based instead of a wide table so 390px never
+// overflows; goalkeepers get their own chips (saves / conceded / prevented).
+function ratingPillClass(r: number): string {
+  if (r >= 7.5) return "bg-emerald-500/20 text-emerald-300 border-emerald-400/30";
+  if (r >= 6.5) return "bg-sky-500/20 text-sky-300 border-sky-400/30";
+  if (r >= 6) return "bg-white/[0.06] text-steel border-glass-border-soft";
+  return "bg-rose-500/15 text-rose-300 border-rose-400/30";
+}
+
+function RatingPill({ rating }: { rating?: number }) {
+  if (rating == null) return <span className="text-[10px] text-steel/40 tabular-persian">—</span>;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center min-w-[38px] px-1.5 py-0.5 rounded-md border text-[11px] font-black tabular-persian leading-4",
+        ratingPillClass(rating)
+      )}
+      title="امتیاز فوت‌ماب"
+    >
+      {faDigits(rating.toFixed(2))}
+    </span>
+  );
+}
+
+function PlayerChip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.045] border border-glass-border-soft px-1.5 py-0.5 text-[10px] text-steel tabular-persian leading-4">
+      <span className="text-steel/60">{label}</span>
+      <span className="font-bold text-[#dcebfa]">{value}</span>
+    </span>
+  );
+}
+
+function PlayerRow({ p }: { p: PlayerStatRow }) {
+  const chips: { label: string; value: string }[] = [];
+  if (p.goals) chips.push({ label: "گل", value: faDigits(p.goals) });
+  if (p.assists) chips.push({ label: "پاس‌گل", value: faDigits(p.assists) });
+  if (p.isGk) {
+    if (p.saves != null) chips.push({ label: "مهار", value: faDigits(p.saves) });
+    if (p.conceded != null) chips.push({ label: "گل خورده", value: faDigits(p.conceded) });
+    if (p.goalsPrevented != null)
+      chips.push({ label: "جلوی گل", value: `${p.goalsPrevented > 0 ? "+" : ""}${faDigits(p.goalsPrevented.toFixed(1))}` });
+  } else {
+    if (p.passesAcc != null)
+      chips.push({
+        label: "پاس",
+        value: p.passesTotal != null ? `${faDigits(p.passesAcc)}/${faDigits(p.passesTotal)}` : faDigits(p.passesAcc),
+      });
+    if (p.chances) chips.push({ label: "فرصت", value: faDigits(p.chances) });
+    if (p.defActions) chips.push({ label: "دفاع", value: faDigits(p.defActions) });
+  }
+  if (p.minutes != null) chips.push({ label: "دقیقه", value: faDigits(p.minutes) });
+  return (
+    <div className="glass-row-hover flex items-start justify-between gap-2.5 px-4 py-2.5 border-b border-glass-border-soft/60 last:border-b-0">
+      <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+        <p className="flex items-center gap-1.5 min-w-0 text-[12.5px] font-bold text-[#eef5fc]">
+          {p.shirt && (
+            <span className="shrink-0 text-[10px] font-black text-steel/70 bg-white/[0.05] rounded px-1 py-px tabular-persian" dir="ltr">
+              {faDigits(p.shirt)}
+            </span>
+          )}
+          <Link href={`/player/${p.id}`} prefetch={false} className="truncate hover:text-sky-soft transition-colors max-w-full">
+            {p.name}
+          </Link>
+          {p.isGk && <span className="shrink-0 text-[9px] font-bold text-amber-300/80 bg-amber-400/10 rounded px-1 py-px">دروازه‌بان</span>}
+        </p>
+        {chips.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1">
+            {chips.map((c) => (
+              <PlayerChip key={c.label} label={c.label} value={c.value} />
+            ))}
+          </p>
+        )}
+      </div>
+      <RatingPill rating={p.rating} />
+    </div>
+  );
+}
+
+function PlayerTeamCard({ rows, match, side }: { rows: PlayerStatRow[]; match: DetailMatch; side: "home" | "away" }) {
+  const team = side === "home" ? match.home : match.away;
+  const starters = rows.filter((r) => r.starter);
+  const subs = rows.filter((r) => !r.starter);
+  const groups: { title: string; list: PlayerStatRow[] }[] = [];
+  if (starters.length > 0) groups.push({ title: "ترکیب اصلی", list: starters });
+  if (subs.length > 0) groups.push({ title: "جایگزین‌ها", list: subs });
+  if (groups.length === 0) groups.push({ title: "بازیکنان", list: rows });
+  return (
+    <section className="glass-card overflow-hidden">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2">
+        <img
+          src={team.logo}
+          alt=""
+          width={15}
+          height={15}
+          className="w-[15px] h-[15px] object-contain"
+          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+        />
+        <span className="font-black text-[12.5px] text-[#ecf3fa]">{team.fa || team.name}</span>
+        <span className="text-[10px] text-steel/60 tabular-persian mr-auto">{faDigits(rows.length)} بازیکن</span>
+      </header>
+      {groups.map((grp) => (
+        <div key={grp.title}>
+          <p className="px-4 pt-2.5 pb-1 text-[9.5px] font-black text-steel/60">{grp.title}</p>
+          {grp.list.map((p) => (
+            <PlayerRow key={p.id} p={p} />
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function PlayerStatsTables({ playerStats, match }: { playerStats: NonNullable<DetailData["playerStats"]>; match: DetailMatch }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {playerStats.home.length > 0 && <PlayerTeamCard rows={playerStats.home} match={match} side="home" />}
+      {playerStats.away.length > 0 && <PlayerTeamCard rows={playerStats.away} match={match} side="away" />}
+      <p className="text-[10px] text-steel/50 text-center">امتیاز و آمار هر بازیکن از فوت‌ماب — بهترین‌ها بالای هر گروه</p>
+    </div>
+  );
+}
+
 // ---------- events timeline ----------
 function EventsTimeline({ events, match }: { events: DetailEvent[]; match: DetailMatch }) {
   if (events.length === 0) {
-    return <p className="glass-card text-center text-steel text-sm py-10">رویدادی ثبت نشده است.</p>;
+    // cycle 45 — honest empty states: an unstarted match has no events BY DESIGN,
+    // «رویدادی ثبت نشده است» was misleading for that case
+    return (
+      <p className="glass-card text-center text-steel text-sm py-10">
+        {match.cancelled
+          ? "این بازی لغو شده است."
+          : match.started
+            ? "رویدادی ثبت نشده است."
+            : "بازی هنوز شروع نشده است؛ رویدادها پس از سوت شروع همین‌جا نمایش داده می‌شوند."}
+      </p>
+    );
   }
   return (
     <div className="glass-card overflow-hidden">
@@ -371,9 +757,13 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
 }
 
 // ---------- stats ----------
-function StatBars({ groups }: { groups: DetailStatGroup[] }) {
+function StatBars({ groups, started }: { groups: DetailStatGroup[]; started?: boolean }) {
   if (groups.length === 0) {
-    return <p className="glass-card text-center text-steel text-sm py-10">آماری برای این بازی ثبت نشده است.</p>;
+    return (
+      <p className="glass-card text-center text-steel text-sm py-10">
+        {started ? "آماری برای این بازی ثبت نشده است." : "آمار پس از شروع بازی این‌جا نمایش داده می‌شود."}
+      </p>
+    );
   }
   return (
     <div className="flex flex-col gap-4">
@@ -889,7 +1279,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         بازگشت به نتایج
       </Link>
 
-      <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} />
+      <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} shootout={data.shootout} />
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (
@@ -915,14 +1305,14 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       )}
 
       {/* tabs */}
-      <nav className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1" aria-label="بخش‌های مسابقه">
+      <nav className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1 overflow-x-auto" aria-label="بخش‌های مسابقه">
         {TAB_LABELS.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
             aria-current={tab === t.key ? "page" : undefined}
             className={cn(
-              "relative px-3.5 py-2 text-[12.5px] font-bold transition-colors",
+              "relative shrink-0 px-3.5 py-2 text-[12.5px] font-bold transition-colors",
               tab === t.key ? "text-primary" : "text-muted-foreground hover:text-foreground"
             )}
           >
@@ -936,10 +1326,24 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         {tab === "events" && (
           <div className="flex flex-col gap-4">
             {data.playerOfTheMatch && <PotmCard p={data.playerOfTheMatch} />}
+            {data.shootout && <ShootoutCard shootout={data.shootout} match={m} />}
             <EventsTimeline events={data.events} match={m} />
           </div>
         )}
-        {tab === "stats" && <StatBars groups={data.statGroups} />}
+        {tab === "stats" && <StatBars groups={data.statGroups} started={m.started && !m.cancelled} />}
+        {tab === "shots" && (data.xg || (data.shots && data.shots.length > 0)) && (
+          <div className="flex flex-col gap-4">
+            {data.xg && <TeamXgStrip xg={data.xg} match={m} />}
+            {data.shots && data.shots.length > 0 && <ShotmapPitch shots={data.shots} match={m} />}
+          </div>
+        )}
+        {tab === "shots" && !data.xg && (!data.shots || data.shots.length === 0) && (
+          <p className="glass-card text-center text-steel text-sm py-10">شوتی برای این مسابقه ثبت نشده است.</p>
+        )}
+        {tab === "players" && data.playerStats && <PlayerStatsTables playerStats={data.playerStats} match={m} />}
+        {tab === "players" && !data.playerStats && (
+          <p className="glass-card text-center text-steel text-sm py-10">آماری برای بازیکنان این مسابقه ثبت نشده است.</p>
+        )}
         {tab === "lineups" &&
           (data.lineups ? (
             <LineupsPitch lineups={data.lineups} match={m} />
