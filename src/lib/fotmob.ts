@@ -1371,6 +1371,11 @@ interface FMPlayerDetails {
     }[] | null;
   } | null;
   // cycle-82: deep season performance, peer traits, market-value history (all optional)
+  // cycle-87 probed: firstSeasonStats also carries the season pitch data —
+  // shotmap (outfield, 30 items on Haaland: eventType Goal/AttemptSaved/Miss,
+  // x/y 0-100, minute, isOnTarget/isBlocked, expectedGoals), keeperShotmap
+  // (GK, 38 items on Sinisalo — shots FACED, playerName = the shooter) and
+  // heatmap.coordinates ({x,y} touches, 248-523 items)
   firstSeasonStats?: {
     statsSection?: {
       title?: string;
@@ -1386,6 +1391,9 @@ interface FMPlayerDetails {
         }[] | null;
       }[] | null;
     } | null;
+    shotmap?: FMShotRaw[] | null;
+    keeperShotmap?: FMShotRaw[] | null;
+    heatmap?: { coordinates?: { x?: number; y?: number }[] | null } | null;
   } | null;
   traits?: {
     key?: string; title?: string;
@@ -1456,6 +1464,25 @@ export interface PlayerRecentMatch {
   sideName: string;
 }
 export interface PlayerRecentSide { id: number; fa: string }
+// cycle-87: season pitch data (shot map + touch heatmap) from firstSeasonStats
+export interface PlayerShot {
+  min: number;
+  x: number; // 0-100, toward the opponent goal
+  y: number; // 0-100, pitch width
+  goal: boolean;
+  onTarget: boolean;
+  blocked: boolean;
+  xg: number | null;
+  typeFa: string | null; // «پای راست»/«پای چپ»/«سر»
+  by: string | null;     // keeper view only: the shooter's name
+}
+export interface PlayerPitch {
+  keeper: boolean;       // true → shots are shots FACED (GK)
+  shots: PlayerShot[];
+  goals: number;         // scored (outfield) / conceded (GK)
+  xgTotal: number | null;
+  heat: { x: number; y: number }[];
+}
 export interface PlayerData {
   id: string;
   name: string;
@@ -1472,6 +1499,8 @@ export interface PlayerData {
   // cycle-86: sides appearing in `recent` (club + national), first-seen order;
   // single-element when the archive only covers the current club
   recentTeams: PlayerRecentSide[];
+  // cycle-87: season shot map + touch heatmap (null → section hidden)
+  pitch: PlayerPitch | null;
   // cycle-86: probed playerData.isCaptain (explicit false when not captain,
   // absent for some payloads → mapped to false)
   isCaptain: boolean;
@@ -1865,6 +1894,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     season,
     recent,
     recentTeams,
+    pitch: buildPitch(raw.firstSeasonStats),
     isCaptain: !!raw.isCaptain,
     next,
     career,
@@ -1882,6 +1912,69 @@ function jalaliContract(iso: string): string {
   // cycle-86: the year is the essential part for long contracts («۹ تیر ۱۴۱۳»
   // for 2034-06-30 — day+month alone was ambiguous)
   return j.day && j.month ? `${j.day} ${j.month} ${j.year}` : "";
+}
+
+// ---- cycle-87: season shot map + touch heatmap (all probed, best-effort) ----
+interface FMShotRaw {
+  eventType?: string;          // Goal / AttemptSaved / Miss (probed)
+  shotType?: string;           // RightFoot / LeftFoot / Header (probed)
+  situation?: string;          // RegularPlay / FromCorner (probed)
+  x?: number; y?: number;      // 0-100 pitch coords, x toward opponent goal
+  min?: number;
+  isOwnGoal?: boolean;
+  isOnTarget?: boolean;
+  isBlocked?: boolean;
+  expectedGoals?: number;
+  playerName?: string;         // keeperShotmap: the shooter
+}
+
+const SHOT_TYPE_FA: Record<string, string> = {
+  RightFoot: "پای راست",
+  LeftFoot: "پای چپ",
+  Header: "سر",
+  Other: "دیگر",
+};
+
+function buildPitch(fss: FMPlayerDetails["firstSeasonStats"]): PlayerPitch | null {
+  const own = Array.isArray(fss?.shotmap) ? fss.shotmap : [];
+  const faced = Array.isArray(fss?.keeperShotmap) ? fss.keeperShotmap : [];
+  // keeper view: no own shots on the season but shots faced recorded
+  const keeper = own.length === 0 && faced.length > 0;
+  const src = keeper ? faced : own;
+  const shots: PlayerShot[] = [];
+  for (const s of src || []) {
+    if (!s || s.isOwnGoal) continue; // own goals are not the player's shots
+    const x = typeof s.x === "number" ? s.x : null;
+    const y = typeof s.y === "number" ? s.y : null;
+    if (x === null || y === null) continue;
+    shots.push({
+      min: typeof s.min === "number" ? s.min : 0,
+      x,
+      y,
+      goal: s.eventType === "Goal",
+      onTarget: !!s.isOnTarget,
+      blocked: !!s.isBlocked,
+      xg: typeof s.expectedGoals === "number" ? s.expectedGoals : null,
+      typeFa: SHOT_TYPE_FA[String(s.shotType || "")] || null,
+      by: keeper ? s.playerName || null : null,
+    });
+  }
+  const heat: { x: number; y: number }[] = [];
+  const coords = fss?.heatmap?.coordinates;
+  if (Array.isArray(coords)) {
+    for (const c of coords.slice(0, 800)) {
+      if (c && typeof c.x === "number" && typeof c.y === "number") heat.push({ x: c.x, y: c.y });
+    }
+  }
+  if (shots.length === 0 && heat.length === 0) return null;
+  const xgSum = shots.reduce((acc, s) => acc + (s.xg || 0), 0);
+  return {
+    keeper,
+    shots,
+    goals: shots.filter((s) => s.goal).length,
+    xgTotal: shots.length > 0 ? Math.round(xgSum * 10) / 10 : null,
+    heat,
+  };
 }
 
 // ---- cycle-20: career path + trophies parsing (all best-effort) ----
@@ -1959,10 +2052,10 @@ function normalizeTrophies(raw?: FMPlayerDetails["trophies"]): PlayerTrophy[] {
  */
 export async function getPlayerData(id: string): Promise<PlayerData> {
   if (!/^\d{3,12}$/.test(id)) throw new PlayerNotFoundError(`bad player id: ${id}`);
-  // cycle-86: key bumped to v2 — output gained recentTeams/isCaptain/sideId
-  // (and the full archive replacing the 10-row window) so the L2 SQLite cache
-  // cannot serve the old shape for its TTL (same convention as cycle-52)
-  const payload = await cached(`player:v2:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-87: key bumped to v3 — output gained the pitch block (shot map +
+  // heatmap) so the L2 SQLite cache cannot serve the older shapes
+  // (same convention as cycle-52/86)
+  const payload = await cached(`player:v3:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

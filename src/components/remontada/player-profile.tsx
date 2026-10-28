@@ -4,7 +4,7 @@
 // so the markup is present in the initial HTML (SEO + no-JS friendly).
 // ------------------------------------------------------------------
 import Link from "next/link";
-import type { PlayerData } from "@/lib/fotmob";
+import type { PlayerData, PlayerPitch, PlayerShot } from "@/lib/fotmob";
 import { faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
 import { countryFa, teamFa } from "@/lib/leagues";
 import { cn } from "@/lib/utils";
@@ -31,6 +31,85 @@ function InfoChip({ label, value }: { label: string; value: string }) {
       <span className="text-steel/80">{label}</span>
       <span className="font-bold">{value}</span>
     </span>
+  );
+}
+
+// cycle-87: season shot map + touch heatmap — pure SSR SVG (no client JS),
+// probed shapes: shotmap (outfield) / keeperShotmap (GK, shots faced) with
+// x/y 0-100 pitch coords, expectedGoals per shot, heatmap touch coordinates.
+// Dots: gold = goal, sky = on target, muted = off target/blocked; radius
+// scales with xG. Pitch lines at low opacity; heat as soft sky dots.
+function PitchSection({ pitch }: { pitch: PlayerPitch }) {
+  const px = (x: number) => 1 + (x / 100) * 98; // map 0-100 → 1-99 (viewBox 100×64)
+  const py = (y: number) => 1 + (y / 100) * 62;
+  const shotR = (xg: number | null) => Math.min(1.4 + Math.sqrt(xg || 0) * 2.6, 5);
+  const shotFill = (s: PlayerShot) =>
+    s.goal ? "var(--gold)" : s.onTarget ? "var(--sky-soft)" : "var(--steel)";
+  const shotTitle = (s: PlayerShot) =>
+    [
+      `${faDigits(s.min)}′`,
+      s.typeFa || "",
+      s.xg !== null ? `xG ${faDigits(String(Math.round(s.xg * 100) / 100))}` : "",
+      s.by ? `شوت‌زن: ${s.by}` : "",
+    ]
+      .filter(Boolean)
+      .join(" · ");
+  const summary = pitch.keeper
+    ? `${faDigits(pitch.shots.length)} شوت رو‌به‌رو · ${faDigits(pitch.goals)} گل خورده${pitch.xgTotal !== null ? ` · xG ${faDigits(String(pitch.xgTotal))}` : ""}`
+    : `${faDigits(pitch.goals)} گل از ${faDigits(pitch.shots.length)} شوت${pitch.xgTotal !== null ? ` · xG مجموع ${faDigits(String(pitch.xgTotal))}` : ""}`;
+  return (
+    <section className="glass-card overflow-hidden" aria-label={pitch.keeper ? "شوت‌های رو‌به‌رو" : "نقشهٔ شوت‌ها"} data-testid="player-pitch">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[12px] font-black">
+        {pitch.keeper ? "شوت‌های رو‌به‌رو" : "نقشهٔ شوت‌ها"}{" "}
+        <span className="text-muted-foreground font-bold text-[10.5px] tabular-persian">({summary})</span>
+      </header>
+      <div className="px-3 sm:px-4 pt-3" dir="ltr">
+        <svg viewBox="0 0 100 64" className="w-full block" role="img" aria-label={pitch.keeper ? "جای شوت‌های رو‌به‌رو روی زمین" : "جای شوت‌ها روی زمین"}>
+          {/* pitch lines */}
+          <g stroke="currentColor" strokeWidth="0.45" fill="none" opacity="0.22" className="text-muted-foreground">
+            <rect x="1" y="1" width="98" height="62" />
+            <line x1="50" y1="1" x2="50" y2="63" />
+            <circle cx="50" cy="32" r="8.2" />
+            <rect x="1" y="13.8" width="15.5" height="36.4" />
+            <rect x="83.5" y="13.8" width="15.5" height="36.4" />
+            <rect x="1" y="24.4" width="5.8" height="15.2" />
+            <rect x="93.2" y="24.4" width="5.8" height="15.2" />
+          </g>
+          {/* touch heatmap */}
+          {pitch.heat.length > 0 && (
+            <g>
+              {pitch.heat.map((c, i) => (
+                <circle key={`h${i}`} cx={px(c.x)} cy={py(c.y)} r="1.05" fill="var(--sky-soft)" opacity="0.14" />
+              ))}
+            </g>
+          )}
+          {/* shots */}
+          {pitch.shots.map((s, i) => (
+            <circle
+              key={`s${i}`}
+              cx={px(s.x)}
+              cy={py(s.y)}
+              r={shotR(s.xg)}
+              fill={shotFill(s)}
+              opacity={s.goal ? 0.95 : 0.6}
+              stroke={s.goal ? "var(--background)" : "none"}
+              strokeWidth="0.35"
+            >
+              <title>{shotTitle(s)}</title>
+            </circle>
+          ))}
+        </svg>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-3 sm:px-4 py-2.5 text-[9px] font-bold text-muted-foreground" dir="rtl">
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--gold)" }} />{pitch.keeper ? "گل خورده" : "گل"}</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--sky-soft)" }} />{pitch.keeper ? "مهارشده" : "در چارچوب"}</span>
+        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full inline-block" style={{ background: "var(--steel)" }} />خارج یا بلاک</span>
+        <span>اندازهٔ نقطه = خطر xG</span>
+        {pitch.heat.length > 0 && (
+          <span className="tabular-persian">· {faDigits(pitch.heat.length)} لمس</span>
+        )}
+      </div>
+    </section>
   );
 }
 
@@ -296,6 +375,9 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
           </span>
         </Link>
       )}
+
+      {/* ---------- season pitch: shot map + touch heatmap (cycle-87, SSR SVG) ---------- */}
+      {p.pitch && <PitchSection pitch={p.pitch} />}
 
       {/* ---------- career path (cycle-20) ---------- */}
       {p.career.length > 0 && (
