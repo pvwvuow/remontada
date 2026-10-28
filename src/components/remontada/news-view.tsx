@@ -31,11 +31,15 @@ export function sourceStyle(s: string): string {
   return "bg-muted text-muted-foreground border-border";
 }
 
-function NewsCard({ item }: { item: ClientNewsItem }) {
+function NewsCard({ item, idx = 0 }: { item: ClientNewsItem; idx?: number }) {
   const display = item.titleFa && item.titleFa !== item.title ? item.titleFa : item.titleFa || item.title;
 
   const body = (
-    <article className="group glass-card overflow-hidden hover:border-sky-soft/30 transition-all cursor-pointer h-full flex flex-col">
+    <article
+      style={{ animationDelay: `${Math.min(idx * 55, 660)}ms` }}
+      className="group glass-card chronicle-card sb-row-in overflow-hidden cursor-pointer h-full flex flex-col"
+      data-testid="chronicle-card"
+    >
       <div className="relative aspect-video bg-muted/40 overflow-hidden">
         {item.image ? (
            
@@ -113,7 +117,7 @@ export function NewsView({ items, loading, emptyHint }: NewsViewProps) {
   return (
     <div className={cn("grid gap-4 sm:grid-cols-2 lg:grid-cols-3 transition-opacity", loading && "opacity-50")}>
       {items.map((n, i) => (
-        <NewsCard key={`${n.link || n.title}-${i}`} item={n} />
+        <NewsCard key={`${n.link || n.title}-${i}`} item={n} idx={i} />
       ))}
     </div>
   );
