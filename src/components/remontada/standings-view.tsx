@@ -10,7 +10,7 @@ import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
-import { faDigits, formColor } from "@/lib/format";
+import { faDigits, formColor, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function QualBar({ color }: { color?: string }) {
@@ -67,7 +67,7 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
         sub={lg ? `${lg.ccode3} · ${lg.enName}` : undefined}
         season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
       />
-      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم` : undefined} />
+      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[520px]">
           <thead>

@@ -14,7 +14,7 @@ import type { GlobalScorer, GlobalScorersData } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { ScorerAvatarTile, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
-import { faDigits } from "@/lib/format";
+import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const ALL_KEY = "all";
@@ -260,6 +260,8 @@ export function TopScorersView() {
           <p className="text-[11px] text-muted-foreground mt-0.5">
             بهترین گلزنان {faDigits(7)} لیگ بزرگ در یک جدول واحد
             {data?.scorers.length ? <> — {faDigits(data.scorers.length)} بازیکن</> : null}
+            {/* cycle-43: data freshness — mirrors the stale-while-error snapshot honesty */}
+            {data?.updatedAt ? <> · به‌روزرسانی {timeAgoFa(data.updatedAt)}</> : null}
           </p>
         </div>
         <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" className="text-chart-3 shrink-0" aria-hidden>

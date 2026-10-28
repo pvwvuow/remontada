@@ -12,7 +12,7 @@ import type { ScorerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { ScorerAvatarTile, GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
-import { faDigits } from "@/lib/format";
+import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface LeagueScorersData {
@@ -119,7 +119,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
             {loading
               ? "در حال دریافت…"
               : data?.scorers.length
-                ? <>بهترین گلزن‌های فصل{data.season ? <> — فصل {faDigits(data.season)}</> : null} — {faDigits(data.scorers.length)} بازیکن</>
+                ? <>بهترین گلزن‌های فصل{data.season ? <> — فصل {faDigits(data.season)}</> : null} — {faDigits(data.scorers.length)} بازیکن{/* cycle-43: data freshness */}{data.updatedAt ? <> · به‌روزرسانی {timeAgoFa(data.updatedAt)}</> : null}</>
                 : "گلزنی برای این فصل ثبت نشده است."}
           </p>
         </div>

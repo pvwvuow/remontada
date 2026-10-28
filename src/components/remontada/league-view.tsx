@@ -9,7 +9,7 @@ import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, Leag
 import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
-import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime } from "@/lib/format";
+import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -487,7 +487,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
         sub={`${league.ccode3} · ${league.enName}`}
         season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
       />
-      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم` : undefined} />
+      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[480px]">
           <thead>
