@@ -764,3 +764,14 @@ Work Log:
 Stage Summary:
 - فقط CSS (globals.css) — هیچ کامپوننتی تغییر نکرد؛ افزودنی و بدون ریسک
 - تسک بعدی کمپین: تسک ۲/۱۰ = تایپوگرافی و هویت arcane (واژه‌نگار گرادیانی + سرفصل‌ها)
+
+Task ID: cycle-61
+Agent: main (Z.ai) — کمپین UI/UX تسک ۲ از ۱۰ «تایپوگرافی و هویت arcane»
+Work Log:
+- کلاس .arcane-text (گرادیان سفید-فولادی → بنفش جادویی → دم طلایی، background-clip:text) — نامش عمداً arcane-text شد تا با یوتیلیتی رنگ Tailwind (--color-arcane) تداخل نکند
+- واژه‌نگار «رمانتادا.» → گرادیان arcane + نقطهٔ طلایی (text-gold)
+- GlassLeagueHeader (عنوان کارت‌های لیگ/آقای گل) → arcane-text
+- brand-glyph: هالهٔ بنفش + غبغب طلایی در hover (transition نرم)
+- پذیرش: eslint 0/0 ← tsc 0 ← build ✓ ← pid 9401 ← رگرسیون ۲۸/۲۸ ← DOM 390×844: clip=text/شفاف/گرادیان روی واژه‌نگار، ۳ نمونه arcane در /league/pl، sw=cw=390، کنسول تمیز
+Stage Summary:
+- تسک بعدی کمپین: تسک ۳/۱۰ = داک ناوبری موبایل به سبک منوی بازی (بدون شکستن هدر دسکتاپ)
