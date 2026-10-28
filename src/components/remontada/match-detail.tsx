@@ -94,6 +94,17 @@ interface DetailData {
     home: { left: number; center: number; right: number };
     away: { left: number; center: number; right: number };
   } | null;
+  // update cycle-100: match weather («وضعیت هوا») — mirrors /api/match/[id];
+  // only the honest subset (no wind/precip units asserted upstream-side)
+  weather?: {
+    condition: string;
+    conditionSource: "localized" | "upstream";
+    temperature?: number;
+    humidity?: number;
+    cloudCover?: number;
+    precipChance?: number;
+    forecast: boolean;
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -944,6 +955,49 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
   );
 }
 
+// update cycle-100: match weather («وضعیت هوا») on the info tab — rows-only
+// card (same rhythm as the info list); the badge in the header states the
+// data mode honestly: upcoming matches carry the upstream forecast
+// («پیش‌بینی»), started/finished ones the observed conditions
+// («مشاهده‌شده»). Wind/precipitation rows are deliberately absent — the
+// upstream values carry no verified unit (honest omission, cycle-100).
+function WeatherIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M17.5 19a4.5 4.5 0 1 0-.9-8.9 6 6 0 1 0-11.3 2.4A3.5 3.5 0 0 0 6.5 19h11z" />
+    </svg>
+  );
+}
+function WeatherCard({ weather }: { weather: NonNullable<DetailData["weather"]> }) {
+  const rows: { label: string; value?: string }[] = [
+    { label: "وضعیت", value: weather.condition || undefined },
+    { label: "دما", value: typeof weather.temperature === "number" ? `${faDigits(weather.temperature)}°` : undefined },
+    { label: "رطوبت", value: typeof weather.humidity === "number" ? `${faDigits(weather.humidity)}٪` : undefined },
+    { label: "پوشش ابر", value: typeof weather.cloudCover === "number" ? `${faDigits(weather.cloudCover)}٪` : undefined },
+    { label: "احتمال بارش", value: typeof weather.precipChance === "number" ? `${faDigits(weather.precipChance)}٪` : undefined },
+  ].filter((r) => r.value);
+  if (rows.length === 0) return null;
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-weather">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa] flex items-center gap-1.5">
+          <WeatherIcon className="text-chart-3" />
+          وضعیت هوا
+        </span>
+        <span className="font-bold text-steel/80">{weather.forecast ? "پیش‌بینی" : "مشاهده‌شده"}</span>
+      </header>
+      <ul className="glass-list">
+        {rows.map((r) => (
+          <li key={r.label} className="flex items-center justify-between px-4 py-2.5 text-[12px]">
+            <span className="text-steel font-bold">{r.label}</span>
+            <span className="font-semibold text-start">{r.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- info ----------
 function InfoPanel({ data }: { data: DetailData }) {
   const rows: { label: string; value?: string }[] = [
@@ -1424,7 +1478,12 @@ export function MatchDetail({ matchId }: { matchId: string }) {
               sub="ترکیب معمولاً ۲۰ تا ۴۰ دقیقه پیش از شروع بازی اعلام می‌شود."
             />
           ))}
-        {tab === "info" && <InfoPanel data={data} />}
+        {tab === "info" && (
+          <div className="flex flex-col gap-4">
+            {data.weather && <WeatherCard weather={data.weather} />}
+            <InfoPanel data={data} />
+          </div>
+        )}
         {tab === "h2h" && <H2HPanel data={h2h} loading={h2hLoading} />}
       </div>
     </div>

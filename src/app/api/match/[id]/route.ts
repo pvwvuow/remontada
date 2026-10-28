@@ -165,6 +165,31 @@ interface FMMatchDetails {
       home?: { total?: { left?: number; center?: number; right?: number } } | null;
       away?: { total?: { left?: number; center?: number; right?: number } } | null;
     } | null;
+    // update cycle-100 probed (UA Chrome/124, 2026-10-29, 28-sample live
+    // sweep): content.weather is ALWAYS present — 0 nulls — for started,
+    // finished AND upcoming matches (upcoming carries apiUsed:"forecast",
+    // started/finished "current"). Flat object, never an array:
+    // {temperature, windSpeed, windDirectionCardinal, iconCode,
+    // relativeHumidity, precipChance?, precipitation, snow, cloudCover,
+    // description, apiUsed, lastUpdated, localizedKey, defaultTitle}.
+    // localizedKey observed set (5): weather_condition_{clear,
+    // partly_cloudy, cloudy, light_rain, thunderstorms}.
+    weather?: {
+      temperature?: number;
+      windSpeed?: number;
+      windDirectionCardinal?: string;
+      iconCode?: number;
+      relativeHumidity?: number;
+      precipChance?: number;
+      precipitation?: number;
+      snow?: number;
+      cloudCover?: number;
+      description?: string;
+      apiUsed?: string;
+      lastUpdated?: string;
+      localizedKey?: string;
+      defaultTitle?: string;
+    } | null;
   };
 }
 
@@ -179,6 +204,18 @@ const EVENT_FA: Record<string, string> = {
   Penalty: "پنالتی",
   VAR: "ویدیو داوری",
   Injury: "مصدمیت",
+};
+
+// update cycle-100: Persian weather condition labels keyed by the upstream
+// localizedKey (5 values observed across a 28-sample live sweep, 0 nulls).
+// Unknown keys fall back to the upstream defaultTitle (English) — the same
+// honesty convention as the cycle-96 injury names.
+const WEATHER_FA: Record<string, string> = {
+  weather_condition_clear: "صاف",
+  weather_condition_partly_cloudy: "تا حدی ابری",
+  weather_condition_cloudy: "ابری",
+  weather_condition_light_rain: "باران سبک",
+  weather_condition_thunderstorms: "رعدوبرق",
 };
 
 const STAT_FA: Record<string, string> = {
@@ -349,6 +386,25 @@ export interface MatchDetailNormalized {
   zones?: {
     home: { left: number; center: number; right: number };
     away: { left: number; center: number; right: number };
+  } | null;
+  // update cycle-100: match weather («وضعیت هوا») — ONLY the honestly
+  // displayable subset: condition (localizedKey→Persian, unknown→upstream
+  // defaultTitle), temperature (°C), relativeHumidity/cloudCover (inherent
+  // percentages) and precipChance (inherent percentage, forecast-only).
+  // windSpeed / precipitation / snow / iconCode are deliberately NOT
+  // normalized for display: windSpeed carries no verified unit (0–5 across
+  // all 28 live samples — km/h vs m/s undecidable → honest omission,
+  // registered for a future probe), precipitation/snow units unverified,
+  // iconCode not exhaustively mapped. null when the block is missing or
+  // carries no displayable value (defensive — probe showed 0 nulls).
+  weather?: {
+    condition: string;
+    conditionSource: "localized" | "upstream";
+    temperature?: number;
+    humidity?: number;
+    cloudCover?: number;
+    precipChance?: number;
+    forecast: boolean;
   } | null;
   // fix cycle-45: shootout attempts were dropped entirely before — the
   // decisive phase of knockout matches was invisible to the user
@@ -733,6 +789,37 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     }
   }
 
+  // ---------------- weather (update cycle-100) ----------------
+  // Honest-subset normalization: every value defensively coerced; the card
+  // renders only when at least one displayable value exists.
+  let weather: MatchDetailNormalized["weather"] = null;
+  const w = raw.content?.weather;
+  if (w && typeof w === "object") {
+    const key = typeof w.localizedKey === "string" ? w.localizedKey : "";
+    const condFa = WEATHER_FA[key];
+    const condition =
+      condFa ||
+      (typeof w.defaultTitle === "string" && w.defaultTitle.trim()) ||
+      "";
+    const hasAny =
+      !!condition ||
+      typeof w.temperature === "number" ||
+      typeof w.relativeHumidity === "number" ||
+      typeof w.cloudCover === "number" ||
+      typeof w.precipChance === "number";
+    if (hasAny) {
+      weather = {
+        condition,
+        conditionSource: condFa ? "localized" : "upstream",
+        temperature: typeof w.temperature === "number" ? w.temperature : undefined,
+        humidity: typeof w.relativeHumidity === "number" ? w.relativeHumidity : undefined,
+        cloudCover: typeof w.cloudCover === "number" ? w.cloudCover : undefined,
+        precipChance: typeof w.precipChance === "number" ? w.precipChance : undefined,
+        forecast: w.apiUsed === "forecast",
+      };
+    }
+  }
+
   // ---------------- team form ----------------
   const tf = raw.content?.matchFacts?.teamForm;
   let form: MatchDetailNormalized["form"] = null;
@@ -823,6 +910,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     form,
     momentum,
     zones,
+    weather,
     shootout,
     shots,
     xg,
