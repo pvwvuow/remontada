@@ -99,21 +99,34 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {rows.map((r, i) => {
               const leader = r.idx === 1;
               return (
                 <tr
                   key={r.teamId}
+                  style={{ animationDelay: `${Math.min(i * 28, 560)}ms` }}
                   className={cn(
-                    "border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors relative",
+                    "sb-row-in border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors relative",
                     leader && "glass-leader"
                   )}
                 >
                   <td className="py-2.5 pe-1 ps-3 relative">
                     <QualBar color={r.qualColor || undefined} />
-                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
-                      {faDigits(pad2(r.idx))}
-                    </span>
+                    {/* cycle-64: podium medallions — the scoreboard moment */}
+                    {r.idx <= 3 ? (
+                      <span
+                        className={cn(
+                          "rank-medal tabular-persian",
+                          r.idx === 1 ? "rank-medal-gold" : r.idx === 2 ? "rank-medal-silver" : "rank-medal-bronze"
+                        )}
+                      >
+                        {faDigits(r.idx)}
+                      </span>
+                    ) : (
+                      <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                        {faDigits(pad2(r.idx))}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 px-1">
                     <div className="flex items-center gap-0.5 min-w-0">
@@ -134,7 +147,13 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
                           }}
                         />
                         <span className="min-w-0 flex flex-col">
-                          <span className={cn("font-bold truncate group-hover:text-primary transition-colors", leader && "text-[#f1f7ff]")}>
+                          <span className={cn("font-bold truncate group-hover:text-primary transition-colors inline-flex items-center gap-1", leader && "text-[#f1f7ff]")}>
+                            {/* cycle-64: the leader wears the crown */}
+                            {leader && (
+                              <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-gold shrink-0" aria-label="صدرنشین">
+                                <path d="M3 8l4.5 3L12 5l4.5 6L21 8l-1.6 9H4.6L3 8z" />
+                              </svg>
+                            )}
                             {r.fa || r.name}
                           </span>
                           <FormDots form={r.form} />
@@ -163,7 +182,9 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
                     <span
                       className={cn(
                         "font-black tabular-persian rounded-lg px-2 py-0.5 inline-block min-w-[34px]",
-                        leader ? "text-[#f0f6ff] bg-[#bddcfa26]" : "text-[#e4eefb] bg-[#9ec3e50b]"
+                        leader
+                          ? "text-[#f6efdc] bg-[#e3c7671f] shadow-[0_0_12px_oklch(0.84_0.12_85/0.22)]"
+                          : "text-[#e4eefb] bg-[#9ec3e50b]"
                       )}
                     >
                       {faDigits(r.pts)}
