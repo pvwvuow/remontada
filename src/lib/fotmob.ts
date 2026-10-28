@@ -314,6 +314,7 @@ interface FotMobLeague {
   allAvailableSeasons?: string[];
   table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] }; selectedSeason?: string } };
   fixtures?: { allMatches?: unknown[] };
+  playoff?: { rounds?: FMBracketRoundRaw[] };
   stats?: {
     players?: {
       header?: string;
@@ -844,6 +845,135 @@ export async function getLeagueFixtures(leagueKey: string, season?: string): Pro
     total: mapped.length,
     stats: computeLeagueStats(mapped),
     progress,
+  };
+}
+
+// ---------------- FotMob: cup knockout bracket (playoff) ----------------
+// cycle-56: raw shapes of the league payload's `playoff` key. Probed live:
+// UCL carries rounds (playoff, 1/8, 1/4, 1/2, final); each matchup holds the
+// tie-level teams + aggregate (aggregatedResult/aggregatedWinner) and the
+// actual legs in `matches` (matchId, per-leg score/winner, status). Leagues
+// without knockout stages simply have no/empty playoff → getLeagueBracket
+// returns null and the UI hides the bracket tab.
+interface FMBracketMatchRaw {
+  matchId?: number | string;
+  home?: { id?: number; name?: string; shortName?: string; score?: number; winner?: boolean };
+  away?: { id?: number; name?: string; shortName?: string; score?: number; winner?: boolean };
+  status?: { utcTime?: string; finished?: boolean; started?: boolean; cancelled?: boolean };
+}
+interface FMBracketMatchupRaw {
+  homeTeam?: string; homeTeamId?: number; homeTeamShortName?: string;
+  awayTeam?: string; awayTeamId?: number; awayTeamShortName?: string;
+  aggregatedResult?: { homeScore?: number; awayScore?: number } | null;
+  aggregatedWinner?: number | null;
+  drawDate?: string;
+  hasTwoPossibleMatchups?: boolean;
+  matches?: FMBracketMatchRaw[];
+}
+interface FMBracketRoundRaw {
+  stage?: string;
+  participantCount?: number;
+  matchups?: FMBracketMatchupRaw[];
+}
+
+export interface BracketLeg {
+  matchId?: string;
+  utcTime?: string;
+  finished: boolean;
+  home: { id: number; name: string; short: string; score: number | null; winner: boolean | null };
+  away: { id: number; name: string; short: string; score: number | null; winner: boolean | null };
+}
+export interface BracketMatchup {
+  home: { id: number; name: string; short: string };
+  away: { id: number; name: string; short: string };
+  aggHome: number | null;
+  aggAway: number | null;
+  winnerId: number | null;
+  drawDate?: string;
+  legs: BracketLeg[];
+}
+export interface BracketRound {
+  stage: string;
+  stageFa: string;
+  matchups: BracketMatchup[];
+}
+export interface LeagueBracketData {
+  leagueKey: string;
+  leagueFa: string;
+  selectedSeason?: string;
+  rounds: BracketRound[];
+}
+
+const BRACKET_STAGE_FA: Record<string, string> = {
+  "playoff": "پلی‌آف",
+  "1/8": "یک‌هشتم نهایی",
+  "1/4": "یک‌چهارم نهایی",
+  "1/2": "نیمه‌نهایی",
+  "final": "فینال",
+};
+
+const bracketTeam = (id?: number, name?: string, short?: string) => ({
+  id: Number(id || 0),
+  name: teamFa(name, short) || name || "",
+  short: short || "",
+});
+
+/**
+ * Cup knockout bracket for a league+season (cycle-56 «براکت جام‌ها»).
+ * Returns null when the payload has no usable playoff rounds (domestic
+ * leagues) — callers hide the tab instead of showing an empty shell.
+ */
+export async function getLeagueBracket(leagueKey: string, season?: string): Promise<LeagueBracketData | null> {
+  const { lg, raw } = await getLeagueRaw(leagueKey, season);
+  const roundsRaw = raw.playoff?.rounds || [];
+  const rounds: BracketRound[] = [];
+  for (const r of roundsRaw) {
+    const stage = String(r?.stage || "");
+    const matchups: BracketMatchup[] = [];
+    for (const m of r?.matchups || []) {
+      if (!m) continue;
+      const legs: BracketLeg[] = (m.matches || [])
+        .filter((x) => x?.home?.name && x?.away?.name)
+        .map((x) => ({
+          ...(x.matchId != null ? { matchId: String(x.matchId) } : {}),
+          ...(x.status?.utcTime ? { utcTime: x.status.utcTime } : {}),
+          finished: !!x.status?.finished,
+          home: {
+            id: Number(x.home?.id || 0),
+            name: teamFa(x.home?.name, x.home?.shortName) || x.home?.name || "",
+            short: x.home?.shortName || "",
+            score: x.home?.score ?? null,
+            winner: x.home?.winner ?? null,
+          },
+          away: {
+            id: Number(x.away?.id || 0),
+            name: teamFa(x.away?.name, x.away?.shortName) || x.away?.name || "",
+            short: x.away?.shortName || "",
+            score: x.away?.score ?? null,
+            winner: x.away?.winner ?? null,
+          },
+        }));
+      matchups.push({
+        home: bracketTeam(m.homeTeamId, m.homeTeam, m.homeTeamShortName),
+        away: bracketTeam(m.awayTeamId, m.awayTeam, m.awayTeamShortName),
+        aggHome: m.aggregatedResult?.homeScore ?? null,
+        aggAway: m.aggregatedResult?.awayScore ?? null,
+        winnerId: m.aggregatedWinner ?? null,
+        ...(m.drawDate ? { drawDate: m.drawDate } : {}),
+        legs,
+      });
+    }
+    if (matchups.length > 0) {
+      rounds.push({ stage, stageFa: BRACKET_STAGE_FA[stage] || stage, matchups });
+    }
+  }
+  if (rounds.length === 0) return null;
+  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  return {
+    leagueKey,
+    leagueFa: lg.faName,
+    ...(selectedSeason ? { selectedSeason } : {}),
+    rounds,
   };
 }
 

@@ -5,17 +5,18 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData } from "@/lib/fotmob";
 import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
+import { LeagueBracket } from "@/components/remontada/league-bracket";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 
-type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
+type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket";
 
 /** Current-week progress bar («هفته ۱۲ از ۳۸») — numeric rounds only. */
 function SeasonProgress({ progress }: { progress: { current: number; total: number } }) {
@@ -591,21 +592,28 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [attempt, setAttempt] = useState(0); // «تلاش دوباره» re-runs the fetch effect
   // cycle-55: selected historical season ("2024/2025") — null = current season
   const [season, setSeason] = useState<string | null>(null);
+  // cycle-56: cup knockout bracket (null → tab hidden for domestic leagues)
+  const [bracket, setBracket] = useState<LeagueBracketData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    setBracket(null);
     (async () => {
       try {
         const sp = season ? `&season=${encodeURIComponent(season)}` : "";
-        const [stRes, fxRes] = await Promise.allSettled([
+        const [stRes, fxRes, brRes] = await Promise.allSettled([
           fetch(`/api/standings?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-fixtures?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
+          fetch(`/api/league-bracket?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
         if (fxRes.status === "fulfilled" && fxRes.value.ok) setFixtures(fxRes.value as LeagueFixturesData);
+        if (brRes.status === "fulfilled" && brRes.value.ok && brRes.value.bracket) {
+          setBracket(brRes.value.bracket as LeagueBracketData);
+        }
         if ((stRes.status === "fulfilled" && !stRes.value.ok) && (fxRes.status === "fulfilled" && !fxRes.value.ok)) {
           setError("دریافت داده‌های لیگ ناموفق بود.");
         }
@@ -652,6 +660,11 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   // cycle-55: season label follows the payload's own selected-season marker
   const shownSeason = standings?.selectedSeason || standings?.season || "";
   const allSeasons = standings?.allSeasons || [];
+  // cycle-56: «براکت» tab appears only when the payload really has playoff rounds
+  const visibleTabs: { key: Tab; label: string }[] = [
+    ...TABS,
+    ...(bracket ? [{ key: "bracket" as Tab, label: "براکت" }] : []),
+  ];
 
   return (
     <div className="flex flex-col gap-4">
@@ -707,7 +720,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
 
       {/* tabs */}
       <nav className="flex items-center gap-1 overflow-x-auto border-b border-[color:var(--glass-border-soft)] -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="بخش‌های لیگ">
-        {TABS.map((t) => (
+        {visibleTabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
@@ -754,6 +767,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}
+          {tab === "bracket" && (bracket ? <LeagueBracket data={bracket} /> : null)}
         </div>
       )}
     </div>
