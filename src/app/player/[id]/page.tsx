@@ -20,13 +20,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   try {
     const p = await getPlayerData(id);
+    // cycle-107: the metadata follows the honest display name (mapped Persian,
+    // else the raw upstream English) — same rule as the profile h1
+    const display = p.nameFa || p.name;
     const teamName = p.team?.fa || p.team?.name || "";
-    const desc = `آمار فصل، بازی‌های اخیر، پست و مشخصات ${p.name}${teamName ? `، بازیکن ${teamName}` : ""} — رمانتادا`;
+    const desc = `آمار فصل، بازی‌های اخیر، پست و مشخصات ${display}${teamName ? `، بازیکن ${teamName}` : ""} — رمانتادا`;
     return {
-      title: `${p.name} — پروفایل بازیکن`,
+      title: `${display} — پروفایل بازیکن`,
       description: desc,
       alternates: { canonical: `/player/${id}` },
-      openGraph: { title: `${p.name} — پروفایل بازیکن | رمانتادا`, description: desc, type: "profile" },
+      openGraph: { title: `${display} — پروفایل بازیکن | رمانتادا`, description: desc, type: "profile" },
     };
   } catch {
     // missing player / upstream hiccup — page itself handles the UX

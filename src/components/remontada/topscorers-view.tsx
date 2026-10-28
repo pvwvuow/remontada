@@ -444,7 +444,7 @@ export function TopScorersView() {
                 left={`${faDigits(withMainRank.length)} بازیکن`}
               />
               <div className="m-3 mt-2 glass-scorer-hero hero-legend p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-5">
-                <ScorerAvatarTile name={heroScorer.s.name} size={56} />
+                <ScorerAvatarTile name={heroScorer.s.nameFa || heroScorer.s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
                     {showGlobal ? "GLOBAL TOP SCORER" : "LEAGUE LEADER"}

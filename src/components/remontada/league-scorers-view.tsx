@@ -170,7 +170,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const top = data.scorers[0];
               return (
                 <div className="glass-scorer-hero p-4 sm:p-5 flex items-center gap-3.5 sm:gap-5">
-                  <ScorerAvatarTile name={top.name} size={60} />
+                  <ScorerAvatarTile name={top.nameFa || top.name} size={60} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
                     {top.playerId ? (
@@ -178,12 +178,12 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                         href={`/player/${top.playerId}`}
                         prefetch={false}
                         className="block text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1 hover:text-primary transition-colors w-fit max-w-full"
-                        title={`پروفایل ${top.name}`}
+                        title={top.nameFa && top.nameFa !== top.name ? top.name : `پروفایل ${top.name}`}
                       >
-                        {top.name}
+                        {top.nameFa || top.name}
                       </Link>
                     ) : (
-                      <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{top.name}</p>
+                      <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{top.nameFa || top.name}</p>
                     )}
                     <div className="flex items-center gap-1.5 text-[10.5px] text-[#b1c9e2] mt-1.5 flex-wrap">
                       {top.team && <span className="truncate">{top.team}</span>}
@@ -208,7 +208,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                       {faDigits(pad2(rank))}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                      <span className="block text-[13px] font-bold text-[#e5eefb] truncate">{s.nameFa || s.name}</span>
                       <span className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 flex-wrap">
                         {s.team && <span className="truncate">{s.team}</span>}
                         <ScorerBadges s={s} />
@@ -224,7 +224,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                 return (
                   <li key={`${s.name}-${i}`}>
                     {s.playerId ? (
-                      <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                      <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={s.nameFa && s.nameFa !== s.name ? s.name : `پروفایل ${s.name}`}>
                         {inner}
                       </Link>
                     ) : (

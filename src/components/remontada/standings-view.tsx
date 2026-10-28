@@ -217,7 +217,7 @@ function ScorersCard({ data }: { data: StandingsData }) {
       <div className="p-2.5 flex flex-col">
         {/* mini hero — the studio scoring-chart leader tile */}
         <div className="glass-scorer-hero p-3 flex items-center gap-3">
-          <ScorerAvatarTile name={top.name} size={46} rounded="rounded-xl" />
+          <ScorerAvatarTile name={top.nameFa || top.name} size={46} rounded="rounded-xl" />
           <div className="min-w-0 flex-1">
             <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (
@@ -225,12 +225,12 @@ function ScorersCard({ data }: { data: StandingsData }) {
                 href={`/player/${top.playerId}`}
                 prefetch={false}
                 className="block text-[13px] font-bold text-[#f1f7fd] truncate mt-0.5 hover:text-primary transition-colors w-fit max-w-full"
-                title={`پروفایل ${top.name}`}
+                title={top.nameFa && top.nameFa !== top.name ? top.name : `پروفایل ${top.name}`}
               >
-                {top.name}
+                {top.nameFa || top.name}
               </Link>
             ) : (
-              <p className="text-[13px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.name}</p>
+              <p className="text-[13px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.nameFa || top.name}</p>
             )}
             {top.team && <p className="text-[9.5px] text-[#92adc9] truncate mt-0.5">{top.team}</p>}
           </div>
@@ -248,7 +248,7 @@ function ScorersCard({ data }: { data: StandingsData }) {
                   {faDigits(pad2(rank))}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                  <span className="block text-[12px] font-bold text-[#e5eefb] truncate">{s.nameFa || s.name}</span>
                   {s.team && <span className="block text-[9px] text-[#92adc9] truncate">{s.team}</span>}
                 </span>
                 <span className="shrink-0 min-w-[34px] text-center rounded-md bg-[#a9cdf611] px-1.5 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
@@ -260,7 +260,7 @@ function ScorersCard({ data }: { data: StandingsData }) {
             return (
               <li key={`${s.name}-${i}`}>
                 {s.playerId ? (
-                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={s.nameFa && s.nameFa !== s.name ? s.name : `پروفایل ${s.name}`}>
                     {inner}
                   </Link>
                 ) : (

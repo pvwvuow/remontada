@@ -80,6 +80,7 @@ export interface StandingsRow {
 export interface ScorerEntry {
   rank: number;
   name: string;
+  nameFa: string; // cycle-107: honest Persian display name (curated map hit, else the raw upstream name) — completes the 104-106 arc on league/standings scorer surfaces
   team: string;
   teamId: number;
   goals: number;
@@ -479,6 +480,7 @@ export type LeagueBoardFmt = "fraction" | "percent" | "number" | "currency" | "k
 export interface LeagueBoardRow {
   rank: number;
   name: string;
+  nameFa?: string; // cycle-107: player rows only — honest Persian display name
   teamFa?: string; // player rows: their club (fa when known)
   teamId?: number;
   value: number;
@@ -570,6 +572,7 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
             ? {
                 rank: rows.length + 1,
                 name: String(r.name),
+                nameFa: playerFa(String(r.name)),
                 ...((r as FMStatPlayer).teamName
                   ? { teamFa: teamFa((r as FMStatPlayer).teamName) || (r as FMStatPlayer).teamName }
                   : {}),
@@ -617,7 +620,9 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
  */
 export async function getFullGoalScorers(leagueKey: string, limit = 20): Promise<ScorerEntry[]> {
   try {
-    return await cached(`fullGoals:${leagueKey}`, 60 * 60_000, async () => {
+    return await cached(`fullGoals:v2:${leagueKey}`, 60 * 60_000, async () => {
+      // v2 (cycle-107): rows gained the required `nameFa` — old v1 entries
+      // would violate the ScorerEntry shape (same convention as standings v5)
       const { raw } = await getLeagueRaw(leagueKey);
       const cat = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
       const url = cat?.fetchAllUrl;
@@ -633,6 +638,7 @@ export async function getFullGoalScorers(leagueKey: string, limit = 20): Promise
         out.push({
           rank: r.Rank ?? out.length + 1,
           name: r.ParticipantName,
+          nameFa: playerFa(r.ParticipantName),
           team: teamFa(r.TeamName || undefined) || r.TeamName || "",
           teamId: r.TeamId ?? 0,
           goals: Math.round(r.StatValue ?? 0),
@@ -794,7 +800,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     const pushScorer = (s: FMStatPlayer, i: number) => {
       if (!s?.name) return;
       scorers.push({
-        rank: s.rank ?? i + 1, name: s.name, team: teamFa(s.teamName, ) || s.teamName || "",
+        rank: s.rank ?? i + 1, name: s.name, nameFa: playerFa(s.name), team: teamFa(s.teamName, ) || s.teamName || "",
         teamId: s.teamId ?? 0, goals: s.value ?? 0, ccode: s.ccode,
         ...(s.id ? { playerId: s.id } : {}),
         ...(assistsMap.has(s.id) ? { assists: assistsMap.get(s.id) } : {}),
@@ -879,13 +885,17 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // NO key bump: the added matchday/ttlMinutes fields are metadata-only (no
   // UI consumer), and the TTL reader falls back to the old 60-min behavior
   // for pre-102 entries still inside their TTL (one generation, self-heals).
+  // v5 (cycle-107): mapped shape gained the REQUIRED `nameFa` on ScorerEntry
+  // rows (and nameFa on player LeagueBoardRow rows) — the honest-name arc
+  // completes on the league/standings scorer surfaces; old v4 entries would
+  // violate the required field (same convention as cycle-52/86/87/96/106).
   // ⚠️ cycle-94: the key deliberately uses the REQUESTED `season` PARAMETER
   // (in function scope), NOT the payload-derived local inside build — that
   // local is always "" (details.seasons is empty upstream), so keying on it
   // would collide the current season and EVERY historical season of a league
   // into `:cur` for the whole 60-min TTL. Verified: 2020/2021 and current
   // responses stay distinct end-to-end (honest rows/boards/xG both ways).
-  return cached(`standings:v4:${leagueKey}:${season || "cur"}`, (mapped) =>
+  return cached(`standings:v5:${leagueKey}:${season || "cur"}`, (mapped) =>
     typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build);
 }
 

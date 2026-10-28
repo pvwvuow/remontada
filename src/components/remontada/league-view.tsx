@@ -243,7 +243,7 @@ function BoardRow({ row, kind }: { row: LeagueBoard["rows"][number] & { _v: stri
         {faDigits(row.rank)}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[12.5px] font-black truncate">{row.name}</p>
+        <p className="text-[12.5px] font-black truncate">{row.nameFa || row.name}</p>
         {kind === "player" && row.teamFa && (
           <p className="text-[10px] text-muted-foreground truncate mt-0.5">{row.teamFa}</p>
         )}
@@ -454,7 +454,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
       <div className="p-2.5 flex flex-col">
         {/* hero — the studio scoring-chart leader tile with the big metric */}
         <div className="glass-scorer-hero p-3.5 flex items-center gap-3">
-          <ScorerAvatarTile name={top.name} size={56} />
+          <ScorerAvatarTile name={top.nameFa || top.name} size={56} />
           <div className="min-w-0 flex-1">
             <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (
@@ -462,12 +462,12 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
                 href={`/player/${top.playerId}`}
                 prefetch={false}
                 className="block text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5 hover:text-primary transition-colors w-fit max-w-full"
-                title={`پروفایل ${top.name}`}
+                title={top.nameFa && top.nameFa !== top.name ? top.name : `پروفایل ${top.name}`}
               >
-                {top.name}
+                {top.nameFa || top.name}
               </Link>
             ) : (
-              <p className="text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.name}</p>
+              <p className="text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.nameFa || top.name}</p>
             )}
             {top.team && <p className="text-[10px] text-[#92adc9] truncate mt-0.5">{top.team}</p>}
           </div>
@@ -485,7 +485,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
                   {faDigits(pad2(rank))}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{s.name}</span>
+                  <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{s.nameFa || s.name}</span>
                   {s.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{s.team}</span>}
                 </span>
                 <span className="shrink-0 min-w-[36px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[14px] font-semibold text-[#e0efff] tabular-persian">
@@ -497,7 +497,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
             return (
               <li key={`${s.name}-${i}`}>
                 {s.playerId ? (
-                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={`پروفایل ${s.name}`}>
+                  <Link href={`/player/${s.playerId}`} prefetch={false} className={cls} title={s.nameFa && s.nameFa !== s.name ? s.name : `پروفایل ${s.name}`}>
                     {inner}
                   </Link>
                 ) : (
