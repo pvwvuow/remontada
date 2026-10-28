@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -694,6 +694,61 @@ function TeamTransfersSection({ data }: { data: TeamTransfersData }) {
   );
 }
 
+// ---------------- team trophies («گنجهٔ افتخارات», cycle-72) ----------------
+// Game-menu achievement shelf: legend-gold glyph + count badge (×۵۶) like a
+// party list, subtle runner-up line, last-title season in Persian digits.
+function TeamTrophyRow({ t }: { t: TeamTrophy }) {
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
+      <span
+        className="shrink-0 w-8 h-8 rounded-lg grid place-items-center text-[13px] text-gold border border-gold/25 bg-gold/10"
+        aria-hidden
+      >
+        ✦
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate">{t.nameFa}</p>
+        {t.lastWon && (
+          <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5">
+            آخرین قهرمانی: {faDigits(t.lastWon)}
+          </p>
+        )}
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-1">
+        {t.won > 0 && (
+          <span className="text-[10.5px] font-black tabular-persian rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-0.5">
+            ×{faDigits(t.won)}
+          </span>
+        )}
+        {t.runnerup > 0 && (
+          <span className="text-[9.5px] font-bold tabular-persian text-steel/80">نایب ×{faDigits(t.runnerup)}</span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamTrophiesSection({ data }: { data: TeamTrophiesData }) {
+  return (
+    <Section
+      title="گنجهٔ افتخارات"
+      extra={
+        data.totalWon > 0 ? (
+          <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+            مجموع {faDigits(data.totalWon)} جام
+          </span>
+        ) : undefined
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-trophies" aria-label="گنجهٔ افتخارات تیم">
+        {data.items.map((t, i) => (
+          <TeamTrophyRow key={`${t.name}:${i}`} t={t} />
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -731,6 +786,24 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* transfers stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-72: lazy team trophies («گنجهٔ افتخارات») — same data/teams source
+  // (shared upstream cache), fetched after mount; stays null → section hidden.
+  const [trophies, setTrophies] = useState<TeamTrophiesData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-trophies/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.trophies) setTrophies(j.trophies as TeamTrophiesData);
+      })
+      .catch(() => {
+        /* trophies stay null → section hidden */
       });
     return () => {
       alive = false;
@@ -922,6 +995,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-71: team transfers («بازار انتقال‌ها») — lazily probed, hidden when absent */}
       {transfers && transfers.items.length > 0 && <TeamTransfersSection data={transfers} />}
+
+      {/* cycle-72: team trophies («گنجهٔ افتخارات») — lazily probed, hidden when absent */}
+      {trophies && trophies.items.length > 0 && <TeamTrophiesSection data={trophies} />}
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
         نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.

@@ -2077,10 +2077,21 @@ interface FMTeamTransferRaw {
 }
 
 /** Raw api/data/teams payload — shared by the squad (cycle-70) and the
- * transfers feed (cycle-71) so both read ONE upstream fetch per hour. */
+ * transfers (cycle-71) + trophies (cycle-72) feeds so all read ONE upstream
+ * fetch per hour. */
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[] };
+  history?: { trophyList?: FMTeamTrophyRaw[] };
+}
+
+interface FMTeamTrophyRaw {
+  name?: string;
+  leagueId?: string | number;
+  won?: number;
+  runnerup?: number;
+  seasonsWon?: string;
+  seasonsRunnerup?: string;
 }
 
 const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
@@ -2214,4 +2225,81 @@ export async function getTeamTransfers(teamId: number): Promise<TeamTransfersDat
     nInternal: items.filter((x) => x.kind === "internal").length,
     items,
   };
+}
+
+// ---------------- FotMob: team trophies (data/teams endpoint, cycle-72) ----------------
+// Probed live (2026-10-29, UA Chrome/124): history.trophyList[] —
+// { name, leagueId, won, runnerup, seasonsWon ("2025/2026,2024/2025,…"
+// desc-ordered), seasonsRunnerup }. Rows with won=0 but runnerup>0 exist
+// (Celtic — Europa League runner-up). Probed: Celtic 9925 → 6 rows
+// (Premiership 56, Scottish Cup 43, League Cup 22), Palace 9826 → 4.
+
+const TROPHY_FA: Record<string, string> = {
+  "Premier League": "لیگ برتر انگلیس",
+  "Champions League": "لیگ قهرمانان اروپا",
+  "Europa League": "لیگ اروپا",
+  "Conference League": "کنفرانس‌لیگ",
+  "FA Cup": "جام حذفی انگلیس",
+  "League Cup": "جام اتحادیه",
+  "Community Shield": "سوپرکاپ انگلیس",
+  Championship: "چمپیونشیپ",
+  "Scottish Premiership": "لیگ برتر اسکاتلند",
+  Premiership: "لیگ برتر اسکاتلند",
+  "Scottish Cup": "جام حذفی اسکاتلند",
+  "Inter Continental Cup": "جام بین‌قاره‌ای",
+  "Club World Cup": "جام باشگاه‌های جهان",
+  "Serie A": "سری آ",
+  LaLiga: "لالیگا",
+  Bundesliga: "بوندس‌لیگا",
+  "Ligue 1": "لیگ ۱ فرانسه",
+  Eredivisie: "اردیویه",
+  "Primeira Liga": "لیگ برتر پرتغال",
+  "Süper Lig": "سوپرلیگ ترکیه",
+};
+
+export interface TeamTrophy {
+  name: string;
+  nameFa: string;
+  won: number;
+  runnerup: number;
+  lastWon?: string; // season string, e.g. "2025/2026"
+}
+
+export interface TeamTrophiesData {
+  totalWon: number;
+  items: TeamTrophy[]; // sorted won desc
+}
+
+/**
+ * Team trophy cabinet («گنجهٔ افتخارات», cycle-72) from the same data/teams
+ * payload (shared cached raw fetch — no extra upstream hit). Rows with won=0
+ * but runnerup>0 are kept (runner-up history is real info); fully empty rows
+ * are dropped; null when the payload has no list so the UI hides the section.
+ */
+export async function getTeamTrophies(teamId: number): Promise<TeamTrophiesData | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.history?.trophyList;
+  if (!Array.isArray(list)) return null;
+  const items: TeamTrophy[] = [];
+  for (const t of list) {
+    if (!t?.name) continue;
+    const won = Number(t.won || 0);
+    const runnerup = Number(t.runnerup || 0);
+    if (won <= 0 && runnerup <= 0) continue;
+    const seasons = String(t.seasonsWon || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    items.push({
+      name: t.name,
+      nameFa: TROPHY_FA[t.name] || t.name,
+      won,
+      runnerup,
+      ...(seasons.length > 0 ? { lastWon: seasons[0] } : {}),
+    });
+  }
+  if (items.length === 0) return null;
+  items.sort((a, b) => b.won - a.won || b.runnerup - a.runnerup || a.name.localeCompare(b.name));
+  return { totalWon: items.reduce((a, t) => a + t.won, 0), items };
 }
