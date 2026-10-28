@@ -363,3 +363,25 @@ Stage Summary:
 - صفحه بازی پیش‌رو حالا ضربان دارد: کاربر فاصله تا سوت شروع را زنده می‌بیند
 - درس دیپلوی: «kill by port → start → curl تست → فقط بعدش تست مرورگر»
 - چرخه ۴۲ = آپدیت، چرخه ۴۳ = آپدیت، چرخه ۴۴ = بررسی باگ
+
+---
+
+Task ID: cycle-42
+Agent: main (Z.ai) — cron self-activation (Job 479103)
+Task: چرخه ۴۲ = «آپدیت» — بهبود کوچک محتوایی/کارکردی به سلیقه خودم؛ انتخاب: رفع یافته پابرجای topscorers cold-start (از cycle-36، ثبت‌شده دوباره در cycle-40)
+
+Work Log:
+- ⚠️ بازیافت نهم کانتینر در شروع چرخه → ترمیم کامل طبق PROTOCOL-recovery: بازسازی remote-token.txt، کلون @6deb92d، bun install، بازگردانی worklog (۳۶۶ خط)، rsync src (diff صفر)، بازگردانی cycle17-regression.sh + cycle40-bughunt.sh
+- شمارش معکوس cycle-41 (KickoffCountdown) روی repo سالم بود — بهبود جدید شروع شد
+- فیکس اصلی: /api/topscorers حالا snapshot آخرین merge کامل (۱۲۰ گلزن) را در کش دو-لایه نگه می‌دارد؛ اگر merge زنده ناقص‌تر از snapshot یا شکست‌خورده باشد، snapshot با stale:true سرو می‌شود؛ UI نوار صادقانه «نمایش آخرین داده‌های ذخیره‌شده — نسخه زنده به‌زودی به‌روزرسانی می‌شود.» (مخفی در مسیر سالم)؛ cacheGetDeep به cache.ts اضافه شد (L1→L2 بدون trigger producer)؛ stale?:boolean به GlobalScorersData
+- 🔍 کشف زیرساختی مهم: dev.db تازه کلون جدول Cache نداشت → dbSet بی‌صدا fail و L2 عملاً هرگز persist نمی‌کرد (فقط memory) → prisma db push با DATABASE_URL ریزوت به مسیر runtime (file:/home/z/my-project/remontada/prisma/dev.db) جزو دستور دیپلوی/بازیابی شد؛ حالا L2 واقعاً بین restart ها کار می‌کند (کلیدهای standings هم)
+- ⚠️ دو درس دیپلوی این چرخه: ۱) پروسه‌های پس‌زمینه بین tool-call ها توسط سندباکس کشته می‌شوند حتی با setsid+nohup+disown → کل زنجیره deploy+تست باید در یک command اجرا شود ۲) fuser -k بی‌صدا شکست خورد و سرور جدید EADDRINUSE گرفت؛ curl بی‌خبر به سرور قدیمی جواب می‌گرفت (دقیقاً تکرار اشکال cycle-41) → kill با pid از ss + حلقه wait-free + حلقه wait-up (curl تا 200) قبل از هر تست
+- اثبات سه‌فازی: snapshot واقعی ۱۲۰تایی در L2 → restart واقعی با TOPSCORERS_MIN_SCORERS=99999 + snapshot متورم ۱۵۰تایی → stale:true از L2 (پروسه سرد!) + نوار رندر شد در 390×844 بدون سرریز → restart عادی → merge زنده ۱۲۰، ردیف‌های فیک از L2 پاک شدند، بدون پرچم
+- پذیرش: eslint 0/0، tsc 0، build موفق (۲۴ صفحه)، رگرسیون ۲۸/۲۸ روی :3000، کنسول تمیز
+- کامیت df135c8 با پیشوند Update + پوش origin/main (ls-remote = df135c8)
+
+Stage Summary:
+- صفحه گلزنان در cold-start/اختلال دیگر خالی نمی‌ماند: آخرین snapshot معتبر با برچسب صادقانه سرو می‌شود — یافته پابرجای دو چرخه بسته شد
+- L2 کش از این به بعد واقعاً بین restart ها زنده است (بهبود عمومی، نه فقط topscorers)
+- دستور بازیابی دو قدم جدید گرفت: prisma db push بعد از کلون + الگوی kill/wait سخت‌گیرانه پورت 3000
+- چرخه ۴۳ = آپدیت، چرخه ۴۴ = بررسی باگ
