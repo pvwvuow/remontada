@@ -848,6 +848,10 @@ export function TeamView({ teamId }: { teamId: number }) {
   if (error && !data) {
     return (
       <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-8 text-center">
+        {/* fix cycle-74: the team error shell had no heading (cycle-73 finding,
+            same a11y class as the cycle-59 match-page fix) — sr-only h1, zero
+            visual change */}
+        <h1 className="sr-only">صفحه تیم</h1>
         <p className="font-black text-sm text-destructive mb-1">{error}</p>
         <button onClick={fetchTeam} className="text-xs font-bold text-foreground underline underline-offset-4">
           تلاش مجدد

@@ -36,7 +36,10 @@ export default function NotFound() {
               <path d="M12 7.4l2.1 1.5-.8 2.5h-2.6l-.8-2.5 2.1-1.5z" />
             </svg>
           </div>
-          <p className="text-5xl font-black tabular-persian text-primary/90 mb-3">{faDigits(404)}</p>
+          {/* fix cycle-74: the 404 shell had no heading at all (cycle-73
+              finding) — the big ۴۰۴ becomes the real h1 (same classes,
+              Tailwind preflight renders it identically) */}
+          <h1 className="text-5xl font-black tabular-persian text-primary/90 mb-3">{faDigits(404)}</h1>
           <p className="font-black text-sm mb-1">توپ از خط بیرون رفت!</p>
           <p className="text-xs text-muted-foreground">
             صفحه‌ای که دنبالش بودید پیدا نشد — شاید حذف شده یا آدرس اشتباه است.
