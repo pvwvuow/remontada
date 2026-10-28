@@ -795,26 +795,36 @@ function TeamStatRowBox({ r }: { r: TeamStatRow }) {
   const player = r.kind === "player";
   const sub = player ? r.nameFa : typeof r.rank === "number" ? `رتبهٔ ${faDigits(r.rank)} لیگ` : "";
   return (
-    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
-      <span
-        className={cn(
-          "shrink-0 w-8 h-8 rounded-lg grid place-items-center text-[13px] border",
-          player ? "text-mint border-mint/25 bg-mint/10" : "text-sky-soft border-sky-soft/25 bg-sky-soft/10"
-        )}
-        aria-hidden
-      >
-        {player ? "★" : "◈"}
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-[12.5px] font-black truncate">{player ? r.leader : r.nameFa}</p>
-        {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+    <li className="glass-card px-3 py-2.5 flex flex-col gap-1">
+      <div className="flex items-center gap-2.5">
+        <span
+          className={cn(
+            "shrink-0 w-8 h-8 rounded-lg grid place-items-center text-[13px] border",
+            player ? "text-mint border-mint/25 bg-mint/10" : "text-sky-soft border-sky-soft/25 bg-sky-soft/10"
+          )}
+          aria-hidden
+        >
+          {player ? "★" : "◈"}
+        </span>
+        <div className="flex-1 min-w-0">
+          <p className="text-[12.5px] font-black truncate">{player ? r.leader : r.nameFa}</p>
+          {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+        </div>
+        <div className="shrink-0 flex flex-col items-end gap-0.5">
+          <p className="text-[14px] font-black tabular-persian leading-none">{r.value}</p>
+          {player && typeof r.rank === "number" && (
+            <span className="text-[9.5px] font-bold tabular-persian text-steel/80">رتبهٔ {faDigits(r.rank)} لیگ</span>
+          )}
+        </div>
       </div>
-      <div className="shrink-0 flex flex-col items-end gap-0.5">
-        <p className="text-[14px] font-black tabular-persian leading-none">{r.value}</p>
-        {player && typeof r.rank === "number" && (
-          <span className="text-[9.5px] font-bold tabular-persian text-steel/80">رتبهٔ {faDigits(r.rank)} لیگ</span>
-        )}
-      </div>
+      {/* cycle-77: topThree context — «سپس:» next-best teammates (player rows),
+          «صدر:» the league leader (team rows, hidden when we are first) */}
+      {r.extras && r.extras.length > 0 && (
+        <p className="text-[9.5px] font-bold text-steel/70 truncate ps-[42px] tabular-persian">
+          {player ? "سپس: " : "صدر: "}
+          {r.extras.join(" · ")}
+        </p>
+      )}
     </li>
   );
 }

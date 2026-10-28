@@ -2482,6 +2482,7 @@ export interface TeamStatRow {
   leader?: string; // players: the team's own leader of this stat
   value: string; // pre-formatted Persian value (unit appended)
   rank?: number; // league-wide rank (player) / league spot (team)
+  extras?: string[]; // pre-formatted «name value» context strings (cycle-77)
 }
 
 export interface TeamStatsData {
@@ -2521,6 +2522,39 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
       if (!block || !Number.isFinite(v)) continue;
       if (kind === "player" && !p?.name) continue;
       const fractions = typeof p?.stat?.fractions === "number" ? p.stat.fractions : 0;
+      // cycle-77: topThree context — probed live (UA Chrome/124): player blocks
+      // carry the team's own next-best (100% same teamId, participant is always
+      // topThree[0]); team blocks carry the league top-3, where topThree[0] is
+      // the league leader unless we are first.
+      const extras: string[] = [];
+      const top = Array.isArray(block.topThree) ? block.topThree : [];
+      const fmtEntry = (t: FMStatParticipant, fb: number): string | null => {
+        const tv =
+          typeof t?.value === "number"
+            ? t.value
+            : typeof t?.stat?.value === "number"
+              ? t.stat.value
+              : NaN;
+        if (!t?.name || !Number.isFinite(tv)) return null;
+        const tf = typeof t.stat?.fractions === "number" ? t.stat.fractions : fb;
+        return `${t.name} ${statValueFa(tv, tf)}${STAT_UNIT[key] || ""}`;
+      };
+      if (kind === "player") {
+        for (const t of top) {
+          if (extras.length >= 2) break;
+          if (t?.name === p?.name) continue;
+          const s = fmtEntry(t, fractions);
+          if (s) extras.push(s);
+        }
+      } else {
+        const l = top[0];
+        const isUs =
+          typeof l?.teamId === "number" ? l.teamId === teamId : l?.name === p?.name;
+        if (l && !isUs) {
+          const s = fmtEntry(l, fractions);
+          if (s) extras.push(s);
+        }
+      }
       out.push({
         key,
         nameFa: STAT_FA[key] || key,
@@ -2528,6 +2562,7 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
         ...(kind === "player" && p?.name ? { leader: p.name } : {}),
         value: statValueFa(v, fractions) + (STAT_UNIT[key] || ""),
         ...(typeof p?.rank === "number" && p.rank > 0 ? { rank: p.rank } : {}),
+        ...(extras.length > 0 ? { extras } : {}),
       });
     }
     return out;
