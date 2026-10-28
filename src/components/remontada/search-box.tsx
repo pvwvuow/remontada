@@ -147,7 +147,7 @@ export function SearchBox() {
         <>
           {/* overlay panel */}
           <div className="fixed inset-0 z-40 bg-background/40 backdrop-blur-[2px]" onClick={() => setOpen(false)} aria-hidden />
-          <div className="absolute z-50 top-10 end-0 w-[min(92vw,420px)] rounded-2xl glass-popover overflow-hidden" role="dialog" aria-label="جستجوی تیم">
+          <div className="cmd-open absolute z-50 top-10 end-0 w-[min(92vw,420px)] rounded-2xl glass-popover overflow-hidden" role="dialog" aria-label="جستجوی تیم">
             <div className="flex items-center gap-2 px-3.5 py-2.5 border-b border-[color:var(--glass-hairline)]">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground shrink-0" aria-hidden>
                 <circle cx="11" cy="11" r="7" />
@@ -202,7 +202,7 @@ export function SearchBox() {
                         onMouseEnter={() => setActive(i)}
                         className={cn(
                           "w-full flex items-center gap-2.5 ps-8 pe-2.5 py-2 rounded-xl text-start transition-colors",
-                          i === active ? "bg-sky-soft/[0.09]" : "hover:bg-white/[0.05]"
+                          i === active ? "cmd-active" : "hover:bg-white/[0.05]"
                         )}
                       >
                         { }
@@ -237,6 +237,16 @@ export function SearchBox() {
                 </ul>
               )}
             </div>
+            {/* cycle-66 — palette hint bar: the little game-UI footer */}
+            {q.trim().length >= 2 && (
+              <div className="flex items-center justify-center gap-2.5 px-3 py-2 border-t border-[color:var(--glass-hairline)] text-[9px] text-muted-foreground/75 bg-white/[0.015]">
+                <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">↑</kbd><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">↓</kbd> حرکت</span>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">Enter</kbd> انتخاب</span>
+                <span aria-hidden>·</span>
+                <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">Esc</kbd> بستن</span>
+              </div>
+            )}
           </div>
         </>
       )}

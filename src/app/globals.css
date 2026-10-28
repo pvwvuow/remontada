@@ -391,6 +391,24 @@
   animation: sb-row-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) both;
 }
 
+/* cycle-66 — command-palette feel for the search dropdown:
+   the keyboard-selected row glows like a highlighted menu option,
+   and the panel opens with a quick game-menu pop */
+@keyframes cmd-open {
+  from { opacity: 0; transform: translateY(-6px) scale(0.975); }
+  to { opacity: 1; transform: none; }
+}
+.cmd-open {
+  animation: cmd-open 0.18s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  transform-origin: top;
+}
+.cmd-active {
+  background: linear-gradient(90deg, oklch(0.7 0.1 300 / 10%), oklch(0.8 0.08 240 / 6%));
+  box-shadow:
+    inset 0 0 0 1px oklch(0.7 0.1 300 / 22%),
+    0 0 14px oklch(0.7 0.1 300 / 10%);
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
