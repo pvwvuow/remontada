@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStandings, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";
+import { getStandings, LEAGUES } from "@/lib/fotmob";
 
 export const dynamic = "force-dynamic";
 
@@ -13,14 +13,8 @@ export async function GET(req: NextRequest) {
     const data = await getStandings(key);
     return NextResponse.json({ ok: true, ...data });
   } catch (err) {
-    if (err instanceof LeagueUnavailableError) {
-      return NextResponse.json(
-        { ok: false, error: "داده این لیگ موقتاً در دسترس نیست." },
-        { status: 503 }
-      );
-    }
     return NextResponse.json(
-      { ok: false, error: "دریافت جدول رده‌بندی ناموفق بود." },
+      { ok: false, error: err instanceof Error ? err.message : "fetch failed" },
       { status: 502 }
     );
   }

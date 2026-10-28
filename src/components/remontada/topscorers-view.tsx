@@ -10,7 +10,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { GlobalScorer, GlobalScorersData, GlobalCard } from "@/lib/fotmob";
+import type { GlobalScorer, GlobalScorersData } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { ScorerAvatarTile, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -139,95 +139,6 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
           </li>
         ))}
       </ol>
-    </div>
-  );
-}
-
-// ---------- cycle-50: «آقای کارت» — yellow/red card leaders ----------
-function CardRow({ c, kind }: { c: GlobalCard; kind: "yellow" | "red" }) {
-  return (
-    <li className="flex items-center gap-3 px-2 sm:px-2.5 py-2 rounded-lg glass-row-hover">
-      <span className="w-[26px] h-[26px] rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
-        {faDigits(pad2(c.rank))}
-      </span>
-      <div className="min-w-0 flex-1">
-        {c.playerId ? (
-          <Link
-            href={`/player/${c.playerId}`}
-            prefetch={false}
-            className="font-bold text-[12px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
-            title="مشاهده پروفایل بازیکن"
-          >
-            {c.name}
-          </Link>
-        ) : (
-          <p className="font-bold text-[12px] truncate text-[#e5eefb]">{c.name}</p>
-        )}
-        <div className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 min-w-0">
-          <span className="truncate">{c.team}</span>
-          <span aria-hidden>·</span>
-          <span className="shrink-0 font-bold">{c.leagueFa}</span>
-        </div>
-      </div>
-      <span
-        className={cn(
-          "shrink-0 min-w-[38px] text-center rounded-lg px-2 py-1 border",
-          kind === "yellow" ? "bg-amber-400/10 border-amber-400/25" : "bg-rose-500/10 border-rose-500/25"
-        )}
-      >
-        <span className={cn("font-semibold tabular-persian text-[13.5px]", kind === "yellow" ? "text-amber-300" : "text-rose-300")}>
-          {faDigits(c.value)}
-        </span>
-        <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">{kind === "yellow" ? "زرد" : "قرمز"}</span>
-      </span>
-    </li>
-  );
-}
-
-function CardsCard({ data }: { data: GlobalScorersData }) {
-  const yellow = data.cards?.yellow || [];
-  const red = data.cards?.red || [];
-  // both empty → section hidden (older snapshot payloads have no `cards` field
-  // at all — the UI stays honest instead of showing a fake empty state)
-  if (yellow.length === 0 && red.length === 0) return null;
-  const both = yellow.length > 0 && red.length > 0;
-  return (
-    <div className="glass-card overflow-hidden">
-      <header className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-amber-400" aria-hidden>
-          <rect x="7.5" y="3.5" width="9" height="14" rx="1.8" />
-          <rect x="4.5" y="6.5" width="9" height="14" rx="1.8" />
-        </svg>
-        <h2 className="text-[12.5px] font-black">آقای کارت</h2>
-        <span className="ms-auto text-[10px] text-steel tabular-persian">
-          {faDigits(yellow.length)} زرد · {faDigits(red.length)} قرمز
-        </span>
-      </header>
-      <div className="grid sm:grid-cols-2">
-        {yellow.length > 0 && (
-          <section
-            className={cn("p-1.5", both && "border-b sm:border-b-0 sm:border-e border-[color:var(--glass-hairline)]")}
-            aria-label="کارت زرد"
-          >
-            <h3 className="px-2 pt-1 pb-1 text-[10px] font-black text-amber-300/90">کارت زرد</h3>
-            <ul className="flex flex-col">
-              {yellow.slice(0, 6).map((c) => (
-                <CardRow key={`y-${c.playerId}`} c={c} kind="yellow" />
-              ))}
-            </ul>
-          </section>
-        )}
-        {red.length > 0 && (
-          <section className="p-1.5" aria-label="کارت قرمز">
-            <h3 className="px-2 pt-1 pb-1 text-[10px] font-black text-rose-300/90">کارت قرمز</h3>
-            <ul className="flex flex-col">
-              {red.slice(0, 4).map((c) => (
-                <CardRow key={`r-${c.playerId}`} c={c} kind="red" />
-              ))}
-            </ul>
-          </section>
-        )}
-      </div>
     </div>
   );
 }
@@ -511,11 +422,9 @@ export function TopScorersView() {
 
       {data && !loading && <AssistsCard data={data} />}
 
-      {data && !loading && <CardsCard data={data} />}
-
       {data && !loading && (
         <p className="text-[10px] text-muted-foreground px-1">
-          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. بج‌های سبز/فیروزه‌ای پاس گل و گل+پاس و xG هر گلزن را نشان می‌دهند. بخش «آقای کارت» هم برترین‌های کارت زرد و قرمز فصل را از همه لیگ‌ها کنار هم می‌آورد. فیلتر انتخابی شما ذخیره می‌ماند و در آدرس صفحه هم منعکس می‌شود تا بتوانید لینک مستقیم هر لیگ را به‌اشتراک بگذارید.
+          در نمای «همه لیگ‌ها» رتبه‌ی جهانی هر گلزن دیده می‌شود؛ با انتخاب یک لیگ، رتبه در همان لیگ به‌همراه نشان «جهانی» نمایش داده می‌شود. بج‌های سبز/فیروزه‌ای پاس گل و گل+پاس و xG هر گلزن را نشان می‌دهند. فیلتر انتخابی شما ذخیره می‌ماند و در آدرس صفحه هم منعکس می‌شود تا بتوانید لینک مستقیم هر لیگ را به‌اشتراک بگذارید.
         </p>
       )}
     </div>

@@ -204,7 +204,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
           <div className="flex items-center gap-1.5">
             {m.started && !m.cancelled && (
               <span className="font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
-                {faDigits(isHome ? m.home.score ?? "—" : m.away.score ?? "—")} : {faDigits(isHome ? m.away.score ?? "—" : m.home.score ?? "—")}
+                {isHome ? m.home.score ?? "—" : m.away.score ?? "—"} : {isHome ? m.away.score ?? "—" : m.home.score ?? "—"}
               </span>
             )}
             {res && (

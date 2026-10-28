@@ -5,8 +5,7 @@
 // ------------------------------------------------------------------
 import Link from "next/link";
 import type { PlayerData } from "@/lib/fotmob";
-import { faDigits, formColor, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
-import { countryFa, teamFa } from "@/lib/leagues";
+import { faDigits, formColor, jalaliShort, tehranTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "./share-button";
 import { TeamLogo } from "./team-logo";
@@ -60,14 +59,11 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
   const teamName = p.team?.fa || p.team?.name || "";
   const chips: { label: string; value: string }[] = [];
   if (p.info.age) chips.push({ label: "سن", value: faDigits(p.info.age) });
-  if (p.info.height) {
-    const h = String(p.info.height).replace(/cm/i, "").trim();
-    chips.push({ label: "قد", value: /\d/.test(h) ? `${faDigits(h)} سانتی‌متر` : faDigits(h) });
-  }
+  if (p.info.height) chips.push({ label: "قد", value: faDigits(p.info.height) });
   if (p.info.shirt) chips.push({ label: "پیراهن", value: faDigits(p.info.shirt) });
   if (p.info.foot) chips.push({ label: "پای ترجیحی", value: p.info.foot });
-  if (p.info.country) chips.push({ label: "کشور", value: countryFa(p.info.country) });
-  if (p.info.marketValue) chips.push({ label: "ارزش بازار", value: marketValueFa(p.info.marketValue) });
+  if (p.info.country) chips.push({ label: "کشور", value: p.info.country });
+  if (p.info.marketValue) chips.push({ label: "ارزش بازار", value: p.info.marketValue });
   if (p.info.contractEnd) chips.push({ label: "پایان قرارداد", value: faDigits(p.info.contractEnd) });
 
   const personLd = {
@@ -116,7 +112,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
               )}
               {p.status && p.status !== "active" && (
                 <span className="rounded-md border border-amber-400/30 bg-amber-400/10 text-amber-400 px-1.5 py-0.5 text-[9.5px] font-black">
-                  {p.status === "injured" ? "مصدومیت" : p.status}
+                  {p.status === "injured" ? "مصدمیت" : p.status}
                 </span>
               )}
             </p>
@@ -175,7 +171,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
           </span>
           <span className="flex items-center gap-2 min-w-0 flex-1 text-[12.5px] font-bold">
             <TeamLogo id={p.next.opponentId} alt="" size={18} />
-            <span className="truncate">برابر {teamFa(p.next.opponent)}</span>
+            <span className="truncate">vs {p.next.opponent}</span>
             <span className="text-[10px] font-bold text-muted-foreground shrink-0">{p.next.isHome ? "(میزبان)" : "(بیرون خانه)"}</span>
           </span>
           <span className="text-[10.5px] text-muted-foreground tabular-persian shrink-0">

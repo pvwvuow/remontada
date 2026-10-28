@@ -30,14 +30,3 @@ model Post {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
-
-// Persistent HTTP-data cache (L2) for FotMob/ESPN payloads.
-// Key examples: "matches:20261027", "standings:pl", "leagueRaw:ucl"
-model Cache {
-  key       String   @id
-  value     String // JSON-serialized payload
-  storedAt  DateTime @default(now())
-  expiresAt DateTime
-
-  @@index([expiresAt])
-}

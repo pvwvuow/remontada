@@ -150,61 +150,6 @@ const TEAM_FA: Record<string, string> = {
   "shakhtar donetsk": "شاختار دونتسک", "dinamo zagreb": "دیناموزاگرب",
   "young boys": "یانگ‌بویز", "basel": "بازل", "salzburg": "زالتسبورگ",
   "bruges": "بروژ", "qarabağ": "قره‌باغ", "qarabag": "قره‌باغ",
-  // ---- cycle 45: teams spotted untranslated in live feeds (Serie A, 2.Bundesliga,
-  // LaLiga 2, Eredivisie, Süper Lig, Scottish, MLS, Brasileirão, J1, K League, …)
-  "venezia": "ونتزیا", "monza": "مونزا", "palermo": "پالرمو",
-  "bayern münchen": "بایرن‌مونیخ", "schalke 04": "شالکه", "wolfsburg": "وولفسبورگ",
-  "vfl wolfsburg": "وولفسبورگ", "hertha bsc": "هرتابرلین", "1. fc nürnberg": "نورنبرگ",
-  "hannover 96": "هانوفر", "kaiserslautern": "کایزرسلاوترن", "holstein kiel": "هولشتاین‌کیل",
-  "magdeburg": "ماگدبورگ", "dynamo dresden": "دینامو درسدن", "paderborn": "پادربورن",
-  "deportivo alavés": "آلاوس", "deportivo alaves": "آلاوس", "real valladolid": "رئال‌والادولید",
-  "leganés": "لگانس", "leganes": "لگانس", "granada": "گرانادا", "cádiz": "کادیز",
-  "cadiz": "کادیز", "tenerife": "تنریفه", "albacete": "آلباسته", "sd huesca": "اوئسکا",
-  "huesca": "اوئسکا", "sparta rotterdam": "اسپارتا روتردام", "fortuna sittard": "فورتونا سیتارد",
-  "fc dordrecht": "دوردخت", "nac breda": "ناک‌بردا", "pec zwolle": "زفوله",
-  "vvv-venlo": "فنلو", "vitesse": "ویتس", "sc heerenveen": "هیرنوین", "excelsior": "اکسلسیور",
-  "aberdeen": "آبردین", "falkirk": "فالکیرک", "dundee united": "دندی‌یونایتد",
-  "dundee fc": "دندی", "kilmarnock": "کیلمارنوک", "st. johnstone": "سنت‌جانستون",
-  "motherwell": "مادرول", "st. mirren": "سنت‌میرن", "hibernian": "هیبرنین",
-  "heart of midlothian": "هارتس", "inter miami cf": "اینترمیامی", "charlotte fc": "شارلوت",
-  "atlanta united": "آتلانتا یونایتد", "toronto fc": "تورنتو", "dc united": "دی‌سی‌یونایتد",
-  "fc cincinnati": "سینسیناتی", "new england revolution": "نیوانگلند",
-  "new york city fc": "نیویورک‌سیتی", "red bull new york": "ردبول نیویورک",
-  "corinthians": "کورینتیانس", "fluminense": "فلومیننزه", "internacional": "اینترناسیونال",
-  "santos": "سانتوس", "palmeiras": "پالمیراس", "rb bragantino": "براگانتینو",
-  "chapecoense": "شاپه‌کوئنزه", "gamba osaka": "گامبا اوساکا", "kashima antlers": "کاشیما",
-  "cerezo osaka": "سرزو اوساکا", "kawasaki frontale": "کاوازاکی فرونتاله",
-  "urawa red diamonds": "اوراوا", "yokohama f.marinos": "یوکوهاما مارینوس",
-  "sanfrecce hiroshima": "هیروشیما", "nagoya grampus": "ناگویا", "sagan tosu": "ساگان توسو",
-  "fc seoul": "اف‌سی سئول", "pohang steelers": "پوهانگ", "antalyaspor": "آنتالیااسپور",
-  "eyüpspor": "عیوپ‌اسپور", "eyupspor": "عیوپ‌اسپور", "fatih karagümrük": "کاراگومروک",
-  "kocaelispor": "کوکائلی‌اسپور", "göztepe": "گوزتپه", "aris thessaloniki": "آریس",
-  "ofi crete": "اوفی کرت", "levadiakos": "لوادیاکوس", "paok thessaloniki": "پاوک",
-  "rosenborg": "روزنبورگ", "molde": "مولده", "brann": "بران", "bodø/glimt": "بودو/گلیمت",
-  "bodo/glimt": "بودو/گلیمت", "vålerenga": "والرنگا", "valerenga": "والرنگا",
-  "viking": "وایکینگ", "lillestrøm": "لیلهستروم", "tromsø": "ترومسو",
-  "fk haugesund": "هاوگسوند", "sarpsborg 08": "سارپسبورگ", "malmö ff": "مالمو",
-  "malmo ff": "مالمو", "ifk göteborg": "یوتبوری", "ifk goteborg": "یوتبوری",
-  "djurgården": "یورگوردن", "djurgarden": "یورگوردن", "häcken": "هاکن",
-  "hammarby if": "هامربی", "crvena zvezda": "ستاره‌سرخ", "partizan beograd": "پارتیزان",
-  "slovan bratislava": "اسلوان براتیسلاوا", "sparta prague": "اسپارتا پراگ",
-  "viktoria plzeň": "پلزن", "viktoria plzen": "پلزن", "legia warszawa": "لگیا ورشو",
-  "lech poznań": "لخ پوزنان", "jagiellonia białystok": "یگیلونیا", "cfr cluj": "کلوژ",
-  "ferencváros": "فرنتس‌واروش", "ferencvaros": "فرنتس‌واروش",
-  // Championship clubs seen in cup draws & women's brackets
-  "sheffield united": "شفیلدیونایتد", "cardiff city": "کاردیف‌سیتی",
-  "swansea city": "سوانزی", "norwich city": "نورویچ",
-  "west bromwich albion": "وست‌بروم", "millwall": "میلوال", "middlesbrough": "میدلزبورو",
-  "coventry city": "کاونتری", "hull city": "هال‌سیتی", "stoke city": "استوک",
-  "portsmouth": "پورتسموث", "charlton": "چارلتون", "watford": "واتفورد",
-  "derby county": "دربی‌کانتی", "bristol city": "بریستول‌سیتی",
-  "blackburn rovers": "بلکبرن", "wrexham": "رکسام", "birmingham city": "بیرمنگام‌سیتی",
-  "ipswich town": "ایپسوییچ", "southampton": "ساوتهمپتون", "burnley fc": "بارنلی",
-  // Persian Gulf Pro League — FotMob spelling variant ("Gol Gohar")
-  "gol gohar": "گل‌گهر",
-  // Saudi / Qatar spelling variants seen in feed
-  "al-taawoun": "التعاون", "damac fc": "دامک", "al-raed": "الراید",
-  "junior fc": "جونیور", "once caldas": "اونس کالداس", "al-gharafa": "الغرافه",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -241,74 +186,17 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "league two|ENG": "لیگ دو انگلیس",
 };
 
-// youth / women / reserve suffixes — translate the base name and append a
-// Persian qualifier so «Chelsea (W)», «Hoffenheim U19», «Werder Bremen II»
-// stop leaking through as raw English (cycle 45).
-// Every regex REQUIRES a leading space so names like «Millwall» (ends in ll)
-// can never be split accidentally.
-const TEAM_QUALIFIERS: { re: RegExp; fa: string }[] = [
-  { re: /\s\((?:w|women)\)$/i, fa: " (زنان)" },
-  { re: /\s(?:fc\s+)?women$/i, fa: " (زنان)" },
-  { re: /\sladies$/i, fa: " (زنان)" },
-  { re: /\su1[789]$/i, fa: " جوانان" },
-  { re: /\su2[013]$/i, fa: " جوانان" },
-  { re: /\s(?:ii|ll)$/i, fa: " دوم" },
-  { re: /\s(?:b|2)$/i, fa: " دوم" },
-];
-
 export function teamFa(...candidates: (string | undefined)[]): string {
   for (const c of candidates) {
     if (!c) continue;
     const key = c.toLowerCase().trim();
     if (TEAM_FA[key]) return TEAM_FA[key];
   }
-  // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
-  for (const c of candidates) {
-    if (!c) continue;
-    const key = c.toLowerCase().trim();
-    for (const q of TEAM_QUALIFIERS) {
-      const m = key.match(q.re);
-      if (m && m.index !== undefined) {
-        const base = key.slice(0, m.index).trim();
-        if (TEAM_FA[base]) return `${TEAM_FA[base]}${q.fa}`;
-      }
-    }
-  }
   // try first candidate as-is
   return candidates[0] || "";
 }
 
-// FotMob player country (English) → فارسی (cycle 45 — player page honesty)
-const COUNTRY_FA: Record<string, string> = {
-  "brazil": "برزیل", "argentina": "آرژانتین", "france": "فرانسه", "spain": "اسپانیا",
-  "germany": "آلمان", "england": "انگلیس", "italy": "ایتالیا", "portugal": "پرتغال",
-  "netherlands": "هلند", "belgium": "بلژیک", "croatia": "کرواسی", "serbia": "صربستان",
-  "poland": "لهستان", "sweden": "سوئد", "norway": "نروژ", "denmark": "دانمارک",
-  "finland": "فنلاند", "turkey": "ترکیه", "türkiye": "ترکیه", "greece": "یونان",
-  "ukraine": "اوکراین", "russia": "روسیه", "japan": "ژاپن", "south korea": "کره جنوبی",
-  "korea republic": "کره جنوبی", "iran": "ایران", "morocco": "مراکش", "egypt": "مصر",
-  "nigeria": "نیجریه", "senegal": "سنگال", "ghana": "غنا", "ivory coast": "ساحل عاج",
-  "côte d'ivoire": "ساحل عاج", "algeria": "الجزیره", "tunisia": "تونس", "cameroon": "کامرون",
-  "mali": "مالی", "usa": "آمریکا", "united states": "آمریکا", "mexico": "مکزیک",
-  "colombia": "کلمبیا", "uruguay": "اروگوئه", "ecuador": "اکوادور", "chile": "شیلی",
-  "peru": "پرو", "paraguay": "پاراگوئه", "venezuela": "ونزوئلا", "australia": "استرالیا",
-  "austria": "اتریش", "switzerland": "سوئیس", "scotland": "اسکاتلند", "wales": "ولز",
-  "ireland": "ایرلند", "republic of ireland": "ایرلند", "czech republic": "چک",
-  "czechia": "چک", "slovakia": "اسلواکی", "slovenia": "اسلوونی", "hungary": "مجارستان",
-  "romania": "رومانی", "bulgaria": "بلغارستان", "israel": "اسرائیل", "saudi arabia": "عربستان",
-  "qatar": "قطر", "united arab emirates": "امارات", "iraq": "عراق", "guinea": "گینه",
-  "dr congo": "کنگو دموکراتیک", "gabon": "گابن", "bosnia and herzegovina": "بوسنی",
-  "north macedonia": "مقدونیه شمالی", "albania": "آلبانی", "kosovo": "کوزوو",
-  "georgia": "گرجستان", "cyprus": "قبرس", "jamaica": "جامائیکا", "canada": "کانادا",
-  "montenegro": "مونته‌نگرو", "kazakhstan": "قزاقستان", "uzbekistan": "ازبکستان",
-};
-
-export function countryFa(name: string | undefined | null): string {
-  if (!name) return "";
-  return COUNTRY_FA[name.toLowerCase().trim()] || name;
-}
-
-// FotMob team logo (kept after countryFa — cycle 45 additions above)
+// FotMob team logo
 export function fotmobTeamLogo(teamId: number | string): string {
   return `https://images.fotmob.com/image_resources/logo/teamlogo/${teamId}.png`;
 }

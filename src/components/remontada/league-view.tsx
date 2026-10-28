@@ -13,7 +13,6 @@ import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAg
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
-import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers";
 
@@ -480,15 +479,6 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
 }
 
 function StandingsTable({ data, league }: { data: StandingsData; league: LeagueConfig }) {
-  // cycle-52: internal mode state — parent keys this component by leagueKey,
-  // so switching league remounts and resets to «کل فصل» without any effect
-  const [mode, setMode] = useState<TableMode>("all");
-  // per-side rows come straight from the same /api/standings payload
-  // (additive `home`/`away`); switch renders only when the source really has
-  // both splits — otherwise the control would lie about available data
-  const hasSides = !!(data.home?.length && data.away?.length);
-  const rows = mode === "home" && hasSides ? data.home! : mode === "away" && hasSides ? data.away! : data.rows;
-  const modeLabel = hasSides && mode === "home" ? "جدول خانه" : hasSides && mode === "away" ? "جدول بیرون" : "جدول رده‌بندی";
   return (
     <div className="glass-card overflow-hidden">
       <GlassLeagueHeader
@@ -497,12 +487,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
         sub={`${league.ccode3} · ${league.enName}`}
         season={data.season ? `فصل ${faDigits(data.season)}` : undefined}
       />
-      <GlassPosterMeta right={modeLabel} left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
-      {hasSides && (
-        <div className="px-4 pb-2.5">
-          <TableModeSwitch mode={mode} onChange={setMode} />
-        </div>
-      )}
+      <GlassPosterMeta right="جدول رده‌بندی" left={data.rows.length ? `${faDigits(data.rows.length)} تیم${data.updatedAt ? ` · به‌روزرسانی ${timeAgoFa(data.updatedAt)}` : ""}` : undefined} />
       <div className="overflow-x-auto">
         <table className="w-full text-[12px] sm:text-[13px] min-w-[480px]">
           <thead>
@@ -520,7 +505,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {data.rows.map((r) => {
               const leader = r.idx === 1;
               return (
                 <tr
@@ -704,7 +689,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         <div className={cn("transition-opacity", loading && "opacity-50")}>
           {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
-              <StandingsTable key={leagueKey} data={standings} league={lg} />
+              <StandingsTable data={standings} league={lg} />
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
