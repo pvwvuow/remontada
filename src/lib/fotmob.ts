@@ -62,6 +62,13 @@ export interface StandingsRow {
   goalsFor: number; goalsAgainst: number; gd: number; pts: number;
   qualColor?: string;
   form?: ("W" | "D" | "L")[];   // last 5 league results, oldest → newest (from season fixtures)
+  // cycle-90 additive: FotMob's xG table variant (same league payload, joined
+  // by team id) — optional because only the big leagues + UCL carry it
+  // (probed live 2026-10-28: PL/LaLiga/SerieA 20 rows, Bundesliga/Ligue1 18,
+  // UCL 36, Persian Gulf none) and historical seasons may omit it too
+  xg?: number;      // expected goals for (season total)
+  xga?: number;     // expected goals against (xgConceded upstream)
+  xPts?: number;    // expected points (xPoints upstream)
 }
 
 export interface ScorerEntry {
@@ -539,6 +546,28 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     };
     const rows: StandingsRow[] = (fmTable?.all || []).map((r) => mapRow(r, true));
     if (rows.length === 0) throw new Error("No standings data");
+
+    // cycle-90: join the xG table variant by team id — the SAME cached league
+    // payload mirrors the table with expected-goals metrics (xg / xgConceded /
+    // xPoints; live-probed 2026-10-28). Optional: only the big leagues + UCL
+    // ship it (Persian Gulf has no table at all) and historical seasons may
+    // omit it, so rows simply stay without xg fields and the UI hides the section.
+    const xgRows = ((fmTable as { xg?: { id?: number; teamId?: number; xg?: number; xgConceded?: number; xPoints?: number }[] } | undefined)?.xg) || [];
+    if (xgRows.length > 0) {
+      const xgById = new Map<number, { xg?: number; xgConceded?: number; xPoints?: number }>();
+      for (const x of xgRows) {
+        const xid = x.id ?? x.teamId;
+        if (xid == null) continue;
+        xgById.set(xid, x);
+      }
+      for (const row of rows) {
+        const x = xgById.get(row.teamId);
+        if (!x) continue;
+        if (typeof x.xg === "number") row.xg = Math.round(x.xg * 100) / 100;
+        if (typeof x.xgConceded === "number") row.xga = Math.round(x.xgConceded * 100) / 100;
+        if (typeof x.xPoints === "number") row.xPts = Math.round(x.xPoints * 100) / 100;
+      }
+    }
     const sideRows = (v?: FotMobRow[]) => {
       const arr = (v || []).map((r) => mapRow(r, false));
       return arr.length > 0 ? arr : undefined;
@@ -620,7 +649,9 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // so the L2 (SQLite) cache cannot serve the old shape for its 60-min TTL
   // cycle-55: per-season cache keys ("cur" keeps the old key string for the
   // current season, so existing cache entries stay valid)
-  return cached(`standings:v2:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
+  // v3 (cycle-90): mapped row shape gained the optional xg/xga/xPts fields —
+  // old v2 entries (without them) would keep the xG section hidden for an hour
+  return cached(`standings:v3:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------

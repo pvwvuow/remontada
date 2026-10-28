@@ -583,6 +583,92 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
   );
 }
 
+// ---------- cycle-90: xG table («جدول xG») --------------------------------
+// FotMob mirrors the league table with an expected-goals variant (xg /
+// xgConceded / xPoints), joined into the standings rows by team id in
+// getStandings (same cached payload, zero extra upstream). Rendered below
+// the main table in the SAME order for row-by-row comparison; hidden
+// entirely when the source has no xG data (Persian Gulf, some historical
+// seasons). Delta = real points − expected points: positive = the team
+// earned more than its chances deserved (clinical / lucky), negative =
+// underperforming — sign convention matches FotMob's own xPointsDiff.
+function XgTable({ rows }: { rows: StandingsRow[] }) {
+  const withXg = useMemo(() => rows.filter((r) => typeof r.xg === "number"), [rows]);
+  if (withXg.length === 0) return null;
+  const fmt1 = (v: number) => faDigits(v.toFixed(1));
+  return (
+    <div className="glass-card overflow-hidden" data-testid="league-xg">
+      <header className="px-4 pt-3.5 pb-2 flex items-baseline justify-between gap-2">
+        <h2 className="text-sm font-black text-[#deedfc]">جدول xG</h2>
+        <span className="text-[9px] text-muted-foreground">کل فصل · ترتیب مطابق جدول اصلی</span>
+      </header>
+      <div className="overflow-x-auto">
+        <table className="w-full text-[12px] sm:text-[13px] min-w-[420px]">
+          <thead>
+            <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
+              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start">تیم</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="گل مورد انتظار زده">xG</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="گل مورد انتظار خورده">xGA</th>
+              <th className="py-2 px-1.5 font-bold text-center" title="امتیاز مورد انتظار بر پایهٔ کیفیت موقعیت‌ها">امتیاز x</th>
+              <th className="py-2 px-2.5 font-black text-center" title="امتیاز واقعی منهای امتیاز x — مثبت: بیش از عملکرد، منفی: کمتر از عملکرد">اختلاف</th>
+            </tr>
+          </thead>
+          <tbody>
+            {withXg.map((r) => {
+              const delta = r.xPts != null ? r.pts - r.xPts : null;
+              return (
+                <tr
+                  key={r.teamId}
+                  className={cn(
+                    "border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors",
+                    r.idx === 1 && "glass-leader"
+                  )}
+                >
+                  <td className="py-2.5 pe-1 ps-3">
+                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                      {faDigits(pad2(r.idx))}
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-1">
+                    <span className="flex items-center gap-2 min-w-0">
+                      <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" />
+                      <span className="font-bold text-[#e4eefb] truncate">{r.fa}</span>
+                    </span>
+                  </td>
+                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xg != null ? fmt1(r.xg) : "—"}</td>
+                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xga != null ? fmt1(r.xga) : "—"}</td>
+                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xPts != null ? fmt1(r.xPts) : "—"}</td>
+                  <td className="py-2.5 px-2.5 text-center">
+                    {delta == null ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      <span
+                        className={cn(
+                          "inline-block min-w-[46px] px-1.5 py-0.5 rounded-md border text-[11px] font-black tabular-persian",
+                          delta >= 0
+                            ? "text-gold border-gold/30 bg-gold/10"
+                            : "text-[#8da7c3] border-[#8da7c3]/25 bg-[#8da7c3]/10"
+                        )}
+                        title={delta >= 0 ? "بیش از عملکرد — امتیاز واقعی بالاتر از کیفیت موقعیت‌ها" : "کمتر از عملکرد — امتیاز واقعی پایین‌تر از کیفیت موقعیت‌ها"}
+                      >
+                        {delta >= 0 ? "+" : "−"}{fmt1(Math.abs(delta))}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="px-4 pb-3 pt-2 text-[10px] leading-5 text-muted-foreground">
+        امتیاز x برداشت آماری فوت‌ماب از امتیازات بر پایهٔ کیفیت موقعیت‌های هر تیم است؛ اختلاف مثبت یعنی تیم بیش از آن‌چه سزاوارش بوده امتیاز گرفته و منفی یعنی کمتر.
+      </p>
+    </div>
+  );
+}
+
 export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   const [tab, setTab] = useState<Tab>("standings");
@@ -774,7 +860,11 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         <div className={cn("transition-opacity", loading && "opacity-50")}>
           {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
-              <StandingsTable key={`${leagueKey}:${standings.selectedSeason || season || "cur"}`} data={standings} league={lg} />
+              <div className="grid gap-4 min-w-0">
+                <StandingsTable key={`${leagueKey}:${standings.selectedSeason || season || "cur"}`} data={standings} league={lg} />
+                {/* cycle-90: expected-goals mirror table — hidden when the source has no xG variant */}
+                <XgTable rows={standings.rows} />
+              </div>
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
           ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
