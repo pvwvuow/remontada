@@ -6,6 +6,11 @@
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "./leagues";
 import { cached } from "./cache";
 import { faDigits, jalaliShort } from "./format";
+// cycle-99: canonical definition lives in @/lib/season (client-safe,
+// dependency-free) so the league page's deep-link seeding guards the SAME
+// regex without pulling this server graph into the client bundle.
+import { SEASON_PARAM_RE } from "./season";
+export { SEASON_PARAM_RE };
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -373,7 +378,8 @@ export class LeagueUnavailableError extends Error {
 // cycle-55: historical seasons are fetched with the same endpoint +
 // `&season=YYYY/YYYY` (probed: selectedSeason label + full table/stats/matches
 // come back for e.g. 2024/2025). Cache key separates per season.
-export const SEASON_PARAM_RE = /^(19|20)\d{2}\/(19|20)\d{2}$/;
+// cycle-99: the SEASON_PARAM_RE definition moved to @/lib/season and is
+// re-exported from the top of this file — API route consumers unchanged.
 
 // Fetch + cache the (heavy) league payload once; standings & fixtures share it
 async function getLeagueRaw(leagueKey: string, season?: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {

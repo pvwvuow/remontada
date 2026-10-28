@@ -6,6 +6,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard } from "@/lib/fotmob";
+// cycle-99: same strict season shape as the API guard — one regex, one
+// contract (client-safe module; a value import from fotmob.ts would drag
+// the server graph into the client bundle — caught in this cycle's build)
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
@@ -797,12 +801,35 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [attempt, setAttempt] = useState(0); // «تلاش دوباره» re-runs the fetch effect
   // cycle-55: selected historical season ("2024/2025") — null = current season
   const [season, setSeason] = useState<string | null>(null);
+  // cycle-99: deep-link seeding — /league/pl?season=2024/2025 opens the
+  // historical view directly. The API family has honored &season= since
+  // cycle-55 but the page never read the URL param, so a shared or bookmarked
+  // season link silently showed the current season. Seeding is client-only
+  // (static shell + client fetch by design) and gated on `seeded` so a deep
+  // link performs exactly ONE fetch with the right season.
+  const [seeded, setSeeded] = useState(false);
   // cycle-56: cup knockout bracket (null → tab hidden for domestic leagues)
   const [bracket, setBracket] = useState<LeagueBracketData | null>(null);
   // cycle-57: current-season transfers (null → tab hidden; historical seasons unsupported by the source)
   const [transfers, setTransfers] = useState<LeagueTransfersData | null>(null);
 
+  // cycle-99: read the deep-linked season once on mount — strict SEASON_PARAM_RE
+  // shape (same guard as the API routes); anything else is ignored and the
+  // current season loads. Probed upstream contract (cycle-99): a well-formed
+  // season the league does not offer is silently served as the CURRENT season
+  // (200 + payload marker selectedSeason=actual) — the honesty snap inside the
+  // fetch effect keeps the selector consistent with what is actually shown.
   useEffect(() => {
+    if (seeded) return;
+    setSeeded(true);
+    try {
+      const raw = new URLSearchParams(window.location.search).get("season");
+      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
+    } catch { /* no window — ignore */ }
+  }, [seeded]);
+
+  useEffect(() => {
+    if (!seeded) return; // cycle-99: wait for the URL seed pass (one fetch per deep link)
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -821,6 +848,25 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
+        // cycle-99 honesty snap: upstream serves the CURRENT season for a
+        // well-formed season it does not offer (live-probed fallback contract:
+        // 200, table = current rows, marker selectedSeason = actual season).
+        // When the payload's own marker disagrees with the requested season,
+        // snap the selector back to the current season and strip the stale
+        // URL param so selector, label and URL never contradict the data on
+        // screen. One extra fetch only in this bogus-param case.
+        if (stRes.status === "fulfilled" && stRes.value.ok) {
+          const sel = (stRes.value as StandingsData).selectedSeason;
+          if (season && sel && sel !== season) {
+            setSeason(null);
+            try {
+              const usp = new URLSearchParams(window.location.search);
+              usp.delete("season");
+              const qs = usp.toString();
+              window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+            } catch { /* ignore */ }
+          }
+        }
         if (fxRes.status === "fulfilled" && fxRes.value.ok) setFixtures(fxRes.value as LeagueFixturesData);
         if (brRes.status === "fulfilled" && brRes.value.ok && brRes.value.bracket) {
           setBracket(brRes.value.bracket as LeagueBracketData);
@@ -838,7 +884,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       }
     })();
     return () => { cancelled = true; };
-  }, [leagueKey, attempt, season]);
+  }, [leagueKey, attempt, season, seeded]);
 
   if (!lg) {
     return (
@@ -874,6 +920,31 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   // cycle-55: season label follows the payload's own selected-season marker
   const shownSeason = standings?.selectedSeason || standings?.season || "";
   const allSeasons = standings?.allSeasons || [];
+  // cycle-99: a deep-linked season upstream really serves (payload marker
+  // matches the request) but that sits outside the selector's 12-season cap
+  // (e.g. 2013/2014 — upstream offers 17) is appended so the selector never
+  // contradicts the data on screen; bogus seasons were already snapped back
+  // in the fetch effect's honesty snap. Plain derivation (no hook — this runs
+  // after the `if (!lg)` early return, so hooks are not allowed here).
+  const seasonOptions =
+    season && standings?.selectedSeason === season && !allSeasons.includes(season)
+      ? [...allSeasons, season]
+      : allSeasons;
+  // cycle-99: selector changes update the URL in place (replaceState — no
+  // history entries, no navigation) so a copied link carries the exact season
+  // being viewed; any other query params are preserved as-is.
+  const applySeason = (s: string | null) => {
+    setSeason(s);
+    // transfers tab only exists in current-season views — fall back to standings
+    setTab((t) => (s !== null && t === "transfers" ? "standings" : t));
+    try {
+      const usp = new URLSearchParams(window.location.search);
+      if (s) usp.set("season", s);
+      else usp.delete("season");
+      const qs = usp.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    } catch { /* ignore */ }
+  };
   // cycle-56: «براکت» tab appears only when the payload really has playoff rounds
   const visibleTabs: { key: Tab; label: string }[] = [
     ...TABS,
@@ -900,7 +971,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
 
       {/* cycle-55: season selector — options come from the payload itself, so
           leagues without a season list simply hide the control */}
-      {allSeasons.length > 1 && (
+      {seasonOptions.length > 1 && (
         <div className="flex items-center gap-2 px-1">
           <label htmlFor="season-select" className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 shrink-0">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
@@ -911,16 +982,14 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           </label>
           <select
             id="season-select"
-            value={season ?? allSeasons[0]}
+            value={season ?? seasonOptions[0]}
             onChange={(e) => {
               const s = e.target.value === allSeasons[0] ? null : e.target.value;
-              setSeason(s);
-              // transfers tab only exists in current-season views — fall back to standings
-              setTab((t) => (s !== null && t === "transfers" ? "standings" : t));
+              applySeason(s);
             }}
             className="text-[12px] font-bold text-foreground bg-white/[0.04] border border-[color:var(--glass-border-soft)] rounded-lg px-2 py-1.5 outline-none focus:border-sky-soft/50 cursor-pointer"
           >
-            {allSeasons.map((s) => (
+            {seasonOptions.map((s) => (
               <option key={s} value={s} className="bg-[#10161f] text-foreground">
                 {faSeasonShort(s)}{s === allSeasons[0] ? " (فعلی)" : ""}
               </option>
