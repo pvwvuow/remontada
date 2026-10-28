@@ -261,7 +261,7 @@ function KickoffCountdown({ utcTime }: { utcTime: string }) {
 
 // ---------- scoreboard ----------
 function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"]; shootout?: DetailData["shootout"] }) {
-  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
+  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : "پیش از شروع";
   return (
     <section className="glass-card glass-hero overflow-hidden">
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-glass-border-soft bg-white/[0.02] text-[11px]">
@@ -292,9 +292,9 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
         <div className="flex flex-col items-center gap-2">
           {m.started && !m.cancelled ? (
             <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live && "text-red-200 live-glow")}>
-              <span>{m.home.score ?? "—"}</span>
+              <span>{m.home.score != null ? faDigits(m.home.score) : "—"}</span>
               <span className="text-muted-foreground/40 text-2xl">:</span>
-              <span>{m.away.score ?? "—"}</span>
+              <span>{m.away.score != null ? faDigits(m.away.score) : "—"}</span>
             </div>
           ) : (
             <div className="font-black text-2xl sm:text-3xl text-muted-foreground tabular-persian">
@@ -608,7 +608,17 @@ function PlayerStatsTables({ playerStats, match }: { playerStats: NonNullable<De
 // ---------- events timeline ----------
 function EventsTimeline({ events, match }: { events: DetailEvent[]; match: DetailMatch }) {
   if (events.length === 0) {
-    return <p className="glass-card text-center text-steel text-sm py-10">رویدادی ثبت نشده است.</p>;
+    // cycle 45 — honest empty states: an unstarted match has no events BY DESIGN,
+    // «رویدادی ثبت نشده است» was misleading for that case
+    return (
+      <p className="glass-card text-center text-steel text-sm py-10">
+        {match.cancelled
+          ? "این بازی لغو شده است."
+          : match.started
+            ? "رویدادی ثبت نشده است."
+            : "بازی هنوز شروع نشده است؛ رویدادها پس از سوت شروع همین‌جا نمایش داده می‌شوند."}
+      </p>
+    );
   }
   return (
     <div className="glass-card overflow-hidden">
@@ -651,9 +661,13 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
 }
 
 // ---------- stats ----------
-function StatBars({ groups }: { groups: DetailStatGroup[] }) {
+function StatBars({ groups, started }: { groups: DetailStatGroup[]; started?: boolean }) {
   if (groups.length === 0) {
-    return <p className="glass-card text-center text-steel text-sm py-10">آماری برای این بازی ثبت نشده است.</p>;
+    return (
+      <p className="glass-card text-center text-steel text-sm py-10">
+        {started ? "آماری برای این بازی ثبت نشده است." : "آمار پس از شروع بازی این‌جا نمایش داده می‌شود."}
+      </p>
+    );
   }
   return (
     <div className="flex flex-col gap-4">
@@ -1220,7 +1234,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             <EventsTimeline events={data.events} match={m} />
           </div>
         )}
-        {tab === "stats" && <StatBars groups={data.statGroups} />}
+        {tab === "stats" && <StatBars groups={data.statGroups} started={m.started && !m.cancelled} />}
         {tab === "shots" && data.shots && data.shots.length > 0 && <ShotmapPitch shots={data.shots} match={m} />}
         {tab === "shots" && (!data.shots || data.shots.length === 0) && (
           <p className="glass-card text-center text-steel text-sm py-10">شوتی برای این مسابقه ثبت نشده است.</p>
