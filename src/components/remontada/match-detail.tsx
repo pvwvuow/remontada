@@ -72,6 +72,11 @@ interface DetailData {
     post: boolean;
     xg?: number;
   }[] | null;
+  // update cycle-47: per-player match stats (mirrors /api/match/[id])
+  playerStats?: {
+    home: PlayerStatRow[];
+    away: PlayerStatRow[];
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -82,11 +87,32 @@ interface DetailData {
   error?: string;
 }
 
-type Tab = "events" | "shots" | "stats" | "lineups" | "info" | "h2h";
+interface PlayerStatRow {
+  id: number;
+  name: string;
+  shirt?: string;
+  side: "home" | "away";
+  isGk: boolean;
+  starter: boolean;
+  rating?: number;
+  minutes?: number;
+  goals?: number;
+  assists?: number;
+  passesAcc?: number;
+  passesTotal?: number;
+  chances?: number;
+  defActions?: number;
+  saves?: number;
+  conceded?: number;
+  goalsPrevented?: number;
+}
+
+type Tab = "events" | "shots" | "players" | "stats" | "lineups" | "info" | "h2h";
 
 const TAB_LABELS: { key: Tab; label: string }[] = [
   { key: "events", label: "رویدادها" },
   { key: "shots", label: "شوت‌ها" },
+  { key: "players", label: "بازیکن‌ها" },
   { key: "stats", label: "آمار" },
   { key: "lineups", label: "ترکیب" },
   { key: "h2h", label: "رو در رو" },
@@ -450,6 +476,131 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
         <Legend color="bg-rose-400" label="تیرک" />
         <Legend color="bg-slate-400/80" label="بیرون" />
       </div>
+    </div>
+  );
+}
+
+// ---------- per-player match stats (update cycle-47) ----------
+// «بازیکن‌ها» tab: one card per team, starters first then substitutes, sorted
+// by FotMob rating. Rows are chip-based instead of a wide table so 390px never
+// overflows; goalkeepers get their own chips (saves / conceded / prevented).
+function ratingPillClass(r: number): string {
+  if (r >= 7.5) return "bg-emerald-500/20 text-emerald-300 border-emerald-400/30";
+  if (r >= 6.5) return "bg-sky-500/20 text-sky-300 border-sky-400/30";
+  if (r >= 6) return "bg-white/[0.06] text-steel border-glass-border-soft";
+  return "bg-rose-500/15 text-rose-300 border-rose-400/30";
+}
+
+function RatingPill({ rating }: { rating?: number }) {
+  if (rating == null) return <span className="text-[10px] text-steel/40 tabular-persian">—</span>;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center justify-center min-w-[38px] px-1.5 py-0.5 rounded-md border text-[11px] font-black tabular-persian leading-4",
+        ratingPillClass(rating)
+      )}
+      title="امتیاز فوت‌ماب"
+    >
+      {faDigits(rating.toFixed(2))}
+    </span>
+  );
+}
+
+function PlayerChip({ label, value }: { label: string; value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.045] border border-glass-border-soft px-1.5 py-0.5 text-[10px] text-steel tabular-persian leading-4">
+      <span className="text-steel/60">{label}</span>
+      <span className="font-bold text-[#dcebfa]">{value}</span>
+    </span>
+  );
+}
+
+function PlayerRow({ p }: { p: PlayerStatRow }) {
+  const chips: { label: string; value: string }[] = [];
+  if (p.goals) chips.push({ label: "گل", value: faDigits(p.goals) });
+  if (p.assists) chips.push({ label: "پاس‌گل", value: faDigits(p.assists) });
+  if (p.isGk) {
+    if (p.saves != null) chips.push({ label: "مهار", value: faDigits(p.saves) });
+    if (p.conceded != null) chips.push({ label: "گل خورده", value: faDigits(p.conceded) });
+    if (p.goalsPrevented != null)
+      chips.push({ label: "جلوی گل", value: `${p.goalsPrevented > 0 ? "+" : ""}${faDigits(p.goalsPrevented.toFixed(1))}` });
+  } else {
+    if (p.passesAcc != null)
+      chips.push({
+        label: "پاس",
+        value: p.passesTotal != null ? `${faDigits(p.passesAcc)}/${faDigits(p.passesTotal)}` : faDigits(p.passesAcc),
+      });
+    if (p.chances) chips.push({ label: "فرصت", value: faDigits(p.chances) });
+    if (p.defActions) chips.push({ label: "دفاع", value: faDigits(p.defActions) });
+  }
+  if (p.minutes != null) chips.push({ label: "دقیقه", value: faDigits(p.minutes) });
+  return (
+    <div className="glass-row-hover flex items-start justify-between gap-2.5 px-4 py-2.5 border-b border-glass-border-soft/60 last:border-b-0">
+      <div className="min-w-0 flex-1 flex flex-col gap-1.5">
+        <p className="flex items-center gap-1.5 min-w-0 text-[12.5px] font-bold text-[#eef5fc]">
+          {p.shirt && (
+            <span className="shrink-0 text-[10px] font-black text-steel/70 bg-white/[0.05] rounded px-1 py-px tabular-persian" dir="ltr">
+              {faDigits(p.shirt)}
+            </span>
+          )}
+          <Link href={`/player/${p.id}`} prefetch={false} className="truncate hover:text-sky-soft transition-colors max-w-full">
+            {p.name}
+          </Link>
+          {p.isGk && <span className="shrink-0 text-[9px] font-bold text-amber-300/80 bg-amber-400/10 rounded px-1 py-px">دروازه‌بان</span>}
+        </p>
+        {chips.length > 0 && (
+          <p className="flex flex-wrap items-center gap-1">
+            {chips.map((c) => (
+              <PlayerChip key={c.label} label={c.label} value={c.value} />
+            ))}
+          </p>
+        )}
+      </div>
+      <RatingPill rating={p.rating} />
+    </div>
+  );
+}
+
+function PlayerTeamCard({ rows, match, side }: { rows: PlayerStatRow[]; match: DetailMatch; side: "home" | "away" }) {
+  const team = side === "home" ? match.home : match.away;
+  const starters = rows.filter((r) => r.starter);
+  const subs = rows.filter((r) => !r.starter);
+  const groups: { title: string; list: PlayerStatRow[] }[] = [];
+  if (starters.length > 0) groups.push({ title: "ترکیب اصلی", list: starters });
+  if (subs.length > 0) groups.push({ title: "جایگزین‌ها", list: subs });
+  if (groups.length === 0) groups.push({ title: "بازیکنان", list: rows });
+  return (
+    <section className="glass-card overflow-hidden">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2">
+        <img
+          src={team.logo}
+          alt=""
+          width={15}
+          height={15}
+          className="w-[15px] h-[15px] object-contain"
+          onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+        />
+        <span className="font-black text-[12.5px] text-[#ecf3fa]">{team.fa || team.name}</span>
+        <span className="text-[10px] text-steel/60 tabular-persian mr-auto">{faDigits(rows.length)} بازیکن</span>
+      </header>
+      {groups.map((grp) => (
+        <div key={grp.title}>
+          <p className="px-4 pt-2.5 pb-1 text-[9.5px] font-black text-steel/60">{grp.title}</p>
+          {grp.list.map((p) => (
+            <PlayerRow key={p.id} p={p} />
+          ))}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+function PlayerStatsTables({ playerStats, match }: { playerStats: NonNullable<DetailData["playerStats"]>; match: DetailMatch }) {
+  return (
+    <div className="flex flex-col gap-4">
+      {playerStats.home.length > 0 && <PlayerTeamCard rows={playerStats.home} match={match} side="home" />}
+      {playerStats.away.length > 0 && <PlayerTeamCard rows={playerStats.away} match={match} side="away" />}
+      <p className="text-[10px] text-steel/50 text-center">امتیاز و آمار هر بازیکن از فوت‌ماب — بهترین‌ها بالای هر گروه</p>
     </div>
   );
 }
@@ -1073,6 +1224,10 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         {tab === "shots" && data.shots && data.shots.length > 0 && <ShotmapPitch shots={data.shots} match={m} />}
         {tab === "shots" && (!data.shots || data.shots.length === 0) && (
           <p className="glass-card text-center text-steel text-sm py-10">شوتی برای این مسابقه ثبت نشده است.</p>
+        )}
+        {tab === "players" && data.playerStats && <PlayerStatsTables playerStats={data.playerStats} match={m} />}
+        {tab === "players" && !data.playerStats && (
+          <p className="glass-card text-center text-steel text-sm py-10">آماری برای بازیکنان این مسابقه ثبت نشده است.</p>
         )}
         {tab === "lineups" &&
           (data.lineups ? (

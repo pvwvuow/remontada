@@ -60,6 +60,25 @@ interface FMStatGroup {
   key?: string;
   stats?: FMStatRow[];
 }
+// update cycle-47: one raw entry of content.playerStats (dict keyed by player
+// id); `stats` is an array of sections whose labels are English titles. Players
+// who never stepped on the pitch carry an empty stats array.
+interface FMPlayerEntry {
+  name?: string;
+  id?: number;
+  teamId?: number;
+  teamName?: string;
+  isGoalkeeper?: boolean;
+  shirtNumber?: string;
+  usualPosition?: number;
+  stats?: FMPlayerStatSection[];
+  shotmap?: unknown[];
+}
+interface FMPlayerStatSection {
+  title?: string;
+  key?: string;
+  stats?: Record<string, { key?: string | null; stat?: { value?: number | null; total?: number | null; type?: string } } | undefined>;
+}
 // update cycle-46: one raw shot from content.shotmap.shots
 interface FMShot {
   eventType?: string;
@@ -136,6 +155,8 @@ interface FMMatchDetails {
     momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
     // update cycle-46: shotmap (per-shot locations, outcome, xG)
     shotmap?: { shots?: FMShot[] };
+    // update cycle-47: per-player match stats (dict keyed by player id)
+    playerStats?: Record<string, FMPlayerEntry>;
   };
 }
 
@@ -334,6 +355,12 @@ export interface MatchDetailNormalized {
     post: boolean;
     xg?: number;
   }[] | null;
+  // update cycle-47: per-player match stats, starters first then subs, each
+  // sorted by FotMob rating desc (players with no data are filtered out)
+  playerStats?: {
+    home: PlayerStatRow[];
+    away: PlayerStatRow[];
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string;
@@ -346,6 +373,28 @@ export interface MatchDetailNormalized {
     stats: { title: string; display: string }[];
   } | null;
   fetchedAt: string;
+}
+
+// update cycle-47: one normalized player row for the «بازیکن‌ها» tab
+export interface PlayerStatRow {
+  id: number;
+  name: string;
+  shirt?: string;
+  side: "home" | "away";
+  isGk: boolean;
+  starter: boolean;
+  rating?: number;
+  minutes?: number;
+  goals?: number;
+  assists?: number;
+  passesAcc?: number;
+  passesTotal?: number;
+  chances?: number;
+  defActions?: number;
+  // goalkeeper-specific (undefined for field players)
+  saves?: number;
+  conceded?: number;
+  goalsPrevented?: number;
 }
 
 function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized {
@@ -461,6 +510,67 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         post: s.eventType === "Post",
         xg: typeof s.expectedGoals === "number" ? Math.round(s.expectedGoals * 100) / 100 : undefined,
       }));
+  }
+
+  // ---------------- player stats (update cycle-47) ----------------
+  // content.playerStats is a dict keyed by player id; only players who actually
+  // played carry stat sections (unused subs/bench GKs have empty arrays).
+  // Starter/sub grouping is derived from content.lineup.*.starters ids; within
+  // each group players are sorted by FotMob rating desc, missing rating last.
+  const rawPS = raw.content?.playerStats;
+  let playerStats: MatchDetailNormalized["playerStats"] = null;
+  if (rawPS && typeof rawPS === "object") {
+    const homeId = g.homeTeam?.id;
+    const awayId = g.awayTeam?.id;
+    const starterIds = new Set<string>();
+    for (const lt of [raw.content?.lineup?.homeTeam, raw.content?.lineup?.awayTeam]) {
+      for (const st of lt?.starters || []) {
+        if (st?.id != null) starterIds.add(String(st.id));
+      }
+    }
+    const rows: PlayerStatRow[] = Object.values(rawPS)
+      .filter((p) => Array.isArray(p?.stats) && p.stats.length > 0 && typeof p.id === "number")
+      .map((p) => {
+        const top =
+          p.stats!.find((s) => (s?.key || "").toLowerCase() === "top_stats")?.stats || {};
+        const num = (label: string): number | undefined => {
+          const v = top[label]?.stat?.value;
+          return typeof v === "number" ? v : undefined;
+        };
+        const passes = top["Accurate passes"]?.stat;
+        const gp = num("Goals prevented");
+        return {
+          id: p.id as number,
+          name: p.name || "?",
+          shirt: p.shirtNumber || undefined,
+          side: (awayId != null && p.teamId === awayId) ? ("away" as const) : ("home" as const),
+          isGk: !!p.isGoalkeeper,
+          starter: starterIds.has(String(p.id)),
+          rating: num("FotMob rating"),
+          minutes: num("Minutes played"),
+          goals: num("Goals"),
+          assists: num("Assists"),
+          passesAcc: typeof passes?.value === "number" ? passes.value : undefined,
+          passesTotal: typeof passes?.total === "number" ? passes.total : undefined,
+          chances: num("Chances created"),
+          defActions: num("Defensive actions"),
+          saves: num("Saves"),
+          conceded: num("Goals conceded"),
+          goalsPrevented: gp != null ? Math.round(gp * 10) / 10 : undefined,
+        };
+      });
+    const order = (a: PlayerStatRow, b: PlayerStatRow) => {
+      if (a.starter !== b.starter) return a.starter ? -1 : 1;
+      const ra = a.rating ?? -1;
+      const rb = b.rating ?? -1;
+      if (rb !== ra) return rb - ra;
+      return (b.minutes ?? 0) - (a.minutes ?? 0);
+    };
+    const homeRows = rows.filter((r) => r.side === "home").sort(order);
+    const awayRows = rows.filter((r) => r.side === "away").sort(order);
+    if (homeRows.length > 0 || awayRows.length > 0) {
+      playerStats = { home: homeRows, away: awayRows };
+    }
   }
 
   // ---------------- stats ----------------
@@ -624,6 +734,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     momentum,
     shootout,
     shots,
+    playerStats,
     playerOfTheMatch,
     fetchedAt: new Date().toISOString(),
   };
