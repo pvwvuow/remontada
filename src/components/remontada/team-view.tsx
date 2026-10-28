@@ -1022,7 +1022,12 @@ function TopPlayerRowItem({ r, fmt }: { r: TeamTopPlayerRow; fmt: "fraction" | "
             {faDigits(r.rank)}
           </span>
         )}
-        <span className="truncate font-black text-[12.5px] min-w-0 flex-1">{r.name}</span>
+        <span
+          className="truncate font-black text-[12.5px] min-w-0 flex-1"
+          title={r.nameFa !== r.name ? r.name : undefined}
+        >
+          {r.nameFa}
+        </span>
         <span className="shrink-0 font-black text-[13px] tabular-persian bg-white/[0.04] rounded-lg px-2 py-0.5">
           {valueText}
         </span>

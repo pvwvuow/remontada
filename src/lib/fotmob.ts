@@ -10,6 +10,7 @@ import { faDigits, jalaliShort } from "./format";
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
 import { SEASON_PARAM_RE } from "./season";
+import { playerFa } from "./player-names-fa";
 export { SEASON_PARAM_RE };
 
 const UA =
@@ -3667,6 +3668,7 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
 export interface TeamTopPlayerRow {
   playerId: number;
   name: string;
+  nameFa: string; // display name — curated Persian (player-names-fa) when mapped, else the raw upstream name (honest fallback, cycle-96 convention); cycle-104
   rank: number | null; // league-wide rank in this stat (Haaland = 1 PL rating)
   value: number;
   fmt: "fraction" | "number";
@@ -3701,6 +3703,7 @@ export async function getTeamTopPlayers(teamId: number): Promise<TeamTopPlayers 
       rows.push({
         playerId: id,
         name,
+        nameFa: playerFa(name),
         rank: Number(p?.rank) > 0 && Number.isFinite(Number(p?.rank)) ? Number(p.rank) : null,
         value,
         fmt,
