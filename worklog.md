@@ -673,3 +673,21 @@ Stage Summary:
 - براکت جام‌ها اضافه شد: UCL (و هر جام آینده در LEAGUES) حالا مراحل حذفی را با رفت‌وبرگشت، مجموع و تیم صعودکننده نشان می‌دهد؛ با انتخابگر فصل چرخه ۵۵، براکت کامل فصل‌های تاریخی هم در دسترس است
 - نوبت گردشی بعدی (فرمول ((NN mod 5)+1)): چرخه ۵۷ = آپدیت #۳ «انتقال‌ها»، ۵۸ = بررسی باگ، ۵۹ = فیکس
 - یادآوری امنیتی: توکن لو رفته ghp_Kmu4… همچنان معتبر است — ابطال فوری و جایگزینی با fine-grained
+---
+Task ID: PROTOCOL-recovery-3 (غیرگردشی)
+Agent: main (Z.ai) — بیدارباش کاری ۱۰ دقیقه‌ای (Job 481020)
+Task: بازیابی سوم پس از بازچرخش کانتینر — اسنپ‌شات بیرونی به دوره cycle-44 برگشته بود
+
+Work Log:
+- کشف در بیدارباش ۰۰:۰۱+08: سلامت ۵۰۰ (next-server pid 1139 بوت‌استرپ قدیمی)، HEAD محلی=52169b7 و آخرین کارت کاربر cycle-44 با درخت کثیف؛ origin/main دست‌نخورده روی 095e1a3 (cycle-56)؛ start-remontada.sh حذف شده، worklog بیرونی بدون cycle-56، گیت تازگی sync حذف (grep=0)
+- چک نشست موازی: دو خواندن git status با فاصله ۳ ثانیه → md5 یکسان (نه رقابت، بازچرخش قطعی) → اجرای کارت PROTOCOL-recovery
+- کلون تازه از origin/main با توکن scripts/remote-token.txt (chmod 600) → 095e1a3
+- bun install --frozen-lockfile (827 بسته، ۳.۱ ثانیه) → DATABASE_URL صریح file:./dev.db + prisma db push + prisma generate → bun run build ✓
+- استارت فقط با scripts/start-remontada.sh → UP pid 1710 HTTP 200
+- رگرسیون رسمی: BASE=http://localhost:3000 bash scripts/cycle17-regression.sh → 28/28
+- گیت تازگی sync دوباره اضافه شد: grep -c "FRESHNESS GATE" scripts/sync-to-github.sh = 1 + bash -n سالم
+
+Stage Summary:
+- پورتال از origin/main بازسازی شد؛ مخزن مرجع ماند؛ هیچ چرخه گردشی مصرف نشد
+- نوبت گردشی بعدی (فرمول ((NN mod 5)+1)): چرخه ۵۷ = آپدیت #۳ «انتقال‌ها»، ۵۸ = بررسی باگ، ۵۹ = فیکس
+- یادآوری امنیتی: توکن لو رفته ghp_Kmu4… همچنان معتبر است — ابطال فوری و جایگزینی با fine-grained
