@@ -5,18 +5,19 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData } from "@/lib/fotmob";
 import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
+import { LeagueTransfersList } from "@/components/remontada/league-transfers";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 
-type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket";
+type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket" | "transfers";
 
 /** Current-week progress bar («هفته ۱۲ از ۳۸») — numeric rounds only. */
 function SeasonProgress({ progress }: { progress: { current: number; total: number } }) {
@@ -594,25 +595,34 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [season, setSeason] = useState<string | null>(null);
   // cycle-56: cup knockout bracket (null → tab hidden for domestic leagues)
   const [bracket, setBracket] = useState<LeagueBracketData | null>(null);
+  // cycle-57: current-season transfers (null → tab hidden; historical seasons unsupported by the source)
+  const [transfers, setTransfers] = useState<LeagueTransfersData | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setError(null);
     setBracket(null);
+    setTransfers(null);
     (async () => {
       try {
         const sp = season ? `&season=${encodeURIComponent(season)}` : "";
-        const [stRes, fxRes, brRes] = await Promise.allSettled([
+        // cycle-57: transfers feed is current-season only (probed) — fetched
+        // without the season param and skipped entirely in historical views
+        const [stRes, fxRes, brRes, trRes] = await Promise.allSettled([
           fetch(`/api/standings?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-fixtures?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-bracket?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
+          ...(season ? [] : [fetch(`/api/league-transfers?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json())]),
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
         if (fxRes.status === "fulfilled" && fxRes.value.ok) setFixtures(fxRes.value as LeagueFixturesData);
         if (brRes.status === "fulfilled" && brRes.value.ok && brRes.value.bracket) {
           setBracket(brRes.value.bracket as LeagueBracketData);
+        }
+        if (trRes?.status === "fulfilled" && trRes.value.ok && trRes.value.transfers) {
+          setTransfers(trRes.value.transfers as LeagueTransfersData);
         }
         if ((stRes.status === "fulfilled" && !stRes.value.ok) && (fxRes.status === "fulfilled" && !fxRes.value.ok)) {
           setError("دریافت داده‌های لیگ ناموفق بود.");
@@ -664,6 +674,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const visibleTabs: { key: Tab; label: string }[] = [
     ...TABS,
     ...(bracket ? [{ key: "bracket" as Tab, label: "براکت" }] : []),
+    ...(transfers && !season ? [{ key: "transfers" as Tab, label: "انتقال‌ها" }] : []),
   ];
 
   return (
@@ -697,7 +708,12 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           <select
             id="season-select"
             value={season ?? allSeasons[0]}
-            onChange={(e) => setSeason(e.target.value === allSeasons[0] ? null : e.target.value)}
+            onChange={(e) => {
+              const s = e.target.value === allSeasons[0] ? null : e.target.value;
+              setSeason(s);
+              // transfers tab only exists in current-season views — fall back to standings
+              setTab((t) => (s !== null && t === "transfers" ? "standings" : t));
+            }}
             className="text-[12px] font-bold text-foreground bg-white/[0.04] border border-[color:var(--glass-border-soft)] rounded-lg px-2 py-1.5 outline-none focus:border-sky-soft/50 cursor-pointer"
           >
             {allSeasons.map((s) => (
@@ -768,6 +784,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}
           {tab === "bracket" && (bracket ? <LeagueBracket data={bracket} /> : null)}
+          {tab === "transfers" && (transfers ? <LeagueTransfersList data={transfers} /> : null)}
         </div>
       )}
     </div>

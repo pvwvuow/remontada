@@ -315,6 +315,7 @@ interface FotMobLeague {
   table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] }; selectedSeason?: string } };
   fixtures?: { allMatches?: unknown[] };
   playoff?: { rounds?: FMBracketRoundRaw[] };
+  transfers?: FMTransfersRaw;
   stats?: {
     players?: {
       header?: string;
@@ -975,6 +976,125 @@ export async function getLeagueBracket(leagueKey: string, season?: string): Prom
     ...(selectedSeason ? { selectedSeason } : {}),
     rounds,
   };
+}
+
+// ---------------- FotMob: league transfers (current season) ----------------
+// cycle-57: raw shape of the league payload's `transfers` key, probed live
+// (UA Chrome/124, 2026-10-29): transfers.data is a date-desc list (~100 rows)
+// covering the league's clubs — each row carries both clubs (id + short/full
+// names), player, position, transferDate, fee (feeText/value) and transferType
+// ("contract" | "on loan" | …). Probed limits: season=2024/2025 →
+// transfers.data is null (feed exists for the CURRENT season only) and
+// UCL/Persian Gulf carry an empty list → getLeagueTransfers returns null and
+// the UI hides the tab. Direction is classified against the standings club
+// ids of the SAME payload (feed ids match standings ids; Hull City 8667 is a
+// genuine 2026/27 PL member).
+interface FMTransfersRaw {
+  data?: FMTransferRaw[];
+}
+interface FMTransferRaw {
+  name?: string;
+  playerId?: number;
+  position?: { label?: string };
+  transferDate?: string;
+  fromClub?: string;
+  fromClubFullName?: string;
+  fromClubId?: number;
+  toClub?: string;
+  toClubFullName?: string;
+  toClubId?: number;
+  fee?: { feeText?: string; value?: number } | null;
+  transferType?: { text?: string };
+  contractExtension?: boolean;
+  onLoan?: boolean;
+}
+
+export interface LeagueTransferItem {
+  playerId: number;
+  name: string;
+  position: string;
+  date: string; // ISO
+  from: { id: number; name: string; fa: string };
+  to: { id: number; name: string; fa: string };
+  kind: "in" | "out" | "internal";
+  kindFa: string;
+  feeFa: string;
+}
+
+export interface LeagueTransfersData {
+  leagueKey: string;
+  leagueFa: string;
+  season: string;
+  items: LeagueTransferItem[];
+}
+
+/** Compact Persian euro amount: 689000 → «۶۸۹ هزار یورو»، 15e6 → «۱۵ میلیون یورو». */
+const euroFa = (v: number): string => {
+  if (v >= 1e6) {
+    const m = v / 1e6;
+    const s = (m >= 10 ? String(Math.round(m)) : m.toFixed(1).replace(/\.0$/, "")).replace(".", "٫");
+    return `${faDigits(s)} میلیون یورو`;
+  }
+  if (v >= 1e3) return `${faDigits(Math.round(v / 1e3))} هزار یورو`;
+  return `${faDigits(v)} یورو`;
+};
+
+/** Persian label for fee/type (source texts probed: fee, on loan, free transfer, contract). */
+const transferFeeFa = (t: FMTransferRaw): string => {
+  if (t.contractExtension) return "تمدید قرارداد";
+  const feeText = (t.fee?.feeText || "").toLowerCase();
+  const typeText = (t.transferType?.text || "").toLowerCase();
+  if (feeText === "fee" && t.fee?.value) return `کارمزد ${euroFa(t.fee.value)}`;
+  if (feeText === "on loan" || typeText === "on loan" || t.onLoan) return "انتقال امانی";
+  if (feeText === "free transfer" || typeText === "free transfer") return "انتقال آزاد";
+  if (typeText === "contract") return "قرارداد";
+  return t.transferType?.text || t.fee?.feeText || "انتقال";
+};
+
+/**
+ * Current-season transfers of a league's clubs (cycle-57 «انتقال‌ها»).
+ * Returns null when the payload has no transfer feed (UCL, Persian Gulf) —
+ * callers hide the tab instead of an empty shell. No season parameter on
+ * purpose: probed live, the feed exists only for the current-season payload.
+ * Source order is already date-desc — kept as-is.
+ */
+export async function getLeagueTransfers(leagueKey: string): Promise<LeagueTransfersData | null> {
+  const { lg, raw } = await getLeagueRaw(leagueKey);
+  const list = raw.transfers?.data || [];
+  if (list.length === 0) return null;
+  const clubIds = new Set<number>(
+    (raw.table?.[0]?.data?.table?.all || []).map((r) => Number(r?.id || 0)).filter((x) => x > 0)
+  );
+  const items: LeagueTransferItem[] = [];
+  for (const t of list) {
+    if (!t?.name || !t?.fromClub || !t?.toClub) continue;
+    const fromIn = clubIds.has(Number(t.fromClubId || 0));
+    const toIn = clubIds.has(Number(t.toClubId || 0));
+    if (!fromIn && !toIn) continue;
+    const kind: LeagueTransferItem["kind"] = fromIn && toIn ? "internal" : toIn ? "in" : "out";
+    items.push({
+      playerId: Number(t.playerId || 0),
+      name: t.name,
+      position: t.position?.label || "",
+      date: t.transferDate || "",
+      from: {
+        id: Number(t.fromClubId || 0),
+        name: t.fromClubFullName || t.fromClub,
+        fa: teamFa(t.fromClubFullName, t.fromClub) || t.fromClubFullName || t.fromClub,
+      },
+      to: {
+        id: Number(t.toClubId || 0),
+        name: t.toClubFullName || t.toClub,
+        fa: teamFa(t.toClubFullName, t.toClub) || t.toClubFullName || t.toClub,
+      },
+      kind,
+      kindFa: kind === "in" ? "ورودی" : kind === "out" ? "خروجی" : "داخلی",
+      feeFa: transferFeeFa(t),
+    });
+  }
+  if (items.length === 0) return null;
+  const season = raw.table?.[0]?.data?.selectedSeason || "";
+  return { leagueKey, leagueFa: lg.faName, season, items };
 }
 
 // ---------------- FotMob: team page (via league payload + daily feed) ----------------
