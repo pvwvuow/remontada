@@ -7,6 +7,7 @@ import { NextResponse } from "next/server";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
+import { roundFa } from "@/lib/fotmob";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -697,7 +698,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     attendance: typeof at === "number" ? at.toLocaleString("en-US") : (typeof at === "string" ? at : undefined),
     date: md?.utcTime || utcTime,
     tournament: tn?.leagueName || leagueName,
-    round: roundRaw ? (/^\d+$/.test(roundRaw) ? `هفته ${roundRaw}` : roundRaw) : undefined,
+    round: roundFa(roundRaw || undefined),
   };
 
   // ---------------- team form ----------------

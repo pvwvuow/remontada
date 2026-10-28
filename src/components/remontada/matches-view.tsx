@@ -4,7 +4,7 @@
 // Remontada — live matches view (day navigation + league groups)
 // ------------------------------------------------------------------
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
 import { faDigits, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
@@ -366,6 +366,20 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
   const favIds = useMemo(() => new Set(favs.map((f) => f.id)), [favs]);
   const [onlyFavs, setOnlyFavs] = useState(false);
   const [statusFilter, setStatusFilter] = useState<"all" | "live" | "finished">("all");
+
+  // fix cycle-59: crest 404s (EFL Cup 938221 / 936417) that fire BEFORE hydration
+  // never reach the inline onError — sweep complete-but-empty images so the
+  // brand-glyph fallback always shows instead of a broken-image icon
+  useEffect(() => {
+    const sweep = () => {
+      document.querySelectorAll("img").forEach((img) => {
+        if (img.complete && img.naturalWidth === 0) img.style.visibility = "hidden";
+      });
+    };
+    const t1 = setTimeout(sweep, 0); // errors already lost before hydration
+    const t2 = setTimeout(sweep, 1500); // crests that 404 just after mount
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [groups]);
 
   // status counts (for the همه/زنده/پایان‌یافته chips)
   const statusCounts = useMemo(() => {

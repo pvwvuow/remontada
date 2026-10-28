@@ -276,10 +276,17 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
   const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : "پیش از شروع";
   return (
     <section className="glass-card glass-hero overflow-hidden">
+      {/* fix cycle-59: match page had no h1/h2 — sr-only h1 for a11y/crawlers,
+          league row promoted to the page's visible h2 (identical look) */}
+      <h1 className="sr-only">
+        {m.home.fa || m.home.name} در برابر {m.away.fa || m.away.name} — {m.leagueFa || m.leagueName}
+      </h1>
       <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-b border-glass-border-soft bg-white/[0.02] text-[11px]">
-        <Link href="/" className="font-extrabold text-[13px] text-[#ecf3fa]/90 hover:text-sky-soft transition-colors truncate">
-          {m.leagueFa || m.leagueName}
-        </Link>
+        <h2 className="min-w-0 truncate">
+          <Link href="/" className="font-extrabold text-[13px] text-[#ecf3fa]/90 hover:text-sky-soft transition-colors">
+            {m.leagueFa || m.leagueName}
+          </Link>
+        </h2>
         {m.round && <span className="text-steel/70 shrink-0">{m.round}</span>}
         <ShareButton
           title={`${m.home.fa || m.home.name} ${m.home.score ?? ""} - ${m.away.score ?? ""} ${m.away.fa || m.away.name} | رمانتادا`}
@@ -677,6 +684,8 @@ function PlayerTeamCard({ rows, match, side }: { rows: PlayerStatRow[]; match: D
           onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
         />
         <span className="font-black text-[12.5px] text-[#ecf3fa]">{team.fa || team.name}</span>
+        {/* fix cycle-59: team name is the lineup section heading */}
+        <h2 className="sr-only">{team.fa || team.name}</h2>
         <span className="text-[10px] text-steel/60 tabular-persian mr-auto">{faDigits(rows.length)} بازیکن</span>
       </header>
       {groups.map((grp) => (
@@ -986,7 +995,7 @@ function SeasonComparePanel({
           <img src={comparison.home.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
           <span className="font-black text-[12px] truncate">{sideName(comparison.home)}</span>
         </span>
-        <span className="text-[10px] font-black text-steel whitespace-nowrap">مقایسه فصل</span>
+        <h2 className="text-[10px] font-black text-steel whitespace-nowrap">مقایسه فصل</h2>
         <span className="flex items-center gap-1.5 min-w-0 justify-end">
           <span className="font-black text-[12px] truncate">{sideName(comparison.away)}</span>
           { }
@@ -1255,6 +1264,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
   if (error && !data) {
     return (
       <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-5 py-8 text-center">
+        <h1 className="sr-only">جزئیات مسابقه</h1>
         <p className="font-black text-sm text-destructive mb-1">{error}</p>
         <button onClick={() => fetchDetail()} className="text-xs font-bold text-foreground underline underline-offset-4">
           تلاش مجدد

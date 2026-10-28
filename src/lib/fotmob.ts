@@ -655,7 +655,7 @@ function normalizeFixture(f: FotMobFixture): NormFixture {
   }
   return {
     id: String(f.id),
-    round: f.roundName ? (/^\d+$/.test(String(f.roundName)) ? `هفته ${f.roundName}` : String(f.roundName)) : undefined,
+    round: roundFa(f.roundName == null ? undefined : String(f.roundName)),
     utcTime: f.status?.utcTime || "",
     started: !!f.status?.started,
     finished: !!f.status?.finished,
@@ -710,8 +710,10 @@ export interface LeagueStats {
   biggestWin: { id: string; round?: string; utcTime: string; diff: number; home: NormFixture["home"]; away: NormFixture["away"] } | null;
 }
 
-/** Round label → Persian. "Regular season - 8" / "8" → «هفته ۸». */
-function roundFa(round: string | undefined): string | undefined {
+/** Round label → Persian. "Regular season - 8" / "8" → «هفته ۸».
+    fix cycle-59: exported + also used by normalizeFixture and the match API
+    route so week labels never leak Latin digits («هفته ۹» not «هفته 9»). */
+export function roundFa(round: string | undefined): string | undefined {
   if (!round) return undefined;
   const raw = String(round);
   if (/^\d+$/.test(raw)) return `هفته ${faDigits(raw)}`;
