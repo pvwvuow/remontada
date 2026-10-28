@@ -424,6 +424,65 @@ export async function getFullGoalScorers(leagueKey: string, limit = 20): Promise
   }
 }
 
+/**
+ * Card leaders for one league («آقای کارت», cycle-50). The league payload
+ * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
+ * S3 static-file mechanism as the goals list — full ranking when the file
+ * is reachable, participant + topThree fallback otherwise. Fully graceful:
+ * any failure (e.g. the persiangulf null feed) returns [] and the merged
+ * section simply omits that league.
+ */
+export async function getLeagueCardLeaders(
+  leagueKey: string,
+  kind: CardKind,
+  limit = 15,
+): Promise<Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[]> {
+  try {
+    return await cached(`cards:${leagueKey}:${kind}`, 60 * 60_000, async () => {
+      const { raw } = await getLeagueRaw(leagueKey);
+      const re = kind === "yellow" ? /^yellow cards$/i : /^red cards$/i;
+      const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
+      if (!cat) return [];
+      const out: Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[] = [];
+      const seen = new Set<number>();
+      if (cat.fetchAllUrl && /^https:\/\/data\.fotmob\.com\//.test(cat.fetchAllUrl)) {
+        const data = await fetchJson<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(cat.fetchAllUrl);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            name: r.ParticipantName,
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            value: Math.round(r.StatValue ?? 0),
+            playerId: id,
+          });
+          if (out.length >= limit) break;
+        }
+      }
+      if (out.length === 0) {
+        // short category fallback (participant + topThree only)
+        for (const p of statCategory(raw, re)) {
+          if (seen.has(p.id)) continue;
+          seen.add(p.id);
+          out.push({
+            name: p.name,
+            team: teamFa(p.teamName || undefined) || p.teamName || "",
+            teamId: p.teamId ?? 0,
+            value: Math.round(p.value ?? 0),
+            playerId: p.id,
+          });
+        }
+      }
+      return out;
+    });
+  } catch {
+    return [];  // unavailable league / upstream hiccup — never break the merge
+  }
+}
+
 export async function getStandings(leagueKey: string): Promise<StandingsData> {
   const { lg, raw } = await getLeagueRaw(leagueKey);
   const build = async () => {
@@ -1374,9 +1433,32 @@ export interface GlobalAssist {
   leagueFa: string;
 }
 
+// cycle-50: card leaders («آقای کارت») — same S3 full-list mechanism as goals
+export type CardKind = "yellow" | "red";
+
+export interface GlobalCard {
+  rank: number;        // global dense rank across leagues (per kind)
+  name: string;
+  team: string;
+  teamId: number;
+  value: number;       // card count
+  playerId?: number;   // FotMob player id → links to /player/[id]
+  leagueKey: string;
+  leagueFa: string;
+}
+
+export interface GlobalCardsData {
+  yellow: GlobalCard[];
+  red: GlobalCard[];
+}
+
 export interface GlobalScorersData {
   scorers: GlobalScorer[];
   assists: GlobalAssist[];
+  /** cycle-50: yellow/red card leaders across all leagues. Additive + optional:
+   *  older snapshots served from L2 lack this field and the UI hides the
+   *  section rather than showing a dishonest empty state. */
+  cards?: GlobalCardsData;
   perLeague: { leagueKey: string; leagueFa: string; scorers: StandingsData["scorers"] }[];
   updatedAt: string;
   /** cycle-42: true when the response comes from the last-known-good snapshot
@@ -1428,7 +1510,50 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
   // de-dup assist leaders by player name (same player can appear in league + cup lists)
   const seenA = new Set<string>();
   const assists = mergedAssists.filter((a) => (seenA.has(a.name) ? false : (seenA.add(a.name), true))).slice(0, 10);
-  return { scorers: merged, assists, perLeague, updatedAt: new Date().toISOString() };
+  // cycle-50: card leaders ride along in the same payload (all per-league
+  // fetches are cache-backed, so the merge only pays on a cold start)
+  let cards: GlobalCardsData | undefined;
+  try {
+    cards = await getAllCardLeaders();
+  } catch {
+    // cards stay undefined — the UI hides the section, the table itself is untouched
+  }
+  return { scorers: merged, assists, perLeague, cards, updatedAt: new Date().toISOString() };
+}
+
+/**
+ * Global card leaders merged across all leagues (cycle-50). Domestic leagues
+ * are attributed first and UCL last — a player listed in both competitions
+ * keeps the domestic entry (same rule as the team index). Dense global rank
+ * per kind, top 10 each.
+ */
+export async function getAllCardLeaders(): Promise<GlobalCardsData> {
+  const ordered = [...LEAGUES].sort((a, b) => (a.key === "ucl" ? 1 : 0) - (b.key === "ucl" ? 1 : 0));
+  const jobs = ordered.flatMap((lg) =>
+    (["yellow", "red"] as const).map(async (kind) => ({
+      lg,
+      kind,
+      rows: await getLeagueCardLeaders(lg.key, kind, 15),
+    }))
+  );
+  const settled = await Promise.allSettled(jobs);
+  const build = (kind: CardKind): GlobalCard[] => {
+    const merged: GlobalCard[] = [];
+    const seen = new Set<number>();
+    for (const r of settled) {
+      if (r.status !== "fulfilled" || r.value.kind !== kind) continue;
+      const { lg } = r.value;
+      for (const row of r.value.rows) {
+        if (row.playerId == null || seen.has(row.playerId)) continue;
+        seen.add(row.playerId);
+        merged.push({ ...row, rank: 0, leagueKey: lg.key, leagueFa: lg.faName });
+      }
+    }
+    merged.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+    merged.forEach((c, i) => { c.rank = i + 1; });
+    return merged.slice(0, 10);
+  };
+  return { yellow: build("yellow"), red: build("red") };
 }
 
 // ---------------- Team index (for search) ----------------
