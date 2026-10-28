@@ -183,6 +183,36 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
   );
 }
 
+// ---------- kickoff countdown (fix cycle-41) ----------
+// For upcoming matches only: live «شروع بازی تا …» line under the status chip.
+// Hydration-safe: SSR/first frame renders nothing, the label is computed after
+// mount (setState inside the deferred timer — never in the effect body) and
+// then ticks every second until kickoff.
+function KickoffCountdown({ utcTime }: { utcTime: string }) {
+  const [label, setLabel] = useState<string | null>(null);
+  useEffect(() => {
+    const fmt = () => {
+      const diff = new Date(utcTime).getTime() - Date.now();
+      if (!Number.isFinite(diff) || diff <= 0) return "بازی به‌زودی شروع می‌شود";
+      const h = Math.floor(diff / 3_600_000);
+      const mnt = Math.floor((diff % 3_600_000) / 60_000);
+      const s = Math.floor((diff % 60_000) / 1000);
+      if (h > 0) return `شروع بازی تا ${faDigits(h)} ساعت و ${faDigits(mnt)} دقیقه دیگر`;
+      if (mnt > 0) return `شروع بازی تا ${faDigits(mnt)} دقیقه و ${faDigits(s)} ثانیه دیگر`;
+      return `شروع بازی تا ${faDigits(s)} ثانیه دیگر`;
+    };
+    const t0 = setTimeout(() => setLabel(fmt()), 0);
+    const iv = setInterval(() => setLabel(fmt()), 1000);
+    return () => { clearTimeout(t0); clearInterval(iv); };
+  }, [utcTime]);
+  if (label === null) return null;
+  return (
+    <p className="text-[10.5px] text-steel/80 tabular-persian whitespace-nowrap" aria-live="off">
+      {label}
+    </p>
+  );
+}
+
 // ---------- scoreboard ----------
 function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"] }) {
   const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
@@ -234,6 +264,9 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
             {m.live && <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-red-500 me-1.5 align-middle" />}
             {status}
           </span>
+          {/* fix cycle-41: live kickoff countdown for upcoming matches (the
+              short «رویدادی ثبت نشده» shell gets a useful heartbeat) */}
+          {!m.started && !m.cancelled && !m.finished && <KickoffCountdown utcTime={m.utcTime} />}
         </div>
         {/* away */}
         <div className="flex flex-col items-center gap-2.5 text-center min-w-0">
