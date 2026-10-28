@@ -776,6 +776,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .map((e, i) => ({ ...e, rank: i + 1 }))
       .slice(0, 6);
 
+    // ⚠️ cycle-94 probe (UA Chrome/124): `details.seasons` is EMPTY in every
+    // data/leagues payload — current AND historical (e.g. ?season=2020/2021) —
+    // so this local is always "" and the honest label lives in selectedSeason
+    // (raw.table[0].data.selectedSeason = the REQUESTED season). Every
+    // consumer of the mapped `season` field must treat it as optional.
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     // cycle-55: FotMob's own selected-season label + the seasons it offers —
     // additive fields so the v2 cache shape stays backward compatible
@@ -805,6 +810,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // old v2 entries (without them) would keep the xG section hidden for an hour
   // v4 (cycle-92): mapped shape gained the optional `boards` field (upstream
   // season leaderboards) — old v3 entries would keep the section hidden an hour
+  // ⚠️ cycle-94: the key deliberately uses the REQUESTED `season` PARAMETER
+  // (in function scope), NOT the payload-derived local inside build — that
+  // local is always "" (details.seasons is empty upstream), so keying on it
+  // would collide the current season and EVERY historical season of a league
+  // into `:cur` for the whole 60-min TTL. Verified: 2020/2021 and current
+  // responses stay distinct end-to-end (honest rows/boards/xG both ways).
   return cached(`standings:v4:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
 }
 
