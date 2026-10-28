@@ -2079,11 +2079,31 @@ interface FMTeamTransferRaw {
 /** Raw api/data/teams payload — shared by the squad (cycle-70), transfers
  * (cycle-71), trophies (cycle-72) and venue (cycle-75) reads — ONE upstream
  * fetch per hour. */
+interface FMStatParticipant {
+  id?: number | string;
+  name?: string;
+  rank?: number;
+  teamId?: number;
+  value?: number;
+  stat?: { name?: string; value?: number; format?: string; fractions?: number };
+}
+
+interface FMStatBlock {
+  header?: string;
+  participant?: FMStatParticipant;
+  topThree?: FMStatParticipant[];
+}
+
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[] };
   history?: { trophyList?: FMTeamTrophyRaw[] };
   overview?: { venue?: FMVenueRaw };
+  stats?: {
+    players?: FMStatBlock[];
+    teams?: FMStatBlock[];
+    primarySeasonId?: string | number;
+  };
 }
 
 interface FMVenueRaw {
@@ -2356,4 +2376,164 @@ export async function getTeamVenue(teamId: number): Promise<TeamVenue | null> {
     ...(typeof surface === "string" && surface ? { surface } : {}),
     ...(typeof opened === "number" && opened > 0 ? { opened } : {}),
   };
+}
+
+// ---------------- FotMob: team season stats (data/teams endpoint, cycle-76) ----------------
+// Probed live (2026-10-29, UA Chrome/124): stats.{players,teams} on the SAME
+// data/teams payload — [{header: "Top scorer"|"FotMob rating", ..., participant:
+// {name, value, stat:{value, fractions}, rank}, topThree: [...]}]. participant is
+// the team's own leader (players) or the team itself (teams, rank = league spot);
+// identical shape on Celtic 9925 (38/27 blocks) and Palace 9826 (43/28).
+
+const STAT_FA: Record<string, string> = {
+  // player categories
+  "Top scorer": "آقای گل",
+  "Assists": "پاس گل",
+  "Goals + Assists": "گل + پاس گل",
+  "FotMob rating": "امتیاز فوت‌ماب",
+  "Expected goals (xG)": "گل مورد انتظار (xG)",
+  "Expected assist (xA)": "پاس گل مورد انتظار (xA)",
+  "Minutes played": "دقایق بازی",
+  "Big chances created": "موقعیت بزرگ ساخته",
+  "Big chances missed": "موقعیت بزرگ از دست رفته",
+  "Clean sheets": "دروازه بسته",
+  "Save percentage": "درصد مهار",
+  "Goals prevented": "گل مهارشده",
+  "Saves per 90": "مهار در هر ۹۰",
+  "Shots per 90": "شوت در هر ۹۰",
+  "Shots on target per 90": "شوت داخل چارچوب در هر ۹۰",
+  "Accurate passes per 90": "پاس دقیق در هر ۹۰",
+  "Chances created": "موقعیت ساخته",
+  "Successful dribbles per 90": "دریبل موفق در هر ۹۰",
+  "Tackles per 90": "تکل در هر ۹۰",
+  "Interceptions per 90": "قطع توپ در هر ۹۰",
+  "Clearances per 90": "دفع در هر ۹۰",
+  "Recoveries per 90": "برداشت توپ در هر ۹۰",
+  "Yellow cards": "کارت زرد",
+  "Goals per 90": "گل در هر ۹۰",
+  "Top speed": "بیشینه سرعت",
+  // team categories
+  "Goals per match": "گل در هر بازی",
+  "Goals conceded per match": "گل خورده در هر بازی",
+  "Average possession": "میانگین مالکیت",
+  "Expected goals": "گل مورد انتظار (xG)",
+  "xG difference": "اختلاف xG",
+  "xG conceded": "گل مورد انتظار خورده",
+  "Attendance": "میانگین تماشاگر",
+  "Shots on target per match": "شوت داخل چارچوب در هر بازی",
+  "Big chances": "موقعیت بزرگ",
+  "Accurate passes per match": "پاس دقیق در هر بازی",
+  "Touches in opposition box": "لمس توپ در محدودهٔ حریف",
+  "Corners": "کرنر",
+  "Saves per match": "مهار در هر بازی",
+  "Fouls per match": "خطا در هر بازی",
+  "Interceptions per match": "قطع توپ در هر بازی",
+  "Tackles per match": "تکل در هر بازی",
+  "Clearances per match": "دفع در هر بازی",
+};
+
+const STAT_UNIT: Record<string, string> = {
+  "Average possession": "٪",
+  "Save percentage": "٪",
+};
+
+// curated selection: the most meaningful categories first, shown in this order
+const STAT_PLAYER_PREF = [
+  "Top scorer",
+  "Assists",
+  "Goals + Assists",
+  "FotMob rating",
+  "Expected goals (xG)",
+  "Expected assist (xA)",
+  "Big chances created",
+  "Clean sheets",
+  "Save percentage",
+  "Goals prevented",
+  "Minutes played",
+  "Yellow cards",
+];
+
+const STAT_TEAM_PREF = [
+  "FotMob rating",
+  "Goals per match",
+  "Average possession",
+  "Expected goals",
+  "xG difference",
+  "Clean sheets",
+  "Attendance",
+];
+
+/** Persian stat value: fraction format keeps decimals («۷٫۳۴»), plain integers stay bare. */
+const statValueFa = (value: number, fractions: number): string => {
+  if (!Number.isFinite(value)) return "";
+  const f =
+    Number.isFinite(fractions) && fractions > 0
+      ? Math.min(Math.round(fractions), 2)
+      : Number.isInteger(value)
+        ? 0
+        : 2;
+  return faDigits(value.toFixed(f)).replace(".", "٫");
+};
+
+export interface TeamStatRow {
+  key: string; // source header (stable React key)
+  nameFa: string;
+  kind: "player" | "team";
+  leader?: string; // players: the team's own leader of this stat
+  value: string; // pre-formatted Persian value (unit appended)
+  rank?: number; // league-wide rank (player) / league spot (team)
+}
+
+export interface TeamStatsData {
+  playerRows: TeamStatRow[];
+  teamRows: TeamStatRow[];
+}
+
+/**
+ * Season stat leaders («آمار برتر فصل», cycle-76) from the shared cached
+ * data/teams raw fetch — no extra upstream hit. Curated subset of categories
+ * (the payload carries ~40); null when the payload has no stats so the UI
+ * hides the section (same contract as the other lazy team reads).
+ */
+export async function getTeamStats(teamId: number): Promise<TeamStatsData | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const st = raw?.stats;
+  if (!st || (!Array.isArray(st.players) && !Array.isArray(st.teams))) return null;
+  const pickRows = (
+    list: FMStatBlock[] | undefined,
+    pref: string[],
+    kind: "player" | "team",
+    limit: number
+  ): TeamStatRow[] => {
+    const out: TeamStatRow[] = [];
+    if (!Array.isArray(list)) return out;
+    for (const key of pref) {
+      if (out.length >= limit) break;
+      const block = list.find((b) => b?.header === key);
+      const p = block?.participant;
+      const v =
+        typeof p?.value === "number"
+          ? p.value
+          : typeof p?.stat?.value === "number"
+            ? p.stat.value
+            : NaN;
+      if (!block || !Number.isFinite(v)) continue;
+      if (kind === "player" && !p?.name) continue;
+      const fractions = typeof p?.stat?.fractions === "number" ? p.stat.fractions : 0;
+      out.push({
+        key,
+        nameFa: STAT_FA[key] || key,
+        kind,
+        ...(kind === "player" && p?.name ? { leader: p.name } : {}),
+        value: statValueFa(v, fractions) + (STAT_UNIT[key] || ""),
+        ...(typeof p?.rank === "number" && p.rank > 0 ? { rank: p.rank } : {}),
+      });
+    }
+    return out;
+  };
+  const playerRows = pickRows(st.players, STAT_PLAYER_PREF, "player", 6);
+  const teamRows = pickRows(st.teams, STAT_TEAM_PREF, "team", 4);
+  if (playerRows.length === 0 && teamRows.length === 0) return null;
+  return { playerRows, teamRows };
 }

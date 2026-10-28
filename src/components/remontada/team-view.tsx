@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -787,6 +787,70 @@ function TeamVenueCard({ v }: { v: TeamVenue }) {
   );
 }
 
+// ---------------- team season stats («آمار برتر فصل», cycle-76) ----------------
+// Game-menu rows in the same language as the trophy cabinet: player leaders
+// carry a mint ★ box, team-level rows a sky ◈ box; value pre-formatted
+// Persian (fractions keep decimals via «٫»), league rank as the sub-line.
+function TeamStatRowBox({ r }: { r: TeamStatRow }) {
+  const player = r.kind === "player";
+  const sub = player ? r.nameFa : typeof r.rank === "number" ? `رتبهٔ ${faDigits(r.rank)} لیگ` : "";
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
+      <span
+        className={cn(
+          "shrink-0 w-8 h-8 rounded-lg grid place-items-center text-[13px] border",
+          player ? "text-mint border-mint/25 bg-mint/10" : "text-sky-soft border-sky-soft/25 bg-sky-soft/10"
+        )}
+        aria-hidden
+      >
+        {player ? "★" : "◈"}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate">{player ? r.leader : r.nameFa}</p>
+        {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-0.5">
+        <p className="text-[14px] font-black tabular-persian leading-none">{r.value}</p>
+        {player && typeof r.rank === "number" && (
+          <span className="text-[9.5px] font-bold tabular-persian text-steel/80">رتبهٔ {faDigits(r.rank)} لیگ</span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamStatsSection({ data }: { data: TeamStatsData }) {
+  const hasPlayers = data.playerRows.length > 0;
+  const hasTeams = data.teamRows.length > 0;
+  if (!hasPlayers && !hasTeams) return null;
+  return (
+    <Section title="آمار برتر فصل">
+      <div className="flex flex-col gap-2" data-testid="team-stats">
+        {hasPlayers && (
+          <>
+            <p className="text-[10px] font-bold text-steel/70 px-1">بهترین‌های تیم</p>
+            <ul className="flex flex-col gap-2" aria-label="بهترین‌های تیم">
+              {data.playerRows.map((r) => (
+                <TeamStatRowBox key={`p:${r.key}`} r={r} />
+              ))}
+            </ul>
+          </>
+        )}
+        {hasTeams && (
+          <>
+            <p className="text-[10px] font-bold text-steel/70 px-1">جایگاه در لیگ</p>
+            <ul className="flex flex-col gap-2" aria-label="جایگاه تیم در لیگ">
+              {data.teamRows.map((r) => (
+                <TeamStatRowBox key={`t:${r.key}`} r={r} />
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -860,6 +924,24 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* venue stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-76: lazy team stats («آمار برتر فصل») — same data/teams source
+  // (shared upstream cache), fetched after mount; stays null → section hidden.
+  const [stats, setStats] = useState<TeamStatsData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-stats/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.stats) setStats(j.stats as TeamStatsData);
+      })
+      .catch(() => {
+        /* stats stay null → section hidden */
       });
     return () => {
       alive = false;
@@ -1025,6 +1107,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* season stats */}
       {season && season.played > 0 && <SeasonPanel s={season} />}
+
+      {/* cycle-76: season stat leaders («آمار برتر فصل») — lazily probed, hidden when absent */}
+      {stats && <TeamStatsSection data={stats} />}
 
       {/* cycle-75: home ground («ورزشگاه خانه») — lazily probed, hidden when absent */}
       {venue && venue.name && <TeamVenueCard v={venue} />}
