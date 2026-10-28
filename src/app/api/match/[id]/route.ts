@@ -9,6 +9,7 @@ import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
 import { roundFa } from "@/lib/fotmob";
 import { playerFa } from "@/lib/player-names-fa";
+import { faDigits } from "@/lib/format";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -125,6 +126,40 @@ interface FMPotm {
   isHomeTeam?: boolean;
   stats?: FMPotmStatGroup[];
 }
+// update cycle-110 probed (UA Chrome/124, 2026-10-29, 5 live matches):
+// matchFacts.insights carries pre-match story lines as localized templates
+// (localizedTextId + statValues[{value,name,type}] + team color). Curated
+// Persian templates live in MATCH_INSIGHT_FA; unknown ids are dropped.
+interface FMInsightStatValue { value?: number | string | null; name?: string | null; type?: string }
+interface FMInsight {
+  type?: string; // "team" | "player"
+  teamId?: number;
+  playerId?: number;
+  priority?: number;
+  localizedTextId?: string;
+  statValues?: FMInsightStatValue[];
+  color?: string;
+}
+
+// update cycle-110: curated Persian renderings of the upstream insight
+// templates (probed live across 5 matches, UA Chrome/124, 2026-10-29 —
+// 11 distinct localizedTextIds). {N} placeholders fill from statValues in
+// order: entries with a `name` are entity refs (team → teamFa, otherwise
+// playerFa; honest fallback = raw upstream name), bare values → Persian
+// digits. Unknown localizedTextIds never render (honest drop).
+const MATCH_INSIGHT_FA: Record<string, string> = {
+  "h2h_winstreak": "{0} در {2} دیدار قبلی مقابل {1} پیروز شده است.",
+  "insights_goals_team": "در {1} بازی اخیر {0} گل به ثمر رسانده است.",
+  "insights_not_clean_sheet": "در {0} بازی متوالی دروازهٔ بسته نداشته است.",
+  "insights_not_won_team": "در {0} بازی اخیر به پیروزی نرسیده است.",
+  "insights_bad_form_team": "{0} بازی اخیر خود را با شکست پشت سر گذاشته است.",
+  "insights_goalless_team": "در {0} بازی متوالی گلی نزده است.",
+  "insights_clean_sheets": "بیشترین کلین‌شیت رقابت را در اختیار دارد ({0}).",
+  "insights_player_most_chances_for_team": "{0} بیشترین موقعیت طلایی را برای {1} ساخته است ({2}).",
+  "insights_player_most_shots_on_target_for_team": "{0} بیشترین شوت در چارچوب را به‌ازای هر بازی برای {1} دارد ({2}).",
+  "insights_player_chances_created_rank_in_competition": "{0} در ساختن موقعیت طلایی رتبهٔ {1} رقابت را دارد ({2}).",
+  "insights_player_goals_scored": "{0} آقای گل رقابت است ({1}).",
+};
 interface FMMatchDetails {
   general?: {
     matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
@@ -151,6 +186,7 @@ interface FMMatchDetails {
         { result?: number; resultString?: string }[]
       ];
       playerOfTheMatch?: FMPotm | null;
+      insights?: FMInsight[];
     };
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
     lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
@@ -437,6 +473,11 @@ export interface MatchDetailNormalized {
     precipChance?: number;
     forecast: boolean;
   } | null;
+  // update cycle-110: match insights («بینش‌ها») — upstream localized story
+  // templates rendered through the curated Persian map; entries with an
+  // unknown localizedTextId are dropped (honest convention, like the weather
+  // keys); empty when the payload has none (or all unmapped)
+  insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
   // fix cycle-45: shootout attempts were dropped entirely before — the
   // decisive phase of knockout matches was invisible to the user
   shootout?: {
@@ -929,6 +970,58 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
       }
     : null;
 
+  // ---------------- match insights (update cycle-110) ----------------
+  // Pre-match story lines (matchFacts.insights): only curated localizedTextId
+  // templates render; numbers → Persian digits, team/player refs ride the
+  // honest-name maps (unknown → raw upstream name). Single-team entries are
+  // prefixed with the owner team's Persian name; h2h/player sentences carry
+  // their subjects inline. Upstream order kept, capped at 6.
+  let insights: MatchDetailNormalized["insights"] = null;
+  {
+    const rawIns = raw.content?.matchFacts?.insights;
+    if (Array.isArray(rawIns) && rawIns.length > 0) {
+      const homeName = g.homeTeam?.name || "";
+      const awayName = g.awayTeam?.name || "";
+      const sideNameOf = (tid?: number): string => {
+        if (!tid) return "";
+        if (tid === g.homeTeam?.id) return teamFa(homeName) || homeName;
+        if (tid === g.awayTeam?.id) return teamFa(awayName) || awayName;
+        return "";
+      };
+      const fill = (tpl: string, svs: FMInsightStatValue[]): string =>
+        tpl.replace(/\{(\d+)\}/g, (_m, idx: string) => {
+          const sv = svs[Number(idx)];
+          if (!sv) return "…";
+          if (typeof sv.name === "string" && sv.name) {
+            const mapped = sv.type === "team" ? teamFa(sv.name) : playerFa(sv.name);
+            return mapped || sv.name;
+          }
+          const n = sv.value;
+          return n === null || n === undefined ? "…" : faDigits(n);
+        });
+      const out: NonNullable<MatchDetailNormalized["insights"]> = [];
+      for (const it of rawIns) {
+        const tpl = it.localizedTextId ? MATCH_INSIGHT_FA[it.localizedTextId] : undefined;
+        if (!tpl) continue; // unknown template → honest drop
+        const svs = Array.isArray(it.statValues) ? it.statValues : [];
+        let text = fill(tpl, svs);
+        if (text.includes("…")) continue; // incomplete placeholder set → skip
+        const kind: "team" | "player" | "h2h" =
+          it.localizedTextId === "h2h_winstreak" ? "h2h" : it.type === "player" ? "player" : "team";
+        if (kind === "team") {
+          const side = sideNameOf(it.teamId);
+          if (side) text = `${side} — ${text}`;
+        }
+        const color =
+          (typeof it.color === "string" && it.color) ||
+          (it.teamId === g.homeTeam?.id ? g.teamColors?.darkMode?.home || "#5b8def" : g.teamColors?.darkMode?.away || "#f59e0b");
+        out.push({ text, color, kind });
+        if (out.length >= 6) break;
+      }
+      if (out.length > 0) insights = out;
+    }
+  }
+
   return {
     match: {
       id: matchId,
@@ -956,6 +1049,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     momentum,
     zones,
     weather,
+    insights,
     shootout,
     shots,
     xg,

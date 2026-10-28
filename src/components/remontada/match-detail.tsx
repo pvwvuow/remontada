@@ -106,6 +106,9 @@ interface DetailData {
     precipChance?: number;
     forecast: boolean;
   } | null;
+  // update cycle-110: match insights («بینش‌ها») — mirrors /api/match/[id];
+  // curated Persian templates only (unknown upstream ids never reach here)
+  insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; nameFa: string; rating?: string | null;
@@ -1002,6 +1005,40 @@ function WeatherCard({ weather }: { weather: NonNullable<DetailData["weather"]> 
   );
 }
 
+// update cycle-110: match insights («بینش‌ها») on the info tab — the same
+// card rhythm as WeatherCard; each row = owning team's color dot + one
+// Persian story line (pre-match form/h2h/top-player facts). Display-only.
+function InsightsIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      <circle cx="12" cy="12" r="3.5" />
+    </svg>
+  );
+}
+function InsightsCard({ insights }: { insights: NonNullable<DetailData["insights"]> }) {
+  if (insights.length === 0) return null;
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-insights">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa] flex items-center gap-1.5">
+          <InsightsIcon className="text-chart-3" />
+          بینش‌ها
+        </span>
+        <span className="font-bold text-steel/80 tabular-persian">{faDigits(insights.length)} نکته</span>
+      </header>
+      <ul className="glass-list">
+        {insights.map((it, i) => (
+          <li key={i} className="flex items-start gap-2.5 px-4 py-2.5 text-[12px] leading-6">
+            <span aria-hidden className="mt-[7px] h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: it.color }} />
+            <span className="font-semibold text-start">{it.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- info ----------
 function InfoPanel({ data }: { data: DetailData }) {
   const rows: { label: string; value?: string }[] = [
@@ -1484,6 +1521,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           ))}
         {tab === "info" && (
           <div className="flex flex-col gap-4">
+            {data.insights && data.insights.length > 0 && <InsightsCard insights={data.insights} />}
             {data.weather && <WeatherCard weather={data.weather} />}
             <InfoPanel data={data} />
           </div>
