@@ -22,7 +22,7 @@ export function BackToTop() {
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="بازگشت به بالای صفحه"
       className={cn(
-        "fixed bottom-5 start-5 z-30 w-11 h-11 rounded-full glass-popover text-sky-soft flex items-center justify-center transition-all duration-300 hover:text-foreground hover:border-sky-soft/45",
+        "fixed bottom-24 sm:bottom-5 start-5 z-30 w-11 h-11 rounded-full glass-popover text-sky-soft flex items-center justify-center transition-all duration-300 hover:text-foreground hover:border-sky-soft/45",
         visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3 pointer-events-none"
       )}
     >

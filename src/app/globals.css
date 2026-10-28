@@ -394,6 +394,14 @@
   color: oklch(0.97 0.03 90);
 }
 
+/* cycle-62 — the game-menu dock is fixed over the thumb zone on phones;
+   every page ends with breathing room so the footer never hides behind it */
+@media (max-width: 639px) {
+  body {
+    padding-bottom: 5.25rem;
+  }
+}
+
 /* Subtle score highlight for goals (soft mint flash, on-palette) */
 @keyframes goal-flash {
   0% { background-color: oklch(0.8 0.09 170 / 30%); }
@@ -418,3 +426,300 @@
 .tabular-persian {
   font-variant-numeric: tabular-nums;
 }
+
+/* ==================================================================
+   Fantasy Quest layer (ui-quest 1-10) — a minimal game-menu atmosphere
+   laid over the Football Glass Studio theme: drifting aurora fields,
+   twinkling stars, rune diamonds, glowing quest tabs, summoning
+   skeletons and forged score numerals. CSS-only; every continuous
+   animation is transform/opacity and wrapped in a
+   prefers-reduced-motion guard so motion-sensitive users get the
+   calm static version. No layout-affecting properties animate.
+   ================================================================== */
+
+:root {
+  --arcane: oklch(0.72 0.13 295);            /* violet "arcane" glow */
+  --arcane-soft: oklch(0.72 0.13 295 / 32%);
+}
+
+/* ---- UI-1: enchanted backdrop (aurora fields + starfield) ----
+   rendered by <FantasyBackdrop/> as a fixed pointer-less layer */
+.fx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fx-aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.15;
+  will-change: transform;
+}
+.fx-aurora-a {
+  width: 48vmax; height: 48vmax; top: -20vmax; right: -14vmax;
+  background: radial-gradient(circle, oklch(0.62 0.14 240), transparent 66%);
+}
+.fx-aurora-b {
+  width: 42vmax; height: 42vmax; bottom: -18vmax; left: -12vmax;
+  background: radial-gradient(circle, var(--arcane), transparent 66%);
+  opacity: 0.11;
+}
+.fx-aurora-c {
+  width: 30vmax; height: 30vmax; top: 40%; left: 26%;
+  background: radial-gradient(circle, oklch(0.66 0.11 168), transparent 66%);
+  opacity: 0.09;
+}
+/* two star layers at different phases → soft twinkle chorus */
+.fx-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(1.3px 1.3px at 12% 22%, oklch(0.95 0.02 240 / 70%), transparent 100%),
+    radial-gradient(1px 1px at 34% 68%, oklch(0.9 0.03 295 / 65%), transparent 100%),
+    radial-gradient(1.4px 1.4px at 55% 12%, oklch(0.95 0.02 240 / 55%), transparent 100%),
+    radial-gradient(1px 1px at 72% 44%, oklch(0.88 0.04 168 / 60%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 86% 76%, oklch(0.95 0.02 240 / 60%), transparent 100%),
+    radial-gradient(1px 1px at 24% 88%, oklch(0.9 0.03 240 / 55%), transparent 100%),
+    radial-gradient(1.1px 1.1px at 64% 92%, oklch(0.9 0.03 295 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 92% 18%, oklch(0.92 0.02 240 / 55%), transparent 100%);
+}
+.fx-stars-b {
+  opacity: 0.4;
+  transform: scale(1.015) rotate(0.4deg);
+  background-image:
+    radial-gradient(1.2px 1.2px at 8% 55%, oklch(0.92 0.02 240 / 60%), transparent 100%),
+    radial-gradient(1px 1px at 28% 8%, oklch(0.9 0.03 168 / 55%), transparent 100%),
+    radial-gradient(1.3px 1.3px at 46% 38%, oklch(0.95 0.02 240 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 60% 82%, oklch(0.9 0.03 295 / 55%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 78% 26%, oklch(0.94 0.02 240 / 55%), transparent 100%),
+    radial-gradient(1px 1px at 96% 60%, oklch(0.9 0.03 240 / 50%), transparent 100%),
+    radial-gradient(1.1px 1.1px at 40% 95%, oklch(0.9 0.03 240 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 3% 82%, oklch(0.92 0.02 295 / 50%), transparent 100%);
+}
+
+/* ---- UI-2: portal gate (first-hit game boot screen) ---- */
+.portal-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0.13 0.022 255 / 82%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none; /* pure ambience — never blocks the page */
+  animation: gate-in 0.45s ease both;
+}
+.portal-gate-out { animation: gate-out 0.6s ease both; }
+@keyframes gate-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gate-out { from { opacity: 1; } to { opacity: 0; } }
+.portal-gate-core { text-align: center; animation: gate-rise 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes gate-rise { from { opacity: 0; transform: translateY(14px) scale(0.94); } to { opacity: 1; transform: none; } }
+.portal-gate-glyph {
+  width: 64px; height: 64px; margin: 0 auto 14px;
+  border-radius: 18px 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+  background: linear-gradient(140deg, oklch(0.36 0.05 255), oklch(0.19 0.03 255));
+  border: 1px solid oklch(0.7 0.07 245 / 55%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.88 0.06 232 / 30%),
+    0 0 34px var(--arcane-soft),
+    0 0 14px oklch(0.72 0.1 240 / 35%);
+  animation: gate-glyph 1.5s ease-in-out infinite alternate;
+}
+@keyframes gate-glyph {
+  from { box-shadow: inset 0 1px 0 oklch(0.88 0.06 232 / 30%), 0 0 20px var(--arcane-soft), 0 0 8px oklch(0.72 0.1 240 / 25%); }
+  to   { box-shadow: inset 0 1px 0 oklch(0.88 0.06 232 / 30%), 0 0 44px var(--arcane-soft), 0 0 18px oklch(0.72 0.1 240 / 45%); }
+}
+.portal-gate-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(100deg, oklch(0.96 0.01 235) 20%, oklch(0.8 0.09 240) 46%, oklch(0.82 0.1 295) 54%, oklch(0.96 0.01 235) 80%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gate-shine 1.6s linear infinite;
+}
+@keyframes gate-shine { from { background-position: 130% 0; } to { background-position: -90% 0; } }
+.portal-gate-sub { margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--steel); }
+
+/* ---- UI-3: game-press micro-interactions ----
+   .press-fx — tactile squash on :active for buttons/chips/tabs
+   .lift      — hover float for glass cards (hover-capable devices only) */
+.press-fx { transition: transform 0.12s ease; }
+.press-fx:active { transform: scale(0.965); }
+.lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.8 0.07 235 / 30%);
+    box-shadow:
+      var(--glass-halo),
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 22px oklch(0.6 0.09 240 / 12%);
+  }
+}
+
+/* ---- UI-4: rune-marked section titles ----
+   inline arcane diamond before the text; truncate-safe (inline pseudo) */
+.rune-title::before {
+  content: "✦";
+  display: inline-block;
+  margin-inline-end: 0.45rem;
+  font-size: 0.78em;
+  color: var(--arcane);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px var(--arcane-soft));
+  vertical-align: 0.08em;
+}
+/* gradient-forged text for hero titles only (keep body copy flat) */
+.rune-glow {
+  background: linear-gradient(100deg, oklch(0.96 0.012 235) 30%, oklch(0.85 0.07 240) 70%, oklch(0.83 0.08 295 / 90%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ---- UI-5: quest tabs (diamond + glow beam on the active tab) ----
+   works wherever aria-current="page" is set — no per-site JS needed */
+.tab-rune { position: relative; }
+.tab-rune::after {
+  content: "";
+  position: absolute;
+  inset-inline: 14%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  box-shadow: 0 0 9px currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.tab-rune::before {
+  content: "◆";
+  position: absolute;
+  bottom: -2.5px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  font-size: 7px;
+  line-height: 1;
+  color: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
+  transition: transform 0.2s ease;
+}
+.tab-rune[aria-current="page"]::after { opacity: 1; }
+.tab-rune[aria-current="page"]::before { transform: translateX(-50%) scale(1); }
+
+/* ---- UI-6: summoning skeletons (rune sweep over the pulse) ---- */
+.summon-glyph { position: relative; overflow: hidden; }
+.summon-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 22%, oklch(0.85 0.06 235 / 12%) 50%, transparent 78%);
+  transform: translateX(-110%);
+  animation: summon-sweep 1.7s ease-in-out infinite;
+}
+@keyframes summon-sweep { to { transform: translateX(110%); } }
+.rune-spin {
+  color: var(--arcane);
+  filter: drop-shadow(0 0 9px var(--arcane-soft));
+  animation: rune-spin 2.8s linear infinite;
+}
+@keyframes rune-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ---- UI-7: forged score numerals + live battle ring ---- */
+.score-forge {
+  background: linear-gradient(180deg, oklch(0.97 0.015 235) 15%, oklch(0.8 0.06 235 / 85%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 12px oklch(0.62 0.09 240 / 35%));
+}
+.score-battle {
+  animation: score-breathe 2.2s ease-in-out infinite;
+}
+@keyframes score-breathe {
+  0%, 100% { filter: drop-shadow(0 2px 10px oklch(0.62 0.2 25 / 25%)); }
+  50% { filter: drop-shadow(0 2px 16px oklch(0.62 0.21 25 / 55%)); }
+}
+
+/* ---- UI-8: rune ring for empty-state icon tiles ---- */
+.rune-ring { position: relative; }
+.rune-ring::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1px dashed oklch(0.72 0.1 295 / 45%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---- UI-9: HUD beams on the chrome bars + arcane focus glow ---- */
+.glass-bar { position: relative; }
+.glass-bar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 6%, oklch(0.8 0.09 240 / 40%), oklch(0.8 0.08 295 / 30%), transparent 94%);
+  pointer-events: none;
+}
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px oklch(0.72 0.13 295 / 70%),
+    0 0 16px oklch(0.72 0.13 295 / 45%);
+}
+
+/* ---- UI-10: gradient scrollbar + soft card entrance ---- */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, oklch(0.46 0.06 260), oklch(0.3 0.04 255));
+  box-shadow: inset 0 0 0 1px oklch(0.7 0.08 260 / 22%);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.56 0.08 262), oklch(0.38 0.05 255));
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(7px) scale(0.996); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- motion-safety: the whole fantasy layer goes static ---- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-aurora, .fx-stars, .fx-stars-b { animation: none !important; }
+  .portal-gate, .portal-gate-core, .portal-gate-glyph { animation: none !important; }
+  .summon-glyph::after { animation: none !important; opacity: 0; }
+  .rune-spin { animation: none !important; }
+  .score-battle { animation: none !important; }
+  .rune-ring::before { animation: none !important; }
+  .glass-card, .glass-hero, .glass-scorer-hero { animation: none !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fx-aurora-a { animation: aurora-a 26s ease-in-out infinite alternate; }
+  .fx-aurora-b { animation: aurora-b 33s ease-in-out infinite alternate; }
+  .fx-aurora-c { animation: aurora-c 39s ease-in-out infinite alternate; }
+  .fx-stars { animation: twinkle-a 5.5s ease-in-out infinite alternate; }
+  .fx-stars-b { animation: twinkle-b 7s ease-in-out infinite alternate; }
+  .rune-ring::before { animation: rune-orbit 16s linear infinite; }
+  .glass-card, .glass-hero, .glass-scorer-hero { animation: card-in 0.38s ease both; }
+}
+@keyframes aurora-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-7vmax, 5vmax, 0) scale(1.14); } }
+@keyframes aurora-b { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(6vmax, -4vmax, 0) scale(0.94); } }
+@keyframes aurora-c { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-5vmax, -3vmax, 0) scale(1.18); } }
+@keyframes twinkle-a { from { opacity: 0.3; } to { opacity: 0.62; } }
+@keyframes twinkle-b { from { opacity: 0.5; } to { opacity: 0.22; } }
+@keyframes rune-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }

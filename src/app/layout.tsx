@@ -3,6 +3,8 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/remontada/pwa-register";
+import { FantasyBackdrop } from "@/components/remontada/fantasy-backdrop";
+import { PortalGate } from "@/components/remontada/portal-gate";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { SITE_URL, SITE_NAME } from "@/lib/site";
 
@@ -109,7 +111,9 @@ export default function RootLayout({
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body className={`${vazir.variable} antialiased bg-background text-foreground font-sans`}>
         <JsonLd data={SITE_LD} />
+        <FantasyBackdrop />
         {children}
+        <PortalGate />
         <Toaster />
         <PwaRegister />
       </body>
