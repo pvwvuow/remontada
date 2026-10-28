@@ -93,6 +93,8 @@ export interface StandingsData {
   leagueFa: string;
   season: string;
   rows: StandingsRow[];
+  home?: StandingsRow[];   // cycle-52 additive: FotMob per-side split (optional — hidden when absent)
+  away?: StandingsRow[];
   scorers: ScorerEntry[];
   assists: AssistEntry[];
   updatedAt: string;
@@ -305,7 +307,7 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
 interface FMStatPlayer { id: number; name: string; teamId?: number; teamName?: string; ccode?: string; value?: number; rank?: number }
 interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
-  table?: { data?: { table?: { all?: FotMobRow[] } } };
+  table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] } } };
   fixtures?: { allMatches?: unknown[] };
   stats?: {
     players?: {
@@ -506,9 +508,14 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
       push(aid, a > h ? "W" : a < h ? "L" : "D");
     }
 
-    const rows: StandingsRow[] = (raw.table?.[0]?.data?.table?.all || []).map((r) => {
+    // cycle-52 (Update #2): one mapper for all three variants — `all` carries
+    // the computed last-5 form chips; FotMob home/away rows share the exact
+    // row shape of `all` (probe: same keys + goalsScored) but attaching the
+    // OVERALL form there would be misleading, so side rows carry no form
+    const fmTable = raw.table?.[0]?.data?.table;
+    const mapRow = (r: FotMobRow, withForm: boolean): StandingsRow => {
       const [gf, ga] = (r.scoresStr || "0-0").split("-").map((x) => parseInt(x, 10) || 0);
-      const form = formMap.get(r.id);
+      const form = withForm ? formMap.get(r.id) : undefined;
       return {
         idx: r.idx, teamId: r.id, name: r.name, fa: teamFa(r.name, r.shortName),
         logo: fotmobTeamLogo(r.id),
@@ -517,8 +524,15 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
         qualColor: r.qualColor || undefined,
         ...(form && form.length > 0 ? { form: form.slice(-5) } : {}),
       };
-    });
+    };
+    const rows: StandingsRow[] = (fmTable?.all || []).map((r) => mapRow(r, true));
     if (rows.length === 0) throw new Error("No standings data");
+    const sideRows = (v?: FotMobRow[]) => {
+      const arr = (v || []).map((r) => mapRow(r, false));
+      return arr.length > 0 ? arr : undefined;
+    };
+    const homeRows = sideRows(fmTable?.home);
+    const awayRows = sideRows(fmTable?.away);
 
     // Top scorers from stats.players (header "Top scorer" + topThree),
     // enriched with assists / G+A / xG / rating matched by player id
@@ -575,12 +589,16 @@ export async function getStandings(leagueKey: string): Promise<StandingsData> {
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
+      ...(homeRows ? { home: homeRows } : {}),
+      ...(awayRows ? { away: awayRows } : {}),
       scorers: mergedScorers,
       assists: assistEntries,
       updatedAt: new Date().toISOString(),
     };
   };
-  return cached(`standings:${leagueKey}`, 60 * 60_000, build);
+  // cycle-52: payload shape gained additive `home`/`away` → key bumped to v2
+  // so the L2 (SQLite) cache cannot serve the old shape for its 60-min TTL
+  return cached(`standings:v2:${leagueKey}`, 60 * 60_000, build);
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------
