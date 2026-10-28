@@ -124,7 +124,15 @@ export function cacheSet<T>(key: string, value: T, ttlMs: number): void {
   void dbSet(key, value, ttlMs);
 }
 
-export async function cached<T>(key: string, ttlMs: number, producer: () => Promise<T>): Promise<T> {
+export async function cached<T>(
+  key: string,
+  // update cycle-102: ttlMs may now be a function of the freshly produced
+  // value (matchday-aware league payloads pick their own TTL from the
+  // payload's fixture list). Plain numbers behave exactly as before — every
+  // existing caller is unchanged.
+  ttlMs: number | ((value: T) => number),
+  producer: () => Promise<T>
+): Promise<T> {
   // L1 fresh → done
   const mem = memGet<T>(key);
   if (mem && Date.now() <= mem.expiresAt) return mem.value;
@@ -139,7 +147,7 @@ export async function cached<T>(key: string, ttlMs: number, producer: () => Prom
   // miss / stale → refresh from source
   try {
     const fresh = await producer();
-    cacheSet(key, fresh, ttlMs);
+    cacheSet(key, fresh, typeof ttlMs === "function" ? ttlMs(fresh) : ttlMs);
     return fresh;
   } catch (err) {
     // stale-while-error: memory first, then disk

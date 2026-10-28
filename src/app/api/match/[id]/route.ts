@@ -181,6 +181,9 @@ interface FMMatchDetails {
     // occurrences in the rendered page, all 21 "m/s" hits are URL false
     // positives (hreflang/links) → the windSpeed unit is permanently
     // unassertable from FotMob itself; temperature IS Celsius (their widget).
+    // precipitation/snow verdict (cycle-102): their i18n bundle carries ONLY
+    // the 12 condition keys — no unit strings at all, and the widget shows
+    // neither value → same permanent honest omission as wind.
     weather?: {
       temperature?: number;
       windSpeed?: number;

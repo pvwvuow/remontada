@@ -116,6 +116,14 @@ export interface StandingsData {
   /** cycle-92 additive: curated upstream season leaderboards (team + player
    *  podiums from raw.stats blocks) — hidden when the feed lacks them. */
   boards?: LeagueBoard[];
+  /** cycle-102 additive metadata: the league sits inside the matchday window
+   *  (live / recently finished / same-day upcoming kickoff) — the payload is
+   *  stored with the short TTL. Absent on quiet days (and on pre-102 cached
+   *  entries, which the TTL reader treats as quiet — old behavior). */
+  matchday?: boolean;
+  /** cycle-102 additive metadata: effective cache TTL in minutes (15 matchday
+   *  / 60 quiet) so callers (and checks) can verify the freshness contract. */
+  ttlMinutes?: number;
   updatedAt: string;
 }
 
@@ -331,7 +339,9 @@ interface FotMobLeague {
   details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
   allAvailableSeasons?: string[];
   table?: { data?: { table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] }; selectedSeason?: string } };
-  fixtures?: { allMatches?: unknown[] };
+  // cycle-102: hasOngoingMatch typed (probed: boolean; null on persiangulf's
+  // null fixtures block) — the matchday detector reads it for free
+  fixtures?: { allMatches?: unknown[]; hasOngoingMatch?: boolean | null };
   playoff?: { rounds?: FMBracketRoundRaw[] };
   transfers?: FMTransfersRaw;
   stats?: {
@@ -381,13 +391,51 @@ export class LeagueUnavailableError extends Error {
 // cycle-99: the SEASON_PARAM_RE definition moved to @/lib/season and is
 // re-exported from the top of this file — API route consumers unchanged.
 
+// ---------------- cycle-102: matchday-aware league payload TTL ----------------
+// Registered cycle-93/98 candidate closed: on matchdays FotMob applies
+// post-hoc corrections (goals, points, tie-break order — root-caused in 98
+// on Serie A) minutes-to-hours AFTER kickoff, and the fixed 60-min
+// leagueRaw/standings TTL served a stale snapshot for up to an hour.
+// The data/leagues payload itself carries the full-season fixture list
+// (fixtures.allMatches with ISO status.utcTime + the upstream
+// hasOngoingMatch flag) → matchday detection is FREE: zero extra upstream.
+// Matchday = any non-cancelled fixture kicking off inside the live window
+// [now-5h, now+10h] (recently finished: the corrections window; live; same-
+// day upcoming) or the upstream hasOngoingMatch flag. Matchday payloads are
+// stored 15 min, quiet days keep the 60-min behavior. Null fixtures block
+// (persiangulf design) → quiet.
+const LEAGUE_TTL_QUIET = 60 * 60_000;
+const LEAGUE_TTL_MATCHDAY = 15 * 60_000;
+
+export function isLeagueMatchday(raw: FotMobLeague, now = Date.now()): boolean {
+  if (raw?.fixtures?.hasOngoingMatch === true) return true;
+  const WINDOW_START = 5 * 3600_000;
+  const WINDOW_END = 10 * 3600_000;
+  const all = raw?.fixtures?.allMatches;
+  if (!Array.isArray(all)) return false;
+  for (const m of all as FotMobFixture[]) {
+    if (m?.status?.cancelled) continue;
+    const t = m?.status?.utcTime ? Date.parse(m.status.utcTime) : NaN;
+    if (Number.isNaN(t)) continue;
+    if (t <= now + WINDOW_END && t >= now - WINDOW_START) return true;
+  }
+  return false;
+}
+
+function leagueTtl(raw: FotMobLeague): number {
+  return isLeagueMatchday(raw) ? LEAGUE_TTL_MATCHDAY : LEAGUE_TTL_QUIET;
+}
+
 // Fetch + cache the (heavy) league payload once; standings & fixtures share it
 async function getLeagueRaw(leagueKey: string, season?: string): Promise<{ lg: (typeof LEAGUES)[number]; raw: FotMobLeague }> {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   if (!lg) throw new Error(`Unknown league: ${leagueKey}`);
   // NOTE: the null/invalid guard lives INSIDE the cached producer so an
   // unusable payload is never cached — each request retries upstream.
-  const raw = await cached(`leagueRaw:${leagueKey}:${season || "cur"}`, 60 * 60_000, async () => {
+  // update cycle-102: the TTL is payload-derived (matchday-aware) — the same
+  // raw payload the producer just fetched decides whether it is stored for
+  // 15 min (matchday) or 60 min (quiet day).
+  const raw = await cached(`leagueRaw:${leagueKey}:${season || "cur"}`, (data) => leagueTtl(data as FotMobLeague), async () => {
     const data = await fetchJson<FotMobLeague>(
       `https://www.fotmob.com/api/data/leagues?id=${lg.fotmobId}&ccode3=${lg.ccode3}&lang=en${season ? `&season=${encodeURIComponent(season)}` : ""}`
     );
@@ -796,6 +844,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       : undefined;
     // cycle-92: curated upstream season boards (same leagueRaw, zero extra hit)
     const boards = extractLeagueBoards(raw);
+    // cycle-102: freshness metadata — the SAME raw payload decides whether
+    // this mapped value (and its leagueRaw source) is stored 15 min
+    // (matchday) or 60 min (quiet). ttlMinutes is always set for fresh
+    // builds; the cached() TTL reader falls back to quiet for pre-102
+    // entries (old behavior preserved for one TTL generation).
+    const matchday = isLeagueMatchday(raw);
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
       ...(selectedSeason ? { selectedSeason } : {}),
@@ -803,6 +857,8 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ...(homeRows ? { home: homeRows } : {}),
       ...(awayRows ? { away: awayRows } : {}),
       ...(boards.length > 0 ? { boards } : {}),
+      ...(matchday ? { matchday: true } : {}),
+      ttlMinutes: matchday ? 15 : 60,
       scorers: mergedScorers,
       assists: assistEntries,
       updatedAt: new Date().toISOString(),
@@ -816,13 +872,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // old v2 entries (without them) would keep the xG section hidden for an hour
   // v4 (cycle-92): mapped shape gained the optional `boards` field (upstream
   // season leaderboards) — old v3 entries would keep the section hidden an hour
+  // cycle-102: TTL is now payload-derived (15 min matchday / 60 min quiet) —
+  // NO key bump: the added matchday/ttlMinutes fields are metadata-only (no
+  // UI consumer), and the TTL reader falls back to the old 60-min behavior
+  // for pre-102 entries still inside their TTL (one generation, self-heals).
   // ⚠️ cycle-94: the key deliberately uses the REQUESTED `season` PARAMETER
   // (in function scope), NOT the payload-derived local inside build — that
   // local is always "" (details.seasons is empty upstream), so keying on it
   // would collide the current season and EVERY historical season of a league
   // into `:cur` for the whole 60-min TTL. Verified: 2020/2021 and current
   // responses stay distinct end-to-end (honest rows/boards/xG both ways).
-  return cached(`standings:v4:${leagueKey}:${season || "cur"}`, 60 * 60_000, build);
+  return cached(`standings:v4:${leagueKey}:${season || "cur"}`, (mapped) =>
+    typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build);
 }
 
 // ---------------- FotMob: league fixtures (full season) ----------------
