@@ -6,6 +6,7 @@
 import { NextResponse } from "next/server";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
+import { buildShootout } from "@/lib/shootout";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -297,6 +298,13 @@ export interface MatchDetailNormalized {
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // fix cycle-45: shootout attempts were dropped entirely before — the
+  // decisive phase of knockout matches was invisible to the user
+  shootout?: {
+    home: number;
+    away: number;
+    attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string;
@@ -357,8 +365,14 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   const rawEvents = raw.content?.matchFacts?.events?.events || [];
   const events: MatchDetailNormalized["events"] = [];
   const scorers: MatchDetailNormalized["scorers"] = [];
+  const shootoutRaw: FMEvent[] = [];
   for (const e of rawEvents) {
-    if (e.isPenaltyShootoutEvent) continue;
+    // fix cycle-45: collect shootout events instead of dropping them —
+    // buildShootout turns them into a dedicated normalized block
+    if (e.isPenaltyShootoutEvent) {
+      shootoutRaw.push(e);
+      continue;
+    }
     const side: "home" | "away" | "neutral" = e.isHome === true ? "home" : e.isHome === false ? "away" : "neutral";
     const isGoal = e.type === "Goal";
     events.push({
@@ -392,6 +406,9 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     }
   }
   events.reverse(); // newest-first for timeline
+
+  // fix cycle-45: penalty shootout block (score + attempts), null on quiet path
+  const shootout = shootoutRaw.length > 0 ? buildShootout(shootoutRaw) : null;
 
   // ---------------- stats ----------------
   // Shape: Periods.All.stats = [ { title: groupName, stats: [ {row}, {titleRow}, ... ] }, ... ]
@@ -552,6 +569,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     info,
     form,
     momentum,
+    shootout,
     playerOfTheMatch,
     fetchedAt: new Date().toISOString(),
   };

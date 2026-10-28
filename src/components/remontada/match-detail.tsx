@@ -53,6 +53,12 @@ interface DetailData {
   info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // fix cycle-45: penalty shootout (was dropped entirely before)
+  shootout?: {
+    home: number;
+    away: number;
+    attempts: { side: "home" | "away" | "neutral"; player?: string; scored: boolean; noteFa: string }[];
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; rating?: string | null;
@@ -214,7 +220,7 @@ function KickoffCountdown({ utcTime }: { utcTime: string }) {
 }
 
 // ---------- scoreboard ----------
-function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"] }) {
+function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"]; shootout?: DetailData["shootout"] }) {
   const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : tehranTime(m.utcTime);
   return (
     <section className="glass-card glass-hero overflow-hidden">
@@ -282,6 +288,19 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
         </div>
       </div>
 
+      {/* fix cycle-45: shootout score strip (decisive phase made visible) */}
+      {shootout && (
+        <div className="px-4 py-2 border-t border-glass-border-soft bg-amber-400/[0.05] flex items-center justify-center gap-2 text-[11px] text-amber-200/90 tabular-persian">
+          <span>ضربات پنالتی:</span>
+          <span className="font-black">{faDigits(shootout.home)}–{faDigits(shootout.away)}</span>
+          {shootout.home !== shootout.away && (
+            <span className="text-steel/80">
+              ({shootout.home > shootout.away ? m.home.fa || m.home.name : m.away.fa || m.away.name} برنده شد)
+            </span>
+          )}
+        </div>
+      )}
+
       {/* scorers + POTM */}
       {m.started && !m.cancelled && (
         <div className="px-4 pb-4 pt-1 grid grid-cols-[1fr_auto_1fr] gap-2 text-[11px]">
@@ -322,6 +341,42 @@ function Scoreboard({ m, scorers, potm }: { m: DetailMatch; scorers: DetailScore
         </div>
       )}
     </section>
+  );
+}
+
+// ---------- penalty shootout card (fix cycle-45) ----------
+function PenDot({ scored }: { scored: boolean }) {
+  return <span className={cn("inline-block w-2 h-2 rounded-full shrink-0", scored ? "bg-emerald-400" : "bg-red-400/70")} aria-hidden />;
+}
+function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["shootout"]>; match: DetailMatch }) {
+  return (
+    <div className="glass-card overflow-hidden">
+      <div className="px-4 py-2 border-b border-glass-border-soft bg-white/[0.02] text-[11px] font-black text-amber-200/90 tabular-persian">
+        ضربات پنالتی — {faDigits(shootout.home)}–{faDigits(shootout.away)}
+      </div>
+      <div className="glass-list">
+        {shootout.attempts.map((a, i) => (
+          <div key={i} className="glass-row-hover grid grid-cols-[1fr_auto_1fr] items-center gap-2 px-4 py-2 text-[12px]">
+            {/* home side (right in RTL) */}
+            <div className={cn("flex items-center gap-2 justify-start", a.side !== "home" && "invisible")}>
+              <PenDot scored={a.scored} />
+              <span className="font-semibold">{a.player}</span>
+              {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
+            </div>
+            <span className="text-[10px] text-muted-foreground tabular-persian">{faDigits(i + 1)}</span>
+            {/* away side */}
+            <div className={cn("flex items-center gap-2 justify-end", a.side !== "away" && "invisible")}>
+              {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
+              <span className="font-semibold">{a.player}</span>
+              <PenDot scored={a.scored} />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="px-4 py-2 text-[10px] text-steel/60 border-t border-glass-border-soft">
+        {match.home.fa || match.home.name} — سمت راست | {match.away.fa || match.away.name} — سمت چپ
+      </div>
+    </div>
   );
 }
 
@@ -889,7 +944,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         بازگشت به نتایج
       </Link>
 
-      <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} />
+      <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} shootout={data.shootout} />
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (
@@ -936,6 +991,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         {tab === "events" && (
           <div className="flex flex-col gap-4">
             {data.playerOfTheMatch && <PotmCard p={data.playerOfTheMatch} />}
+            {data.shootout && <ShootoutCard shootout={data.shootout} match={m} />}
             <EventsTimeline events={data.events} match={m} />
           </div>
         )}
