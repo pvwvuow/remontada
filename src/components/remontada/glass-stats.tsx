@@ -86,7 +86,8 @@ export function GlassLeagueHeader({
           </span>
         ) : null}
         <div className="min-w-0">
-          <Title className="text-[13.5px] font-extrabold text-[#ecf3fa] truncate leading-5">{title}</Title>
+          {/* cycle-61: card titles carry the arcane identity */}
+          <Title className="arcane-text text-[13.5px] font-extrabold truncate leading-5">{title}</Title>
           {sub && (
             <p className="text-[8px] font-bold tracking-[0.22em] text-steel/75 uppercase truncate mt-0.5">{sub}</p>
           )}

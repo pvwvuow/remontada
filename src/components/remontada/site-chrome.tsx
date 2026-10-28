@@ -20,8 +20,9 @@ export function SiteLogo({ small = false }: { small?: boolean }) {
         </svg>
       </div>
       <div className="leading-tight hidden xs:block sm:block">
-        <p className={`${small ? "text-base" : "text-lg"} font-black tracking-tight group-hover:text-primary transition-colors`}>
-          رمانتادا<span className="text-primary">.</span>
+        {/* cycle-61: arcane wordmark — gradient name + legend-gold dot */}
+        <p className={`${small ? "text-base" : "text-lg"} font-black tracking-tight transition-colors`}>
+          <span className="arcane-text">رمانتادا</span><span className="text-gold">.</span>
         </p>
         <p className="text-[10px] text-muted-foreground font-medium">فوتبال، بی‌وقفه و زنده</p>
       </div>
