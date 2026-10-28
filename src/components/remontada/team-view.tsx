@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -923,6 +923,72 @@ function TeamHistorySection({ data }: { data: TeamSeasonHistory }) {
   );
 }
 
+// ---------------- team coach history («تاریخچهٔ نیمکت», cycle-91) ----------------
+// Bench timeline in the trophy-cabinet visual language: one card per coach
+// tenure (consecutive same-coach seasons grouped upstream), season span chip
+// on the left (gold border + «نیمکت فعلی» tag for the ongoing bench), middle
+// shows the coach name + league, right column the games-weighted PPG + win%.
+function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
+  const span = t.from === t.to ? t.fromShortFa : `${t.fromShortFa} تا ${t.toShortFa}`;
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
+      <span
+        className={cn(
+          "shrink-0 min-w-9 px-1.5 h-9 rounded-lg grid place-items-center text-[9.5px] font-black tabular-persian border",
+          t.live ? "text-gold border-gold/30 bg-gold/10" : "text-[#c3d4ea] border-[color:var(--glass-border-soft)] bg-white/[0.05]"
+        )}
+        title={`${faDigits(t.from)} تا ${faDigits(t.to)}`}
+        aria-hidden
+      >
+        {span}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate flex items-center gap-1.5">
+          {t.name}
+          {t.live && (
+            <span className="shrink-0 rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-px text-[8.5px] font-black">
+              نیمکت فعلی
+            </span>
+          )}
+        </p>
+        <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5 truncate">
+          {t.leagueName} · {t.seasons === 1 ? "۱ فصل" : `${faDigits(t.seasons)} فصل`} · {faDigits(t.games)} بازی
+        </p>
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-0.5">
+        <p className="text-[14px] font-black tabular-persian leading-none" title="میانگین امتیاز در هر بازی">
+          {faDigits(t.ppg.toFixed(1))}
+        </p>
+        <span className="text-[9.5px] font-bold tabular-persian text-steel/80">
+          {faDigits(t.winPct)}٪ برد · {faDigits(t.win)} ب · {faDigits(t.draw)} م · {faDigits(t.loss)} پ
+        </span>
+      </div>
+    </li>
+  );
+}
+
+function TeamCoachesSection({ data }: { data: TeamCoachHistory }) {
+  return (
+    <Section
+      title="تاریخچهٔ نیمکت"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+          از فصل {data.tenures[data.tenures.length - 1]?.fromShortFa ?? ""}
+        </span>
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-coaches" aria-label="تاریخچهٔ سرمربیان تیم">
+        {data.tenures.map((t) => (
+          <TeamCoachTenureRow key={`${t.from}:${t.name}`} t={t} />
+        ))}
+      </ul>
+      <p className="text-[9.5px] text-muted-foreground mt-2 px-1">
+        رکوردهای هر فصل لیگِ اصلی باشگاه است؛ میانگین امتیاز وزن‌دهی‌شده بر حسب تعداد بازی. دادهٔ FotMob.
+      </p>
+    </Section>
+  );
+}
+
 // ---------------- team full-season fixtures («همهٔ بازی‌های فصل», cycle-81) ----------------
 // Whole-season archive from the shared team payload (league + cups +
 // friendlies) — far beyond the 10-result / 8-upcoming windows above. Two
@@ -1162,6 +1228,25 @@ export function TeamView({ teamId }: { teamId: number }) {
     };
   }, [teamId]);
 
+  // cycle-91: lazy team coach history («تاریخچهٔ نیمکت») — same data/teams
+  // source (shared upstream cache), fetched after mount; stays null → section
+  // hidden when the source has no bench archive (same contract as above).
+  const [coaches, setCoaches] = useState<TeamCoachHistory | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-coaches/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.coaches) setCoaches(j.coaches as TeamCoachHistory);
+      })
+      .catch(() => {
+        /* coaches stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
   // cycle-81: lazy team full-season fixtures («همهٔ بازی‌های فصل») — same
   // data/teams source (shared upstream cache), fetched after mount; stays
   // null → section hidden.
@@ -1382,6 +1467,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-80: team league history («سوابق لیگ») — lazily probed, hidden when absent */}
       {seasonHistory && seasonHistory.items.length > 0 && <TeamHistorySection data={seasonHistory} />}
+
+      {/* cycle-91: team coach history («تاریخچهٔ نیمکت») — lazily probed, hidden when absent */}
+      {coaches && coaches.tenures.length > 0 && <TeamCoachesSection data={coaches} />}
 
       {/* cycle-81: team full-season fixtures («همهٔ بازی‌های فصل») — lazily probed, hidden when absent */}
       {fixturesAll && fixturesAll.total > 0 && <TeamFixturesSection data={fixturesAll} teamId={teamId} />}

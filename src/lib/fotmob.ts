@@ -2514,6 +2514,14 @@ interface FMTeamDataRaw {
   history?: {
     trophyList?: FMTeamTrophyRaw[];
     historicalTableData?: { ranks?: FMHistoryRankRaw[] };
+    // cycle-91 probed (UA Chrome/124, 2026-10-29): one row per coach×season of
+    // the club's PRIMARY league that year — { id (coach id-space, NOT player
+    // ids), name, season "2012/2013", leagueId, leagueName, win, draw, loss,
+    // pointsPerGame, winPercentage (0..1 fraction) }. Ascending by season.
+    // Coverage: City 15 / Celtic 19 / Palace 24 / Liverpool 16 / even small
+    // clubs (Whitby 6); mid-season handovers appear as consecutive rows of
+    // different coaches (Strasbourg: 8 coaches over 14 seasons).
+    coachHistory?: FMCoachHistoryRaw[];
   };
   overview?: { venue?: FMVenueRaw };
   stats?: {
@@ -3065,6 +3073,19 @@ const currentSeasonKey = (): string => {
  * SEASON_HISTORY_SHOWN rows; null when the payload has no ranks so the UI
  * hides the section (same contract as the other lazy team reads).
  */
+interface FMCoachHistoryRaw {
+  id?: number;
+  name?: string;
+  season?: string;
+  leagueId?: number;
+  leagueName?: string;
+  win?: number;
+  draw?: number;
+  loss?: number;
+  pointsPerGame?: number;
+  winPercentage?: number;
+}
+
 export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHistory | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return null;
   const raw = await getTeamDataRaw(teamId);
@@ -3096,6 +3117,168 @@ export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHi
   if (items.length === 0) return null;
   items.sort((a, b) => b.season.localeCompare(a.season));
   return { total: items.length, items: items.slice(0, SEASON_HISTORY_SHOWN) };
+}
+
+// ---------------- FotMob: team coach history (data/teams endpoint, cycle-91) ----------------
+// «تاریخچهٔ نیمکت» — the bench timeline. Consecutive same-coach seasons are
+// grouped into one tenure (Guardiola 2016/17→2025/26 on City); a mid-season
+// handover or a return after a gap naturally starts a new tenure. Totals are
+// plain sums; ppg/winPct are games-weighted averages of the source rows.
+// Newest first. Same contract as every other lazy team read: null → UI hides.
+
+export interface TeamCoachSeason {
+  season: string; // "2025/2026" (stable React key within tenure)
+  shortFa: string; // pre-formatted «۲۵/۲۶»
+  leagueName: string;
+  win: number;
+  draw: number;
+  loss: number;
+  ppg: number;
+}
+
+export interface TeamCoachTenure {
+  name: string;
+  from: string; // "2016/2017"
+  to: string; // "2025/2026"
+  fromShortFa: string; // «۱۶/۱۷»
+  toShortFa: string; // «۲۵/۲۶»
+  leagueName: string; // primary league of the tenure's LATEST season (Palace tenures cross Championship→PL)
+  seasons: number;
+  games: number;
+  win: number;
+  draw: number;
+  loss: number;
+  ppg: number; // games-weighted avg, 2dp
+  winPct: number; // 0..100, 0dp
+  live?: boolean; // tenure contains the current season → «نیمکت فعلی»
+  perSeason: TeamCoachSeason[]; // newest first
+}
+
+export interface TeamCoachHistory {
+  total: number; // season rows in the source
+  tenures: TeamCoachTenure[]; // newest first
+}
+
+/** "2016/2017" → «۱۶/۱۷» (same visual language as the season-history chips). */
+const coachShortSeasonFa = (season: string): string => {
+  const parts = season.split("/");
+  if (parts.length !== 2) return faDigits(season);
+  return faDigits(`${parts[0].slice(-2)}/${parts[1].slice(-2)}`);
+};
+
+export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHistory | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.history?.coachHistory;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const num = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+  const cur = currentSeasonKey();
+  const rows = list
+    .map((r) => {
+      const name = String(r?.name || "");
+      const season = String(r?.season || "");
+      if (!name || !season) return null;
+      return {
+        name,
+        season,
+        leagueName: String(r?.leagueName || ""),
+        win: num(r?.win),
+        draw: num(r?.draw),
+        loss: num(r?.loss),
+        ppg: num(r?.pointsPerGame),
+        winPct: num(r?.winPercentage),
+      };
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    // payload is ascending, but never trust order — group on a known order
+    .sort((a, b) => a.season.localeCompare(b.season));
+  if (rows.length === 0) return null;
+
+  interface Acc {
+    name: string;
+    from: string;
+    to: string;
+    leagueName: string;
+    games: number;
+    win: number;
+    draw: number;
+    loss: number;
+    ppgSum: number; // Σ ppg·games
+    pctSum: number; // Σ winPct·games
+    live: boolean;
+    perSeason: TeamCoachSeason[]; // built newest-first via unshift
+  }
+  const accs: Acc[] = [];
+  for (const r of rows) {
+    const games = Math.max(r.win + r.draw + r.loss, 0);
+    const last = accs[accs.length - 1];
+    if (last && last.name === r.name) {
+      last.to = r.season;
+      last.leagueName = r.leagueName; // latest season's primary league wins
+      last.games += games;
+      last.win += r.win;
+      last.draw += r.draw;
+      last.loss += r.loss;
+      last.ppgSum += r.ppg * games;
+      last.pctSum += r.winPct * games;
+      last.live = last.live || r.season === cur;
+      last.perSeason.unshift({
+        season: r.season,
+        shortFa: coachShortSeasonFa(r.season),
+        leagueName: r.leagueName,
+        win: r.win,
+        draw: r.draw,
+        loss: r.loss,
+        ppg: r.ppg,
+      });
+    } else {
+      accs.push({
+        name: r.name,
+        from: r.season,
+        to: r.season,
+        leagueName: r.leagueName,
+        games,
+        win: r.win,
+        draw: r.draw,
+        loss: r.loss,
+        ppgSum: r.ppg * games,
+        pctSum: r.winPct * games,
+        live: r.season === cur,
+        perSeason: [
+          {
+            season: r.season,
+            shortFa: coachShortSeasonFa(r.season),
+            leagueName: r.leagueName,
+            win: r.win,
+            draw: r.draw,
+            loss: r.loss,
+            ppg: r.ppg,
+          },
+        ],
+      });
+    }
+  }
+
+  const tenures: TeamCoachTenure[] = accs.map((a) => ({
+    name: a.name,
+    from: a.from,
+    to: a.to,
+    fromShortFa: coachShortSeasonFa(a.from),
+    toShortFa: coachShortSeasonFa(a.to),
+    leagueName: a.leagueName,
+    seasons: a.perSeason.length,
+    games: a.games,
+    win: a.win,
+    draw: a.draw,
+    loss: a.loss,
+    ppg: a.games > 0 ? Math.round((a.ppgSum / a.games) * 100) / 100 : 0,
+    winPct: a.games > 0 ? Math.round((a.pctSum / a.games) * 100) : 0,
+    ...(a.live ? { live: true } : {}),
+    perSeason: a.perSeason,
+  }));
+  if (tenures.length === 0) return null;
+  tenures.reverse(); // newest bench first
+  return { total: rows.length, tenures };
 }
 
 // ---------------- FotMob: team full-season fixtures (data/teams endpoint, cycle-81) ----------------
