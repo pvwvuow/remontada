@@ -2049,47 +2049,169 @@ interface FMSquadMember {
   excludeFromRanking?: boolean;
 }
 
+// ---------------- FotMob: team transfers (data/teams endpoint, cycle-71) ----------------
+// Probed live (2026-10-29, UA Chrome/124): the SAME api/data/teams payload
+// that feeds the squad also carries transfers.allTransfers[] — a date-desc
+// feed of the team's moves. Row shape DIFFERS from the league feed: fee is
+// {feeText, localizedFeeText} with NO value; the euro estimate sits on
+// amountEuroEstimated (often null; feeText is then "fee"/"undisclosed").
+// Probed directions on Celtic 9925: in=16, out=24, contract extensions
+// (from == to == team) = 5.
+
+interface FMTeamTransferRaw {
+  name?: string;
+  playerId?: number;
+  position?: { label?: string };
+  transferDate?: string;
+  fromClub?: string;
+  fromClubFullName?: string;
+  fromClubId?: number;
+  toClub?: string;
+  toClubFullName?: string;
+  toClubId?: number;
+  fee?: { feeText?: string } | null;
+  amountEuroEstimated?: number | null;
+  transferType?: { text?: string };
+  contractExtension?: boolean;
+  onLoan?: boolean;
+}
+
+/** Raw api/data/teams payload — shared by the squad (cycle-70) and the
+ * transfers feed (cycle-71) so both read ONE upstream fetch per hour. */
+interface FMTeamDataRaw {
+  squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
+  transfers?: { allTransfers?: FMTeamTransferRaw[] };
+}
+
+const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
+  cached(`teamDataRaw:${teamId}`, 60 * 60_000, async () =>
+    fetchJson<FMTeamDataRaw>(`https://www.fotmob.com/api/data/teams?id=${teamId}`, 15000)
+  );
+
 export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return null;
-  return cached(`teamSquad:${teamId}`, 60 * 60_000, async () => {
-    const raw = await fetchJson<{ squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] } }>(
-      `https://www.fotmob.com/api/data/teams?id=${teamId}`,
-      15000
-    );
-    const list = raw?.squad?.squad;
-    if (!Array.isArray(list) || list.length === 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.squad?.squad;
+  if (!Array.isArray(list) || list.length === 0) return null;
 
-    let coach: TeamSquad["coach"] = null;
-    const groups: TeamSquad["groups"] = [];
-    for (const g of list) {
-      const title = String(g?.title || "");
-      const members = Array.isArray(g?.members) ? g.members : [];
-      if (title === "coach") {
-        const c = members[0];
-        if (c?.id && c.name) {
-          coach = { id: c.id, name: c.name, ...(c.age != null ? { age: c.age } : {}), ...(c.cname ? { nationality: c.cname } : {}) };
-        }
-        continue;
+  let coach: TeamSquad["coach"] = null;
+  const groups: TeamSquad["groups"] = [];
+  for (const g of list) {
+    const title = String(g?.title || "");
+    const members = Array.isArray(g?.members) ? g.members : [];
+    if (title === "coach") {
+      const c = members[0];
+      if (c?.id && c.name) {
+        coach = { id: c.id, name: c.name, ...(c.age != null ? { age: c.age } : {}), ...(c.cname ? { nationality: c.cname } : {}) };
       }
-      if (!SQUAD_GROUP_FA[title] || members.length === 0) continue;
-      const players = members
-        .filter((m) => m?.id && m.name)
-        .map((m) => ({
-          id: m.id as number,
-          name: m.name as string,
-          ...(m.shirtNumber != null ? { shirt: m.shirtNumber } : {}),
-          ...(m.age != null ? { age: m.age } : {}),
-          ...(m.cname ? { nationality: m.cname } : {}),
-          ...(m.rating != null && m.rating > 0 ? { rating: m.rating } : {}),
-          ...(m.goals ? { goals: m.goals } : {}),
-          ...(m.assists ? { assists: m.assists } : {}),
-          injured: Boolean(m.injury),
-          ...(m.height ? { height: m.height } : {}),
-        }));
-      if (players.length === 0) continue;
-      groups.push({ key: title as TeamSquad["groups"][number]["key"], titleFa: SQUAD_GROUP_FA[title], players });
+      continue;
     }
-    if (groups.length === 0 && !coach) return null;
-    return { coach, groups };
-  });
+    if (!SQUAD_GROUP_FA[title] || members.length === 0) continue;
+    const players = members
+      .filter((m) => m?.id && m.name)
+      .map((m) => ({
+        id: m.id as number,
+        name: m.name as string,
+        ...(m.shirtNumber != null ? { shirt: m.shirtNumber } : {}),
+        ...(m.age != null ? { age: m.age } : {}),
+        ...(m.cname ? { nationality: m.cname } : {}),
+        ...(m.rating != null && m.rating > 0 ? { rating: m.rating } : {}),
+        ...(m.goals ? { goals: m.goals } : {}),
+        ...(m.assists ? { assists: m.assists } : {}),
+        injured: Boolean(m.injury),
+        ...(m.height ? { height: m.height } : {}),
+      }));
+    if (players.length === 0) continue;
+    groups.push({ key: title as TeamSquad["groups"][number]["key"], titleFa: SQUAD_GROUP_FA[title], players });
+  }
+  if (groups.length === 0 && !coach) return null;
+  return { coach, groups };
+}
+
+export interface TeamTransferItem {
+  playerId: number;
+  name: string;
+  position: string;
+  date: string; // ISO
+  from: { id: number; name: string; fa: string };
+  to: { id: number; name: string; fa: string };
+  kind: "in" | "out" | "internal";
+  kindFa: string;
+  feeFa: string;
+}
+
+export interface TeamTransfersData {
+  total: number;
+  nIn: number;
+  nOut: number;
+  nInternal: number;
+  items: TeamTransferItem[];
+}
+
+/** Persian fee/type label for the TEAM feed (fee has no value here — the euro
+ * estimate lives on amountEuroEstimated; probed texts: fee, on loan, free
+ * transfer, contract extension, undisclosed). */
+const teamTransferFeeFa = (t: FMTeamTransferRaw): string => {
+  if (t.contractExtension) return "تمدید قرارداد";
+  if (typeof t.amountEuroEstimated === "number" && t.amountEuroEstimated > 0) {
+    return `کارمزد ${euroFa(t.amountEuroEstimated)}`;
+  }
+  const feeText = (t.fee?.feeText || "").toLowerCase();
+  const typeText = (t.transferType?.text || "").toLowerCase();
+  if (feeText === "on loan" || typeText === "on loan" || t.onLoan) return "انتقال امانی";
+  if (feeText === "free transfer" || typeText === "free transfer") return "انتقال آزاد";
+  if (feeText === "undisclosed" || typeText === "undisclosed") return "کارمزد نامشخص";
+  if (feeText === "fee") return "کارمزد";
+  if (typeText === "contract") return "قرارداد";
+  return t.transferType?.text || t.fee?.feeText || "انتقال";
+};
+
+/**
+ * Team-level transfer feed («بازار انتقال‌ها», cycle-71) from the data/teams
+ * payload — direction classified against the team id itself (in = toId, out =
+ * fromId, internal = both, i.e. contract extensions). Source order is already
+ * date-desc — kept as-is. Returns null when the payload has no feed so the UI
+ * hides the section (same contract as getTeamSquad).
+ */
+export async function getTeamTransfers(teamId: number): Promise<TeamTransfersData | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.transfers?.allTransfers;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const items: TeamTransferItem[] = [];
+  for (const t of list) {
+    if (!t?.name || !t?.fromClub || !t?.toClub) continue;
+    const fromId = Number(t.fromClubId || 0);
+    const toId = Number(t.toClubId || 0);
+    if (fromId !== teamId && toId !== teamId) continue;
+    const kind: TeamTransferItem["kind"] =
+      fromId === teamId && toId === teamId ? "internal" : toId === teamId ? "in" : "out";
+    items.push({
+      playerId: Number(t.playerId || 0),
+      name: t.name,
+      position: t.position?.label || "",
+      date: t.transferDate || "",
+      from: {
+        id: fromId,
+        name: t.fromClubFullName || t.fromClub,
+        fa: teamFa(t.fromClubFullName, t.fromClub) || t.fromClubFullName || t.fromClub,
+      },
+      to: {
+        id: toId,
+        name: t.toClubFullName || t.toClub,
+        fa: teamFa(t.toClubFullName, t.toClub) || t.toClubFullName || t.toClub,
+      },
+      kind,
+      kindFa: kind === "in" ? "ورودی" : kind === "out" ? "خروجی" : "تمدید",
+      feeFa: teamTransferFeeFa(t),
+    });
+  }
+  if (items.length === 0) return null;
+  return {
+    total: items.length,
+    nIn: items.filter((x) => x.kind === "in").length,
+    nOut: items.filter((x) => x.kind === "out").length,
+    nInternal: items.filter((x) => x.kind === "internal").length,
+    items,
+  };
 }

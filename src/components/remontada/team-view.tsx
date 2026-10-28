@@ -6,8 +6,9 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
+import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -607,6 +608,92 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
   );
 }
 
+// ---------------- team transfers («بازار انتقال‌ها», cycle-71) ----------------
+// Same visual language as the league feed (league-transfers.tsx): direction
+// chip mint/rose/sky, from→to club tags with tiny logos, Persian fee label
+// and Jalali date. Kind «internal» in a team context means contract renewal.
+const TEAM_KIND_CHIP: Record<TeamTransferItem["kind"], string> = {
+  in: "text-mint border-mint/30 bg-mint/10",
+  out: "text-rose-soft border-rose-soft/30 bg-rose-soft/10",
+  internal: "text-sky-soft border-sky-soft/30 bg-sky-soft/10",
+};
+
+function TransferClubTag({ id, name }: { id: number; name: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 min-w-0">
+      <img
+        src={fotmobTeamLogo(id)}
+        alt=""
+        width={14}
+        height={14}
+        loading="lazy"
+        className="w-3.5 h-3.5 rounded-[3px] object-contain shrink-0 bg-white/10"
+        onError={(e) => {
+          e.currentTarget.style.visibility = "hidden";
+        }}
+      />
+      <span className="truncate">{name}</span>
+    </span>
+  );
+}
+
+function TeamTransferRow({ t }: { t: TeamTransferItem }) {
+  const j = t.date ? jalaliShort(t.date) : null;
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-start gap-2.5">
+      <span
+        className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.05] border border-[color:var(--glass-border-soft)] grid place-items-center text-[10px] font-black text-[#c3d4ea]"
+        aria-hidden
+      >
+        {t.position || "—"}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate">{t.name}</p>
+        <p className="text-[11px] text-[#b4c8df]/75 flex items-center gap-1.5 mt-0.5">
+          <span className="min-w-0 flex items-center gap-1">
+            <TransferClubTag id={t.from.id} name={t.from.fa} />
+          </span>
+          <span className="text-muted-foreground shrink-0" aria-hidden>←</span>
+          <span className="min-w-0 flex items-center gap-1">
+            <TransferClubTag id={t.to.id} name={t.to.fa} />
+          </span>
+        </p>
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-1">
+        <span className={cn("text-[9.5px] font-black rounded-md border px-1.5 py-0.5", TEAM_KIND_CHIP[t.kind])}>
+          {t.kindFa}
+        </span>
+        <span className="text-[10px] font-bold text-[#c3d4ea]">{t.feeFa}</span>
+        {j && (
+          <span className="text-[9.5px] text-muted-foreground tabular-persian whitespace-nowrap">
+            {j.day} {j.month}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamTransfersSection({ data }: { data: TeamTransfersData }) {
+  return (
+    <Section
+      title="بازار انتقال‌ها"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+          ورودی {faDigits(data.nIn)} · خروجی {faDigits(data.nOut)}
+          {data.nInternal > 0 && <> · تمدید {faDigits(data.nInternal)}</>}
+        </span>
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-transfers" aria-label="بازار انتقال‌های تیم">
+        {data.items.map((t, i) => (
+          <TeamTransferRow key={`${t.playerId}:${t.date}:${i}`} t={t} />
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -625,6 +712,25 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* squad stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-71: lazy team transfers («بازار انتقال‌ها») — same data/teams
+  // source as the squad (one shared upstream cache), fetched after mount;
+  // stays null → section hidden when the source has no feed.
+  const [transfers, setTransfers] = useState<TeamTransfersData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-transfers/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.transfers) setTransfers(j.transfers as TeamTransfersData);
+      })
+      .catch(() => {
+        /* transfers stay null → section hidden */
       });
     return () => {
       alive = false;
@@ -813,6 +919,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-70: team squad («ترکیب تیم») — lazily probed, hidden when absent */}
       {squad && <SquadSection squad={squad} />}
+
+      {/* cycle-71: team transfers («بازار انتقال‌ها») — lazily probed, hidden when absent */}
+      {transfers && transfers.items.length > 0 && <TeamTransfersSection data={transfers} />}
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
         نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.
