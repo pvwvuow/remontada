@@ -56,12 +56,12 @@ function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: num
               href={`/player/${s.playerId}`}
               prefetch={false}
               className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
-              title="مشاهده پروفایل بازیکن"
+              title={s.nameFa && s.nameFa !== s.name ? s.name : "مشاهده پروفایل بازیکن"}
             >
-              {s.name}
+              {s.nameFa || s.name}
             </Link>
           ) : (
-            <p className="font-bold text-[13px] truncate text-[#e5eefb]">{s.name}</p>
+            <p className="font-bold text-[13px] truncate text-[#e5eefb]">{s.nameFa || s.name}</p>
           )}
           <div className="flex items-center gap-1.5 text-[10px] text-[#92adc9] mt-0.5 flex-wrap">
             <span className="truncate">{s.team}</span>
@@ -117,12 +117,12 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
                   href={`/player/${a.playerId}`}
                   prefetch={false}
                   className="font-bold text-[12.5px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
-                  title="مشاهده پروفایل بازیکن"
+                  title={a.nameFa && a.nameFa !== a.name ? a.name : "مشاهده پروفایل بازیکن"}
                 >
-                  {a.name}
+                  {a.nameFa || a.name}
                 </Link>
               ) : (
-                <p className="font-bold text-[12.5px] truncate text-[#e5eefb]">{a.name}</p>
+                <p className="font-bold text-[12.5px] truncate text-[#e5eefb]">{a.nameFa || a.name}</p>
               )}
               <div className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 min-w-0">
                 <span className="truncate">{a.team}</span>
@@ -156,12 +156,12 @@ function CardRow({ c, kind }: { c: GlobalCard; kind: "yellow" | "red" }) {
             href={`/player/${c.playerId}`}
             prefetch={false}
             className="font-bold text-[12px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
-            title="مشاهده پروفایل بازیکن"
+            title={c.nameFa && c.nameFa !== c.name ? c.name : "مشاهده پروفایل بازیکن"}
           >
-            {c.name}
+            {c.nameFa || c.name}
           </Link>
         ) : (
-          <p className="font-bold text-[12px] truncate text-[#e5eefb]">{c.name}</p>
+          <p className="font-bold text-[12px] truncate text-[#e5eefb]">{c.nameFa || c.name}</p>
         )}
         <div className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 min-w-0">
           <span className="truncate">{c.team}</span>
@@ -454,18 +454,18 @@ export function TopScorersView() {
                       href={`/player/${heroScorer.s.playerId}`}
                       prefetch={false}
                       className="block text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1 hover:text-primary transition-colors w-fit max-w-full"
-                      title="مشاهده پروفایل بازیکن"
+                      title={heroScorer.s.nameFa && heroScorer.s.nameFa !== heroScorer.s.name ? heroScorer.s.name : "مشاهده پروفایل بازیکن"}
                     >
                       {/* cycle-65: the league's top gun wears the crown */}
                       <span className="inline-flex items-center gap-1.5 max-w-full">
                         <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" className="text-gold shrink-0 drop-shadow-[0_0_6px_oklch(0.84_0.12_85/50%)]" aria-label="آقای گل">
                           <path d="M3 8l4.5 3L12 5l4.5 6L21 8l-1.6 9H4.6L3 8z" />
                         </svg>
-                        <span className="truncate">{heroScorer.s.name}</span>
+                        <span className="truncate">{heroScorer.s.nameFa || heroScorer.s.name}</span>
                       </span>
                     </Link>
                   ) : (
-                    <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{heroScorer.s.name}</p>
+                    <p className="text-lg sm:text-2xl font-bold text-[#f1f7fd] truncate mt-1">{heroScorer.s.nameFa || heroScorer.s.name}</p>
                   )}
                   <div className="flex items-center gap-1.5 text-[10.5px] text-[#b1c9e2] mt-1.5 flex-wrap">
                     <span className="truncate">{heroScorer.s.team}</span>

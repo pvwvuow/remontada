@@ -679,6 +679,7 @@ export async function getLeagueCardLeaders(
           seen.add(id);
           out.push({
             name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
             team: teamFa(r.TeamName || undefined) || r.TeamName || "",
             teamId: r.TeamId ?? 0,
             value: Math.round(r.StatValue ?? 0),
@@ -694,6 +695,7 @@ export async function getLeagueCardLeaders(
           seen.add(p.id);
           out.push({
             name: p.name,
+            nameFa: playerFa(p.name),
             team: teamFa(p.teamName || undefined) || p.teamName || "",
             teamId: p.teamId ?? 0,
             value: Math.round(p.value ?? 0),
@@ -2457,6 +2459,7 @@ export interface GlobalScorer {
   rank: number;        // global dense rank across all leagues
   leagueRank: number;  // rank within the scorer's own league (from FotMob)
   name: string;
+  nameFa: string; // display name — curated Persian (player-names-fa) when mapped, else the raw upstream name; cycle-105 extension of the cycle-104 map
   team: string;
   teamId: number;
   goals: number;
@@ -2473,6 +2476,7 @@ export interface GlobalScorer {
 export interface GlobalAssist {
   rank: number;
   name: string;
+  nameFa: string; // display name — cycle-105, same honest map as cycle-104
   team: string;
   teamId: number;
   value: number;       // assists
@@ -2487,6 +2491,7 @@ export type CardKind = "yellow" | "red";
 export interface GlobalCard {
   rank: number;        // global dense rank across leagues (per kind)
   name: string;
+  nameFa: string; // display name — cycle-105, same honest map as cycle-104
   team: string;
   teamId: number;
   value: number;       // card count
@@ -2529,7 +2534,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
       for (const s of st.scorers) {
         merged.push({
           rank: 0, // dense global rank assigned after the sort below
-          name: s.name, team: s.team, teamId: s.teamId, goals: s.goals,
+          name: s.name, nameFa: playerFa(s.name), team: s.team, teamId: s.teamId, goals: s.goals,
           leagueRank: s.rank || 0,
           ...(s.playerId != null ? { playerId: s.playerId } : {}),
           ...(s.assists != null ? { assists: s.assists } : {}),
@@ -2544,7 +2549,7 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
     for (const a of st.assists || []) {
       mergedAssists.push({
         rank: 0, // dense global rank assigned after the sort below
-        name: a.name, team: a.team, teamId: a.teamId, value: a.assists,
+        name: a.name, nameFa: playerFa(a.name), team: a.team, teamId: a.teamId, value: a.assists,
         ...(a.playerId != null ? { playerId: a.playerId } : {}),
         leagueKey: lg.key, leagueFa: lg.faName,
       });
@@ -2594,7 +2599,7 @@ export async function getAllCardLeaders(): Promise<GlobalCardsData> {
       for (const row of r.value.rows) {
         if (row.playerId == null || seen.has(row.playerId)) continue;
         seen.add(row.playerId);
-        merged.push({ ...row, rank: 0, leagueKey: lg.key, leagueFa: lg.faName });
+        merged.push({ ...row, nameFa: playerFa(row.name), rank: 0, leagueKey: lg.key, leagueFa: lg.faName });
       }
     }
     merged.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
