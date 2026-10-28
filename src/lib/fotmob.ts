@@ -2107,7 +2107,10 @@ interface FMStatBlock {
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[] };
-  history?: { trophyList?: FMTeamTrophyRaw[] };
+  history?: {
+    trophyList?: FMTeamTrophyRaw[];
+    historicalTableData?: { ranks?: FMHistoryRankRaw[] };
+  };
   overview?: { venue?: FMVenueRaw };
   stats?: {
     players?: FMStatBlock[];
@@ -2128,6 +2131,15 @@ interface FMTeamTrophyRaw {
   runnerup?: number;
   seasonsWon?: string;
   seasonsRunnerup?: string;
+}
+
+interface FMHistoryRankRaw {
+  tournamentName?: string;
+  seasonName?: string;
+  shortSeasonName?: string;
+  position?: number;
+  numberOfTeams?: number;
+  stats?: { points?: number; wins?: number; draws?: number; loss?: number };
 }
 
 const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
@@ -2581,4 +2593,80 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
   const teamRows = pickRows(st.teams, STAT_TEAM_PREF, "team", 4);
   if (playerRows.length === 0 && teamRows.length === 0) return null;
   return { playerRows, teamRows };
+}
+
+// ---------------- FotMob: team league history (data/teams endpoint, cycle-80) ----------------
+// Probed live (2026-10-29, UA Chrome/124): history.historicalTableData.ranks on
+// the SAME data/teams payload — per-season league finishes {tournamentName,
+// seasonName, shortSeasonName, position, numberOfTeams, stats:{points, wins,
+// draws, loss}}; 17 seasons on Celtic 9925 / Palace 9826 / City 8456. NOTE: a
+// true season SWITCHER is not feasible — allAvailableSeasons is [] on all three
+// reference teams, so this feed is the honest season-history read.
+
+export interface TeamSeasonRank {
+  season: string; // "2025/2026" (stable React key)
+  shortFa: string; // pre-formatted «۲۵/۲۶»
+  tournamentFa: string;
+  position: number;
+  ofTeams?: number;
+  points: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  live?: boolean; // seasonName === inferred current season → in progress
+}
+
+export interface TeamSeasonHistory {
+  total: number; // full archive depth in the source
+  items: TeamSeasonRank[]; // most recent first, capped for mobile
+}
+
+/** How many past seasons the mobile card shows (source carries ~17). */
+const SEASON_HISTORY_SHOWN = 8;
+
+/** European-style season key containing today (Tehran): Jul→Dec = Y/Y+1. */
+const currentSeasonKey = (): string => {
+  const t = todayInTehran(); // YYYYMMDD
+  const y = Number(t.slice(0, 4));
+  const m = Number(t.slice(4, 6));
+  return m >= 7 ? `${y}/${y + 1}` : `${y - 1}/${y}`;
+};
+
+/**
+ * Per-season league finishes («سوابق لیگ», cycle-80) from the shared cached
+ * data/teams raw fetch — no extra upstream hit. Most recent first, capped at
+ * SEASON_HISTORY_SHOWN rows; null when the payload has no ranks so the UI
+ * hides the section (same contract as the other lazy team reads).
+ */
+export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHistory | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const ranks = raw?.history?.historicalTableData?.ranks;
+  if (!Array.isArray(ranks) || ranks.length === 0) return null;
+  const items: TeamSeasonRank[] = [];
+  const cur = currentSeasonKey();
+  for (const r of ranks) {
+    const season = String(r?.seasonName || "");
+    const position = Number(r?.position);
+    if (!season || !Number.isFinite(position) || position <= 0) continue;
+    const s = r?.stats || {};
+    const num = (v: unknown): number => (Number.isFinite(Number(v)) ? Number(v) : 0);
+    items.push({
+      season,
+      shortFa: faDigits(r?.shortSeasonName || season),
+      tournamentFa: TROPHY_FA[String(r?.tournamentName || "")] || String(r?.tournamentName || ""),
+      position,
+      ...(Number.isFinite(Number(r?.numberOfTeams)) && Number(r?.numberOfTeams) > 0
+        ? { ofTeams: Number(r?.numberOfTeams) }
+        : {}),
+      points: num(s.points),
+      wins: num(s.wins),
+      draws: num(s.draws),
+      losses: num(s.loss),
+      ...(season === cur ? { live: true } : {}),
+    });
+  }
+  if (items.length === 0) return null;
+  items.sort((a, b) => b.season.localeCompare(a.season));
+  return { total: items.length, items: items.slice(0, SEASON_HISTORY_SHOWN) };
 }

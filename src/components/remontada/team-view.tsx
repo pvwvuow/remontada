@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -861,6 +861,68 @@ function TeamStatsSection({ data }: { data: TeamStatsData }) {
   );
 }
 
+// ---------------- team league history («سوابق لیگ», cycle-80) ----------------
+// Game-menu rows in the trophy-cabinet language: the season chip carries the
+// short season («۲۵/۲۶», gold when the season ended as champions), the
+// middle shows the competition + ب/م/پ line (same abbreviations as the
+// season splits), the right column the points + «رتبهٔ N از M».
+function TeamSeasonRankRow({ r }: { r: TeamSeasonRank }) {
+  // «قهرمان لیگ» only for a FINISHED title season — the live season (fotmob
+  // already carries it as position 1 after a few rounds) keeps the honest
+  // «رتبهٔ N از M» wording.
+  const champion = r.position === 1 && !r.live;
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
+      <span
+        className={cn(
+          "shrink-0 w-9 h-9 rounded-lg grid place-items-center text-[9.5px] font-black tabular-persian border",
+          champion ? "text-gold border-gold/30 bg-gold/10" : "text-[#c3d4ea] border-[color:var(--glass-border-soft)] bg-white/[0.05]"
+        )}
+        aria-hidden
+      >
+        {r.shortFa}
+      </span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] font-black truncate">{r.tournamentFa || "لیگ"}</p>
+        <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5">
+          {faDigits(r.wins)} ب · {faDigits(r.draws)} م · {faDigits(r.losses)} پ
+        </p>
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-0.5">
+        <p className="text-[14px] font-black tabular-persian leading-none">{faDigits(r.points)}</p>
+        {champion ? (
+          <span className="text-[9.5px] font-black tabular-persian text-gold">قهرمان لیگ</span>
+        ) : (
+          <span className="text-[9.5px] font-bold tabular-persian text-steel/80">
+            رتبهٔ {faDigits(r.position)}{r.ofTeams ? ` از ${faDigits(r.ofTeams)}` : ""}
+          </span>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamHistorySection({ data }: { data: TeamSeasonHistory }) {
+  return (
+    <Section
+      title="سوابق لیگ"
+      extra={
+        data.total > data.items.length ? (
+          <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+            {faDigits(data.total)} فصل در آرشیو
+          </span>
+        ) : undefined
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-history" aria-label="سوابق فصل‌های لیگ تیم">
+        {data.items.map((r) => (
+          <TeamSeasonRankRow key={r.season} r={r} />
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -952,6 +1014,24 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* stats stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-80: lazy team league history («سوابق لیگ») — same data/teams source
+  // (shared upstream cache), fetched after mount; stays null → section hidden.
+  const [seasonHistory, setSeasonHistory] = useState<TeamSeasonHistory | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-history/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.history) setSeasonHistory(j.history as TeamSeasonHistory);
+      })
+      .catch(() => {
+        /* history stays null → section hidden */
       });
     return () => {
       alive = false;
@@ -1156,6 +1236,9 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-72: team trophies («گنجهٔ افتخارات») — lazily probed, hidden when absent */}
       {trophies && trophies.items.length > 0 && <TeamTrophiesSection data={trophies} />}
+
+      {/* cycle-80: team league history («سوابق لیگ») — lazily probed, hidden when absent */}
+      {seasonHistory && seasonHistory.items.length > 0 && <TeamHistorySection data={seasonHistory} />}
 
       <p className="text-[10px] text-muted-foreground px-1 text-center">
         نتایج از فید روزانه‌ی FotMob و آمار فصل از فیکسچرهای لیگ تجمیع شده است.
