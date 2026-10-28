@@ -135,6 +135,17 @@ export default function Home() {
     0
   );
 
+  // update cycle-38: reflect live matches in the browser tab title — users
+  // keeping the home tab open in the background see at a glance when games
+  // are in progress (e.g. «(۳ زنده) رمانتادا | …»), no state, no re-render
+  useEffect(() => {
+    const base = "رمانتادا | نتایج زنده فوتبال، جدول لیگ‌ها و اخبار";
+    document.title = liveCount > 0 ? `(${faDigits(liveCount)} زنده) ${base}` : base;
+    return () => {
+      document.title = base;
+    };
+  }, [liveCount]);
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* ---------- header (cycle-23: shared SiteHeader — single-source chrome) ---------- */}
