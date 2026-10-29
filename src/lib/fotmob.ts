@@ -149,6 +149,16 @@ export interface StandingsData {
   away?: StandingsRow[];
   scorers: ScorerEntry[];
   assists: AssistEntry[];
+  /** cycle-176 additive: the league's own yellow/red card leaders — the
+   *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
+   *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
+   *  global /topscorers merge); the league page never surfaced its own
+   *  league's cards. Plucked into the mapped payload current-season only
+   *  (cycle-132 rule — the deep files are current-season), absent when the
+   *  feed has no card categories or both lists come back empty (the UI
+   *  hides the section, the table is untouched). Per-kind honest absence:
+   *  mas has no "Yellow cards" category → yellow: [] with red: [8 rows]. */
+  cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
   /** cycle-92 additive: curated upstream season leaderboards (team + player
    *  podiums from raw.stats blocks) — hidden when the feed lacks them. */
   boards?: LeagueBoard[];
@@ -926,6 +936,18 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // the league page surfaces the block (بهترین پاس‌دهندگان) and the raw
     // English name alone would dead-end the profile network (the 167 lesson)
     assists: st.assists.map((a) => ({ ...a, team: teamFa(a.team) || a.team, nameFa: playerFa(a.name) })),
+    // cycle-176 additive: card rows get the same read-time honest names —
+    // freshCardNames (the cycle-109 idempotent read-freshener for the cards
+    // family) reused verbatim, so a player-name map addition never waits a
+    // full generation to reach the league page's کارت‌ها section
+    ...(st.cards
+      ? {
+          cards: {
+            yellow: freshCardNames(st.cards.yellow || []),
+            red: freshCardNames(st.cards.red || []),
+          },
+        }
+      : {}),
     ...(st.boards
       ? {
           boards: st.boards.map((b) =>
@@ -1149,6 +1171,34 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-176: the league's own card leaders ride the mapped payload —
+    // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
+    // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
+    // consumer was the global /topscorers merge; the league page never
+    // surfaced them. Live-probed 2026-10-30 UA Chrome/124: pl yellow_card.json
+    // = 204 rows / red_card.json = 14 rows; persiangulf = 178/19 with the
+    // Persian hook (Alireza Alizadeh, Gol Gohar, 5 yellows); mas carries ONLY
+    // the "Red cards" category (yellow legitimately absent). Same season rule
+    // as the global merge (cycle-132): the deep files are current-season, so
+    // historical payloads omit the block entirely. Rows keep the FILE's rank
+    // order (no re-sort — same contract the global page renders); limit 15
+    // matches the global merge (the UI slices 5 per kind, the API keeps the
+    // depth). Both-empty → block omitted (not {yellow:[],red:[]}).
+    let cards: StandingsData["cards"];
+    if (!requestedSeason) {
+      // SEQUENTIAL on purpose (cycle-176 live incident): the first draft
+      // Promise.all'd the two kinds and the mas cold build raced the two L2
+      // writes — yellow's [] row landed, red's write lost and its rows were
+      // silently dropped by the catch-all (cards:mas:red had NO row while
+      // the payload shipped without the block). Same discipline as the 175
+      // merge: one write at a time. Per-kind catch keeps the documented
+      // honesty: one transient failure degrades THAT kind to [] instead of
+      // killing the whole block.
+      const yellow = await getLeagueCardLeaders(leagueKey, "yellow", 15).catch(() => [] as LeagueCardEntry[]);
+      const red = await getLeagueCardLeaders(leagueKey, "red", 15).catch(() => [] as LeagueCardEntry[]);
+      if (yellow.length > 0 || red.length > 0) cards = { yellow, red };
+    }
+
     // ⚠️ cycle-94 probe (UA Chrome/124): `details.seasons` is EMPTY in every
     // data/leagues payload — current AND historical (e.g. ?season=2020/2021) —
     // so this local is always "" and the honest label lives in selectedSeason
@@ -1193,6 +1243,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ttlMinutes: matchday ? 15 : 60,
       scorers: mergedScorers,
       assists: mergedAssists,
+      ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
     };
@@ -1229,7 +1280,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // cycle-175: v7 — the deep merged assists list (fullAssists merge) forces
     // an immediate clean rebuild instead of serving 3-row assists for up to a
     // full TTL generation (the same reasoning that produced v6 for scorers).
-    await cached(`standings:v7:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-176: v8 — the additive cards block forces the same immediate
+    // clean rebuild (old v7 rows lack the block and would keep the section
+    // hidden for up to a full TTL generation; the 52/55/90/92/107/175
+    // additive-shape convention).
+    await cached(`standings:v8:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1246,7 +1301,17 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // (assists == []) keep the normal TTL. Healthy tables keep the exact
       // matchday-aware TTL.
       (Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN) &&
-      !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN)
+      !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-176: the same end-to-end guard for a thin-but-nonempty YELLOW
+      // list — the wide yellow_card.json fetch dropped at build time would
+      // bake the 3-4-row category fallback for a full ttlMinutes generation;
+      // re-probe in 90s (upstream-free: leagueRaw + the card rows are both
+      // cached with their own cycle-127 guards). RED is deliberately
+      // unguarded: red files are naturally short (live-probed pl=14,
+      // persiangulf=19, mas=8 rows) and early-season reds legitimately sit
+      // under 10 — a red guard would re-probe forever. Honest-empty yellow
+      // (mas: no category) keeps the normal TTL.
+      !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN)
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
         : 90_000,
       build),
@@ -2989,6 +3054,13 @@ export interface GlobalCard {
   leagueKey: string;
   leagueFa: string;
 }
+
+/** cycle-176: the per-league card row exactly as getLeagueCardLeaders maps
+ *  it (rank/leagueKey/leagueFa are the GLOBAL merge's dense decorations and
+ *  are meaningless inside one league's payload). Same shape the league page
+ *  renders — name/nameFa/team for the honest display, playerId for the
+ *  170/174 link contract, value = card count. */
+export type LeagueCardEntry = Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">;
 
 export interface GlobalCardsData {
   yellow: GlobalCard[];
