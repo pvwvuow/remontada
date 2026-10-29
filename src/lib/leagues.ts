@@ -92,6 +92,15 @@ export const LEAGUES: LeagueConfig[] = [
   // cups' honest transfers-hide contract does not apply). ESPN fallback slug
   // probed live: tur.1 → 200.
   { key: "superlig",   fotmobId: 71,          ccode3: "TUR",  faName: "سوپرلیگ ترکیه",      enName: "Süper Lig",        espnSlug: "tur.1",          priority: 11 },
+  // cycle-146: Scottish Premiership — the TWELFTH competition and the SECOND
+  // consecutive new global-race participant (no globalMerge flag: 17
+  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
+  // exactly). Four blocks live-probed 2026-10-29: flat 12-row table (Celtic
+  // top, Rangers 2nd — the Old Firm), Top scorer category with fetchAllUrl
+  // (Camilo Durán, Celtic, 7; 93-goal full file), 129 title seasons (newest
+  // 2025/2026 Celtic over Rangers), transfers.data = 100 entries (domestic).
+  // ESPN fallback slug probed live: sco.1 → 200.
+  { key: "scottish",   fotmobId: 64,          ccode3: "SCO",  faName: "لیگ برتر اسکاتلند",   enName: "Scottish Premiership", espnSlug: "sco.1",      priority: 12 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -113,6 +122,8 @@ const COMPETITION_FA: Record<string, string> = {
   "persian gulf": "لیگ خلیج فارس",
   "persian gulf pro league": "لیگ خلیج فارس",
   "süper lig": "سوپرلیگ ترکیه",
+  // «Premiership» is ambiguous in the daily feed (SCO vs NIR) — country-keyed
+  // entries disambiguate; the plain name joins AMBIGUOUS_NAMES (cycle-146)
   "efl cup": "جام اتحادیه انگلیس",
   "carabao cup": "جام اتحادیه انگلیس",
   "fa cup": "جام حذفی انگلیس",
@@ -454,6 +465,67 @@ const TEAM_FA: Record<string, string> = {
   "al zawraa": "الزوراء",
   "lausanne": "لوزان",
   "gais": "گایس",
+
+  // cycle-146 Scottish Premiership onboarding: the 2026/2027 table spellings
+  // were ALREADY mapped from earlier cycles (Celtic, Rangers, Heart of
+  // Midlothian, Dundee FC, Dundee United, Falkirk, St. Mirren, St.
+  // Johnstone, Aberdeen, Motherwell, Hibernian, Kilmarnock) — only the
+  // short-form variants from the goals file / feeds needed adding.
+  "hearts": "هارتس",
+  "dundee": "دندی",
+  "st mirren": "سنت‌میرن",
+
+  // cycle-146 transfers sweep: the LIVE Scottish transfer feed (100 items)
+  // serves 43 distinct unmapped club names — Scottish lower-division sides
+  // (Arbroath, Dumbarton, Raith Rovers, Ross County, Livingston — relegated
+  // out of the 12-team table, Dunfermline…) plus loan parties (Leicester
+  // City and Leyton Orient were NEVER mapped by any earlier cycle — the
+  // portal's pre-2026/2027 maps only covered current-squad teams; Maccabi
+  // Tel Aviv, Grasshopper, Željezničar…). Bounded, honest, currently-served.
+  "aalesund": "اوله‌سوند",
+  "alloa athletic": "آلوآ اتلتیک",
+  "arbroath": "آربروت",
+  "austin fc": "آستین",
+  "ayr united": "آیر یونایتد",
+  "botoșani": "بوتوشانی",
+  "bradford city": "برادفورد سیتی",
+  "bristol rovers": "بریستول راورز",
+  "charleston battery": "چارلستون بتتری",
+  "dumbarton": "دامبارتون",
+  "dunfermline athletic": "دانفرملین اتلتیک",
+  "fk neftchi": "نفتچی باکو",
+  "fortuna düsseldorf": "فورتونا دوسلدورف",
+  "gillingham": "گیلیگام",
+  "glentoran": "گلنتوران",
+  "grasshopper": "گراس‌هاپر",
+  "górnik zabrze": "گورنیک زابژه",
+  "hermannstadt": "هرمانشتات",
+  "ilves": "ایلوس",
+  "kolding if": "کولدینگ",
+  "leicester city": "لسترسیتی",
+  "leyton orient": "لیتون اورینت",
+  "livingston": "لیوینگستون",
+  "macarthur fc": "مک‌آرتور",
+  "maccabi tel aviv": "مکابی تل‌آویو",
+  "nk varazdin": "واراژدین",
+  "nk varaždin": "واراژدین",
+  "portland timbers": "پورتلند تیمبرز",
+  "preston north end": "پرستون نورث اند",
+  "raith rovers": "ریث راورز",
+  "rhode island fc": "رود آیلند",
+  "ross county": "راس کانتی",
+  "sharjah cultural club": "الشارجه",
+  "stenhousemuir": "استن‌هاوس‌مور",
+  "stockport county": "استوکپورت کانتی",
+  "swindon town": "سویندون تاون",
+  "tondela": "توندلا",
+  "víkingur": "ویکینگور",
+  "wehen wiesbaden": "وهن ویس‌بادن",
+  "wycombe wanderers": "وایکام ونجرز",
+  "xamax": "گزانماکس",
+  "yverdon": "ایوردون",
+  "željezničar": "ژلجوزنیچار",
+  "žilina": "ژیلیانا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -474,6 +546,7 @@ export function competitionFa(name: string, ccode?: string): string {
 const AMBIGUOUS_NAMES = new Set([
   "premier league", "serie a", "super league", "pro league", "first division",
   "championship", "prva liga", "first league", "fa cup", "super lig", "league one", "league two",
+  "premiership",
 ]);
 
 const COMPETITION_FA_CC: Record<string, string> = {
@@ -488,6 +561,10 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "championship|ENG": "چمپیونشیپ انگلیس",
   "league one|ENG": "لیگ یک انگلیس",
   "league two|ENG": "لیگ دو انگلیس",
+  // cycle-146: the daily feed serves «Premiership» for both Scotland and
+  // Northern Ireland — country-keyed Persian names, plain name ambiguous
+  "premiership|SCO": "لیگ برتر اسکاتلند",
+  "premiership|NIR": "لیگ برتر ایرلند شمالی",
 };
 
 // youth / women / reserve suffixes — translate the base name and append a
