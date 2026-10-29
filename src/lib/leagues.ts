@@ -333,6 +333,36 @@ const TEAM_FA: Record<string, string> = {
   "kairat almaty": "قیرات آلماتی", "thun": "تون",
   "lincoln red imps fc": "لینکلن رد ایمپس", "kups": "کوپس",
   "inter club d'escaldes": "اینتر اسکالدس", "fk kauno žalgiris": "کاونو ژالگیریس",
+
+  // cycle-144 drift sweep (live probe 2026-10-29): 2026/2027 upstream spellings
+  // with no mapping — promoted sides (Málaga, Racing Santander, Köln,
+  // Elversberg, Troyes), UCL league-phase spellings (hyphenated PSG, PSV
+  // Eindhoven, LASK, Sabah FK, AEK Athens, Slavia Prague, FC Porto) and
+  // topscorer-feed full forms (Bayer 04 Leverkusen, Sport-Club Freiburg,
+  // Union Saint-Gilloise…). Zero shape change — additive keys only.
+  "paris saint-germain": "پاری سن‌ژرمن",
+  "psv eindhoven": "پی‌اس‌وی آیندهوون",
+  "fc porto": "پورتو",
+  "slavia prague": "اسلاویا پراگ",
+  "aek athens": "آئک آتن",
+  "lask": "لاسک",
+  "sabah fk": "صباح باکو",
+  "málaga": "مالاگا",
+  "racing santander": "ریسینگ سانتاندر",
+  "mainz 05": "ماینتس ۰۵",
+  "1. fsv mainz 05": "ماینتس ۰۵",
+  "1. fc köln": "کلن",
+  "elversberg": "الورسبرگ",
+  "sv 07 elversberg": "الورسبرگ",
+  "troyes": "تروا",
+  "bayer 04 leverkusen": "بایر لورکوزن",
+  "fc augsburg": "آگسبورگ",
+  "sport-club freiburg": "فرایبورگ",
+  "sporting lisbon": "اسپورتینگ‌لیسبون",
+  "n.e.c.": "نایمخن",
+  "union saint-gilloise": "یونیون سن‌ژیلواز",
+  "rsc anderlecht": "آندرلشت",
+  "celta de vigo": "سلتاویگو",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -404,6 +434,15 @@ export function teamFa(...candidates: (string | undefined)[]): string {
         if (TEAM_FA[base]) return `${TEAM_FA[base]}${q.fa}`;
       }
     }
+  }
+  // cycle-144: cup-bracket TBD slots arrive as one string «Side A/Side B»
+  // (upstream joins the two possible teams with a slash). Map each side
+  // honestly; a side with no mapping keeps its upstream name.
+  if (candidates[0]?.includes("/")) {
+    return candidates[0]
+      .split("/")
+      .map((s) => teamFa(s.trim()) || s.trim())
+      .join("/");
   }
   // try first candidate as-is
   return candidates[0] || "";
