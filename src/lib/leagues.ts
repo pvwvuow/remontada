@@ -117,6 +117,25 @@ export const LEAGUES: LeagueConfig[] = [
   // there, exactly like سلتیک on uel), while النصر/الاتحاد/الاهلی now
   // join the search index honestly.
   { key: "saudi",      fotmobId: 536,         ccode3: "KSA",  faName: "لیگ حرفه‌ای عربستان", enName: "Saudi Pro League", espnSlug: "ksa.1",          priority: 13 },
+  // cycle-150: EFL Championship — the FOURTEENTH competition and the FOURTH
+  // consecutive new global-race participant (no globalMerge flag: 17
+  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
+  // exactly, byte-identical). Four blocks live-probed 2026-10-29 (UA
+  // Chrome/124, /api/data/leagues?id=48&ccode3=ENG — the live path after
+  // /api/leagues 404s): flat 24-row table (Middlesbrough top on 25, Swansea
+  // 2nd, West Ham 3rd — the relegated giant; Derby/Preston propping up),
+  // Top scorer category with a data.fotmob.com fetchAllUrl (Will Lankshear,
+  // Middlesbrough, 11; Guðjohnsen 8, Larin 7 — a 208-scorer full file),
+  // 123 title seasons (newest 2025/2026 Coventry City over Ipswich Town;
+  // oldest 1892/1893 Birmingham City — the SECOND-oldest title history in
+  // the portal after the Scottish Premiership's 129), and transfers.data =
+  // 100 entries (DOMESTIC league — the cups' honest transfers-hide contract
+  // does not apply). playoff = null → bracket tab honestly absent. ESPN
+  // fallback slug probed live: eng.2 → 200. The Persian-fan pick that had
+  // been passed over twice (cycles 145/147 in favour of the Gulf leagues):
+  // the historic second tier where the relegated giants — وست‌هم/ساوتهمپتون/
+  // ولورهمپتون — now ride, with کوونتری the reigning champion.
+  { key: "championship", fotmobId: 48,       ccode3: "ENG",  faName: "چمپیونشیپ انگلیس",    enName: "EFL Championship", espnSlug: "eng.2",          priority: 14 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -558,6 +577,48 @@ const TEAM_FA: Record<string, string> = {
   "yverdon": "ایوردون",
   "željezničar": "ژلجوزنیچار",
   "žilina": "ژیلیانا",
+  // cycle-150: EFL Championship (league 48) — the 4 table-team spellings the
+  // blocks above missed + the transfer-feed sweep (100 entries, 126 distinct
+  // club names) + the 123-season title-history sweep (winner AND runner-up
+  // sides — both go through teamFa). Byte-exact from the live feed; additive
+  // keys only, zero shape change.
+  "accrington": "اکرینگتون", "accrington stanley": "اکرینگتون استنلی",
+  "américa": "آمریکا", "cf américa": "آمریکا",
+  "barnsley": "بارنزلی", "birmingham": "بیرمنگام", "blackburn": "بلکبرن",
+  "blackpool": "بلکپول", "bolton": "بولتون", "bolton wanderers": "بولتون واندررز",
+  "botev plovdiv": "بوتف پلوودیو", "bradford": "برادفورد",
+  "bradford pa": "برادفورد پارک اونیو", "burton": "برتون",
+  "burton albion": "برتون آلبیون", "bury": "بوری",
+  "cambridge": "کمبریج", "cambridge united": "کمبریج یونایتد",
+  "cardiff": "کاردیف", "charlton athletic": "چارلتون اتلتیک", // "charlton" already lives in the PL block (line 381) — kept, no dup
+  "chesterfield": "چسترفیلد", "clermont foot": "کلرمون فوت",
+  "colorado": "کلرادو", "colorado rapids": "کلرادو رپیدز", "colwyn bay": "کولوین بی",
+  "coventry": "کوونتری", // "coventry city" already lives in the PL block («کاونتری», line 380) — kept, no dup
+  "derby": "دربی", "doncaster": "دانکاستر", "doncaster rovers": "دانکاستر روورز",
+  "exeter": "اکستر", "exeter city": "اکستر سیتی",
+  "fleetwood": "فلیتوود", "fleetwood town": "فلیتوود تاون",
+  "glossop north end": "گلوسوپ نورث اند",
+  "grimsby": "گریمزبی", "grimsby town": "گریمزبی تاون",
+  "houston": "هیوستون", "houston dynamo fc": "هیوستون داینامو",
+  "huddersfield town": "هادرزفیلد تاون", "hull": "هال", "ipswich": "ایپسویچ",
+  "leicester": "لستر", "lincoln": "لینکلن", "lincoln city": "لینکلن سیتی",
+  "luton town": "لوتون تاون", "milton keynes dons": "میلتون کینز داونز",
+  "mk dons": "ام‌کی داونز", "montpellier": "مونپلیه",
+  "newport": "نیوپورت", "newport county": "نیوپورت کانتی",
+  "northampton town": "نورث‌همپتون تاون", "norwich": "نوریچ",
+  "nottm forest": "ناتینگهام فارست", "notts county": "ناتس کانتی",
+  "oldham athletic": "اولدهام اتلتیک", "oxford united": "آکسفورد یونایتد",
+  "oxford utd": "آکسفورد یونایتد", "peterborough": "پیتربورو",
+  "peterborough united": "پیتربورو یونایتد", "preston": "پرستون",
+  "qpr": "کویینز پارک رنجرز", "queens park rangers": "کویینز پارک رنجرز",
+  "raków częstochowa": "راکوف چنستوخووا", "reading": "ردینگ",
+  "salford": "سالفورد", "salford city": "سالفورد سیتی",
+  "san diego fc": "سن دیگو", "sheff utd": "شفیلد یونایتد",
+  "sheffield wednesday": "شفیلد ونزدی", "southend": "ساوتند",
+  "southend united": "ساوتند یونایتد", "st. louis city": "سنت لوئیس سیتی",
+  "stevenage": "استیونج", "stoke": "استوک", "swansea": "سوانزی",
+  "sydney fc": "سیدنی", "são paulo": "سائوپائولو", "tokyo verdy": "وردی توکیو",
+  "west brom": "وست برومویچ آلبیون", "wigan athletic": "ویگان اتلتیک",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

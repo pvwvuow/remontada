@@ -1,11 +1,11 @@
 #!/bin/bash
 # cycle-148 bug-hunt — the three NEWEST league surfaces (145 superlig /
 # 146 scottish / 147 saudi) walked the way a fan does, viewport 390x844,
-# REAL clicks, plus API truth for the whole 13-league portal state.
+# REAL clicks, plus API truth for the whole 14-league portal state (cycle-150 added the Championship).
 # Lessons baked in (D5): assertions follow LIVE truth probed 2026-10-29
-# (tops: گالاتاسارای 22 / سلتیک 28 / الهلال 27; global race 220 scorers,
-# perLeague=11, leader honest-pattern not a frozen name) — no stale claims.
-# V1 /leagues → 13 cards + the three new routes really present
+# (tops: گالاتاسارای 22 / سلتیک 28 / الهلال 27; global race 240 scorers (cycle-150: the Championship joined),
+# perLeague=12 (cycle-150 joined the Championship), leader honest-pattern — no stale claims.
+# V1 /leagues → 14 cards (cycle-150: 13 + the Championship) + the three new routes really present
 # V2 /league/superlig → h1, top گالاتاسارای, «آقای گل»+«انتقال‌ها» tabs,
 #    bracket tab ABSENT (playoff=null honest-absence contract)
 # V3 superlig → real click «انتقال‌ها» → panel alive (aria-label section),
@@ -14,7 +14,7 @@
 #    click, zero broken images
 # V5 /league/saudi → h1, top الهلال, real transfers click, zero broken
 # V6 /topscorers → «مصاف گلزنان» + honest «۱۱ لیگ و جام برتر» + dynamic
-#    «۱۱ لیگ مشارکت‌کننده» (computed from live perLeague, not baked)
+#    «۱۲ لیگ مشارکت‌کننده» (computed from live perLeague, not baked)
 # V7 /topscorers/superlig → dedicated path alive, ≥5 Persian scorer names,
 #    Persian-digit goal counts (leader may drift daily — pattern, not name)
 # V8 /players → «یازده لیگ و جام برتر» + three new chips + REAL click
@@ -61,8 +61,8 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 13 league cards with the three newest routes really present
-hunt "V1 leagues hub 13 cards" "http://localhost:3000/leagues" \
+# V1: the hub — 14 league cards with the three newest routes really present
+hunt "V1 leagues hub 14 cards" "http://localhost:3000/leagues" \
 "" "" \
 "({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new3:!!document.querySelector(\"a[href='/league/superlig']\")&&!!document.querySelector(\"a[href='/league/scottish']\")&&!!document.querySelector(\"a[href='/league/saudi']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
@@ -102,30 +102,30 @@ sleep 3
 FEAT5=$($B eval "JSON.stringify((()=>{return {panel:!!document.querySelector('section[aria-label=\"انتقال‌های لیگ\"]'),alive:(document.body.innerText||'').includes('انتقال')}})())" 2>/dev/null | tr -d '"\\')
 collect "$TOP5 $FEAT5" "V5 saudi hilal-top + transfers click"
 
-# V6a: the global race DEFAULT view — honest «۱۱ لیگ و جام برتر» copy
+# V6a: the global race DEFAULT view — honest «۱۲ لیگ و جام برتر» copy
 # (the dynamic «N لیگ مشارکت‌کننده» subtitle renders ONLY with a selected
 # season — designed contract, proven in V6b on 2023/2024)
 hunt "V6a race default copy" "http://localhost:3000/topscorers" \
 "(document.body.innerText||\"\").includes(\"مصاف گلزنان\")" "" \
-"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy11:(document.body.innerText||\"\").includes(\"۱۱ لیگ و جام برتر\"),noStale8:(document.body.innerText||\"\").includes(\"۸ لیگ مشارکت‌کننده\")===false})"
+"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy12:(document.body.innerText||\"\").includes(\"۱۲ لیگ و جام برتر\"),noStale8:(document.body.innerText||\"\").includes(\"۸ لیگ مشارکت‌کننده\")===false})"
 
-# V6b: season-selected race — the DYNAMIC participants subtitle: 11 live
-hunt "V6b race season dyn11" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
+# V6b: season-selected race — the DYNAMIC participants subtitle: 12 live
+hunt "V6b race season dyn12" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"مشارکت‌کننده\")" "" \
-"({dyn11:(document.body.innerText||\"\").includes(\"۱۱ لیگ مشارکت‌کننده\"),seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
+"({dyn12:(document.body.innerText||\"\").includes(\"۱۲ لیگ مشارکت‌کننده\"),seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
 
 # V7: dedicated superlig scorers path — alive with Persian names + digit goals
 hunt "V7 superlig scorers path" "http://localhost:3000/topscorers/superlig" \
 "(document.body.innerText||\"\").match(/[۰-۹]/)" "" \
 "({h1Live:!!(document.querySelector(\"h1\")||{}).innerText,persianNames:((document.body.innerText||\"\" ).match(/[آ-ی]{3,}/g)||[]).length>=5,faGoals:/[۰-۹]+\s*گل/.test(document.body.innerText||\"\")})"
 
-# V8: players hub — 11 copy + three new chips + REAL click league-saudi
+# V8: players hub — 12 copy + the chips + REAL click league-saudi
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY11=$($B eval "JSON.stringify((document.body.innerText||'').includes('یازده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY11=$($B eval "JSON.stringify((document.body.innerText||'').includes('دوازده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 # the league chips live in the TEAMS mode - real click mode-teams FIRST
 # (the cycle-134/143 two-step fan path), then the saudi chip
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
@@ -171,13 +171,13 @@ for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, 
         report(f"standings {lk}", good, f"rows={len(rows)} top={rows[0].get('fa') if rows else None}")
     except Exception as e:
         report(f"standings {lk}", False, str(e))
-# A2: global race — 220 scorers, 11 perLeague incl. the new three, honest leader shape
+# A2: global race — 240 scorers, 12 perLeague incl. the new four, honest leader shape
 try:
     d = get("http://localhost:3000/api/topscorers?league=all")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 220 and len(pl) == 11 and {"superlig","scottish","saudi"} <= set(pl) \
+    good = len(ts) == 240 and len(pl) == 12 and {"superlig","scottish","saudi","championship"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) and lead.get("goals", 0) > 0 \
         and not ascii_leak(lead.get("team"))
     report("topscorers all", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
@@ -218,7 +218,7 @@ for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers
 try:
     d = get("http://localhost:3000/api/topscorers?league=all&season=2023/2024")
     pl = d.get("perLeague") or []
-    report("topscorers 2023/2024 participants", len(pl) == 11, f"perLeague={len(pl)} (dynamic honest copy)")
+    report("topscorers 2023/2024 participants", len(pl) == 12, f"perLeague={len(pl)} (dynamic honest copy)")
 except Exception as e:
     report("topscorers 2023/2024 participants", False, str(e))
 import urllib.parse

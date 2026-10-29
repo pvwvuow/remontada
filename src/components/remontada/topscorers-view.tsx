@@ -424,12 +424,12 @@ export function TopScorersView() {
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {/* cycle-147: 10 + the Saudi Pro League = 11 merge participants
-                (the Pro League's 17 slash-format seasons cover the window) */}
+            {/* cycle-150: 11 + the EFL Championship = 12 merge participants
+                (the Championship's 17 slash-format seasons cover the window) */}
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (
-              <>بهترین گلزنان {faDigits(11)} لیگ و جام برتر در یک جدول واحد</>
+              <>بهترین گلزنان {faDigits(12)} لیگ و جام برتر در یک جدول واحد</>
             )}
             {season && data?.perLeague.length ? (
               <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>
