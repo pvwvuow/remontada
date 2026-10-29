@@ -14,10 +14,11 @@ const DOCK_ITEMS = [
   { href: "/", label: "نتایج زنده", icon: "live" },
   { href: "/leagues", label: "لیگ‌ها", icon: "trophy" },
   { href: "/topscorers", label: "گلزنان", icon: "goal" },
+  { href: "/players", label: "بازیکنان", icon: "players" },
   { href: "/news", label: "اخبار", icon: "news" },
 ] as const;
 
-function DockIcon({ name }: { name: "live" | "trophy" | "goal" | "news" }) {
+function DockIcon({ name }: { name: "live" | "trophy" | "goal" | "news" | "players" }) {
   if (name === "live") {
     return (
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -43,6 +44,16 @@ function DockIcon({ name }: { name: "live" | "trophy" | "goal" | "news" }) {
       </svg>
     );
   }
+  if (name === "players") {
+    return (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="9" cy="8" r="3.2" />
+        <path d="M2.8 19a6.2 6.2 0 0 1 12.4 0" />
+        <path d="M16.2 5.1a2.9 2.9 0 1 1 1 5.6" />
+        <path d="M15.4 13.7a5.6 5.6 0 0 1 5.8 4.8" />
+      </svg>
+    );
+  }
   return (
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       <path d="M4 5h16M4 10h16M4 15h10M4 20h7" />
@@ -61,7 +72,7 @@ export function NavDock() {
         {DOCK_ITEMS.map((item) => {
           const active =
             item.href === "/"
-              ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player")
+              ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player/")
               : pathname.startsWith(item.href);
           return (
             <Link
@@ -69,7 +80,7 @@ export function NavDock() {
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-xl px-3 py-1.5 min-w-0 flex-1 transition-all duration-200",
+                "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 min-w-0 flex-1 transition-all duration-200",
                 active
                   ? "text-primary bg-primary/10 border border-primary/30 shadow-[0_0_16px_oklch(0.7_0.1_300/0.28)]"
                   : "text-muted-foreground border border-transparent hover:text-foreground active:scale-95"

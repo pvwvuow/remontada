@@ -34,10 +34,11 @@ const NAV_ITEMS = [
   { href: "/", label: "نتایج زنده", icon: "live" },
   { href: "/leagues", label: "لیگ‌ها", icon: "trophy" },
   { href: "/topscorers", label: "گلزنان", icon: "goal" },
+  { href: "/players", label: "بازیکنان", icon: "players" },
   { href: "/news", label: "اخبار", icon: "news" },
 ] as const;
 
-function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news"; size?: number }) {
+function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news" | "players"; size?: number }) {
   if (name === "live") {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -60,6 +61,16 @@ function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
         <circle cx="12" cy="8" r="4.2" />
         <path d="M9 12l-2.5 9L12 18l5.5 3L15 12" />
+      </svg>
+    );
+  }
+  if (name === "players") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="9" cy="8" r="3.2" />
+        <path d="M2.8 19a6.2 6.2 0 0 1 12.4 0" />
+        <path d="M16.2 5.1a2.9 2.9 0 1 1 1 5.6" />
+        <path d="M15.4 13.7a5.6 5.6 0 0 1 5.8 4.8" />
       </svg>
     );
   }
@@ -86,7 +97,7 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
                 game-menu dock (root layout) owns small-screen navigation */}
             <nav className="hidden sm:flex items-center gap-1 text-[12px] font-bold min-w-0 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label="ناوبری اصلی">
             {NAV_ITEMS.map((item) => {
-              const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player") : pathname.startsWith(item.href);
+              const active = item.href === "/" ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player/") : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
