@@ -3232,6 +3232,94 @@ export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResul
 
 export { LEAGUES };
 
+// ---------------- FotMob: player search index (cycle-166) ----------------
+// The header search covered TEAMS only (the team index from standings rows)
+// while every league's standings payload ALSO carries a 20-scorer block that
+// getTeamIndex discarded — so the searchable player pool (460 «آقای گل» rows
+// incl. the Iranian hooks صیادمنش/زاهدی) rides the SAME getStandings calls,
+// ZERO extra upstream fetches. Keys/aliases ride PLAYER_NAME_FA through the
+// standings mapper, so Persian queries («صیادمنش») match by design.
+export interface PlayerIndexEntry {
+  playerId: number;
+  name: string; // honest upstream English name
+  fa: string; // Persian display (PLAYER_NAME_FA hit or honest fallback)
+  teamFa?: string;
+  teamId?: number;
+  leagueKey: string;
+  leagueFa: string;
+  goals?: number;
+  rank: number; // scorer rank inside the league block (ordering hint)
+}
+
+export interface PlayerSearchResult extends PlayerIndexEntry {
+  matchedOn: string;
+  hl?: { fa?: [number, number] | null; name?: [number, number] | null };
+}
+
+let playerIndexCache: { at: number; data: PlayerIndexEntry[] } | null = null;
+
+export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
+  if (playerIndexCache && Date.now() - playerIndexCache.at < 10 * 60_000) return playerIndexCache.data;
+  const ordered = [...LEAGUES].sort((a, b) => {
+    const rank = (k: string) => (k === "ucl" ? 1 : 0);
+    return rank(a.key) - rank(b.key);
+  });
+  const settled = await Promise.allSettled(ordered.map((lg) => getStandings(lg.key)));
+  const out: PlayerIndexEntry[] = [];
+  const seen = new Set<number>();
+  settled.forEach((r, i) => {
+    const lg = ordered[i];
+    if (r.status !== "fulfilled") return;
+    for (const s of r.value.scorers || []) {
+      if (s.playerId == null || seen.has(s.playerId)) continue;
+      seen.add(s.playerId);
+      out.push({
+        playerId: s.playerId,
+        name: s.name,
+        fa: s.nameFa || s.name,
+        teamFa: s.team || undefined,
+        teamId: s.teamId ?? undefined,
+        leagueKey: lg.key,
+        leagueFa: lg.faName,
+        goals: s.goals ?? undefined,
+        rank: s.rank ?? 0,
+      });
+    }
+  });
+  playerIndexCache = { at: Date.now(), data: out };
+  return out;
+}
+
+export async function searchPlayers(q: string, limit = 6): Promise<PlayerSearchResult[]> {
+  const nq = normalizeQuery(q);
+  if (nq.length < 2) return [];
+  const index = await getPlayerIndex();
+  const scored: { e: PlayerIndexEntry; score: number; matchedOn: string }[] = [];
+  for (const e of index) {
+    const hay = normalizeQuery(`${e.name} ${e.fa}`);
+    let score = -1;
+    let matchedOn = e.fa || e.name;
+    if (hay === nq) { score = 100; }
+    else if (hay.startsWith(nq)) { score = 80; matchedOn = e.fa || e.name; }
+    else if (hay.includes(nq)) { score = 50; }
+    else {
+      const words = nq.split(" ");
+      if (words.length > 1 && words.every((w) => hay.includes(w))) { score = 40; }
+    }
+    if (score > 0) scored.push({ e, score, matchedOn });
+  }
+  scored.sort((a, b) => b.score - a.score || a.e.rank - b.e.rank);
+  return scored.slice(0, limit).map(({ e, matchedOn }) => {
+    const faRange = rangeOf(e.fa || "", nq);
+    const nameRange = rangeOf(e.name || "", nq);
+    return {
+      ...e,
+      matchedOn,
+      hl: faRange || nameRange ? { fa: faRange, name: nameRange } : undefined,
+    };
+  });
+}
+
 // ---------------- helpers ----------------
 export function todayInTehran(): string {
   // Tehran = UTC+3:30 (no DST since 2022)

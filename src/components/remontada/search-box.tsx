@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { TeamSearchResult } from "@/lib/fotmob";
+import type { TeamSearchResult, PlayerSearchResult } from "@/lib/fotmob";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { useFavorites } from "@/lib/favorites";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -40,6 +40,9 @@ export function SearchBox() {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const [results, setResults] = useState<TeamSearchResult[]>([]);
+  // cycle-166: the «آقای گل» player pool joins the search — teams stay first
+  // (results), players render as their own section below with /player links
+  const [players, setPlayers] = useState<PlayerSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0); // keyboard-highlighted result
   const favorites = useFavorites();
@@ -72,6 +75,7 @@ export function SearchBox() {
     const query = q.trim();
     if (query.length < 2) {
       setResults([]);
+      setPlayers([]);
       setLoading(false);
       return;
     }
@@ -82,6 +86,7 @@ export function SearchBox() {
         const json = await res.json();
         if (json.ok) {
           setResults(json.results as TeamSearchResult[]);
+          setPlayers((json.players ?? []) as PlayerSearchResult[]);
           setActive(0);
         }
       } catch {
@@ -97,6 +102,16 @@ export function SearchBox() {
     (teamId: number) => {
       setOpen(false);
       router.push(`/team/${teamId}`);
+    },
+    [router]
+  );
+
+  // cycle-166: keyboard selection spans teams first, then the players section
+  const totalRows = results.length + players.length;
+  const goPlayer = useCallback(
+    (playerId: number) => {
+      setOpen(false);
+      router.push(`/player/${playerId}`);
     },
     [router]
   );
@@ -118,9 +133,13 @@ export function SearchBox() {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { setOpen(false); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, results.length - 1)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, totalRows - 1)); }
     if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
-    if (e.key === "Enter" && results[active]) { e.preventDefault(); go(results[active].teamId); }
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (active < results.length) { if (results[active]) go(results[active].teamId); }
+      else { const p = players[active - results.length]; if (p) goPlayer(p.playerId); }
+    }
   };
 
   return (
@@ -170,11 +189,11 @@ export function SearchBox() {
             <div className="max-h-[46vh] overflow-y-auto">
               {q.trim().length < 2 ? (
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
-                  حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌های {faDigits(23)} لیگ و جام
+                  حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های {faDigits(23)} لیگ و جام
                 </p>
-              ) : !loading && results.length === 0 ? (
+              ) : !loading && results.length === 0 && players.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">
-                  <p className="text-[11.5px] text-muted-foreground">تیمی با این نام پیدا نشد.</p>
+                  <p className="text-[11.5px] text-muted-foreground">تیمی یا بازیکنی با این نام پیدا نشد.</p>
                   <div className="w-full">
                     <p className="text-[10px] font-bold text-muted-foreground/80 text-center mb-2">شاید دنبال این تیم‌ها بودید:</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
@@ -235,6 +254,58 @@ export function SearchBox() {
                     </li>
                   ))}
                 </ul>
+              )}
+
+              {players.length > 0 && (
+                <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5">
+                  <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">بازیکنان</p>
+                  <ul className="px-1.5 flex flex-col">
+                    {players.map((p, i) => {
+                      const idx = results.length + i;
+                      return (
+                        <li key={p.playerId}>
+                          <button
+                            type="button"
+                            onClick={() => goPlayer(p.playerId)}
+                            onMouseEnter={() => setActive(idx)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
+                              idx === active ? "cmd-active" : "hover:bg-white/[0.05]"
+                            )}
+                          >
+                            <img
+                              src={`https://images.fotmob.com/image_resources/playerimages/${p.playerId}.png`}
+                              alt=""
+                              width={22}
+                              height={22}
+                              loading="lazy"
+                              className="w-[22px] h-[22px] rounded-full object-cover shrink-0 bg-white/[0.06]"
+                              onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-bold text-[13px] truncate">
+                                <Hl text={p.fa} range={p.hl?.fa ?? null} />
+                              </span>
+                              <span className="block text-[10px] text-muted-foreground truncate">
+                                <Hl text={p.name} range={p.hl?.name ?? null} />
+                              </span>
+                            </span>
+                            <span className="shrink-0 flex flex-col items-end gap-0.5">
+                              {p.teamFa ? (
+                                <span className="text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
+                                  {p.teamFa}
+                                </span>
+                              ) : null}
+                              <span className="text-[9px] text-muted-foreground truncate max-w-[110px]">
+                                {p.leagueFa}
+                              </span>
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
               )}
             </div>
             {/* cycle-66 — palette hint bar: the little game-UI footer */}
