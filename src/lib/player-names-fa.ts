@@ -468,6 +468,34 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "luuk de jong": "لوک دی یونگ",
   "cristiano ronaldo": "کریستیانو رونالدو",
 
+  // — AFC Champions League Two (cycle-157) — the top-20 window of the live
+  // 91-scorer 2026/2027 goals.json (leader مالکوم الجزیره 4). No Iranian
+  // scorer yet (گل‌گهر سیرجان has 2 points from 3 group games and no entry
+  // in the file) — the Persian hook rides the CLUB itself, not a name.
+  // Probed 2026-10-29, UA Chrome/124. Zero duplicate keys against the 412
+  // pre-existing player keys (guard asserted in cycle157-domproof).
+  "malcom": "مالکوم",
+  "aref al haj": "عارف الحاج",
+  "facundo kruspzky": "فاکوندو کروسپزکی",
+  "moses dyer": "موزس دایر",
+  "abdulwahab al malood": "عبدالوهاب المالود",
+  "ahmad ersan": "احمد ارسان",
+  "balša sekulić": "بالشا سکولیچ",
+  "clarismario santos": "کلاریزماریو سانتوس",
+  "craig goodwin": "کریگ گودوین",
+  "david lalhlansanga": "دیوید لالهلانسانگا",
+  "ethan alagich": "ایتان آلاگیچ",
+  "gleison": "گلیسون",
+  "hussein ali jasim al saedi": "حسین علی جاسم الساعدی",
+  "tiago alves": "تیاگو آلوز",
+  "yousef al sulaiman": "یوسف السلیمان",
+  "abdallah nasib": "عبدالله نصیب",
+  "abdy bäsimow": "آبدی باسیموف",
+  "ahmad assaf": "احمد عساف",
+  "ahmed al ganehi": "احمد الغانمی",
+  // "ahmed alaa" rides the existing saudi-window entry (احمد علاء) — the
+  // duplicate-key guard caught the re-add and it was removed
+
 };
 
 // Persian display name for an upstream player name — exact lowercased map

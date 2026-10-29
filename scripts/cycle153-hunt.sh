@@ -65,11 +65,11 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 18 league cards with the newest routes really present
-# (gate-synced cycle-156: eredivisie is the 18th card)
-hunt "V1 leagues hub 18 cards" "http://localhost:3000/leagues" \
+# V1: the hub — 19 league cards with the newest routes really present
+# (gate-synced cycle-157: acl2 is the 19th card — the FIFTH live cup)
+hunt "V1 leagues hub 19 cards" "http://localhost:3000/leagues" \
 "" "" \
-"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
+"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
 # V2: championship — h1, live top میدلزبورو, scorers+transfers tabs, honest bracket absence
 hunt "V2 championship page tabs" "http://localhost:3000/league/championship" \
@@ -205,11 +205,12 @@ def report(name, good, detail):
     print(f"{name}: {detail} {'OK' if good else 'BAD'}")
 import re
 ascii_leak = lambda s: bool(re.search(r"[A-Za-z]", s or ""))
-# A1: seven portal standings + the 18th (cycle-156) — row counts, live tops
-# (eredivisie probed 2026-10-29: Feyenoord 24), zero ASCII in top-5 fa
+# A1: eight portal standings + the 19th (cycle-157, FIFTH live cup,
+# COMPOSITE 8-group table flattened 32 rows — top is Group A leader الوحده),
+# zero ASCII in top-5 fa
 for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, "سلتیک"), ("saudi", 18, "الهلال"),
                    ("championship", 24, "میدلزبورو"), ("portugal", 18, "پورتو"), ("uae", 14, "الجزیره"),
-                   ("qatar", 12, "الریان"), ("eredivisie", 18, "فاینورد")):
+                   ("qatar", 12, "الریان"), ("eredivisie", 18, "فاینورد"), ("acl2", 32, "الوحده")):
     try:
         d = get(f"http://localhost:3000/api/standings?league={lk}")
         rows = d.get("rows") or []
@@ -298,7 +299,7 @@ case "$API_OUT" in *"API_TRUTH OK"*) : ;; *) BAD=$((BAD+1)) ;; esac
 
 echo "== RESULT =="
 if [ "$BAD" -eq 0 ]; then
-  echo "HUNT OK — patrol contracts green (cycle-153 targets, gates synced to the 18-league cycle-156 truth)"
+  echo "HUNT OK — patrol contracts green (cycle-153 targets, gates synced to the 19-league cycle-157 truth)"
 else
   echo "HUNT FLAGGED (BAD=$BAD)"; exit 1
 fi

@@ -424,8 +424,10 @@ export function TopScorersView() {
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {/* cycle-151: 12 + Liga Portugal = 13 merge participants
-                (Portugal's 17 slash-format seasons cover the window) */}
+            {/* cycle-151 origin, gate-synced cycle-157: 16 merge participants —
+                acl2 rides the uecl/acl globalMerge:false flag (4 slash-format
+                seasons would shrink the cycle-132 window), so the count and
+                the 320-scorer merge stay untouched */}
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (

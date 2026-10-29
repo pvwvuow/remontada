@@ -216,6 +216,38 @@ export const LEAGUES: LeagueConfig[] = [
   // already honors it. espnSlug ned.1 verified live (200), unlike the Gulf
   // leagues — the matches ESPN fallback covers it too.
   { key: "eredivisie", fotmobId: 57,          ccode3: "NED",  faName: "اردیویزهٔ هلند",     enName: "Eredivisie",        espnSlug: "ned.1",          priority: 18 },
+  // cycle-157: AFC Champions League Two — the NINETEENTH competition, the
+  // FIFTH live cup (ucl/uel/uecl/acl/acl2) and the «براکت جام‌ها» footprint's
+  // Persian-club crown jewel. Probed live 2026-10-29/30 (UA Chrome/124,
+  // /api/data/matchDetails?matchId=6054514 → parentLeagueId = 9469 — the
+  // day-feed group id 9469 IS the page id here, unlike ACL Elite's
+  // 943983/943984 day-split; five candidate European leagues were probed the
+  // same window (Danish 46 / Greek 135 / Swiss 69 / Belgian 40 / Egyptian
+  // 519 — all five-block complete but ZERO Iranian players in any squad
+  // sweep) and lost to the ultimate Persian hook: گل‌گهر سیرجان (fotmob
+  // 389880) rides Group B (with الجزیره/آرخاداغ/المحررق) and 32 of 33 squad
+  // members carry cname "Iran" — player-level verified through our own
+  // /api/player/196041 (مهدی رحمتی → country=Iran). Feed shape: COMPOSITE
+  // group tables (data.composite = true, data.tables[] = Group A–H, 4 rows
+  // each, 32 clubs; data.table itself empty — the cycle-141 parser
+  // extension flattens them, COMPOSITE_REGION_FA now carries گروه A–H
+  // labels), allAvailableSeasons = 13 entries but only FOUR slash-format
+  // (2026/2027 → 2023/2024) — joining the cycle-132 race with a 4-season
+  // feed would SHRINK the 12-season window, so globalMerge: false (the
+  // uecl/acl flag: per-league surfaces live, both global merges untouched —
+  // race stays 320 scorers / 16 participants in every window). Top scorer
+  // category with a data.fotmob.com fetchAllUrl (91-row file, leader
+  // مالکوم الجزیره 4 — the SAME Al-Jazira teamId 102101 the uae league
+  // serves), 21 title seasons (top-level seasons[], newest 2025/2026
+  // گامبا اوساکا over النصر; oldest 2004 — defunct champions ride the
+  // honest English fallback by design, cycle-96/104 convention),
+  // transfers.data = null (cups — the tab honestly hides via the cycle-57
+  // contract) and playoff = null until the knockout rounds are drawn (the
+  // honest hidden bracket tab, cycle-56 contract). NO espnSlug (ESPN
+  // answers HTTP 400 for afc.champions.two / afc.champions.league.two —
+  // the Gulf pattern). Day-feed group names ride eight exact-match keys
+  // («AFC Champions League Two - A» … «- H»).
+  { key: "acl2",       fotmobId: 9469,        ccode3: "INT",  faName: "لیگ قهرمانان آسیا ۲", enName: "AFC Champions League Two",                    priority: 19, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -258,6 +290,18 @@ const COMPETITION_FA: Record<string, string> = {
   "afc champions league elite west": "لیگ قهرمانان آسیا (الیت) — غرب",
   "afc champions league elite east": "لیگ قهرمانان آسیا (الیت) — شرق",
   "afc champions league two": "لیگ قهرمانان آسیا ۲",
+  // cycle-157: ACL Two day-feed group splits — the /matches grid renders one
+  // day-tournament per group with a " - X" suffix (probed: «AFC Champions
+  // League Two - D» @ 2026-11-03, UA Chrome/124); eight exact-match keys keep
+  // the grid Persian like the Elite West/East pair above
+  "afc champions league two - a": "لیگ قهرمانان آسیا ۲ — گروه A",
+  "afc champions league two - b": "لیگ قهرمانان آسیا ۲ — گروه B",
+  "afc champions league two - c": "لیگ قهرمانان آسیا ۲ — گروه C",
+  "afc champions league two - d": "لیگ قهرمانان آسیا ۲ — گروه D",
+  "afc champions league two - e": "لیگ قهرمانان آسیا ۲ — گروه E",
+  "afc champions league two - f": "لیگ قهرمانان آسیا ۲ — گروه F",
+  "afc champions league two - g": "لیگ قهرمانان آسیا ۲ — گروه G",
+  "afc champions league two - h": "لیگ قهرمانان آسیا ۲ — گروه H",
   "eredivisie": "اردیویزهٔ هلند",
   "primeira liga": "لیگ پرتغال",
   "liga portugal": "لیگ پرتغال",
@@ -806,6 +850,59 @@ const TEAM_FA: Record<string, string> = {
   "machida zelvia": "ماچیدا زلویا", "nk lokomotiva": "لوکوموتیوا",
   "rotherham": "روترام", "śląsk wrocław": "شلونسک وروتسواو",
   "salt lake": "رئال سالت‌لیک", // short spelling of Real Salt Lake
+  // cycle-157: AFC Champions League Two (league 9469) — exact upstream
+  // spellings of the 32-club composite table (Groups A–H) not already
+  // mapped above (الجزیره/الریان/التعاون/الوحده/الفیصلی/ماچیدا زلویا/FC
+  // Seoul/گل‌گهر ride existing entries — گل‌گهر سیرجان is a Persian Gulf
+  // Pro League club) + the 21 title seasons' clubs not covered earlier
+  // (2025/2026 گامبا اوساکا rides a match-feed-era key). Defunct/obscure
+  // champions keep the honest English fallback only where no confident
+  // transliteration exists (cycle-96/104 convention). Probed 2026-10-29,
+  // UA Chrome/124. Zero duplicate keys against the 804 pre-existing team
+  // keys (guard asserted in cycle157-domproof).
+  "kuwait sc": "الکویت",
+  "nasaf qarshi": "نسف قرشی",
+  "al khalidiyah": "الخالدیه",
+  "arkadag": "آرخاداغ",
+  "muharraq": "المحررق",
+  "al-nahda": "النهده",
+  "al-hussein sc": "الحسین اردن",
+  "east bengal fc": "ایست بنگال",
+  "al-seeb": "السیب",
+  "persib bandung": "پرسیب باندونگ",
+  "melbourne victory": "ملبورن ویکتوری",
+  "viettel": "ویت‌تل",
+  "lion city sailors fc": "لایون سیتی سیلرز",
+  "adelaide united": "آدلاید یونایتد",
+  "bg pathum united": "بی‌جی پاتوم یونایتد",
+  "tai po": "تای پو",
+  "svay rieng": "سوای رینگ",
+  "shanghai shenhua": "شانگهای شنهوا",
+  "tampines rovers fc": "تامپینیز راورز",
+  "phnom penh": "پنوم‌پن",
+  "gangwon fc": "گانگ‌وون",
+  "kitchee": "کیتچی",
+  "kuching city": "کوچینگ سیتی",
+  // title-history-only clubs (ACL Two seasons[] winners/runners 2004 →
+  // 2025/2026; استقلال دوشنبه carries the city qualifier so it can never
+  // be confused with Tehran's استقلال)
+  "al karama sc": "الکرامه",
+  "al-ahed": "العهد",
+  "al-jaish": "الجیش",
+  "al-nejmeh": "النجمه",
+  "al-qadsia": "القادسیه",
+  "altyn asyr": "آلتین اسیر",
+  "april 25 sc": "آوریل ۲۵",
+  "bengaluru fc": "بنگلورو",
+  "central coast mariners": "سنترال کوست مارینرز",
+  "erbil": "اربیل",
+  "fc istiklol": "استقلال دوشنبه",
+  "kuala lumpur city": "کوالالامپور سیتی",
+  "safa beirut sc": "صفا بیروت",
+  "shabab al ordon al quadisiya": "شباب اردن",
+  // "al nassr fc" rides the existing saudi entry (النصر — the FC-suffixed
+  // spelling was already mapped by the cycle-147 sweep; duplicate-key guard
+  // caught the re-add and it was removed, the 152/155 sweep convention)
 };
 
 export function competitionFa(name: string, ccode?: string): string {

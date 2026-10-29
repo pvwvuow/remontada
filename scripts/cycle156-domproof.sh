@@ -28,7 +28,7 @@
 # defunct champions deliberately ride the honest English fallback) + 23
 # additive PLAYER_NAME_FA keys (the top-20 window + جهانبخش + پاولیدیس the
 # 2023/2024 archived-window leader 29 + دی یونگ/رونالدو surfaced live by the
-# historical race view). Zero duplicate keys: 804 team / 412 player keys.
+# historical race view). Zero duplicate keys: 841 team / 431 player keys (gate-synced cycle-157).
 set -u
 B=agent-browser
 $B set viewport 390 844 >/dev/null
@@ -165,7 +165,7 @@ try:
 except Exception as e:
     report('A7 jahanbakhsh country=Iran', False, str(e))
 
-# A8: mapping-sweep duplicate-key guard — 804 team keys / 412 player keys,
+# A8: mapping-sweep duplicate-key guard — 841 team keys / 431 player keys
 # zero duplicates (the 152/155 sweep guard, re-run at the new totals)
 import collections
 def keys_of(path, obj):
@@ -177,7 +177,7 @@ tk = keys_of('src/lib/leagues.ts', 'const TEAM_FA')
 pk = keys_of('src/lib/player-names-fa.ts', 'export const PLAYER_NAME_FA')
 td = [k for k, c in collections.Counter(tk).items() if c > 1]
 pd = [k for k, c in collections.Counter(pk).items() if c > 1]
-report('A8 duplicate-key guard', len(tk) == 804 and len(pk) == 412 and not td and not pd,
+report('A8 duplicate-key guard', len(tk) == 841 and len(pk) == 431 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dupTeam={td} dupPlayer={pd}")
 
 print('API_TRUTH', 'OK' if ok else 'BAD')
@@ -307,9 +307,9 @@ echo "$COPY16 $FEAT6" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 [ "$OUT6" != "{sw:390,cw:390,h1n:1,vbroken:0}" ] && TOTAL_BAD=$((TOTAL_BAD+1))
 [ "$C6" = "0" ] && [ "$E6" = "0" ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D7: /leagues — 18 cards + the eredivisie card
-probe "http://localhost:3000/leagues" "D7 leagues hub 18 cards" \
-"cards=document.querySelectorAll(\"a[href^='/league/']\").length,ereCard=!!document.querySelector(\"a[href='/league/eredivisie']\"),h1Fa=((document.querySelector(\"h1\")||{}).innerText||'').includes('لیگ');return {cards,ereCard,h1Fa}"
+# D7: /leagues — 19 cards + the eredivisie + acl2 cards (gate-synced cycle-157)
+probe "http://localhost:3000/leagues" "D7 leagues hub 19 cards" \
+"cards=document.querySelectorAll(\"a[href^='/league/']\").length,ereCard=!!document.querySelector(\"a[href='/league/eredivisie']\"),acl2Card=!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa=((document.querySelector(\"h1\")||{}).innerText||'').includes('لیگ');return {cards,ereCard,acl2Card,h1Fa}"
 
 # D8: the hook's club page — اکسلسیور (10218) with the squad grid alive
 probe "http://localhost:3000/team/10218" "D8 excelsior team page" \
@@ -344,7 +344,7 @@ echo "$FEAT9" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 
 echo "== RESULT =="
 if [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 8/8 + DOM 9/9 green — اردیویزهٔ هلند honest end-to-end: the 18th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (فاینورد ۲۴/آژاکس ۲۱/پی‌اس‌وی آیندهوون ۲۰) on an 18/18 Persian table, برینجولفور ویلیومسون 8 atop the scorers with PERSIAN name AND team (خرونینگن), the LIVE Iranian علیرضا جهانبخش (اکسلسیور — country=Iran verified through our own /api/player/466890) as the Persian hook, 320-scorer race (16 leagues) with رافینیا still honest leader, 127 titles topped by 2025/2026 پی‌اس‌وی over فاینورد (pre-war defunct champions honestly English), transfers 100 items, the CURRENT-season bracket honestly absent while the ARCHIVED 2025/2026 season serves a real ۲-round European-playoff bracket through the SAME season-aware API (نیمه‌نهایی/فینال proven in D3), historical 2023/2024 race honestly 15 participants with the all-Persian top (کریستیانو رونالدو/لوک دی یونگ/وانگلیس پاولیدیس), espnSlug ned.1 verified (the ESPN fallback covers the league too, Gulf pattern reversed), attribution truth live-verified: فاینورد/خرونینگن/اکسلسیور ride the new eredivisie index while آژاکس keeps its uecl-first truth (same live class as Celtic→uel, recorded since 153); race copy ۱۶ + players hub شانزده + search guide ۱۸ + /leagues 18th card, mapping sweep 804 team / 412 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 8/8 + DOM 9/9 green — اردیویزهٔ هلند honest end-to-end: the 18th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (فاینورد ۲۴/آژاکس ۲۱/پی‌اس‌وی آیندهوون ۲۰) on an 18/18 Persian table, برینجولفور ویلیومسون 8 atop the scorers with PERSIAN name AND team (خرونینگن), the LIVE Iranian علیرضا جهانبخش (اکسلسیور — country=Iran verified through our own /api/player/466890) as the Persian hook, 320-scorer race (16 leagues) with رافینیا still honest leader, 127 titles topped by 2025/2026 پی‌اس‌وی over فاینورد (pre-war defunct champions honestly English), transfers 100 items, the CURRENT-season bracket honestly absent while the ARCHIVED 2025/2026 season serves a real ۲-round European-playoff bracket through the SAME season-aware API (نیمه‌نهایی/فینال proven in D3), historical 2023/2024 race honestly 15 participants with the all-Persian top (کریستیانو رونالدو/لوک دی یونگ/وانگلیس پاولیدیس), espnSlug ned.1 verified (the ESPN fallback covers the league too, Gulf pattern reversed), attribution truth live-verified: فاینورد/خرونینگن/اکسلسیور ride the new eredivisie index while آژاکس keeps its uecl-first truth (same live class as Celtic→uel, recorded since 153); race copy ۱۶ + players hub شانزده + search guide ۱۹ + /leagues 19th card (acl2, gate-synced cycle-157), mapping sweep 841 team / 431 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (TOTAL_BAD=$TOTAL_BAD)"; exit 1
 fi

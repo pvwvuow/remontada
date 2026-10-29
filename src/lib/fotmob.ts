@@ -954,7 +954,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // and record the segments in `groups` (curated Persian labels, unknown
     // names fall back to the raw string) so the UI draws the region rows.
     // The 9 flat feeds never enter this branch — byte-identical output.
-    const COMPOSITE_REGION_FA: Record<string, string> = { west: "منطقهٔ غرب", east: "منطقهٔ شرق" };
+    const COMPOSITE_REGION_FA: Record<string, string> = {
+      west: "منطقهٔ غرب", east: "منطقهٔ شرق",
+      // cycle-157: ACL Two serves eight four-team group sub-tables
+      // (leagueName "Group A".."Group H") — Persian labels with the
+      // Latin group letter, the standard Persian sports convention
+      "group a": "گروه A", "group b": "گروه B", "group c": "گروه C", "group d": "گروه D", "group e": "گروه E", "group f": "گروه F", "group g": "گروه G", "group h": "گروه H",
+    };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];
     const groups: { fa: string; count: number }[] = [];
