@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -22,6 +22,9 @@ interface LeagueScorersData {
   leagueFa: string;
   season: string;
   scorers: ScorerEntry[];
+  // cycle-174 additive: the assists block rides the same payload — the
+  // per-league page renders it like the league page (honest absence = []).
+  assists?: AssistEntry[];
   updatedAt: string;
 }
 
@@ -246,6 +249,56 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
             sub="معمولاً پس از شروع فصل و پایان هفته‌ی نخست منتشر می‌شود."
           />
         )
+      )}
+
+      {/* cycle-174: بهترین پاس‌دهندگان — the per-league topscorers page joins its
+          sister page: the SAME cached getStandings payload already carried the
+          freshened assists block (the route just dropped it); compact card
+          under the scorers poster, same 170 link contract (playerId → /player
+          with prefetch=false, title = English original when Persian shown),
+          honest absence when the feed has no assists (mas). */}
+      {data && !loading && (data.assists || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
+              <path d="M4 19h16" />
+              <path d="M5 15l5-5 4 3 5-7" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">بهترین پاس‌دهندگان</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">پاس گل فصل</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.assists || []).map((a, i) => {
+              const rank = a.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{a.nameFa || a.name}</span>
+                    {a.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{a.team}</span>}
+                  </span>
+                  <span className="shrink-0 min-w-[36px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[14px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(a.assists)}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${a.name}-${i}`}>
+                  {a.playerId ? (
+                    <Link href={`/player/${a.playerId}`} prefetch={false} className={cls} title={a.nameFa && a.nameFa !== a.name ? a.name : `پروفایل ${a.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       )}
 
       {data && !loading && (

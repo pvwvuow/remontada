@@ -3,6 +3,9 @@
 // Full top-scorers list of ONE league (from the league payload stats,
 // enriched with assists / G+A / xG / rating / minutes by player id).
 // Uses the same 60-min cached getStandings payload — no extra FotMob hit.
+// cycle-174 additive: the response now also carries the freshened assists
+// block (same payload, same zero extra upstream cost) so the per-league
+// topscorers page can render «بهترین پاس‌دهندگان» like its sister page.
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
 import { getStandings, LeagueUnavailableError } from "@/lib/fotmob";
@@ -27,6 +30,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ leagueK
       leagueFa: st.leagueFa,
       season: st.season,
       scorers: st.scorers,
+      // cycle-174 additive: assists ride the SAME cached payload — consumers
+      // written before this field never read it (the 108 additive contract).
+      assists: st.assists,
       updatedAt: st.updatedAt,
     });
   } catch (err) {
