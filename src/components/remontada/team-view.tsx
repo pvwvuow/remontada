@@ -12,6 +12,7 @@ import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
 import { EmptyState } from "@/components/remontada/empty-state";
+import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { cn } from "@/lib/utils";
 
 interface TeamData {
@@ -1290,12 +1291,14 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
     p.marketValueFa,
   ].filter(Boolean) as string[];
   const inner = (
-    <div className="grid grid-cols-[26px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-2.5">
-      <span className="w-[24px] h-[24px] rounded-md bg-white/[0.06] border border-glass-border-soft flex items-center justify-center text-[9.5px] font-black text-steel/80 tabular-persian shrink-0">
-        {p.shirt ?? "—"}
-      </span>
+    <div className="grid grid-cols-[32px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-2.5">
+      {/* cycle-130: real headshot in the lineup row — the shirt number moves next to the name */}
+      <PlayerPhoto id={p.id > 0 ? p.id : null} name={p.name} size={32} rounded="rounded-lg" />
       <div className="min-w-0">
-        <p className="truncate text-[12.5px] font-black">{p.name}</p>
+        <p className="truncate text-[12.5px] font-black">
+          {p.name}
+          {p.shirt && <span className="ms-1.5 text-[9.5px] font-bold text-steel/70 tabular-persian">#{faDigits(p.shirt)}</span>}
+        </p>
         {facts.length > 0 && (
           <p className="text-[9px] text-steel/70 truncate tabular-persian mt-0.5">{facts.join(" · ")}</p>
         )}

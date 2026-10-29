@@ -13,7 +13,8 @@ import Link from "next/link";
 import type { GlobalScorer, GlobalScorersData, GlobalCard } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
-import { ScorerAvatarTile, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -50,6 +51,8 @@ function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: num
         <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[11px] font-bold shrink-0 tabular-persian">
           {faDigits(pad2(mainRank))}
         </span>
+        {/* cycle-130: face per row — headshot with the initials fallback */}
+        <PlayerPhoto id={s.playerId} name={s.nameFa || s.name} size={30} rounded="rounded-lg" />
         <div className="min-w-0 flex-1">
           {s.playerId ? (
             <Link
@@ -444,7 +447,7 @@ export function TopScorersView() {
                 left={`${faDigits(withMainRank.length)} بازیکن`}
               />
               <div className="m-3 mt-2 glass-scorer-hero hero-legend p-3.5 sm:p-5 flex items-center gap-3.5 sm:gap-5">
-                <ScorerAvatarTile name={heroScorer.s.nameFa || heroScorer.s.name} size={56} />
+                <PlayerPhoto id={heroScorer.s.playerId} name={heroScorer.s.nameFa || heroScorer.s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
                     {showGlobal ? "GLOBAL TOP SCORER" : "LEAGUE LEADER"}

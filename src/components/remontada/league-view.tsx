@@ -18,7 +18,8 @@ import { LeagueTransfersList } from "@/components/remontada/league-transfers";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
-import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 
 type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket" | "transfers" | "titles";
@@ -454,7 +455,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
       <div className="p-2.5 flex flex-col">
         {/* hero — the studio scoring-chart leader tile with the big metric */}
         <div className="glass-scorer-hero p-3.5 flex items-center gap-3">
-          <ScorerAvatarTile name={top.nameFa || top.name} size={56} />
+          <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={56} />
           <div className="min-w-0 flex-1">
             <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (

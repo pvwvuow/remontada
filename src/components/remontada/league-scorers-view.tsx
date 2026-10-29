@@ -11,7 +11,8 @@ import Link from "next/link";
 import type { ScorerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
-import { ScorerAvatarTile, GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
+import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
+import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -170,7 +171,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const top = data.scorers[0];
               return (
                 <div className="glass-scorer-hero p-4 sm:p-5 flex items-center gap-3.5 sm:gap-5">
-                  <ScorerAvatarTile name={top.nameFa || top.name} size={60} />
+                  <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={60} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
                     {top.playerId ? (

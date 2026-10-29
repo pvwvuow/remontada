@@ -10,7 +10,8 @@ import { LEAGUES } from "@/lib/leagues";
 import type { StandingsData } from "@/lib/fotmob";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { EmptyState } from "@/components/remontada/empty-state";
-import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
+import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 import { faDigits, formColor, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -235,7 +236,7 @@ function ScorersCard({ data }: { data: StandingsData }) {
       <div className="p-2.5 flex flex-col">
         {/* mini hero — the studio scoring-chart leader tile */}
         <div className="glass-scorer-hero p-3 flex items-center gap-3">
-          <ScorerAvatarTile name={top.nameFa || top.name} size={46} rounded="rounded-xl" />
+          <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={46} rounded="rounded-xl" />
           <div className="min-w-0 flex-1">
             <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (

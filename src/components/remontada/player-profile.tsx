@@ -9,9 +9,9 @@ import { faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
 import { countryFa, teamFa } from "@/lib/leagues";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "./share-button";
+import { PlayerPhoto } from "./player-photo";
 import { TeamLogo } from "./team-logo";
 import { JsonLd } from "./json-ld";
-import { ScorerAvatarTile } from "./glass-stats";
 import { RecentMatchesSection } from "./player-recent";
 
 function StatBox({ display, title, accent }: { display: string; title: string; accent?: boolean }) {
@@ -178,7 +178,8 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
       {/* ---------- header ---------- */}
       <section className="glass-scorer-hero overflow-hidden">
         <div className="px-4 py-4 flex items-center gap-3.5">
-          <ScorerAvatarTile name={p.nameFa || p.name || "؟"} size={60} />
+          {/* cycle-130: real headshot (image_resources/playerimages) with the initials tile as fallback */}
+          <PlayerPhoto id={p.id} name={p.nameFa || p.name || "؟"} size={60} suffix="" />
           <div className="min-w-0 flex-1">
             {/* cycle-106: honest Persian display name (English kept as tooltip when mapped) */}
             <h1 className="font-black text-lg leading-7 truncate text-[#f1f7fd]" dir="auto" title={p.nameFa && p.nameFa !== p.name ? p.name : undefined}>{p.nameFa || p.name}</h1>
