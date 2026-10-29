@@ -66,13 +66,14 @@ try:
 except Exception as e:
     report("A1 pl cards ride route", False, repr(e))
 
-# A2: top-level parity — OLD keys + EXACTLY {assists, cards} (the 174 A2
-# era pin advanced one step; scorer rows + assists untouched below)
+# A2: top-level parity — OLD keys + the additive era line (the 174 A2 pin
+# advanced twice: 179 added cards, 180 added selectedSeason + allSeasons
+# for the season selector).
 try:
     d = get(BASE + "/api/topscorers/pl")
     old = {"ok", "leagueKey", "leagueFa", "season", "scorers", "updatedAt"}
     extra = set(d.keys()) - old
-    good = extra == {"assists", "cards"}
+    good = extra == {"assists", "cards", "selectedSeason", "allSeasons"}
     report("A2 top-level parity", good, f"extra={sorted(extra)}")
 except Exception as e:
     report("A2 top-level parity", False, repr(e))

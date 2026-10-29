@@ -9,29 +9,50 @@
 // cycle-179 additive: same sister-page consistency one surface over — the
 // SAME cached payload has carried the cycle-176 cards block since the v8
 // bump; the route dropped it exactly like it dropped assists before 174.
+// cycle-180 additive: optional historical season — the exact cycle-55
+// contract the standings route has honored since day one (strict
+// SEASON_PARAM_RE shape → getStandings(key, season)); the per-league
+// topscorers page was the only league-scoped surface still stuck on the
+// current season. The response also carries selectedSeason + allSeasons
+// (the cycle-55 payload fields) so the selector's options come from the
+// payload itself and the UI can honestly snap a bogus-but-well-formed
+// season back to what is actually shown (the cycle-99 marker contract).
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
 import { getStandings, LeagueUnavailableError } from "@/lib/fotmob";
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { LEAGUES } from "@/lib/leagues";
 
 export const dynamic = "force-dynamic";
 
 const VALID_KEYS = LEAGUES.map((l) => l.key);
 
-export async function GET(_req: Request, { params }: { params: Promise<{ leagueKey: string }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ leagueKey: string }> }) {
   const { leagueKey } = await params;
 
   if (!VALID_KEYS.includes(leagueKey)) {
     return NextResponse.json({ ok: false, error: "لیگ ناشناخته است." }, { status: 404 });
   }
 
+  // cycle-180 additive: the cycle-55 season contract, byte-for-byte the
+  // standings route's guard — strict "YYYY/YYYY" shape, anything else → 400.
+  const season = new URL(req.url).searchParams.get("season") || undefined;
+  if (season && !SEASON_PARAM_RE.test(season)) {
+    return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
+  }
+
   try {
-    const st = await getStandings(leagueKey);
+    const st = await getStandings(leagueKey, season);
     return NextResponse.json({
       ok: true,
       leagueKey: st.leagueKey,
       leagueFa: st.leagueFa,
       season: st.season,
+      // cycle-180 additive: the payload's own season marker + offer list —
+      // old consumers never read these fields (the 108 rule); the UI uses
+      // selectedSeason for the honest label and allSeasons for the selector.
+      selectedSeason: st.selectedSeason,
+      allSeasons: st.allSeasons,
       scorers: st.scorers,
       // cycle-174 additive: assists ride the SAME cached payload — consumers
       // written before this field never read it (the 108 additive contract).
