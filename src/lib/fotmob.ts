@@ -2872,7 +2872,12 @@ export interface GlobalScorersData {
  * merges — the UI already hides the section when `cards` is undefined.
  */
 export async function getAllTopScorers(season?: string): Promise<GlobalScorersData> {
-  const settled = await Promise.allSettled(LEAGUES.map((lg) => getStandings(lg.key, season)));
+  // cycle-140: the race is LEAGUES minus merge-exempt cups (globalMerge:
+  // false) — UECL's 6-season feed would shrink the cycle-132 allSeasons
+  // intersection window from 12 to 6. Index alignment: the SAME filtered
+  // array indexes the settled results below, never LEAGUES itself.
+  const raceLeagues = LEAGUES.filter((lg) => lg.globalMerge !== false);
+  const settled = await Promise.allSettled(raceLeagues.map((lg) => getStandings(lg.key, season)));
   const merged: GlobalScorer[] = [];
   const mergedAssists: GlobalAssist[] = [];
   const perLeague: GlobalScorersData["perLeague"] = [];
@@ -2881,7 +2886,7 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
   let seasonsCommon: string[] | undefined;
   const seasonVotes = new Map<string, number>();
   settled.forEach((r, i) => {
-    const lg = LEAGUES[i];
+    const lg = raceLeagues[i];
     if (r.status !== "fulfilled") return;
     const st = r.value;
     // cycle-132: per-feed season contract bookkeeping (before the scorers
@@ -2961,7 +2966,10 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
  * per kind, top 10 each.
  */
 export async function getAllCardLeaders(): Promise<GlobalCardsData> {
-  const ordered = [...LEAGUES].sort((a, b) => (a.key === "ucl" ? 1 : 0) - (b.key === "ucl" ? 1 : 0));
+  // cycle-140: same merge-exemption as the scorers race (globalMerge: false)
+  // — one flag, one semantic: the /topscorers page shows one participant set,
+  // never a 9th competition in the cards section while the race says 8.
+  const ordered = [...LEAGUES].filter((lg) => lg.globalMerge !== false).sort((a, b) => (a.key === "ucl" ? 1 : 0) - (b.key === "ucl" ? 1 : 0));
   const jobs = ordered.flatMap((lg) =>
     (["yellow", "red"] as const).map(async (kind) => ({
       lg,

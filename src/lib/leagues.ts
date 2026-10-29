@@ -10,6 +10,14 @@ export interface LeagueConfig {
   enName: string;
   espnSlug?: string;    // ESPN fallback slug
   priority: number;     // lower = higher in list
+  /** cycle-140: explicit false = excluded from the TWO global merges
+   *  (getAllTopScorers race + getAllCardLeaders). Reason is contract, not
+   *  taste: the cycle-132 race intersects allSeasons across participating
+   *  feeds — UECL's 6-season feed (2021/2022+) would SHRINK the 12-season
+   *  window to 6. The flag does NOT affect any per-league surface: standings,
+   *  fixtures, bracket, titles, /topscorers/uecl (reads getStandings
+   *  directly), players hub, search index all stay live. */
+  globalMerge?: boolean;
 }
 
 export const LEAGUES: LeagueConfig[] = [
@@ -43,6 +51,14 @@ export const LEAGUES: LeagueConfig[] = [
   // standings league phase, fixtures, per-league scorers, global merge (8th
   // participant), bracket tab, /topscorers/uel, players hub, search index.
   { key: "uel",        fotmobId: 73,          ccode3: "INT",  faName: "لیگ اروپا",          enName: "Europa League",    espnSlug: "uefa.europa",    priority: 8 },
+  // cycle-140: the cups footprint's third live cup. The UEL cycle-139 probe
+  // already characterized it (fotmob.com/leagues/10216, UA Chrome/124,
+  // 2026-10-29): full 2026/2027 league-phase table (36 teams — Hearts rides
+  // the standings index now), FIVE playoff rounds, 6 historical seasons
+  // (2021/2022+ — the exact reason for globalMerge: false above), domestic-
+  // shaped stats blocks and transfers.data = null (cups). ESPN fallback slug
+  // probed live: uefa.europa.conf → 200.
+  { key: "uecl",       fotmobId: 10216,       ccode3: "INT",  faName: "کنفرانس لیگ اروپا",  enName: "Conference League", espnSlug: "uefa.europa.conf", priority: 9, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -260,6 +276,20 @@ const TEAM_FA: Record<string, string> = {
   "nec nijmegen": "نایمخن", "torreense": "توررنسه",
   "nk celje": "سلیه", "hapoel beer sheva": "هاپوئل بئرشبا",
   "ararat armenia": "آرارات ایروان",
+  // cycle-140: the 26 UECL league-phase teams that had no map entry yet (the
+  // other 10 already resolve) — without these they leak through as raw
+  // English in the standings/bracket/search (probe: live UECL table rows)
+  "lugano": "لوگانو", "fc twente": "تونته", "st.truiden": "سنت‌ترویدن",
+  "hajduk split": "هایدوک اسپلیت", "fc københavn": "کپنهاگ",
+  "universitatea craiova": "دانشگاه کرایووا", "mjällby": "میالبی",
+  "borac banja luka": "بوراتس بنیالوکا", "braga": "براگا", "gent": "خنت",
+  "nordsjælland": "نورشلاند", "egnatia": "اگناتیا", "riga fc": "ریگا",
+  "fk crvena zvezda": "ستاره سرخ بلگراد", "cska sofia": "سسکا صوفیه",
+  "jablonec": "یابلونتس", "fc midtjylland": "میدتیلند", "agf": "آرهوس",
+  "pafos fc": "پافوس", "iberia 1999": "ایبریا ۱۹۹۹",
+  "kairat almaty": "قیرات آلماتی", "thun": "تون",
+  "lincoln red imps fc": "لینکلن رد ایمپس", "kups": "کوپس",
+  "inter club d'escaldes": "اینتر اسکالدس", "fk kauno žalgiris": "کاونو ژالگیریس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
