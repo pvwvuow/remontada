@@ -3079,6 +3079,11 @@ export function normalizeQuery(q: string): string {
     .replace(/[\u064b-\u0652]/g, "")
     .replace(/ي/g, "ی")
     .replace(/ك/g, "ک")
+    // fix cycle-149 (FINDING-1 from the 148 bug-hunt): fold hyphen/underscore
+    // separators to spaces so «Al-Hilal» / «man_united» match the space-formed
+    // feed names — both the query and the alias haystack pass through here,
+    // so one fold repairs both sides at once
+    .replace(/[-_]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -3163,6 +3168,9 @@ function rangeOf(display: string, nq: string): [number, number] | null {
     let c = display[i].toLowerCase();
     if (c === "ي") c = "ی";
     else if (c === "ك") c = "ک";
+    // fix cycle-149: fold separators here too so the highlight range stays
+    // consistent with the folded matcher (map indices stay display-correct)
+    else if (c === "-" || c === "_") c = " ";
     chars.push(c);
     map.push(i);
   }
