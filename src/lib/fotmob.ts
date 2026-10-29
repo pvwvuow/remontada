@@ -1569,6 +1569,10 @@ interface FMTransferRaw {
 export interface LeagueTransferItem {
   playerId: number;
   name: string;
+  // cycle-167: honest Persian display name (playerFa hit, else the raw
+  // upstream name) — transfers join the same naming contract every other
+  // player surface already honors (scorers/squads/search since cycle-107).
+  nameFa: string;
   position: string;
   date: string; // ISO
   from: { id: number; name: string; fa: string };
@@ -1632,6 +1636,7 @@ export async function getLeagueTransfers(leagueKey: string): Promise<LeagueTrans
     items.push({
       playerId: Number(t.playerId || 0),
       name: t.name,
+      nameFa: playerFa(t.name),
       position: t.position?.label || "",
       date: t.transferDate || "",
       from: {
@@ -3631,6 +3636,8 @@ export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
 export interface TeamTransferItem {
   playerId: number;
   name: string;
+  // cycle-167: honest Persian display name — same contract as the league feed.
+  nameFa: string;
   position: string;
   date: string; // ISO
   from: { id: number; name: string; fa: string };
@@ -3689,6 +3696,7 @@ export async function getTeamTransfers(teamId: number): Promise<TeamTransfersDat
     items.push({
       playerId: Number(t.playerId || 0),
       name: t.name,
+      nameFa: playerFa(t.name),
       position: t.position?.label || "",
       date: t.transferDate || "",
       from: {

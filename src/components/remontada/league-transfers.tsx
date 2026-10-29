@@ -6,7 +6,15 @@
 // (ورودی/خروجی/داخلی), clubs from→to with tiny logos, Persian fee/type
 // label, Jalali date. FotMob serves this feed for the current season
 // only (probed: historical season → null data), so the panel says so.
+// cycle-167: the player name joins the profile network — every other
+// player surface (scorers/squads/search) already links /player/<id>
+// (probed live: the transfer page serves ANY playerId, yet transfer
+// names were the last dead-text mentions). Names render the honest
+// Persian map hit (27 of 803 unique live names hit at probe time) with
+// the English original in the title tooltip — the league-scorers
+// contract. Guard: playerId ≤ 0 (probed: 1 of 908 live) stays text.
 // ------------------------------------------------------------------
+import Link from "next/link";
 import type { LeagueTransfersData, LeagueTransferItem } from "@/lib/fotmob";
 import { faDigits, jalaliShort } from "@/lib/format";
 import { TeamLogo } from "./team-logo";
@@ -41,7 +49,18 @@ function TransferRow({ t }: { t: LeagueTransferItem }) {
         {t.position || "—"}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[12.5px] font-black truncate">{t.name}</p>
+        {t.playerId > 0 ? (
+          <Link
+            href={`/player/${t.playerId}`}
+            prefetch={false}
+            className="text-[12.5px] font-black truncate block max-w-full w-fit rounded-md glass-row-hover"
+            title={t.nameFa && t.nameFa !== t.name ? t.name : `پروفایل ${t.name}`}
+          >
+            {t.nameFa || t.name}
+          </Link>
+        ) : (
+          <p className="text-[12.5px] font-black truncate">{t.nameFa || t.name}</p>
+        )}
         <p className="text-[11px] text-[#b4c8df]/75 flex items-center gap-1.5 mt-0.5">
           <span className="min-w-0 flex items-center gap-1">
             <ClubTag id={t.from.id} name={t.from.fa} />

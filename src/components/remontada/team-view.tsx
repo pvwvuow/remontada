@@ -649,7 +649,20 @@ function TeamTransferRow({ t }: { t: TeamTransferItem }) {
         {t.position || "—"}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-[12.5px] font-black truncate">{t.name}</p>
+        {/* cycle-167: transfer names join the profile network — same guard +
+            honest-name contract as the league transfers panel */}
+        {t.playerId > 0 ? (
+          <Link
+            href={`/player/${t.playerId}`}
+            prefetch={false}
+            className="text-[12.5px] font-black truncate block max-w-full w-fit rounded-md glass-row-hover"
+            title={t.nameFa && t.nameFa !== t.name ? t.name : `پروفایل ${t.name}`}
+          >
+            {t.nameFa || t.name}
+          </Link>
+        ) : (
+          <p className="text-[12.5px] font-black truncate">{t.nameFa || t.name}</p>
+        )}
         <p className="text-[11px] text-[#b4c8df]/75 flex items-center gap-1.5 mt-0.5">
           <span className="min-w-0 flex items-center gap-1">
             <TransferClubTag id={t.from.id} name={t.from.fa} />
