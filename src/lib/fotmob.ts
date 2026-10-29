@@ -132,6 +132,11 @@ export interface StandingsData {
    *  Absent on feeds without a legend (persiangulf) and on pre-111 cached
    *  entries (self-heals at the next TTL — UI hides the section). */
   legend?: { fa: string; color: string }[];
+  /** cycle-114 additive: true when the payload comes from the last-known-good
+   *  snapshot (upstream outage — the /api/standings route serves the 24h
+   *  snapshot instead of the honest 503) — the UI shows an honest
+   *  «آخرین داده‌های ذخیره‌شده» notice. Never set on the live path. */
+  stale?: boolean;
   updatedAt: string;
 }
 

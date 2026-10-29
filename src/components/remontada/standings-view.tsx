@@ -337,6 +337,21 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange, onRetr
         ))}
       </div>
 
+      {/* cycle-114: honest notice when the table is served from the
+          last-known-good snapshot after an upstream outage (cycle-43 pattern) */}
+      {data && !loading && data.stale && (
+        <div
+          role="status"
+          className="rounded-xl border border-chart-2/30 bg-chart-2/10 text-chart-2 px-4 py-2.5 flex items-center gap-2 text-[11.5px] font-bold"
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="shrink-0" aria-hidden>
+            <circle cx="12" cy="12" r="9" />
+            <path d="M12 7v5l3 2" />
+          </svg>
+          نمایش آخرین داده‌های ذخیره‌شده — نسخه زنده به‌زودی به‌روزرسانی می‌شود.
+        </div>
+      )}
+
       {!data && loading ? (
         <Skeleton />
       ) : data ? (
