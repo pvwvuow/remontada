@@ -177,7 +177,8 @@ except Exception as e:
     report("gol-gohar iranian squad", False, repr(e))
     report("player-level Iran verify", False, repr(e))
 
-# A7: mapping-sweep duplicate-key guard — 1009 team keys / 486 player keys,
+# A7: mapping-sweep duplicate-key guard — 1035 team keys / 511 player keys,
+# (gate-synced cycle-162: the mas sweep +26/+25)
 # zero duplicates (the 152/155/156/159 sweep guard at the new totals;
 # gate-synced cycle-161: hnl +49 team / +28 player keys)
 def keys_of(path, anchor):
@@ -189,7 +190,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A7 duplicate-key guard", len(tk) == 1009 and len(pk) == 486 and not td and not pd,
+report("A7 duplicate-key guard", len(tk) == 1035 and len(pk) == 511 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 # A8: day-feed group splits ride the eight exact-match keys — the
@@ -222,9 +223,9 @@ sleep 3
 FEAT2=$($B eval "JSON.stringify((function(){const b=document.body.innerText||'';return {scorer:b.includes('مالکوم'),team:b.includes('الجزیره'),fa4:b.includes('۴'),noLatinTop:(function(){const rows=[...document.querySelectorAll('table tbody tr')].slice(0,5);return rows.every(function(r){return !/[A-Za-z]/.test(r.innerText||'')})})()}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT2" "B2 scorers real click"
 
-# B3: the hub — 19 cards + the acl2 card (gate-synced cycle-157)
+# B3: the hub — 22 cards + the acl2 + mas cards (gate-synced cycle-162)
 probe "$BASE/leagues" "B3 leagues hub 19 cards" \
-"(function(){return {cards:document.querySelectorAll(\"a[href^='/league/']\").length,acl2Card:!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa:((document.querySelector('h1')||{}).innerText||'').includes('لیگ')}})()"
+"(function(){return {cards:document.querySelectorAll(\"a[href^='/league/']\").length,acl2Card:!!document.querySelector(\"a[href='/league/acl2']\"),masCard:!!document.querySelector(\"a[href='/league/mas']\"),h1Fa:((document.querySelector('h1')||{}).innerText||'').includes('لیگ')}})()"
 
 # B4: /topscorers default — race copy ۱۸ (hnl joined cycle-161) and the
 # search guide grew to ۲۱ on the home search flow
@@ -241,15 +242,15 @@ sleep 4
 FEAT5=$($B eval "JSON.stringify((function(){const b=document.body.innerText||'';const has=b.indexOf('لیگ قهرمانان آسیا ۲ — گروه')!==-1;const rawEn=b.indexOf('AFC Champions League Two')!==-1;return {faGroupSplit:has,rawEnglishAbsent:!rawEn}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT5" "B5 day-feed group splits"
 
-# B6: the search guide — ۲۱ لیگ و جام in the real search UI (hnl joins)
+# B6: the search guide — ۲۲ لیگ و جام in the real search UI (mas joins)
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 sleep 2
 $B eval '(function(){const b=document.querySelector("button[aria-label=\"جستجوی تیم\"]");if(b)b.click();return b?"opened":"no-trigger"})()' >/dev/null 2>&1
 sleep 1.5
-FEAT6=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide21:b.includes('۲۱ لیگ و جام'),old20gone:!b.includes('۲۰ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
-collect "$FEAT6" "B6 search guide 21"
+FEAT6=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide22:b.includes('۲۲ لیگ و جام'),old21gone:!b.includes('۲۱ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
+collect "$FEAT6" "B6 search guide 22"
 
 # B7: the hook club page — /team/389880 گل‌گهر with the Iranian squad grid
 probe "$BASE/team/389880" "B7 gol-gohar team page" \
@@ -257,7 +258,7 @@ probe "$BASE/team/389880" "B7 gol-gohar team page" \
 
 echo "== RESULT =="
 if [ "$A_BAD" -eq 0 ] && [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 8/8 + DOM 7/7 green — لیگ قهرمانان آسیا ۲ honest end-to-end: the 19th competition, the FIFTH live cup and the «براکت جام‌ها» footprint's Persian-club crown jewel, joining with the uecl/acl globalMerge:false flag because only FOUR slash-format seasons exist (2026/2027 → 2023/2024) — the race 360 scorers / 18 participants (hnl cycle-161) with رافینیا honest leader in every window; the COMPOSITE 8-group feed flattens to a 32-row table with Persian group labels گروه A–H, top الوحده ۹, and گل‌گهر سیرجان (Group B, ۲ امتیاز) visible on the page — the club whose squad is Iranian 32/33 members deep (player-level /api/player/196041 = country Iran, the D5 rule); مالکوم ۴ الجزیره leads the 91-scorer file with PERSIAN name AND team on the dedicated /topscorers/acl2 path; 21 title seasons topped by 2025/2026 گامبا اوساکا over النصر (oldest 2004 — defunct champions ride the honest English fallback by design); transfers honestly empty (cup contract) and the bracket tab honestly absent (knockouts not drawn); NO espnSlug (ESPN 400 — Gulf pattern); day-feed group splits ride eight exact-match keys («لیگ قهرمانان آسیا ۲ — گروه X» on the real home grid); race copy ۱۸ honest, search guide ۲۱, /leagues 21st card; mapping sweep 1009 team / 486 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 8/8 + DOM 7/7 green — لیگ قهرمانان آسیا ۲ honest end-to-end: the 19th competition, the FIFTH live cup and the «براکت جام‌ها» footprint's Persian-club crown jewel, joining with the uecl/acl globalMerge:false flag because only FOUR slash-format seasons exist (2026/2027 → 2023/2024) — the race 360 scorers / 18 participants (hnl cycle-161) with رافینیا honest leader in every window; the COMPOSITE 8-group feed flattens to a 32-row table with Persian group labels گروه A–H, top الوحده ۹, and گل‌گهر سیرجان (Group B, ۲ امتیاز) visible on the page — the club whose squad is Iranian 32/33 members deep (player-level /api/player/196041 = country Iran, the D5 rule); مالکوم ۴ الجزیره leads the 91-scorer file with PERSIAN name AND team on the dedicated /topscorers/acl2 path; 21 title seasons topped by 2025/2026 گامبا اوساکا over النصر (oldest 2004 — defunct champions ride the honest English fallback by design); transfers honestly empty (cup contract) and the bracket tab honestly absent (knockouts not drawn); NO espnSlug (ESPN 400 — Gulf pattern); day-feed group splits ride eight exact-match keys («لیگ قهرمانان آسیا ۲ — گروه X» on the real home grid); race copy ۱۸ honest, search guide ۲۲, /leagues 22nd card; mapping sweep 1035 team / 511 player keys with ZERO duplicates (mas joined cycle-162); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1
 fi

@@ -77,9 +77,9 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
 echo "== PASS ($PASS_NAME) — DOM patrol @390x844 =="
 
 # V1: the hub — 21 league cards, the acl2 card really present
-hunt "V1 leagues hub 21 cards" "$BASE/leagues" \
+hunt "V1 leagues hub 22 cards" "$BASE/leagues" \
 "" "" \
-"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,acl2:!!document.querySelector(\"a[href='/league/acl2']\"),ere:!!document.querySelector(\"a[href='/league/eredivisie']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
+"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,acl2:!!document.querySelector(\"a[href='/league/acl2']\"),ere:!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/mas']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
 # V2: acl2 league page — h1, flattened composite with Persian group labels,
 # top الوحده, گل‌گهر visible, tabs honest (scorers+titles in, transfers+bracket out)
@@ -322,7 +322,7 @@ report("match acl2 persian sides",
        and (m.get("away") or {}).get("fa") == "السیب",
        f"home={(m.get('home') or {}).get('fa')} away={(m.get('away') or {}).get('fa')}")
 
-# A9: duplicate-key guard — 1009 team / 486 player keys, zero duplicates (gate-synced cycle-161)
+# A9: duplicate-key guard — 1035 team / 511 player keys, zero duplicates (gate-synced cycle-162)
 def keys_of(path, anchor):
     s = open(path).read()
     i = s.index(anchor)
@@ -332,7 +332,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A9 duplicate-key guard", len(tk) == 1009 and len(pk) == 486 and not td and not pd,
+report("A9 duplicate-key guard", len(tk) == 1035 and len(pk) == 511 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 print("API_TRUTH", "OK" if not fails else f"BAD {fails}")

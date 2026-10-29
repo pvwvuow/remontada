@@ -313,6 +313,25 @@ export const LEAGUES: LeagueConfig[] = [
   // COMPETITION_FA key (unique upstream name — no AMBIGUOUS_NAMES entry
   // needed).
   { key: "hnl",        fotmobId: 252,         ccode3: "CRO",  faName: "لیگ برتر کرواسی",    enName: "Croatian HNL",                                  priority: 21 },
+  // cycle-162: Malaysia Super League — the 22nd competition, the FIRST
+  // merge-exempt DOMESTIC league. The live Iranian hook rides the TOP of the
+  // table AND the scoring race: شهاب زاهدی (squad ccode IRN + playerData
+  // countryCode IRN + nationalTeamId 6711 — the 160/161 evidence triple) is
+  // Johor Darul Ta'zim's striker, 3rd in the 2026/2027 scorer file (7 goals).
+  // globalMerge:false is the CYCLE-160 NORWEGIAN LESSON applied (D5-evidenced
+  // probe 2026-10-30): only the three newest seasons are slash-format
+  // (2026/2027, 2025/2026, 2024/2025); the 14-season plain-year archive
+  // (2023…2010) would shrink the race's cycle-132 allSeasons intersection
+  // from 17 slash seasons to 3 — the same regression that kept Norwegian 59
+  // out entirely. Merge-exempt keeps the race at 360/18 untouched while the
+  // league still serves its full page, dedicated /topscorers/mas path,
+  // fixtures (132 allMatches), transfers (flat 3-item list) and archives.
+  // NO espnSlug (ESPN 400 — the Gulf pattern); playoff = null → bracket tab
+  // honestly absent (cycle-56 contract); seasons[] top-level EMPTY → titles
+  // API honestly null → «قهرمانان» tab honestly absent (cycle-121 contract).
+  // Day-feed bare «Liga Super» (ccode MAS) is a UNIQUE upstream name — plain
+  // COMPETITION_FA key, no AMBIGUOUS_NAMES entry (the hnl pattern).
+  { key: "mas",        fotmobId: 8985,        ccode3: "MAS",  faName: "سوپرلیگ مالزی",      enName: "Malaysia Super League",                         priority: 22, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -329,6 +348,11 @@ const COMPETITION_FA: Record<string, string> = {
   // 2026-10-31/11-02 ccode=CRO) — unique upstream name, no
   // AMBIGUOUS_NAMES entry needed
   "hnl": "لیگ برتر کرواسی",
+  // cycle-162: the day feed serves bare «Liga Super» for Malaysia
+  // (probed 2026-10-30/31 ccode=MAS) — unique upstream name (Uzbekistan
+  // rides «Superliga», Romania «Superliga», Serbia «Super Liga»), no
+  // AMBIGUOUS_NAMES entry needed
+  "liga super": "سوپرلیگ مالزی",
   "premier league": "پریمیرلیگ انگلیس",
   "laliga": "لالیگا",
   "la liga": "لالیگا",
@@ -1103,6 +1127,40 @@ const TEAM_FA: Record<string, string> = {
   "zira": "زیرا",
   "újpest": "اوی‌پشت", "ujpest": "اوی‌پشت",
   "široki brijeg": "شیروکی بریگ", "siroki brijeg": "شیروکی بریگ",
+  // ---- cycle-162: Malaysia Super League sweep (D5 live probe 2026-10-30,
+  // UA Chrome/124): 26 unmapped distinct clubs across the current 12-row
+  // table + the 2026/2027→2018 archived tables + the 63-row PascalCase
+  // scorer files + the 3-item transfer list (Maccabi Haifa; Telstar and
+  // Malmö FF already mapped by the eredivisie/hnl sweeps). All keys ASCII —
+  // no plain-ASCII variants needed (the cycle-145 İ lesson applies to
+  // accented feeds only). Malaysian state clubs keep their standard
+  // Persian-football transliterations.
+  "brunei dpmm": "برونئی دی‌پی‌ام‌ام",
+  "felda united fc": "فلدا یونایتد",
+  "imigresen fc": "ایمیگرسن",
+  "kedah darul aman": "کداح دارالامان",
+  "kelantan": "کلانتان",
+  "kelantan dnfc": "کلانتان دی‌ان‌اف‌سی",
+  "kelantan red warrior": "کلانتان رد واریور",
+  "kelantan the real warriors fc": "کلانتان رئال واریرز",
+  "kelantan united": "کلانتان یونایتد",
+  "maccabi haifa": "مکابی حیفا",
+  "melaka fc": "ملاکا",
+  "melaka united": "ملاکا یونایتد",
+  "negeri sembilan": "نگری سمبیلان",
+  "pdrm": "پی‌دی‌آرام",
+  "penang": "پنانگ",
+  "perak": "پراک",
+  "perak ii": "پراک ۲",
+  "petaling jaya city fc": "پتالینگ جایا سیتی",
+  "sabah": "صباح",
+  "sarawak united": "ساراواک یونایتد",
+  "selangor": "سلانگور",
+  "selangor ii": "سلانگور ۲",
+  "sri pahang": "سری پاهنگ",
+  "star city": "استار سیتی",
+  "terengganu": "ترنگگانو",
+  "uitm": "اوی‌تی‌ام",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

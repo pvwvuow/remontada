@@ -549,6 +549,34 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "abdoulie sanyang": "عبدوله سانیانگ",
   "mohammad mohebbi": "محمد محبی",
 
+  // ---- cycle-162: Malaysia Super League sweep (D5 live probe 2026-10-30):
+  // the 2026/2027 top-20 goals.json window (the cycle-23 parser's native
+  // PascalCase shape) + the live-Iranian hook شهاب زاهدی (3rd, 7 goals,
+  // Johor Darul Ta'zim) + the second hook مجتبی اسماعیل‌زاده (Brunei DPMM).
+  // Accented keys are the byte-exact lowercased feed forms; plain-ASCII
+  // variants added defensively (the cycle-145 İ lesson).
+  "chrigor": "کریگور",
+  "jerome mpacko etame": "جروم امپاکو اتم",
+  "shahab zahedi": "شهاب زاهدی",
+  "bérgson": "برگسون", "bergson": "برگسون",
+  "ajdin mujagić": "آیدین مویاگیچ", "ajdin mujagic": "آیدین مویاگیچ",
+  "gonzalo di renzo": "گونسالو دی رنزو",
+  "marcos guilherme": "مارکوس گیلرمه",
+  "nur fikri azhar": "نور فیکری ازهار",
+  "paulo josué": "پائولو ژوزه", "paulo josue": "پائولو ژوزه",
+  "christian": "کریستیان",
+  "dalberto": "دالبرتو",
+  "dong-hyun do": "دو دونگ‌هیون",
+  "dylan wenzel-halls": "دیلان ونزل-هالز",
+  "faisal abdul halim": "فیصل عبدالحلیم",
+  "gervane kastaneer": "گوین کاستانیر",
+  "óscar arribas": "اسکار آریباس", "oscar arribas": "اسکار آریباس",
+  "philip dandada musa": "فیلیپ داندادا موسا",
+  "safawi rasid": "سفاوی راسید",
+  "stefano brundo": "استفانو بروندو",
+  "stoichkov": "استویچکوف",
+  "mojtaba esmaeilzadeh": "مجتبی اسماعیل‌زاده",
+
 };
 
 // Persian display name for an upstream player name — exact lowercased map

@@ -66,12 +66,13 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 21 league cards with the newest routes really present
-# (gate-synced cycle-161: hnl is the 21st card)
+# V1: the hub — 22 league cards with the newest routes really present
+# (gate-synced cycle-162: mas is the 22nd card — the first merge-exempt
+# DOMESTIC league, the cycle-160 Norwegian lesson applied)
 # (gate-synced cycle-157: acl2 is the 19th card — the FIFTH live cup)
-hunt "V1 leagues hub 21 cards" "http://localhost:3000/leagues" \
+hunt "V1 leagues hub 22 cards" "http://localhost:3000/leagues" \
 "" "" \
-"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/acl2']\")&&!!document.querySelector(\"a[href='/league/swiss']\")&&!!document.querySelector(\"a[href='/league/hnl']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
+"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/acl2']\")&&!!document.querySelector(\"a[href='/league/swiss']\")&&!!document.querySelector(\"a[href='/league/hnl']\")&&!!document.querySelector(\"a[href='/league/mas']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
 # V2: championship — h1, live top میدلزبورو, scorers+transfers tabs, honest bracket absence
 hunt "V2 championship page tabs" "http://localhost:3000/league/championship" \

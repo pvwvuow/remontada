@@ -170,7 +170,7 @@ export function SearchBox() {
             <div className="max-h-[46vh] overflow-y-auto">
               {q.trim().length < 2 ? (
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
-                  حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌های {faDigits(21)} لیگ و جام
+                  حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌های {faDigits(22)} لیگ و جام
                 </p>
               ) : !loading && results.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">

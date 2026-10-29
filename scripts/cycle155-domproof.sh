@@ -265,9 +265,9 @@ echo "$FEAT5" | grep -q "false\|null" && RC5=1
 [ "$C5" = "0" ] && [ "$E5" = "0" ] || RC5=1
 [ "$RC5" -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D6: /leagues — 19 cards + the qatar + eredivisie + acl2 cards (gate-synced cycle-157)
+# D6: /leagues — 22 cards + the qatar + eredivisie + acl2 + mas cards (gate-synced cycle-162)
 probe "$BASE/leagues" "D6 leagues hub 19 cards" \
-"return {cards:document.querySelectorAll(\"a[href^='/league/']\").length,qatarCard:!!document.querySelector(\"a[href='/league/qatar']\"),ereCard:!!document.querySelector(\"a[href='/league/eredivisie']\"),acl2Card:!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")}"
+"return {cards:document.querySelectorAll(\"a[href^='/league/']\").length,qatarCard:!!document.querySelector(\"a[href='/league/qatar']\"),ereCard:!!document.querySelector(\"a[href='/league/eredivisie']\"),acl2Card:!!document.querySelector(\"a[href='/league/acl2']\"),masCard:!!document.querySelector(\"a[href='/league/mas']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")}"
 
 # D7: السد team page (101895) — the newest league's runner-up page
 probe "$BASE/team/101895" "D7 al-sadd team page" \
@@ -275,7 +275,7 @@ probe "$BASE/team/101895" "D7 al-sadd team page" \
 
 echo "== RESULT =="
 if [ "$A_BAD" -eq 0 ] && [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 4/4 + DOM 7/7 green — لیگ ستارگان قطر honest end-to-end: the 17th competition and the SEVENTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الریان ۱۷/السد ۱۵/الدحیل ۱۵) on a 12/12 Persian table, اکرم عفیف 7 atop the scorers with PERSIAN name AND team (السد), the LIVE Iranian فرهاد زوشی (لوسیل، ۳ گل) in the pool, 360-scorer race (18 leagues, gate-synced cycle-161) with رافینیا still honest leader, 22 titles topped by 2025/2026 السد over الشمال (oldest 2004/2005 الغرافه, الجیش runner rows), transfers 17 items zero-ASCII, bracket honestly absent, NO espnSlug (ESPN 400 — persiangulf/uae Gulf pattern, probed live), attribution truth live-verified: الراین/لوسیل/السیلیه ride the new qatar index while Al-Sadd keeps its dual ACL truth and the eight prior first-seen truths stay put (پورتو→portugal, خورفکان→uae, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۸ + players hub هجده + search guide ۲۱ + /leagues 21st card (hnl, gate-synced cycle-161), /players qatar grid with URL sync — the Gulf arc COMPLETION (persiangulf + saudi + uae + qatar); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 4/4 + DOM 7/7 green — لیگ ستارگان قطر honest end-to-end: the 17th competition and the SEVENTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الریان ۱۷/السد ۱۵/الدحیل ۱۵) on a 12/12 Persian table, اکرم عفیف 7 atop the scorers with PERSIAN name AND team (السد), the LIVE Iranian فرهاد زوشی (لوسیل، ۳ گل) in the pool, 360-scorer race (18 leagues, gate-synced cycle-161) with رافینیا still honest leader, 22 titles topped by 2025/2026 السد over الشمال (oldest 2004/2005 الغرافه, الجیش runner rows), transfers 17 items zero-ASCII, bracket honestly absent, NO espnSlug (ESPN 400 — persiangulf/uae Gulf pattern, probed live), attribution truth live-verified: الراین/لوسیل/السیلیه ride the new qatar index while Al-Sadd keeps its dual ACL truth and the eight prior first-seen truths stay put (پورتو→portugal, خورفکان→uae, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۸ + players hub هجده + search guide ۲۲ + /leagues 22nd card (mas, gate-synced cycle-162), /players qatar grid with URL sync — the Gulf arc COMPLETION (persiangulf + saudi + uae + qatar); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1
 fi
