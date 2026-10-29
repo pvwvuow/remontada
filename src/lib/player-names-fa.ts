@@ -496,6 +496,33 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   // "ahmed alaa" rides the existing saudi-window entry (احمد علاء) — the
   // duplicate-key guard caught the re-add and it was removed
 
+  // cycle-160: Swiss Super League — the 116-row goals.json top-20 window
+  // (leader Samuel Essende 12) plus the Persian hook himself:
+  // مصطفی حیدری, the 19-year-old Iranian centre-back at سنت‌گالن.
+  // Diacritic forms byte-exact AND plain-ASCII variants (the cycle-145 İ
+  // lesson), the cycle-159 convention.
+  "samuel essende": "ساموئل اسنده",
+  "marcel monsberger": "مارسل مونسبرگر",
+  "winsley boteli": "وینسلی بوتلی",
+  "žan celar": "ژان چلار", "zan celar": "ژان چلار",
+  "christian fassnacht": "کریستین فاسناخت",
+  "dereck moncada": "درک مونکادا",
+  "lutfi dalipi": "لطیف دالیپی",
+  "kingstone mutandwa": "کینگستون موتاندا",
+  "philippe kény": "فیلیپ کنی", "philippe keny": "فیلیپ کنی",
+  "daniel dos santos": "دانیل دوس سانتوس",
+  "emmanuel umeh": "امانوئل اومه",
+  "juan cabrera": "خوان کابررا",
+  "daniel mikołajewski": "دانیل میکووایفسکی", "daniel mikolajewski": "دانیل میکووایفسکی",
+  "albian ajeti": "آلبیان آیتی",
+  "aliou baldé": "آلیو بالده", "aliou balde": "آلیو بالده",
+  "alvyn sanches": "آلوین سانچز",
+  "andrejs cigaņiks": "آندریس تیگانیکس", "andrejs ciganiks": "آندریس تیگانیکس",
+  "asane sow": "اسان سو",
+  "brighton labeau": "برایتون لابو",
+  "elias pihlström": "الیاس پیلشتروم", "elias pihlstrom": "الیاس پیلشتروم",
+  "mostafa heydari": "مصطفی حیدری",
+
 };
 
 // Persian display name for an upstream player name — exact lowercased map

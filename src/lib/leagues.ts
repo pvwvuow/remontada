@@ -248,6 +248,38 @@ export const LEAGUES: LeagueConfig[] = [
   // the Gulf pattern). Day-feed group names ride eight exact-match keys
   // («AFC Champions League Two - A» … «- H»).
   { key: "acl2",       fotmobId: 9469,        ccode3: "INT",  faName: "لیگ قهرمانان آسیا ۲", enName: "AFC Champions League Two",                    priority: 19, globalMerge: false },
+  // cycle-160: Swiss Super League — the TWENTIETH competition and the
+  // EIGHTH consecutive new global-race participant (no globalMerge flag:
+  // 17 slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132
+  // window exactly — same cadence as superlig/scottish/saudi/championship/
+  // portugal/uae/qatar/eredivisie). Blocks live-probed 2026-10-30 (UA
+  // Chrome/124, /api/data/leagues?id=69&ccode3=SUI): flat 12-row 2026/2027
+  // table (Lugano top on 31, Young Boys 2nd on 25, Sion 3rd on 22), Top
+  // scorer category with a data.fotmob.com fetchAllUrl (Samuel Essende 12
+  // — a 116-scorer full goals.json file in the PascalCase FMStatFullRow
+  // shape the cycle-23 parser reads natively), 32 title seasons (newest
+  // 2025/2026 Thun over St. Gallen, oldest 1994/1995 Grasshopper over
+  // Lugano — the Xamax runner rows ride the existing گزانماکس map),
+  // transfers.data = 100 entries (flat list — DOMESTIC league, the cups'
+  // honest transfers-hide contract does not apply), playoff = null in the
+  // CURRENT window → bracket tab honestly absent (cycle-56 contract;
+  // archived seasons verified playoff:null too). espnSlug sui.1 verified
+  // live (200) — the eredivisie pattern, NOT the Gulf one. ARCHIVED
+  // seasons serve COMPOSITE tables (2025/2026: Championship Group 6 +
+  // Relegation Group 6 + the 12-row overall — the cycle-141 flattening
+  // handles them natively; «دور قهرمانی»/«دور سقوط» joined
+  // COMPOSITE_REGION_FA). The Persian-fan pick of the six-block sweep
+  // (Belgian 40 / Greek 135 / Danish 46 / Egyptian 519 / Austrian 38 all
+  // four-block complete but ZERO Iranian players in any full squad sweep;
+  // Norwegian 59 can't join the race — plain-year seasons): the live
+  // Iranian hook — مصطفی حیدری, the 19-year-old Iranian centre-back at
+  // سنت‌گالن (squad ccode IRN + cname "Iran" + nationalTeamId 6711,
+  // rating 6.26 over live 2026/2027 appearances; his individual FotMob
+  // profile 404s — a youth member without a player page yet, so the D5
+  // player-level check rides three agreeing club-side fields with NO
+  // contradicting profile — the exact evidence class the Dennis-Eckert
+  // false positive lacked).
+  { key: "swiss",      fotmobId: 69,          ccode3: "SUI",  faName: "سوپرلیگ سوئیس",      enName: "Swiss Super League", espnSlug: "sui.1",          priority: 20 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -945,6 +977,50 @@ const TEAM_FA: Record<string, string> = {
   "us orléans loiret": "اورلئان", "us orleans loiret": "اورلئان",
   "vitória sc guimarães": "ویتوریا گیمارایش", "vitoria sc guimaraes": "ویتوریا گیمارایش",
   "épinal": "اپینال", "epinal": "اپینال",
+  // cycle-160: Swiss Super League — five unmapped table clubs with
+  // byte-exact AND plain-ASCII variants (the cycle-145 İ lesson: ü never
+  // lowercases to u, so «FC Zürich» and «FC Zurich» both need keys), the
+  // scorer-file long forms (BSC Young Boys / FC Basel / FC Vaduz — the
+  // table feed's short «Young Boys»/«Basel» were already mapped by earlier
+  // sweeps, as were lugano/thun/servette/lausanne/grasshopper/xamax), and
+  // the 96-distinct-club transfer sweep (the Swiss winter clubs first:
+  // Winterthur/Wil/Kriens/Etoile Carouge/Rapperswil-Jona/Stade
+  // Lausanne-Ouchy/Stade Nyonnais/Yverdon, then the foreign partners).
+  "sion": "سیون",
+  "fc zürich": "زوریخ", "fc zurich": "زوریخ",
+  "st. gallen": "سنت‌گالن", "st gallen": "سنت‌گالن", "saint gallen": "سنت‌گالن",
+  "luzern": "لوتسرن",
+  "fc vaduz": "وادوتس",
+  "bsc young boys": "یانگ‌بویز", "fc basel": "بازل",
+  "winterthur": "وینترتور", "wil": "ویل", "kriens": "کرینس",
+  "etoile carouge": "اتوال کاروژ",
+  "fc rapperswil-jona": "راپرسویل یونا",
+  "fc stade lausanne-ouchy": "استاد لوزان اوشی",
+  "stade nyonnais": "استاد نیون",
+  "austria lustenau": "آستریا لوستناو",
+  "amiens": "امیان",
+  "baník ostrava": "بانیک اوستراوا", "banik ostrava": "بانیک اوستراوا",
+  "batman petrolspor": "باتمان پترول‌اسپور",
+  "carrarese": "کارارزه",
+  "castellón": "کاستلون", "castellon": "کاستلون",
+  "enosis paralimni": "انوزیس پارالیمنی",
+  "fc andorra": "آندورا",
+  "fc heidenheim": "هایدنهایم",
+  "juventus next gen": "یوونتوس نکست‌جن",
+  "kalmar ff": "کالمار",
+  "kortrijk": "کورتریک",
+  "lechia gdańsk": "لخیا گدانسک", "lechia gdansk": "لخیا گدانسک",
+  "nycfc": "نیویورک‌سیتی",
+  "red star": "رد استار",
+  "royal antwerp": "رویال آنتورپ",
+  "start": "استارت",
+  "union touarga sport": "یونیون توارگا",
+  "westerlo": "وسترلو",
+  "widzew łódź": "ویدزف ووتس", "widzew lodz": "ویدزف ووتس",
+  "wisła kraków": "ویسوا کراکوف", "wisla krakow": "ویسوا کراکوف",
+  "örgryte": "اورگریته", "orgryte": "اورگریته",
+  "železničar pančevo": "ژلزنیچار پانچوو", "zeleznicar pancevo": "ژلزنیچار پانچوو",
+  "1.fc köln": "کلن", "1.fc koln": "کلن",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -972,6 +1048,9 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "premier league|ENG": "پریمیرلیگ انگلیس",
   "serie a|ITA": "سری‌آ ایتالیا",
   "super league|GRE": "سوپرلیگ یونان",
+  // cycle-160: the day feed serves bare «Super League» for Switzerland too
+  // (probed 2026-10-31/11-01 ccode=SUI) — country-qualified like Greece
+  "super league|SUI": "سوپرلیگ سوئیس",
   "pro league|BEL": "لیگ بلژیک",
   "pro league|SAU": "لیگ حرفه‌ای عربستان",
   "first division|CYP": "دسته اول قبرس",

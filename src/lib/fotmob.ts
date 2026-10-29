@@ -960,6 +960,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // (leagueName "Group A".."Group H") — Persian labels with the
       // Latin group letter, the standard Persian sports convention
       "group a": "گروه A", "group b": "گروه B", "group c": "گروه C", "group d": "گروه D", "group e": "گروه E", "group f": "گروه F", "group g": "گروه G", "group h": "گروه H",
+      // cycle-160: archived Swiss seasons split into Championship/Relegation
+      // groups (live-probed 2025/2026: 6+6 rows + the 12-row overall table
+      // — leagueName values "Championship Group"/"Relegation Group"/
+      // "Super League"; the overall rides the «جدول کلی» label below)
+      "championship group": "دور قهرمانی", "relegation group": "دور سقوط",
+      // the archived Swiss third sub-table IS the combined table (its
+      // leagueName is just the league's English name) — the standard
+      // Persian-sports label for the merged standings
+      "super league": "جدول کلی",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];

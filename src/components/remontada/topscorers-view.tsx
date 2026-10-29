@@ -424,14 +424,15 @@ export function TopScorersView() {
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {/* cycle-151 origin, gate-synced cycle-157: 16 merge participants —
-                acl2 rides the uecl/acl globalMerge:false flag (4 slash-format
-                seasons would shrink the cycle-132 window), so the count and
-                the 320-scorer merge stay untouched */}
+            {/* cycle-151 origin, gate-synced cycles 157/160: 17 merge
+                participants — acl2 rides the uecl/acl globalMerge:false
+                flag (4 slash-format seasons would shrink the cycle-132
+                window), swiss joined cycle-160 with 17 slash-format
+                seasons covering the window exactly */}
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (
-              <>بهترین گلزنان {faDigits(16)} لیگ و جام برتر در یک جدول واحد</>
+              <>بهترین گلزنان {faDigits(17)} لیگ و جام برتر در یک جدول واحد</>
             )}
             {season && data?.perLeague.length ? (
               <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>
