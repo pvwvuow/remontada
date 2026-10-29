@@ -442,7 +442,20 @@ export interface MatchDetailNormalized {
   }[];
   statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
-  info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
+  info: {
+    stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
+    // cycle-115 additive: referee & stadium facts («داور و ورزشگاه») — the
+    // infoBox Referee.stats block + Stadium capacity/surface, unconsumed since
+    // the beginning. Optional → pre-115 cached payloads self-heal at the next
+    // 25s cache generation (UI hides the card). Unknown stat types drop.
+    refereeStats?: {
+      matches?: number;
+      yellowPerMatch?: number; yellowAvg?: number; yellowVs?: "above" | "below" | "average";
+      red?: number; penalties?: number;
+      foulsPerMatch?: number; foulsAvg?: number; foulsVs?: "above" | "below" | "average";
+    } | null;
+    stadiumExtra?: { capacity?: number; surface?: string } | null;
+  };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
   // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
@@ -841,11 +854,44 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   // ---------------- info box ----------------
   const infoBox = raw.content?.matchFacts?.infoBox || {};
   const md = infoBox["Match Date"] as { utcTime?: string } | undefined;
-  const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
-  const rf = infoBox["Referee"] as { text?: string } | undefined;
+  const st = infoBox["Stadium"] as { name?: string; city?: string; capacity?: number; surface?: string } | undefined;
+  const rf = infoBox["Referee"] as { text?: string; stats?: { type?: string; value?: number; average?: number; averageType?: string }[] } | undefined;
   const at = infoBox["Attendance"] as unknown;
   const tn = infoBox["Tournament"] as { leagueName?: string; roundName?: string } | undefined;
   const roundRaw = g.leagueRoundName || tn?.roundName || "";
+  // cycle-115: referee & stadium facts — the Referee.stats block (matches,
+  // yellow/foul per-match averages with their league-average comparison,
+  // red cards, penalties) + Stadium capacity/surface. Unknown stat types
+  // drop (honest convention, like weather keys/insights/legend tKeys);
+  // averageType outside the above/below enum falls back to "average" only
+  // when a league average exists at all.
+  const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+  const statOf = (t: string) => rf?.stats?.find((s) => s?.type === t);
+  const vsOf = (s?: { average?: number; averageType?: string }): "above" | "below" | "average" | undefined =>
+    s?.averageType === "above" || s?.averageType === "below" ? s.averageType : s?.average != null ? "average" : undefined;
+  const yc = statOf("yellowCards");
+  const fl = statOf("fouls");
+  const refereeStats =
+    rf?.stats?.length || rf?.text
+      ? {
+          ...(num(statOf("matches")?.value) != null ? { matches: num(statOf("matches")?.value) } : {}),
+          ...(num(yc?.value) != null ? { yellowPerMatch: num(yc?.value) } : {}),
+          ...(num(yc?.average) != null ? { yellowAvg: num(yc?.average) } : {}),
+          ...(vsOf(yc) ? { yellowVs: vsOf(yc) } : {}),
+          ...(num(statOf("redCards")?.value) != null ? { red: num(statOf("redCards")?.value) } : {}),
+          ...(num(statOf("penalties")?.value) != null ? { penalties: num(statOf("penalties")?.value) } : {}),
+          ...(num(fl?.value) != null ? { foulsPerMatch: num(fl?.value) } : {}),
+          ...(num(fl?.average) != null ? { foulsAvg: num(fl?.average) } : {}),
+          ...(vsOf(fl) ? { foulsVs: vsOf(fl) } : {}),
+        }
+      : undefined;
+  const stadiumExtra =
+    typeof st?.capacity === "number" || typeof st?.surface === "string"
+      ? {
+          ...(typeof st?.capacity === "number" ? { capacity: st.capacity } : {}),
+          ...(typeof st?.surface === "string" ? { surface: st.surface } : {}),
+        }
+      : undefined;
   const info: MatchDetailNormalized["info"] = {
     stadium: st?.name,
     city: st?.city,
@@ -854,6 +900,8 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     date: md?.utcTime || utcTime,
     tournament: tn?.leagueName || leagueName,
     round: roundFa(roundRaw || undefined),
+    refereeStats,
+    stadiumExtra,
   };
 
   // ---------------- attacking zones (update cycle-97) ----------------

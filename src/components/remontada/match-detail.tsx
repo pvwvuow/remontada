@@ -50,7 +50,16 @@ interface DetailData {
   events: DetailEvent[];
   statGroups: DetailStatGroup[];
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
-  info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
+  info: {
+    stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
+    refereeStats?: {
+      matches?: number;
+      yellowPerMatch?: number; yellowAvg?: number; yellowVs?: "above" | "below" | "average";
+      red?: number; penalties?: number;
+      foulsPerMatch?: number; foulsAvg?: number; foulsVs?: "above" | "below" | "average";
+    } | null;
+    stadiumExtra?: { capacity?: number; surface?: string } | null;
+  };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
   // fix cycle-45: penalty shootout (was dropped entirely before)
@@ -1087,6 +1096,75 @@ function InfoPanel({ data }: { data: DetailData }) {
   );
 }
 
+// ---------- referee & stadium (update cycle-115) ----------
+// The infoBox Referee.stats block + Stadium capacity/surface, unconsumed
+// since the beginning. Unknown surface keys drop (honest convention, like
+// weather keys/insights/legend tKeys); the referee NAME itself stays honest
+// English (unmapped-name contract, Loftus-Cheek precedent).
+const SURFACE_FA: Record<string, string> = {
+  grass: "چمن طبیعی",
+  "artificial turf": "چمن مصنوعی",
+};
+const VS_FA: Record<"above" | "below" | "average", string> = {
+  above: "بالاتر از میانگین لیگ",
+  below: "پایین‌تر از میانگین لیگ",
+  average: "در حد میانگین لیگ",
+};
+const VS_CLS: Record<"above" | "below" | "average", string> = {
+  above: "text-rose-soft border-rose-deep/30 bg-rose-deep/[0.07]",
+  below: "text-mint border-mint/25 bg-mint/[0.05]",
+  average: "text-steel border-glass-border-soft bg-white/[0.04]",
+};
+/** ≤2-decimal Persian number, trailing zeros trimmed (deepNumFa twin) */
+function faNum2(n: number): string {
+  return faDigits((Math.round(n * 100) / 100).toString());
+}
+function RefereeStadiumCard({ info }: { info: DetailData["info"] }) {
+  const rs = info.refereeStats;
+  const se = info.stadiumExtra;
+  const refRows: { label: string; value: string; vs?: "above" | "below" | "average" }[] = [];
+  if (rs) {
+    if (rs.matches != null) refRows.push({ label: "بازی داوری‌شده", value: faDigits(rs.matches) });
+    if (rs.yellowPerMatch != null) refRows.push({ label: "میانگین کارت زرد", value: faNum2(rs.yellowPerMatch), ...(rs.yellowVs ? { vs: rs.yellowVs } : {}) });
+    if (rs.red != null) refRows.push({ label: "کارت قرمز", value: faDigits(rs.red) });
+    if (rs.penalties != null) refRows.push({ label: "پنالتی اعلام‌شده", value: faDigits(rs.penalties) });
+    if (rs.foulsPerMatch != null) refRows.push({ label: "میانگین خطا", value: faNum2(rs.foulsPerMatch), ...(rs.foulsVs ? { vs: rs.foulsVs } : {}) });
+  }
+  const stRows: { label: string; value: string }[] = [];
+  if (se) {
+    if (typeof se.capacity === "number") stRows.push({ label: "ظرفیت ورزشگاه", value: `${faDigits(se.capacity.toLocaleString("en-US"))} نفر` });
+    const sf = se.surface ? SURFACE_FA[se.surface] : undefined;
+    if (sf) stRows.push({ label: "نوع چمن", value: sf });
+  }
+  if (refRows.length === 0 && stRows.length === 0) return null;
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-referee" aria-label="داور و ورزشگاه">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa]">داور و ورزشگاه</span>
+      </header>
+      <ul className="glass-list">
+        {refRows.map((r, i) => (
+          <li key={`r${i}`} className="flex items-center justify-between gap-2 px-4 py-2.5 text-[12.5px]">
+            <span className="text-steel font-bold shrink-0">{r.label}</span>
+            <span className="font-semibold text-start flex items-center gap-1.5">
+              {r.value}
+              {r.vs && (
+                <span className={cn("rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold", VS_CLS[r.vs])}>{VS_FA[r.vs]}</span>
+              )}
+            </span>
+          </li>
+        ))}
+        {stRows.map((r, i) => (
+          <li key={`s${i}`} className="flex items-center justify-between gap-2 px-4 py-2.5 text-[12.5px]">
+            <span className="text-steel font-bold shrink-0">{r.label}</span>
+            <span className="font-semibold text-start">{r.value}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- head-to-head ----------
 interface H2HTeam { id: number; name: string; fa: string; logo: string }
 interface H2HMeeting {
@@ -1524,6 +1602,9 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             {data.insights && data.insights.length > 0 && <InsightsCard insights={data.insights} />}
             {data.weather && <WeatherCard weather={data.weather} />}
             <InfoPanel data={data} />
+            {/* cycle-115: referee & stadium facts — hidden when the payload
+                lacks them (pre-115 cached entries self-heal in ≤25s) */}
+            <RefereeStadiumCard info={data.info} />
           </div>
         )}
         {tab === "h2h" && <H2HPanel data={h2h} loading={h2hLoading} />}
