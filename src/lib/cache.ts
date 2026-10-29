@@ -6,6 +6,16 @@
 // cache silently degrades to memory-only — the site never breaks
 // because of the cache. DB access is lazy (dynamic import) so a broken
 // Prisma setup cannot crash module initialization.
+//
+// Cycle 129 — L2 write reliability (registered candidate from card 127):
+// the old getDb() permanently disabled L2 after a SINGLE failed smoke
+// query, so one transient lock (e.g. a copy/restart window on dev.db)
+// silently killed every L2 write for the rest of the process (reproduced
+// pre-fix by scripts/cycle129-poison-probe.ts). Now: init is retried,
+// and after exhaustion L2 re-tries after a cooldown instead of dying.
+// All L2 writes also flow through one FIFO queue with bounded retries,
+// so a transient write error retries instead of vanishing, and the
+// final drop is logged instead of being fully silent.
 // ------------------------------------------------------------------
 
 interface CacheEntry<T> {
@@ -46,22 +56,46 @@ interface PrismaCacheClient {
 }
 
 let dbPromise: Promise<PrismaCacheClient | null> | null = null;
-let dbDisabled = false;
+// cycle-129: cooldown timestamp instead of a permanent kill switch — L2
+// degrades to memory-only for RETRY_COOLDOWN_MS after exhausted init
+// attempts, then one fresh init cycle is allowed (self-healing L2).
+let dbRetryNotBefore = 0;
+
+const INIT_ATTEMPTS = 3;
+const INIT_RETRY_PAUSE_MS = 400;
+const RETRY_COOLDOWN_MS = 30_000;
 
 function getDb(): Promise<PrismaCacheClient | null> {
-  if (dbDisabled) return Promise.resolve(null);
+  if (Date.now() < dbRetryNotBefore) return Promise.resolve(null);
   if (!dbPromise) {
     dbPromise = (async () => {
-      try {
-        const mod = await import("./db");
-        // tiny smoke query — proves the engine + file are usable
-        await mod.db.$queryRaw`SELECT 1`;
-        return mod.db as unknown as PrismaCacheClient;
-      } catch (err) {
-        console.warn("[cache] Prisma unavailable — memory-only cache:", err instanceof Error ? err.message : err);
-        dbDisabled = true;
-        return null;
+      for (let attempt = 1; attempt <= INIT_ATTEMPTS; attempt++) {
+        try {
+          const mod = await import("./db");
+          // tiny smoke query — proves the engine + file are usable
+          await mod.db.$queryRaw`SELECT 1`;
+          return mod.db as unknown as PrismaCacheClient;
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (attempt < INIT_ATTEMPTS) {
+            console.warn(
+              `[cache] Prisma init attempt ${attempt}/${INIT_ATTEMPTS} failed — retrying in ${INIT_RETRY_PAUSE_MS}ms:`,
+              msg
+            );
+            await new Promise((resolve) => setTimeout(resolve, INIT_RETRY_PAUSE_MS));
+          } else {
+            // exhausted: cooldown, then let a future call start a fresh init
+            dbRetryNotBefore = Date.now() + RETRY_COOLDOWN_MS;
+            dbPromise = null;
+            console.warn(
+              `[cache] Prisma unavailable — memory-only cache for ${RETRY_COOLDOWN_MS / 1000}s:`,
+              msg
+            );
+            return null;
+          }
+        }
       }
+      return null;
     })();
   }
   return dbPromise;
@@ -79,23 +113,52 @@ async function dbGet(key: string): Promise<CacheEntry<unknown> | null> {
   }
 }
 
+// cycle-129: SQLite tolerates one writer at a time — all L2 writes (and the
+// occasional sweep) are chained through this FIFO so they never contend with
+// each other, and each write retries transient failures instead of vanishing.
+// Callers keep the exact fire-and-forget contract: cacheSet() still returns
+// void immediately and never throws.
+let writeChain: Promise<void> = Promise.resolve();
+const WRITE_RETRIES = 2;
+const WRITE_RETRY_BASE_MS = 250;
+
+function enqueueWrite(task: () => Promise<void>): Promise<void> {
+  const next = writeChain.then(task, task);
+  writeChain = next.then(
+    () => undefined,
+    () => undefined
+  );
+  return next;
+}
+
 async function dbSet<T>(key: string, value: T, ttlMs: number): Promise<void> {
   const db = await getDb();
   if (!db) return;
-  try {
+  await enqueueWrite(async () => {
     const expiresAt = new Date(Date.now() + Math.max(ttlMs, 60_000));
-    await db.cache.upsert({
-      where: { key },
-      create: { key, value: JSON.stringify(value), expiresAt },
-      update: { value: JSON.stringify(value), expiresAt, storedAt: new Date() },
-    });
-    // occasional sweep of long-expired rows (cheap, indexed)
-    if (Math.random() < 0.02) {
-      await db.cache.deleteMany({ where: { expiresAt: { lt: new Date(Date.now() - 7 * 86400_000) } } });
+    const payload = JSON.stringify(value);
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await db.cache.upsert({
+          where: { key },
+          create: { key, value: payload, expiresAt },
+          update: { value: payload, expiresAt, storedAt: new Date() },
+        });
+        // occasional sweep of long-expired rows (cheap, indexed)
+        if (Math.random() < 0.02) {
+          await db.cache.deleteMany({ where: { expiresAt: { lt: new Date(Date.now() - 7 * 86400_000) } } });
+        }
+        return;
+      } catch (err) {
+        if (attempt >= WRITE_RETRIES) {
+          // observability: a final drop is now visible in the logs instead of silent
+          console.warn("[cache] L2 write dropped after retries:", key, err instanceof Error ? err.message : err);
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, WRITE_RETRY_BASE_MS * (attempt + 1)));
+      }
     }
-  } catch {
-    // ignore write failures
-  }
+  });
 }
 
 // ---------- public API (same signature as before) ----------
