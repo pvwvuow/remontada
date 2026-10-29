@@ -167,15 +167,13 @@ sleep 3
 B1=$($B eval 'JSON.stringify((()=>{const txt=document.body.innerText||"";return {sw:document.documentElement.scrollWidth,cw:document.documentElement.clientWidth,h1n:document.querySelectorAll("h1").length,vbroken:[...document.images].filter(i=>i.complete&&i.naturalWidth===0&&getComputedStyle(i).visibility!=="hidden").length,hasHistLabel:txt.includes("فصل ۲۰۲۴/۲۰۲۵"),falseBanner:txt.includes("ارتباط برقرار نشد."),titlesTab:[...document.querySelectorAll("button")].some(b=>(b.textContent||"").trim()==="قهرمانان")}})())' 2>/dev/null | tr -d '"\\')
 echo "B1 deep-link → $B1"
 echo "$B1" | grep -q 'hasHistLabel:true' && echo "$B1" | grep -q 'h1n:1' || { echo "   ⚠ B1 FAIL"; IBAD=$((IBAD+1)); }
-# FINDING (cycle-122 hunt, fix scheduled cycle-123): cycle-121 regression —
-# on historic deep-links the conditional transfers-spread shifts the
-# allSettled array so tiRes is undefined → TypeError inside the effect →
-# false «ارتباط برقرار نشد.» banner + «قهرمانان» tab never renders
-# (setTitles unreached). Data itself loads fine (blame 89ee488c). Reported
-# informationally — NOT blessed as a pass, NOT counted as a page defect.
-echo "$B1" | grep -q 'titlesTab:false' \
-  && echo "   FINDING-1 confirmed (known cycle-121 regression, fix=cycle-123): titles tab absent + false banner on historic deep-link" \
-  || echo "   titles tab present on historic deep-link (regression closed — tighten this assert next hunt)"
+# FINDING-1 (cycle-122 hunt) FIXED in cycle-123: the conditional transfers
+# spread moved to the tail of the allSettled array (titles owns the fixed
+# slot) + symmetric optional chaining — historic deep-links must now show
+# NO false banner AND the «قهرمانان» tab. Hard regression guard since 123.
+echo "$B1" | grep -q 'falseBanner:false' && echo "$B1" | grep -q 'titlesTab:true' \
+  && echo "   FINDING-1 closed (cycle-123): no false banner + titles tab renders on historic deep-link" \
+  || { echo "   ⚠ B1 FAIL: FINDING-1 regression — false banner or missing titles tab on historic deep-link"; IBAD=$((IBAD+1)); }
 # B2) cycle-101 season-state reset on client-side league switch
 $B open "http://localhost:3000/leagues" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
