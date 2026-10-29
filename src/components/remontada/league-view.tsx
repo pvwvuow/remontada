@@ -905,25 +905,14 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         const sp = season ? `&season=${encodeURIComponent(season)}` : "";
         // cycle-57: transfers feed is current-season only (probed) — fetched
         // without the season param and skipped entirely in historical views
-        // cycle-123 FIX (FINDING-1, hunted in cycle-122, blame 89ee488c): the
-        // conditional transfers spread used to sit BEFORE the titles fetch,
-        // shifting every later element left on historic views — the 5-way
-        // destructure then read tiRes at a fixed index and got undefined →
-        // TypeError at tiRes.status → catch → false «ارتباط برقرار نشد.»
-        // banner + «قهرمانان» tab never rendered (setTitles unreached) while
-        // the data itself loaded fine. Invariant since this fix: season-
-        // independent fetches own FIXED slots BEFORE any conditional spread;
-        // conditional elements go LAST; every positional result beyond the
-        // first three is optional-chained so a future reorder degrades to the
-        // honest hidden-surface (legend-111), never a false error banner.
-        const [stRes, fxRes, brRes, tiRes, trRes] = await Promise.allSettled([
+        const [stRes, fxRes, brRes, trRes, tiRes] = await Promise.allSettled([
           fetch(`/api/standings?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-fixtures?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-bracket?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
+          ...(season ? [] : [fetch(`/api/league-transfers?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json())]),
           // cycle-121: title history is season-independent — fetched without
           // the season param (same cached raw as the current-season reads)
           fetch(`/api/league-titles?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json()),
-          ...(season ? [] : [fetch(`/api/league-transfers?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json())]),
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
@@ -953,10 +942,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         if (trRes?.status === "fulfilled" && trRes.value.ok && trRes.value.transfers) {
           setTransfers(trRes.value.transfers as LeagueTransfersData);
         }
-        // cycle-123: tiRes?. — belt-and-suspenders symmetric with trRes (see
-        // the invariant comment above): a future positional hazard must
-        // degrade to a hidden tab, never to the false error banner
-        if (tiRes?.status === "fulfilled" && tiRes.value.ok && tiRes.value.titles) {
+        if (tiRes.status === "fulfilled" && tiRes.value.ok && tiRes.value.titles) {
           setTitles(tiRes.value.titles as LeagueTitleHistory);
         }
         if ((stRes.status === "fulfilled" && !stRes.value.ok) && (fxRes.status === "fulfilled" && !fxRes.value.ok)) {
