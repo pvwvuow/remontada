@@ -8,6 +8,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
+// NOTE: no VALUE imports from @/lib/fotmob here — the client bundle must not
+// pull the fetch/db graph (cycle-116: the market string is pre-formatted
+// server-side as totalMarketValueFa)
 import { ShareButton } from "@/components/remontada/share-button";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
@@ -40,6 +43,13 @@ interface DetailStatRow { key: string; title: string; home: string; away: string
 interface DetailStatGroup { title: string; rows: DetailStatRow[] }
 interface LineupSide {
   teamId: number; name: string; fa: string; formation?: string; coach?: string; coachFa?: string;
+  starterAge?: number;         // cycle-116 raw — میانگین سن ترکیب اصلی
+  totalMarketValueFa?: string; // cycle-116 display-ready (server-formatted EUR)
+  unavailable?: {            // cycle-116 «غایبان» — reason chips honest-mapped
+    id?: number; name: string; nameFa?: string;
+    type?: string; typeFa?: string;
+    returnRaw?: string; returnFa?: string | null;
+  }[];
   rows: { players: { id: number; name: string; nameFa: string; shirt?: string; rating?: number }[] }[];
   subs: { id: number; name: string; nameFa: string; shirt?: string }[];
 }
@@ -939,6 +949,19 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
         {t.coach && (
           <p className="text-[10px] text-muted-foreground text-center">سرمربی: <span className="font-bold text-foreground/80">{t.coachFa || t.coach}</span></p>
         )}
+        {/* cycle-116: starter facts — میانگین سن + ارزش کل ترکیب (raw EUR,
+            formatted with the shared marketValueFa wording) */}
+        {(typeof t.starterAge === "number" || t.totalMarketValueFa) && (
+          <p className="text-[10px] text-muted-foreground text-center">
+            {typeof t.starterAge === "number" && (
+              <>میانگین سن: <span className="font-bold text-foreground/80 tabular-persian">{faNum2(t.starterAge)} سال</span></>
+            )}
+            {typeof t.starterAge === "number" && t.totalMarketValueFa && " · "}
+            {t.totalMarketValueFa && (
+              <>ارزش بازار ترکیب: <span className="font-bold text-foreground/80">{t.totalMarketValueFa}</span></>
+            )}
+          </p>
+        )}
         {t.subs.length > 0 && (
           <details className="text-[11px]">
             <summary className="cursor-pointer text-muted-foreground font-bold select-none hover:text-foreground transition-colors">
@@ -967,6 +990,56 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
       {side(lineups.home, true) ?? <p className="flex-1 text-center text-muted-foreground text-xs py-8">ترکیب {match.home.fa || match.home.name} ثبت نشده</p>}
       <div className="hidden sm:block w-px self-stretch bg-border/40" aria-hidden />
       {side(lineups.away, false) ?? <p className="flex-1 text-center text-muted-foreground text-xs py-8">ترکیب {match.away.fa || match.away.name} ثبت نشده</p>}
+    </div>
+  );
+}
+
+// update cycle-116: «غایبان» — the content.lineup unavailable blocks (injured
+// / international-duty players with the raw expectedReturn parsed to Persian
+// via the cycle-96 month maps). Per-side blocks, honest names (playerFa →
+// English fallback); reason chips only for the probed types (مصدومیت rose /
+// اعزام به تیم ملی sky); unknown types and unparsable returns stay English.
+const UNAVAILABLE_CLS: Record<string, string> = {
+  injury: "text-rose-soft border-rose-deep/30 bg-rose-deep/[0.07]",
+  internationalduty: "text-sky-soft border-sky-soft/30 bg-sky-soft/[0.07]",
+};
+function UnavailableCard({ lineups, match }: { lineups: NonNullable<DetailData["lineups"]>; match: DetailMatch }) {
+  const sides = (["home", "away"] as const)
+    .map((side) => ({ side, t: lineups[side], list: lineups[side]?.unavailable || [] }))
+    .filter((x) => x.list.length > 0);
+  if (sides.length === 0) return null;
+  const label = (s: "home" | "away") =>
+    (s === "home" ? lineups.home?.fa : lineups.away?.fa) ||
+    (s === "home" ? match.home.fa || match.home.name : match.away.fa || match.away.name);
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-unavailable" aria-label="غایبان">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa]">غایبان</span>
+      </header>
+      {sides.map(({ side, list }) => (
+        <section key={side} className={cn("px-4 py-2.5 flex flex-col gap-1.5", side === "away" && "border-t border-glass-border-soft")}>
+          <p className="text-[10.5px] font-bold text-steel">{label(side)}</p>
+          <ul className="flex flex-col">
+            {list.map((u, i) => (
+              <li key={i} className="flex items-center justify-between gap-2 py-1.5 text-[12px]">
+                <span className="font-semibold text-start min-w-0 truncate">
+                  <Link href={`/player/${u.id}`} prefetch={false} className="hover:text-sky-soft transition-colors">
+                    {u.nameFa || u.name}
+                  </Link>
+                </span>
+                <span className="flex items-center gap-1.5 shrink-0">
+                  {u.typeFa && (
+                    <span className={cn("rounded-md border px-1.5 py-0.5 text-[9.5px] font-bold", (u.type && UNAVAILABLE_CLS[u.type]) || "text-steel border-glass-border-soft bg-white/[0.04]")}>
+                      {u.typeFa}
+                    </span>
+                  )}
+                  <span className="text-[10px] text-muted-foreground tabular-persian">{u.returnFa || u.returnRaw}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
     </div>
   );
 }
@@ -1588,7 +1661,11 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         )}
         {tab === "lineups" &&
           (data.lineups ? (
-            <LineupsPitch lineups={data.lineups} match={m} />
+            <div className="flex flex-col gap-4">
+              <LineupsPitch lineups={data.lineups} match={m} />
+              {/* cycle-116: «غایبان» — hidden when the payload lacks it */}
+              <UnavailableCard lineups={data.lineups} match={m} />
+            </div>
           ) : (
             <EmptyState
               icon="shirt"

@@ -2103,6 +2103,13 @@ function marketNumFa(n: number): string {
   return `${faDigits(n)} یورو`;
 }
 
+/** cycle-116 additive export: public wrapper for marketNumFa — the lineup-tab
+ *  «غایبان و آمار ترکیب» feature formats totalStarterMarketValue with the
+ *  exact same EUR wording as the player market-value history (no drift). */
+export function marketValueFa(n: number): string {
+  return marketNumFa(n);
+}
+
 function buildDeepStats(raw: FMPlayerDetails): PlayerDeepGroup[] | null {
   const groups = raw.firstSeasonStats?.statsSection?.items;
   if (!Array.isArray(groups)) return null;
@@ -2364,6 +2371,29 @@ const RETURN_PREFIX_FA: Record<string, string> = {
   expected_return_date_mid: "اواسط",
   expected_return_date_late: "اواخر",
 };
+
+// cycle-116: the MATCH lineup unavailable blocks (content.lineup.*Team.
+// unavailable[].unavailability.expectedReturn) carry the return as a RAW
+// STRING ("Doubtful" | "Out for season" | "Early November 2026" | "Mid …" |
+// "Late …" — probed enum over 4 matches) unlike the player payload's keyed
+// enum. Parse it with the SAME cycle-96 month/prefix maps; unmapped patterns
+// return null and the UI falls back to the honest English raw.
+export function unavailableReturnFa(raw?: string): string | null {
+  const s = (raw || "").trim();
+  if (!s) return null;
+  const low = s.toLowerCase();
+  if (low === "doubtful") return "مشارکت مشکوک";
+  if (low === "out for season") return "خارج برای کل فصل";
+  const mp = low.match(/^(early|mid|late)\s+([a-z]+)\s+(\d{4})$/);
+  if (mp) {
+    const prefix = RETURN_PREFIX_FA[`expected_return_date_${mp[1]}`];
+    const month = MONTH_FA[mp[2]];
+    if (prefix && month) return `${prefix} ${month} ${faDigits(mp[3])}`;
+  }
+  const mb = low.match(/^([a-z]+)\s+(\d{4})$/);
+  if (mb && MONTH_FA[mb[1]]) return `${MONTH_FA[mb[1]]} ${faDigits(mb[2])}`;
+  return null;
+}
 const PLAYER_RETURN_KEY_FA: Record<string, string> = {
   expected_return_date_doubtful: "مشارکت مشکوک",
   expected_return_date_back_in_training: "بازگشت به تمرین",

@@ -7,7 +7,7 @@ import { NextResponse } from "next/server";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
-import { roundFa } from "@/lib/fotmob";
+import { roundFa, unavailableReturnFa, marketValueFa } from "@/lib/fotmob";
 import { playerFa } from "@/lib/player-names-fa";
 import { faDigits } from "@/lib/format";
 
@@ -108,6 +108,16 @@ interface FMLineupTeam {
   starters?: FMStarter[];
   subs?: FMStarter[];
   coach?: { name?: string; firstName?: string; lastName?: string } | null;
+  // cycle-116: lineup-tab «غایبان و آمار ترکیب» — the unavailable (injured /
+  // suspended / international duty) block + starter facts, unconsumed since
+  // the beginning (probed shapes over 4 matches, UA Chrome/124).
+  averageStarterAge?: number;
+  totalStarterMarketValue?: number;
+  unavailable?: {
+    id?: number; name?: string; firstName?: string; lastName?: string;
+    marketValue?: number;
+    unavailability?: { type?: string; expectedReturn?: string } | null;
+  }[] | null;
 }
 interface FMPotmStatValue { value?: number | null; total?: number | null; type?: string }
 interface FMPotmStatGroup {
@@ -397,6 +407,14 @@ interface LineupSide {
   formation?: string;
   coach?: string;
   coachFa?: string; // cycle-106 honest map (present only when a coach name exists)
+  starterAge?: number;       // cycle-116 raw — the UI formats (میانگین سن)
+  totalMarketValue?: number; // cycle-116 raw EUR
+  totalMarketValueFa?: string; // cycle-116 display-ready «۲۵۶.۷ میلیون یورو» (marketValueFa server-side — the client bundle must NOT pull fotmob/db)
+  unavailable?: {            // cycle-116 «غایبان» — honest names (playerFa)
+    id?: number; name: string; nameFa?: string;
+    type?: string; typeFa?: string;
+    returnRaw?: string; returnFa?: string | null;
+  }[];
   rows: { players: Omit<Chip, "_y">[] }[];
   subs: { id: number; name: string; nameFa: string; shirt?: string }[];
 }
@@ -837,6 +855,35 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     const build = (t?: FMLineupTeam): LineupSide | null => {
       if (!t?.starters?.length) return null;
       const coachName = t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined;
+      // cycle-116: «غایبان» — unavailable (injured / international duty / …)
+      // players with the raw expectedReturn string parsed through the cycle-96
+      // month/prefix maps (unavailableReturnFa). Names ride playerFa with the
+      // honest-English fallback (Loftus-Cheek contract). Unmapped unavailability
+      // TYPES drop their chip (honest convention, like weather keys/insights).
+      const UNAVAILABLE_TYPE_FA: Record<string, string> = {
+        injury: "مصدومیت",
+        internationalduty: "اعزام به تیم ملی",
+      };
+      const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
+      const unavailable = Array.isArray(t.unavailable)
+        ? t.unavailable
+            .map((u) => {
+              const nm = (u?.name || [u?.firstName, u?.lastName].filter(Boolean).join(" ") || "").trim();
+              if (!nm) return null;
+              const nfa = playerFa(nm);
+              const typ = (u?.unavailability?.type || "").toLowerCase();
+              const retRaw = u?.unavailability?.expectedReturn || undefined;
+              return {
+                ...(u?.id != null ? { id: u.id } : {}),
+                name: nm,
+                ...(nfa && nfa !== nm ? { nameFa: nfa } : {}),
+                ...(typ ? { type: typ, ...(UNAVAILABLE_TYPE_FA[typ] ? { typeFa: UNAVAILABLE_TYPE_FA[typ] } : {}) } : {}),
+                ...(retRaw ? { returnRaw: retRaw } : {}),
+                returnFa: unavailableReturnFa(retRaw),
+              };
+            })
+            .filter((u): u is NonNullable<typeof u> => u !== null)
+        : undefined;
       return {
         teamId: t.id,
         name: t.name,
@@ -844,6 +891,11 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         formation: t.formation || undefined,
         coach: coachName,
         coachFa: coachName ? playerFa(coachName) : undefined,
+        ...(isNum(t.averageStarterAge) ? { starterAge: t.averageStarterAge } : {}),
+        ...(isNum(t.totalStarterMarketValue)
+          ? { totalMarketValue: t.totalStarterMarketValue, totalMarketValueFa: marketValueFa(t.totalStarterMarketValue) }
+          : {}),
+        ...(unavailable?.length ? { unavailable } : {}),
         rows: clusterRows(t.starters),
         subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, nameFa: playerFa(s.name), shirt: s.shirtNumber || undefined })),
       };
