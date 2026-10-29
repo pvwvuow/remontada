@@ -257,6 +257,48 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         </section>
       )}
 
+      {/* ---------- playing positions (cycle-135) ---------- */}
+      {p.positions && p.positions.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label="پست‌های بازی" data-testid="player-positions">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-400" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="3.5" />
+              <path d="M12 3v5.5M12 15.5V21M3 12h5.5M15.5 12H21" />
+            </svg>
+            پست‌های بازی
+            <span className="ms-auto text-[9.5px] font-bold text-muted-foreground">ترکیب‌های اعلامی فوت‌ماب</span>
+          </header>
+          <div className="px-4 py-3.5">
+            <div className="flex flex-wrap gap-1.5">
+              {p.positions.map((s) => (
+                <span
+                  key={s.en}
+                  title={s.en}
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10.5px] font-black border",
+                    s.isMain
+                      ? "bg-sky-500/15 border-sky-400/30 text-[#d9edff]"
+                      : "bg-white/[0.03] border-glass-border-soft text-[#c8dcf2]/85"
+                  )}
+                >
+                  {s.isMain && (
+                    <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" className="text-sky-400" aria-label="پست اصلی">
+                      <path d="M12 2l2.6 6.9L22 9.3l-5.4 4.8 1.6 7-6.2-3.7-6.2 3.7 1.6-7L2 9.3l7.4-.4z" />
+                    </svg>
+                  )}
+                  {s.fa}
+                  <span className="text-[9px] font-bold text-steel/70 tabular-persian">{faDigits(String(s.occurrences))} بازی</span>
+                </span>
+              ))}
+            </div>
+            <p className="text-[9px] text-muted-foreground leading-4 mt-2.5">
+              شمارِ بازی‌ها در هر پست بر اساس آرشیو فوت‌ماب است؛ پست اصلی با ستاره نشان شده.
+            </p>
+          </div>
+        </section>
+      )}
+
       {/* ---------- season stats ---------- */}
       {p.season && (
         <section className="glass-card overflow-hidden" aria-label="آمار فصل">

@@ -1815,7 +1815,18 @@ interface FMPlayerDetails {
   status?: string;
   birthDate?: { utcTime?: string } | null;
   primaryTeam?: { teamId?: number; teamName?: string; onLoan?: boolean } | null;
-  positionDescription?: { primaryPosition?: { label?: string } } | null;
+  // cycle-135 probed (UA Chrome/124, 2026-10-29): beyond the one
+  // `primaryPosition` label mapped since the beginning, the payload carries
+  // the FULL multi-position map — `positions[]` (Raphinha: 6 entries, each
+  // {strPos:{label,key}, occurences, isMainPosition, pitchPositionData}) and
+  // `nonPrimaryPositions`. We map only the label + occurrence count + main
+  // flag (pitchPositionData is a per-entry pitch blob not needed for the
+  // «پست‌های بازی» chips; kept unmapped on purpose). Optional + additive:
+  // absence (coach payloads, odd feeds) → the profile section simply hides.
+  positionDescription?: {
+    primaryPosition?: { label?: string };
+    positions?: { strPos?: { label?: string; key?: string }; occurences?: number; isMainPosition?: boolean }[];
+  } | null;
   playerInformation?: Record<string, FMPlayerInfoEntry> | FMPlayerInfoEntry[];
   mainLeague?: { leagueId?: number; leagueName?: string; season?: string; stats?: { title?: string; localizedTitleId?: string; value?: number }[] } | null;
   nextMatch?: { matchId?: number; homeId?: number; awayId?: number; homeName?: string; awayName?: string; matchDate?: string; leagueId?: number; leagueName?: string } | null;
@@ -1975,12 +1986,31 @@ export interface PlayerPitch {
   xgTotal: number | null;
   heat: { x: number; y: number }[];
 }
+// cycle-135: one entry of the player's multi-position map («پست‌های بازی»).
+// `occurrences` = how many official lineups the player featured there per
+// FotMob's own tally; `isMain` = the payload's isMainPosition flag. Sorted
+// main-first, then by occurrences — the UI renders them as chips in that
+// honest order (no re-ranking of our own).
+export interface PlayerPositionSpot {
+  fa: string; // precise Persian label (faPositionDetail), English kept for title/tooltip
+  en: string; // raw upstream label, e.g. "Left Winger"
+  occurrences: number;
+  isMain: boolean;
+}
+
 export interface PlayerData {
   id: string;
   name: string;
   nameFa: string; // cycle-106: honest Persian display name for the profile h1 (curated map hit, else the raw upstream name)
   positionFa: string | null;
   positionEn: string | null;
+  // cycle-135: full multi-position map from positionDescription.positions
+  // («پست‌های بازی» chips on the profile). OPTIONAL by contract — coach/odd
+  // payloads legitimately lack it → the section hides (same honesty pattern
+  // as pitch/traits/market). Cache key still bumped to v6 because the
+  // NORMALIZED output changed (map added + refined keeper fa label) and a
+  // stale v5 shape would serve unrefined labels for the TTL window.
+  positions?: PlayerPositionSpot[];
   status: string;
   team: { id: number; name: string; fa: string; logo: string } | null;
   info: {
@@ -2040,6 +2070,31 @@ function faPosition(label?: string): string | null {
   if (l.includes("right winger")) return "وینگر راست";
   if (l.includes("winger")) return "وینگر";
   if (l.includes("striker") || l.includes("forward")) return "مهاجم";
+  return null;
+}
+
+// cycle-135: side-aware refinement used ONLY by the «پست‌های بازی» chips.
+// faPosition deliberately stays untouched — it feeds the profile sub-line and
+// other surfaces whose labels are part of the proven contract (regression 28/28
+// asserts none of them, but the honest-additive rule says new mapper for new
+// surface). Falls back to faPosition for anything it does not refine.
+function faPositionDetail(label?: string): string | null {
+  const l = (label || "").toLowerCase();
+  if (!l) return null;
+  if (l.includes("centre back") || l.includes("center back") || l.includes("centre-back") || l.includes("center-back")) return "مدافع میانی";
+  // cycle-135 probed: some payloads label the GK spot just "Keeper" (Joan
+  // García id=1167220) while others use the full "Goalkeeper" — both are
+  // the same spot. Refined here only; faPosition ("Goalkeeper"-only) keeps
+  // its proven behaviour on existing surfaces.
+  if (l.includes("keeper")) return "دروازه‌بان";
+  if (/^right back|right back$/.test(l) || l.includes("right-back") || l.includes("rightback")) return "دفاع راست";
+  if (/^left back|left back$/.test(l) || l.includes("left-back") || l.includes("leftback")) return "دفاع چپ";
+  if (l.includes("right midfield")) return "هافبک راست";
+  if (l.includes("left midfield")) return "هافبک چپ";
+  const base = faPosition(l);
+  if (base) return base;
+  if (l.includes("second striker")) return "مهاجم دوم";
+  if (l.includes("midfield")) return "هافبک";
   return null;
 }
 
@@ -2386,6 +2441,27 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
   }
 
   const posEn = raw.positionDescription?.primaryPosition?.label || null;
+  // cycle-135: full multi-position map («پست‌های بازی») — dedupe by English
+  // label, sort main-first then by the payload's own occurrence tally, cap 8.
+  // Section hides when the payload carries none (coach/odd feeds) — honest
+  // absence, same pattern as pitch/traits/market.
+  const rawSpots = raw.positionDescription?.positions ?? [];
+  const seenPos = new Set<string>();
+  const positions: PlayerPositionSpot[] = [];
+  for (const s of rawSpots) {
+    const en = s.strPos?.label?.trim();
+    if (!en) continue;
+    const key = en.toLowerCase();
+    if (seenPos.has(key)) continue;
+    seenPos.add(key);
+    positions.push({
+      fa: faPositionDetail(en) ?? faPosition(en) ?? en,
+      en,
+      occurrences: typeof s.occurences === "number" && s.occurences >= 0 ? s.occurences : 0,
+      isMain: s.isMainPosition === true,
+    });
+  }
+  positions.sort((a, b) => Number(b.isMain) - Number(a.isMain) || b.occurrences - a.occurrences);
   const careerItems = raw.careerHistory?.careerItems || {};
   const career = [
     ...normalizeCareerEntries(careerItems.senior?.teamEntries, "senior"),
@@ -2397,6 +2473,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     nameFa: playerFa(raw.name || ""),
     positionFa: faPosition(posEn || undefined),
     positionEn: posEn,
+    ...(positions.length > 0 ? { positions: positions.slice(0, 8) } : {}),
     status: raw.status || "",
     injury: buildInjury(raw),
     team: pt
@@ -2683,7 +2760,11 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // cycle-106: key bumped to v5 — output gained the root nameFa (profile h1
   // display name); older shapes would violate the required field (same
   // convention as cycle-52/86/87/96)
-  const payload = await cached(`player:v5:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-135: key bumped to v6 — normalized output changed in place: gained
+  // the optional positions[] map AND the detail-mapper refined fa labels
+  // ("Keeper" → «دروازه‌بان»), so a v5-cached shape would serve the stale
+  // unrefined labels for up to the TTL (same convention as cycle-52/86/87/96)
+  const payload = await cached(`player:v6:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
