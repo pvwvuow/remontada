@@ -5,12 +5,12 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard, LeagueTitleHistory } from "@/lib/fotmob";
 // cycle-99: same strict season shape as the API guard — one regex, one
 // contract (client-safe module; a value import from fotmob.ts would drag
 // the server graph into the client bundle — caught in this cycle's build)
 import { SEASON_PARAM_RE } from "@/lib/season";
-import { LEAGUES, type LeagueConfig } from "@/lib/leagues";
+import { LEAGUES, fotmobTeamLogo, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
@@ -21,7 +21,7 @@ import { EmptyState } from "@/components/remontada/empty-state";
 import { ScorerAvatarTile, GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { TableModeSwitch, type TableMode } from "@/components/remontada/table-mode";
 
-type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket" | "transfers";
+type Tab = "standings" | "stats" | "fixtures" | "recent" | "scorers" | "bracket" | "transfers" | "titles";
 
 /** Current-week progress bar («هفته ۱۲ از ۳۸») — numeric rounds only. */
 function SeasonProgress({ progress }: { progress: { current: number; total: number } }) {
@@ -809,6 +809,49 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
   );
 }
 
+// ---------------- cycle-121: league title history («قهرمانان») ----------------
+// The league's full per-season champions from the SAME cached data/leagues
+// payload (top-level seasons[]: winner = champion, loser = runner-up —
+// probed uniform across pl/seriea/laliga/ucl; the persiangulf null payload
+// never reaches here — designed 503 path). Newest first; the tab is hidden
+// when the source has no list (legend-111 contract). Champion bold with a
+// /team/ link, runner-up muted, honest legend note at the tail.
+function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
+  return (
+    <div className="glass-card overflow-hidden" data-testid="league-titles">
+      <div className="grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-[color:var(--glass-border-soft)] text-[9px] font-black text-steel/60">
+        <span>فصل</span>
+        <span className="text-start">قهرمان</span>
+        <span className="text-start">نایب‌قهرمان</span>
+      </div>
+      {data.items.map((s, i) => (
+        <div key={`${s.season}-${i}`} className={cn("grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2", i % 2 ? "bg-white/[0.02]" : "")}>
+          <span className="text-[10px] font-black text-steel/70 tabular-persian">{faDigits(s.season)}</span>
+          {s.championId > 0 ? (
+            <Link href={`/team/${s.championId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
+              <img src={fotmobTeamLogo(s.championId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+              <span className="truncate text-[11.5px] font-black group-hover:text-sky-soft transition-colors">{s.championFa}</span>
+            </Link>
+          ) : (
+            <span className="truncate text-[11.5px] font-black">{s.championFa}</span>
+          )}
+          {s.runnerUpId != null && s.runnerUpFa ? (
+            <Link href={`/team/${s.runnerUpId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
+              <img src={fotmobTeamLogo(s.runnerUpId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0 opacity-80" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+              <span className="truncate text-[11px] font-bold text-steel/70 group-hover:text-sky-soft transition-colors">{s.runnerUpFa}</span>
+            </Link>
+          ) : (
+            <span className="text-[11px] text-steel/40">—</span>
+          )}
+        </div>
+      ))}
+      <p className="text-[9px] text-muted-foreground px-3 sm:px-4 py-2 border-t border-[color:var(--glass-border-soft)]">
+        تاریخچهٔ کامل قهرمانی به روایت فوت‌ماب — {faDigits(data.total)} فصل؛ قهرمان پررنگ و نایب‌قهرمان کم‌رنگ.
+      </p>
+    </div>
+  );
+}
+
 export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const lg = LEAGUES.find((l) => l.key === leagueKey);
   const [tab, setTab] = useState<Tab>("standings");
@@ -830,6 +873,9 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const [bracket, setBracket] = useState<LeagueBracketData | null>(null);
   // cycle-57: current-season transfers (null → tab hidden; historical seasons unsupported by the source)
   const [transfers, setTransfers] = useState<LeagueTransfersData | null>(null);
+  // cycle-121: full title history («قهرمانان») — season-independent, so the
+  // tab shows on historical views too (null → tab hidden)
+  const [titles, setTitles] = useState<LeagueTitleHistory | null>(null);
 
   // cycle-99: read the deep-linked season once on mount — strict SEASON_PARAM_RE
   // shape (same guard as the API routes); anything else is ignored and the
@@ -853,16 +899,20 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
     setError(null);
     setBracket(null);
     setTransfers(null);
+    setTitles(null);
     (async () => {
       try {
         const sp = season ? `&season=${encodeURIComponent(season)}` : "";
         // cycle-57: transfers feed is current-season only (probed) — fetched
         // without the season param and skipped entirely in historical views
-        const [stRes, fxRes, brRes, trRes] = await Promise.allSettled([
+        const [stRes, fxRes, brRes, trRes, tiRes] = await Promise.allSettled([
           fetch(`/api/standings?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-fixtures?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           fetch(`/api/league-bracket?league=${leagueKey}${sp}`, { cache: "no-store" }).then((r) => r.json()),
           ...(season ? [] : [fetch(`/api/league-transfers?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json())]),
+          // cycle-121: title history is season-independent — fetched without
+          // the season param (same cached raw as the current-season reads)
+          fetch(`/api/league-titles?league=${leagueKey}`, { cache: "no-store" }).then((r) => r.json()),
         ]);
         if (cancelled) return;
         if (stRes.status === "fulfilled" && stRes.value.ok) setStandings(stRes.value as StandingsData);
@@ -891,6 +941,9 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         }
         if (trRes?.status === "fulfilled" && trRes.value.ok && trRes.value.transfers) {
           setTransfers(trRes.value.transfers as LeagueTransfersData);
+        }
+        if (tiRes.status === "fulfilled" && tiRes.value.ok && tiRes.value.titles) {
+          setTitles(tiRes.value.titles as LeagueTitleHistory);
         }
         if ((stRes.status === "fulfilled" && !stRes.value.ok) && (fxRes.status === "fulfilled" && !fxRes.value.ok)) {
           setError("دریافت داده‌های لیگ ناموفق بود.");
@@ -967,6 +1020,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   const visibleTabs: { key: Tab; label: string }[] = [
     ...TABS,
     ...(bracket ? [{ key: "bracket" as Tab, label: "براکت" }] : []),
+    ...(titles ? [{ key: "titles" as Tab, label: "قهرمانان" }] : []),
     ...(transfers && !season ? [{ key: "transfers" as Tab, label: "انتقال‌ها" }] : []),
   ];
 
@@ -1101,6 +1155,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}
           {tab === "bracket" && (bracket ? <LeagueBracket data={bracket} /> : null)}
+          {tab === "titles" && (titles ? <LeagueTitles data={titles} /> : null)}
           {tab === "transfers" && (transfers ? <LeagueTransfersList data={transfers} /> : null)}
         </div>
       )}

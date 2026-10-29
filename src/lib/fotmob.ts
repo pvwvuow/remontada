@@ -389,6 +389,15 @@ interface FotMobLeague {
   // null fixtures block) — the matchday detector reads it for free
   fixtures?: { allMatches?: unknown[]; hasOngoingMatch?: boolean | null };
   playoff?: { rounds?: FMBracketRoundRaw[] };
+  // cycle-121 probed (UA Chrome/124, 2026-10-29): top-level seasons = the
+  // league's FULL title history — one entry per completed season, newest
+  // first: {seasonName, winner {id, name, seasonName, winner:true},
+  // loser {…}} where winner = champion and loser = runner-up. Uniform:
+  // pl=127 (oldest 1888), seriea=121 (1898), laliga=95 (1929), ucl=71
+  // (1955/1956) — every entry carries both names; persiangulf's payload
+  // is null upstream (designed 503 path) so this surface is honestly
+  // absent there.
+  seasons?: FMTitleSeasonRaw[];
   transfers?: FMTransfersRaw;
   stats?: {
     players?: {
@@ -4227,4 +4236,60 @@ export async function getTeamFixtureDifficulty(teamId: number): Promise<TeamFixt
     verdictFa: fd.difficultyKey ? DIFFICULTY_VERDICT_FA[fd.difficultyKey] ?? null : null,
     fixtures,
   };
+}
+
+// ---------------- FotMob: league title history (data/leagues endpoint, cycle-121) ----------------
+
+// cycle-121 raw shape (see FotMobLeague.seasons comment)
+interface FMTitleSeasonRaw {
+  seasonName?: string;
+  winner?: { id?: number; name?: string; seasonName?: string; winner?: boolean } | null;
+  loser?: { id?: number; name?: string; seasonName?: string } | null;
+}
+
+export interface LeagueTitleSeason {
+  season: string;          // raw upstream season name ("2025/2026", "1929")
+  championId: number;      // >0 → /team/{id} link (cycle-117 contract)
+  championFa: string;      // teamFa-mapped Persian, honest English fallback
+  runnerUpId: number | null;
+  runnerUpFa: string | null;
+}
+
+export interface LeagueTitleHistory {
+  total: number;
+  items: LeagueTitleSeason[]; // newest first
+}
+
+/** cycle-121 additive export: «قهرمانان» — the league's full title history
+ *  from the SAME cached data/leagues payload the standings/fixtures/bracket/
+ *  transfers reads use (top-level raw.seasons: winner = champion, loser =
+ *  runner-up; probed uniform pl=127 / seriea=121 / laliga=95 / ucl=71 with
+ *  both names on every entry). Season-independent — fetched on the current
+ *  raw, so zero upstream hits and no cache-key bump. Null when the source
+ *  has no list (UI hides the tab, legend-111 contract); the persiangulf
+ *  null payload surfaces as LeagueUnavailableError → designed 503 like
+ *  every other league surface. */
+export async function getLeagueTitleHistory(leagueKey: string, season?: string): Promise<LeagueTitleHistory | null> {
+  const { raw } = await getLeagueRaw(leagueKey, season);
+  const list = raw?.seasons;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const items: LeagueTitleSeason[] = [];
+  for (const s of list) {
+    const seasonName = String(s?.seasonName || "");
+    const wName = String(s?.winner?.name || "");
+    if (!seasonName || !wName) continue;
+    const wId = Number(s?.winner?.id || 0);
+    const lName = String(s?.loser?.name || "");
+    const lId = Number(s?.loser?.id || 0);
+    items.push({
+      season: seasonName,
+      championId: wId > 0 ? wId : 0,
+      championFa: teamFa(wName) || wName,
+      runnerUpId: lName && lId > 0 ? lId : null,
+      runnerUpFa: lName ? teamFa(lName) || lName : null,
+    });
+  }
+  if (items.length === 0) return null;
+  // upstream serves seasons[] NEWEST-first (probed: seasons[0] = 2025/2026) — serve as-is.
+  return { total: items.length, items };
 }
