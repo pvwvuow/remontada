@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 // ------------------------------------------------------------------
 // Cycle 42 — topscorers cold-start fix (long-standing cycle-36/40 finding).
-// The merged table is built from 7 league feeds; on a cold start or during
+// The merged table is built from 8 league/cup feeds; on a cold start or during
 // a FotMob hiccup some feeds fail and `getAllTopScorers` silently drops
 // them, so the first visitor could see a thin or empty table. A full
 // snapshot of the last successful merge is kept in the two-tier cache

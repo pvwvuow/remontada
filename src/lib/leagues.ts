@@ -29,6 +29,20 @@ export const LEAGUES: LeagueConfig[] = [
   // scorers + the global merge's 6th league, transfers, titles, /players
   // all-teams mode, team index/search).
   { key: "persiangulf",fotmobId: 523,           ccode3: "IRN",  faName: "لیگ خلیج فارس ایران", enName: "Persian Gulf Pro League", priority: 7 },
+  // cycle-139: the cups footprint («براکت جام‌ها») gains its second live cup.
+  // The matches feed exposed the real page id (parentLeagueId/primaryId = 73,
+  // probe 2026-10-29 UA Chrome/124 — fotmob.com/leagues/73): full 2026/2027
+  // league-phase table (36 teams), FIVE playoff rounds (playoff/1/8/1/4/1/2/
+  // final), 17 historical seasons (2010/2011 → 2026/2027 — superset of the
+  // global merge's 12-season window, so the intersection contract is
+  // untouched; UECL's 6-season feed would have SHRUNK it and is deferred),
+  // stats blocks with the same empty-topItems + fetchAllUrl shape as the
+  // domestic leagues, and transfers.data = null (cups — the tab honestly
+  // hides via the cycle-57 contract). Historical probe 2024/2025: 36 rows +
+  // 5 rounds. All surfaces light through the existing generic plumbing:
+  // standings league phase, fixtures, per-league scorers, global merge (8th
+  // participant), bracket tab, /topscorers/uel, players hub, search index.
+  { key: "uel",        fotmobId: 73,          ccode3: "INT",  faName: "لیگ اروپا",          enName: "Europa League",    espnSlug: "uefa.europa",    priority: 8 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -238,6 +252,14 @@ const TEAM_FA: Record<string, string> = {
   // Saudi / Qatar spelling variants seen in feed
   "al-taawoun": "التعاون", "damac fc": "دامک", "al-raed": "الراید",
   "junior fc": "جونیور", "once caldas": "اونس کالداس", "al-gharafa": "الغرافه",
+  // cycle-139: the 9 UEL league-phase teams that had no map entry yet (the
+  // other 27 already resolve) — without these they leak through as raw
+  // English in the standings/bracket/search (probe: live UEL table rows)
+  "union st.gilloise": "یونیون سنت‌ژیلوآز", "omonia nicosia": "اومونیا نیکوزیا",
+  "levski sofia": "لووسکی صوفیه", "sturm graz": "اشتورم گراتس",
+  "nec nijmegen": "نایمخن", "torreense": "توررنسه",
+  "nk celje": "سلیه", "hapoel beer sheva": "هاپوئل بئرشبا",
+  "ararat armenia": "آرارات ایروان",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

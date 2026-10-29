@@ -1,7 +1,7 @@
 "use client";
 
 // ------------------------------------------------------------------
-// Remontada — global top scorers page (merged race across 7 leagues)
+// Remontada — global top scorers page (merged race across 8 leagues+cups)
 // Cycle 10: league filter persists in localStorage; each scorer shows
 // their global rank, and inside a league filter the league-local rank
 // plus a «جهانی #» badge.
@@ -424,10 +424,11 @@ export function TopScorersView() {
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
+            {/* cycle-139: 7 leagues + the Europa League = 8 merge participants */}
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (
-              <>بهترین گلزنان {faDigits(7)} لیگ بزرگ در یک جدول واحد</>
+              <>بهترین گلزنان {faDigits(8)} لیگ و جام برتر در یک جدول واحد</>
             )}
             {season && data?.perLeague.length ? (
               <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>

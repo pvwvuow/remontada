@@ -3017,7 +3017,7 @@ export function normalizeQuery(q: string): string {
 let teamIndexCache: { at: number; data: TeamIndexEntry[] } | null = null;
 
 // Teams whose league page is unavailable via FotMob keyless API (e.g. Persian Gulf Pro
-// League returns `null`) or which sit outside the portal's 7 leagues entirely, but
+// League returns `null`) or which sit outside the portal's 8 leagues/cups entirely, but
 // which must still be searchable — the 404 page sends users to the header search, so
 // any team with a working /team/ page has to be findable. Ids verified from match
 // feed (persiangulf) and live data/teams probes (cycle-79: Ibrox / Tynecastle resolve).
@@ -3035,7 +3035,7 @@ const SEARCH_FALLBACK_TEAMS: { teamId: number; name: string; fa: string; leagueK
   { teamId: 9860, name: "Heart of Midlothian FC", fa: "هارت", leagueKey: "scotland", leagueFa: "لیگ برتر اسکاتلند" },
 ];
 
-/** Flat index of every team in our 7 league standings (getStandings is cached, so this is cheap). */
+/** Flat index of every team in our 8 league/cup standings (getStandings is cached, so this is cheap). */
 export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
   if (teamIndexCache && Date.now() - teamIndexCache.at < 10 * 60_000) return teamIndexCache.data;
   // domestic leagues first, UCL last — a team playing both (e.g. Real Madrid)
