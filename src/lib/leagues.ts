@@ -79,6 +79,19 @@ export const LEAGUES: LeagueConfig[] = [
   // probe: season=2025/2026 serves the true 12-per-region table (Tractor in
   // the West top three). ESPN fallback slug probed live: afc.champions → 200.
   { key: "acl",        fotmobId: 525,         ccode3: "INT",  faName: "لیگ قهرمانان آسیا (الیت)", enName: "AFC Champions League Elite", espnSlug: "afc.champions", priority: 10, globalMerge: false },
+  // cycle-145: Turkish Süper Lig — the ELEVENTH competition, and the first
+  // NEW GLOBAL-RACE PARTICIPANT since cycle-132 (no globalMerge flag: the
+  // live probe 2026-10-29 UA Chrome/124 showed allAvailableSeasons = 17
+  // slash-format seasons 2026/2027 → 2010/2011, so the sliced-12 window
+  // (2026/2027 → 2015/2016) is covered EXACTLY — the cycle-132 intersection
+  // stays byte-identical while the race honestly grows to 9 participants).
+  // Four blocks live-probed: flat 18-row table, Top scorer category with
+  // data.fotmob.com fetchAllUrl (Gift Orban / Mohamed Salah / Victor Osimhen
+  // all on 8), 70 title seasons (newest 2025/2026 Galatasaray over
+  // Fenerbahçe), and transfers.data = 100 entries (DOMESTIC league — the
+  // cups' honest transfers-hide contract does not apply). ESPN fallback slug
+  // probed live: tur.1 → 200.
+  { key: "superlig",   fotmobId: 71,          ccode3: "TUR",  faName: "سوپرلیگ ترکیه",      enName: "Süper Lig",        espnSlug: "tur.1",          priority: 11 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -99,6 +112,7 @@ const COMPETITION_FA: Record<string, string> = {
   "ligue 1": "لیگ ۱ فرانسه",
   "persian gulf": "لیگ خلیج فارس",
   "persian gulf pro league": "لیگ خلیج فارس",
+  "süper lig": "سوپرلیگ ترکیه",
   "efl cup": "جام اتحادیه انگلیس",
   "carabao cup": "جام اتحادیه انگلیس",
   "fa cup": "جام حذفی انگلیس",
@@ -363,6 +377,83 @@ const TEAM_FA: Record<string, string> = {
   "union saint-gilloise": "یونیون سن‌ژیلواز",
   "rsc anderlecht": "آندرلشت",
   "celta de vigo": "سلتاویگو",
+
+  // cycle-145 Süper Lig onboarding (live probe 2026-10-29): the 2026/2027
+  // table + stats/goals-file spellings. Already mapped before this cycle:
+  // Galatasaray, Trabzonspor, Beşiktaş, Fenerbahçe, Kocaelispor, Göztepe,
+  // Eyüpspor.
+  "amed sportif": "آمد اسپورتیف",
+  "amedspor": "آمد اسپورتیف",
+  "kasımpaşa": "قاسم‌پاشا",
+  "kasimpasa": "قاسم‌پاشا",
+  "erzurumspor fk": "ارزروم‌اسپور",
+  "bb erzurumspor": "ارزروم‌اسپور",
+  "çorum fk": "چوروم",
+  "corum fk": "چوروم",
+  "goztepe": "گوزتپه",
+  "alanyaspor": "آلانیا اسپور",
+  "başakşehir": "باشاک‌شهیر",
+  "basaksehir": "باشاک‌شهیر",
+  "rizespor": "ریزسپور",
+  "caykur rizespor": "ریزسپور",
+  "konyaspor": "قونیا اسپور",
+  "gaziantep fk": "غازی عینتاب",
+  "gazisehir gaziantep": "غازی عینتاب",
+  "gençlerbirliği": "گنچلربیرلیگی",
+  "genclerbirligi": "گنچلربیرلیگی",
+  "samsunspor": "سامسون‌اسپور",
+
+  // cycle-145 transfers sweep: the LIVE Süper Lig transfer feed (100 items)
+  // serves 43 distinct unmapped club names — Turkish lower-division sides
+  // (relegated Kayserispor/Sivasspor, İstanbulspor, Karşıyaka…) plus the
+  // loan/foreign parties (Rodina, Zenit, Servette…). «free agent» is the
+  // GENERIC no-club side (fotmob id 2) — 35 occurrences across all 11
+  // leagues; mapping it once fixes every league's transfers tab. Foreign
+  // third-party clubs in OTHER leagues' feeds keep churning daily — the
+  // honest fallback convention applies there (documented, not mapped).
+  "free agent": "آزاد",
+  "istanbulspor": "استانبول‌اسپور",
+  "van spor kulübü": "ون‌اسپور",
+  "bodrum fk": "بدروم",
+  "kayserispor": "قیصریه‌اسپور",
+  "adanaspor": "آدانا اسپور",
+  "kırklarelispor": "کرکلارلی‌اسپور",
+  "rodina": "رودینا",
+  "sebatspor": "سبات‌اسپور",
+  "karşıyaka": "کارشی‌یاکا",
+  "pendikspor": "پندیک‌اسپور",
+  "balıkesirspor": "بالیکسیر اسپور",
+  "sivasspor": "سیواس‌اسپور",
+  "sarıyer": "ساری‌یر",
+  "yalovaspor": "یالواسپور",
+  "malatyaspor": "ملاتیاسپور",
+  "ağrı 1970 spor": "آغری ۱۹۷۰",
+  "zonguldak kömürspor": "زونگولداغ کوموراسپور",
+  "şanlıurfaspor": "شانلی‌اورفاسپور",
+  "iğdır fk": "ایغدیر",
+  "sakaryaspor": "ساکاریاسپور",
+  "kütahyaspor": "کوتاهیاسپور",
+  "esenler erokspor": "اسنلر اروک‌اسپور",
+  "inegölspor": "اینگول‌اسپور",
+  "muğlaspor": "موغلاسپور",
+  "cercle brugge": "سرکل بروژ",
+  "vitória de guimarães": "ویتوریا گیماریش",
+  "zenit st. petersburg": "زنیت",
+  "modena": "مودنا",
+  "estrela da amadora": "استرلا آمادورا",
+  "rudeš": "رودش",
+  "la galaxy": "لس آنجلس گلکسی",
+  "györi eto": "دیور ای‌تی‌او",
+  "rapid wien": "راپید وین",
+  "laçi": "لاچی",
+  "slovan liberec": "اسلووان لیبرتس",
+  "chaves": "شاویش",
+  "fc utrecht": "اوترخت",
+  "servette": "سروت",
+  "sampdoria": "سمپدوریا",
+  "al zawraa": "الزوراء",
+  "lausanne": "لوزان",
+  "gais": "گایس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -415,9 +506,15 @@ const TEAM_QUALIFIERS: { re: RegExp; fa: string }[] = [
 ];
 
 export function teamFa(...candidates: (string | undefined)[]): string {
+  // cycle-145: Turkish «İ» lowercases to i + COMBINING DOT ABOVE (U+0307) —
+  // probed live: «İstanbulspor».toLowerCase() = "i\u0307stanbulspor", which
+  // never byte-matches a plain-i key. Strip the combining dot at key build
+  // time so every dotted-capital spelling finds its mapping (no TEAM_FA or
+  // COUNTRY_FA key legitimately contains U+0307).
+  const norm = (s: string) => s.toLowerCase().trim().replace(/\u0307/g, "");
   for (const c of candidates) {
     if (!c) continue;
-    const key = c.toLowerCase().trim();
+    const key = norm(c);
     if (TEAM_FA[key]) return TEAM_FA[key];
     // cycle-86: national teams («Norway» → «نروژ») ride the country map —
     // probed via player recentMatches sides (club vs national team rows)
@@ -426,7 +523,7 @@ export function teamFa(...candidates: (string | undefined)[]): string {
   // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
   for (const c of candidates) {
     if (!c) continue;
-    const key = c.toLowerCase().trim();
+    const key = norm(c);
     for (const q of TEAM_QUALIFIERS) {
       const m = key.match(q.re);
       if (m && m.index !== undefined) {

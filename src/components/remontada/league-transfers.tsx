@@ -9,7 +9,7 @@
 // ------------------------------------------------------------------
 import type { LeagueTransfersData, LeagueTransferItem } from "@/lib/fotmob";
 import { faDigits, jalaliShort } from "@/lib/format";
-import { fotmobTeamLogo } from "@/lib/leagues";
+import { TeamLogo } from "./team-logo";
 import { cn } from "@/lib/utils";
 
 const KIND_CHIP: Record<LeagueTransferItem["kind"], string> = {
@@ -21,14 +21,10 @@ const KIND_CHIP: Record<LeagueTransferItem["kind"], string> = {
 function ClubTag({ id, name }: { id: number; name: string }) {
   return (
     <span className="inline-flex items-center gap-1 min-w-0">
-      <img
-        src={fotmobTeamLogo(id)}
-        alt=""
-        width={14}
-        height={14}
-        loading="lazy"
-        className="w-3.5 h-3.5 rounded-[3px] object-contain shrink-0 bg-white/10"
-      />
+      {/* cycle-145: TeamLogo owns the generic-side placeholder — a raw <img>
+          here 403s for «Free agent» (id 2) before hydration → visible broken
+          image, the only transfers-surface logo without a guard */}
+      <TeamLogo id={id} alt="" size={14} className="rounded-[3px] bg-white/10" />
       <span className="truncate">{name}</span>
     </span>
   );

@@ -6,8 +6,9 @@
 // those ride the honest English-fallback convention (cycle-104, players) and
 // churn daily by design — counted separately, never a portal leak.
 // Run: BASE=http://localhost:3000 bun scripts/cycle144-drift.ts
+export {}; // module marker — top-level await requires a module under tsc
 const BASE = process.env.BASE || "http://localhost:3000";
-const KEYS = ["ucl", "pl", "laliga", "seriea", "bundesliga", "ligue1", "persiangulf", "uel", "uecl", "acl"];
+const KEYS = ["ucl", "pl", "laliga", "seriea", "bundesliga", "ligue1", "persiangulf", "uel", "uecl", "acl", "superlig"];
 const CUPS = ["ucl", "uel", "uecl", "acl"];
 
 type Leak = { surface: string; path: string; field: string; val: string; name?: string };

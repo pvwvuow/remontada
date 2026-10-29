@@ -424,11 +424,12 @@ export function TopScorersView() {
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            {/* cycle-139: 7 leagues + the Europa League = 8 merge participants */}
+            {/* cycle-145: 8 + the Süper Lig = 9 merge participants (the
+                Süper's 17 slash-format seasons cover the full 12-window) */}
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (
-              <>بهترین گلزنان {faDigits(8)} لیگ و جام برتر در یک جدول واحد</>
+              <>بهترین گلزنان {faDigits(9)} لیگ و جام برتر در یک جدول واحد</>
             )}
             {season && data?.perLeague.length ? (
               <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>
