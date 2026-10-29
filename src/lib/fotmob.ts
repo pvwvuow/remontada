@@ -32,6 +32,32 @@ async function fetchJson<T>(url: string, timeoutMs = 12000): Promise<T> {
   }
 }
 
+// cycle-127: transient-guard for the data.fotmob.com static per-season files
+// (goals.json / *_card.json). These are one-shot gzip fetches on the cold
+// path: when one gets dropped by a cold start the graceful producers below
+// bake a THIN result (empty or topThree-only) into the 60-minute cache —
+// the live incident logged in cycle-124, whose only self-heal was a full
+// restart (an L2 purge alone was not enough because L1 held the payload).
+// Two tries with a short pause close the transient class; the thin-TTL
+// guard below still heals anything that slips through (a 90s re-probe
+// instead of an hour-baked row, in BOTH L1 and L2 since they share the TTL).
+async function fetchDataFile<T>(url: string): Promise<T> {
+  try {
+    return await fetchJson<T>(url);
+  } catch {
+    await new Promise((r) => setTimeout(r, 400));
+    return await fetchJson<T>(url);
+  }
+}
+
+// Full-season S3 files are ALWAYS wide (live-probed 2026-10-29: goals.json
+// 298/130 rows for PL 2023/24 + 2000/01, yellow_card.json 438/204) while the
+// degraded fallback lists carry only the category topThree (~3-4). Anything
+// below these thresholds therefore means "the file fetch was dropped", not
+// "the season had no scorers/cards".
+const FULL_LIST_HEALTHY_MIN = 10;
+const CARD_LIST_HEALTHY_MIN = 8;
+
 // ---------------- Normalized types ----------------
 export interface NormMatch {
   id: string;
@@ -686,14 +712,22 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
 // deploy.
 export async function getFullGoalScorers(leagueKey: string, limit = 20, season?: string): Promise<ScorerEntry[]> {
   try {
-    return await cached(`fullGoals:v3:${leagueKey}:${season || "cur"}`, 60 * 60_000, async () => {
+    return await cached(
+      `fullGoals:v3:${leagueKey}:${season || "cur"}`,
+      // cycle-127 thin-TTL guard: a healthy full-season list keeps the exact
+      // 60-minute TTL; a thin one (dropped transient fetch, or a league
+      // payload without the category) is baked for 90 SECONDS only, so the
+      // next generation re-probes and self-heals without a restart. The
+      // re-probe is upstream-free: it reads the already-cached league payload.
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
       // v2 (cycle-107): rows gained the required `nameFa` — old v1 entries
       // would violate the ScorerEntry shape (same convention as standings v5)
       const { raw } = await getLeagueRaw(leagueKey, season);
       const cat = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
       const url = cat?.fetchAllUrl;
       if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
-      const data = await fetchJson<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+      const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
       const rows = data?.TopLists?.[0]?.StatList || [];
       const out: ScorerEntry[] = [];
       const seen = new Set<number>();
@@ -715,7 +749,8 @@ export async function getFullGoalScorers(leagueKey: string, limit = 20, season?:
         if (out.length >= limit) break;
       }
       return out;
-    });
+      }
+    );
   } catch {
     return [];  // upstream hiccup / unavailable league — never break the caller
   }
@@ -736,7 +771,14 @@ export async function getLeagueCardLeaders(
 ): Promise<Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[]> {
   try {
     return freshCardNames(
-      await cached(`cards:${leagueKey}:${kind}`, 60 * 60_000, async () => {
+      await cached(
+        `cards:${leagueKey}:${kind}`,
+        // cycle-127 thin-TTL guard (same class as getFullGoalScorers):
+        // full card files are always wide (live-probed 438/204 yellow rows),
+        // the topThree fallback is ~3-4 — thin rows re-probe after 90s
+        // instead of baking for an hour.
+        (rows) => (rows.length >= CARD_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+        async () => {
       const { raw } = await getLeagueRaw(leagueKey);
       const re = kind === "yellow" ? /^yellow cards$/i : /^red cards$/i;
       const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
@@ -744,7 +786,7 @@ export async function getLeagueCardLeaders(
       const out: Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[] = [];
       const seen = new Set<number>();
       if (cat.fetchAllUrl && /^https:\/\/data\.fotmob\.com\//.test(cat.fetchAllUrl)) {
-        const data = await fetchJson<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(cat.fetchAllUrl);
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(cat.fetchAllUrl);
         const rows = data?.TopLists?.[0]?.StatList || [];
         for (const r of rows) {
           const id = r.ParticiantId ?? r.ParticipantId;
@@ -777,7 +819,8 @@ export async function getLeagueCardLeaders(
         }
       }
       return out;
-    })
+        }
+      )
     );
   } catch {
     return [];  // unavailable league / upstream hiccup — never break the merge
@@ -1037,7 +1080,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // serving the mixed payloads for up to a full TTL generation.
   return freshenHonestNames(
     await cached(`standings:v6:${leagueKey}:${season || "cur"}`, (mapped) =>
-      typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build),
+      // cycle-127 thin-scorers guard (closes the cycle-124 incident class
+      // END-TO-END): the merged scorers list rides on this cached entry, so
+      // even with the thin-TTL on fullGoals itself a thin merged list would
+      // stay visible for a full ttlMinutes generation (the thin fullGoals row
+      // expires but nothing re-runs build()). A thin scorers list — dropped
+      // goals.json fetch, or a payload without the stats block — now re-probes
+      // in 90s (upstream-free: reads the cached leagueRaw); healthy tables
+      // keep the exact matchday-aware TTL.
+      Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN
+        ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
+        : 90_000,
+      build),
   );
 }
 
