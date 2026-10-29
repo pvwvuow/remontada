@@ -19,6 +19,7 @@ export interface ShootoutAttempt {
   side: "home" | "away" | "neutral";
   player?: string;
   playerFa?: string;
+  playerId?: number; // cycle-172 additive: /player link id (omitted when upstream lacks it or dead ≤0)
   scored: boolean;
   noteFa: string;
 }
@@ -41,7 +42,15 @@ const MISS_FA: Record<string, string> = {
 interface RawShootoutEvent {
   type?: unknown;
   isHome?: unknown;
-  player?: { name?: string | null } | null;
+  player?: { name?: string | null; id?: number | string | null } | null;
+}
+
+// cycle-172: same safe coercion as the match route's posId — upstream sends
+// numbers on player refs but STRING ids elsewhere; non-positive-integer →
+// undefined (the 167 dead-id guard).
+function posId(v: unknown): number | undefined {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : undefined;
 }
 
 export function buildShootout(rawEvents: unknown[]): Shootout | null {
@@ -64,6 +73,7 @@ export function buildShootout(rawEvents: unknown[]): Shootout | null {
       side,
       player: playerName,
       ...(playerName ? { playerFa: playerFa(playerName) } : {}),
+      playerId: posId(ev.player?.id),
       scored,
       noteFa: scored ? "گل" : MISS_FA[type] || "ناموفق",
     });

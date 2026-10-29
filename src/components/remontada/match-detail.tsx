@@ -4,7 +4,7 @@
 // Remontada — full match detail page
 // scoreboard + scorers + events timeline + stats + lineups + info
 // ------------------------------------------------------------------
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
@@ -34,11 +34,11 @@ interface DetailMatch {
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
   away: { id: number; name: string; fa: string; logo: string; score: number | null };
 }
-interface DetailScorer { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string }
+interface DetailScorer { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string; playerId?: number; assistId?: number }
 interface DetailEvent {
   type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
-  player?: string; playerFa?: string; card?: string; ownGoal: boolean; penalty: boolean;
-  swapIn?: string; swapInFa?: string; swapOut?: string; swapOutFa?: string; homeScore: number | null; awayScore: number | null; assist?: string; assistFa?: string;
+  player?: string; playerFa?: string; playerId?: number; card?: string; ownGoal: boolean; penalty: boolean;
+  swapIn?: string; swapInFa?: string; swapInId?: number; swapOut?: string; swapOutFa?: string; swapOutId?: number; homeScore: number | null; awayScore: number | null; assist?: string; assistFa?: string; assistId?: number;
 }
 interface DetailStatRow { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }
 interface DetailStatGroup { title: string; rows: DetailStatRow[] }
@@ -77,7 +77,7 @@ interface DetailData {
   shootout?: {
     home: number;
     away: number;
-    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; scored: boolean; noteFa: string }[];
+    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; playerId?: number; scored: boolean; noteFa: string }[];
   } | null;
   // update cycle-46: normalized shotmap (null when the match has no shot data)
   shots?: {
@@ -237,20 +237,50 @@ function eventIcon(e: DetailEvent) {
   return <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground/50 inline-block" aria-hidden />;
 }
 
-function eventText(e: DetailEvent) {
-  // cycle-106: honest Persian names when mapped, raw English otherwise
+// cycle-172: the 107/167 link contract for the timeline family — a player
+// name with a live id becomes a /player Link (prefetch=false); the tooltip
+// carries the English original when a Persian name is shown (the PotmCard
+// rule). Missing/dead id (≤0) renders the SAME span as before — the honest
+// fallback, byte-identical visuals.
+function PlayerNameLink({ id, fa, name, cls, children }: { id?: number; fa?: string; name?: string; cls?: string; children: ReactNode }) {
+  const title = fa && name && fa !== name ? name : "مشاهده پروفایل بازیکن";
+  if (!id || id <= 0) return <span className={cls}>{children}</span>;
+  return (
+    <Link href={`/player/${id}`} prefetch={false} className={cn(cls, "hover:text-sky-soft transition-colors")} title={title}>
+      {children}
+    </Link>
+  );
+}
+
+function eventContent(e: DetailEvent): ReactNode {
+  // cycle-172: same text as the old eventText — now with live profile links
+  // on the scorer, the assister and both substitution ends.
   const p = e.playerFa || e.player || "";
+  const pName = <PlayerNameLink id={e.playerId} fa={e.playerFa} name={e.player}>{p}</PlayerNameLink>;
   if (e.type === "Goal") {
-    const parts = [p];
-    if (e.penalty) parts.push("(پنالتی)");
-    if (e.ownGoal) parts.push("(گل به خودی)");
-    if (e.assist) parts.push(`(پاس: ${e.assistFa || e.assist})`);
-    return parts.filter(Boolean).join(" ");
+    return (
+      <>
+        {pName}
+        {e.penalty ? " (پنالتی)" : ""}
+        {e.ownGoal ? " (گل به خودی)" : ""}
+        {e.assist ? (
+          <>{" (پاس: "}<PlayerNameLink id={e.assistId} fa={e.assistFa} name={e.assist}>{e.assistFa || e.assist}</PlayerNameLink>{")"}</>
+        ) : ""}
+      </>
+    );
   }
-  if (e.type === "Substitution") return `${e.swapInFa || e.swapIn || "?"} ← ${e.swapOutFa || e.swapOut || "?"}`;
-  if (e.type === "Card") return p || "کارت";
-  if (e.type === "MissedPenalty") return `${p} (پنالتی از دست رفت)`;
-  return p || e.typeFa;
+  if (e.type === "Substitution") {
+    return (
+      <>
+        <PlayerNameLink id={e.swapInId} fa={e.swapInFa} name={e.swapIn}>{e.swapInFa || e.swapIn || "?"}</PlayerNameLink>
+        {" ← "}
+        <PlayerNameLink id={e.swapOutId} fa={e.swapOutFa} name={e.swapOut}>{e.swapOutFa || e.swapOut || "?"}</PlayerNameLink>
+      </>
+    );
+  }
+  if (e.type === "Card") return p ? pName : "کارت";
+  if (e.type === "MissedPenalty") return <>{pName}{" (پنالتی از دست رفت)"}</>;
+  return p ? pName : e.typeFa;
 }
 
 const ROLE_FA: Record<string, string> = {
@@ -442,10 +472,10 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
               scorers.filter((s) => s.side === "home").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
                   <GoalIcon className="text-primary/80" />
-                  <span className="font-semibold text-foreground/85">{s.playerFa || s.player}</span> {faDigits(s.minute)}
+                  <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink> {faDigits(s.minute)}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assistFa || s.assist})</span>}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
                 </span>
               ))}
           </div>
@@ -454,10 +484,10 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.away.score !== null &&
               scorers.filter((s) => s.side === "away").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: {s.assistFa || s.assist})</span>}
+                  {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {faDigits(s.minute)} <span className="font-semibold text-foreground/85">{s.playerFa || s.player}</span>
+                  {faDigits(s.minute)} <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink>
                   <GoalIcon className="text-primary/80" />
                 </span>
               ))}
@@ -493,14 +523,14 @@ function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["s
             {/* home side (right in RTL) */}
             <div className={cn("flex items-center gap-2 justify-start", a.side !== "home" && "invisible")}>
               <PenDot scored={a.scored} />
-              <span className="font-semibold">{a.playerFa || a.player}</span>
+              <PlayerNameLink id={a.playerId} fa={a.playerFa} name={a.player} cls="font-semibold">{a.playerFa || a.player}</PlayerNameLink>
               {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
             </div>
             <span className="text-[10px] text-muted-foreground tabular-persian">{faDigits(i + 1)}</span>
             {/* away side */}
             <div className={cn("flex items-center gap-2 justify-end", a.side !== "away" && "invisible")}>
               {!a.scored && <span className="text-muted-foreground text-[10.5px]">({a.noteFa})</span>}
-              <span className="font-semibold">{a.playerFa || a.player}</span>
+              <PlayerNameLink id={a.playerId} fa={a.playerFa} name={a.player} cls="font-semibold">{a.playerFa || a.player}</PlayerNameLink>
               <PenDot scored={a.scored} />
             </div>
           </div>
@@ -817,7 +847,7 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
             {/* home side (right in RTL) */}
             <div className={cn("flex items-center gap-2 justify-start", e.side !== "home" && "invisible")}>
               {eventIcon(e)}
-              <span className="font-semibold">{eventText(e)}</span>
+              <span className="font-semibold">{eventContent(e)}</span>
             </div>
             {/* minute + score */}
             <div className="flex flex-col items-center min-w-[54px]">
@@ -830,7 +860,7 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
             </div>
             {/* away side */}
             <div className={cn("flex items-center gap-2 justify-end", e.side !== "away" && "invisible")}>
-              <span className="font-semibold">{eventText(e)}</span>
+              <span className="font-semibold">{eventContent(e)}</span>
               {eventIcon(e)}
             </div>
           </div>

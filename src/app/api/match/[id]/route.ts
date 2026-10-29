@@ -403,6 +403,16 @@ function fmtMinute(e: FMEvent): string {
   return `${base}′`;
 }
 
+// cycle-172: safe player-id coercion for the timeline family — upstream sends
+// numbers on event player refs but STRING ids on substitution swap refs
+// (live-probed 2026-10-30: swap: [{name, id: "1311977"}, …]). Anything that
+// is not a positive integer (missing, 0, junk) → undefined, so the UI falls
+// back to the plain honest name (the 167 dead-id rule).
+function posId(v: unknown): number | undefined {
+  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
+  return Number.isInteger(n) && n > 0 ? n : undefined;
+}
+
 // ---------------- lineup row clustering ----------------
 // cycle-106: chips/subs/coach carry nameFa — the honest Persian display name
 // (curated PLAYER_NAME_FA hit, else the raw upstream English name), same
@@ -477,7 +487,11 @@ export interface MatchDetailNormalized {
     home: { id: number; name: string; fa: string; logo: string; score: number | null };
     away: { id: number; name: string; fa: string; logo: string; score: number | null };
   };
-  scorers: { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string }[];
+  // cycle-172 additive: upstream player ids join the timeline family —
+  // player/assist/sub names become live /player links in the UI. Optional
+  // fields only; every legacy field byte-untouched. ids are omitted when
+  // upstream lacks them or the value is a dead id (≤0 — the 167 guard).
+  scorers: { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string; playerId?: number; assistId?: number }[];
   events: {
     type: string;
     typeFa: string;
@@ -485,7 +499,11 @@ export interface MatchDetailNormalized {
     side: "home" | "away" | "neutral";
     player?: string;
     playerFa?: string;
+    playerId?: number;
     card?: string;
+    assistId?: number;
+    swapInId?: number;
+    swapOutId?: number;
     ownGoal: boolean;
     penalty: boolean;
     swapIn?: string;
@@ -561,7 +579,7 @@ export interface MatchDetailNormalized {
   shootout?: {
     home: number;
     away: number;
-    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; scored: boolean; noteFa: string }[];
+    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; playerId?: number; scored: boolean; noteFa: string }[];
   } | null;
   // update cycle-46: normalized shotmap (null when the match has no shot data)
   shots?: {
@@ -725,17 +743,21 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
       side,
       player: e.player?.name || undefined,
       ...(e.player?.name ? { playerFa: playerFa(e.player.name) } : {}),
+      playerId: posId(e.player?.id),
       card: e.card || undefined,
       ownGoal: !!e.ownGoal,
       penalty: e.type === "MissedPenalty" || (!!isGoal && !!e.isPenalty),
       swapIn: e.type === "Substitution" ? e.swap?.[0]?.name : undefined,
       swapInFa: e.type === "Substitution" && e.swap?.[0]?.name ? playerFa(e.swap[0].name) : undefined,
+      swapInId: e.type === "Substitution" ? posId(e.swap?.[0]?.id) : undefined,
       swapOut: e.type === "Substitution" ? e.swap?.[1]?.name : undefined,
       swapOutFa: e.type === "Substitution" && e.swap?.[1]?.name ? playerFa(e.swap[1].name) : undefined,
+      swapOutId: e.type === "Substitution" ? posId(e.swap?.[1]?.id) : undefined,
       homeScore: typeof e.homeScore === "number" ? e.homeScore : null,
       awayScore: typeof e.awayScore === "number" ? e.awayScore : null,
       assist: isGoal && !e.ownGoal ? e.assistInput || undefined : undefined,
       assistFa: isGoal && !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
+      assistId: isGoal && !e.ownGoal ? posId(e.assistPlayerId) : undefined,
     });
     if (isGoal) {
       if (side !== "neutral") {
@@ -743,6 +765,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
           side,
           player: e.player?.name || "",
           playerFa: playerFa(e.player?.name || ""),
+          playerId: posId(e.player?.id),
           minute: fmtMinute(e),
           ownGoal: !!e.ownGoal,
           penalty: !!e.isPenalty,
@@ -750,6 +773,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
           // is shown by FotMob as the player — keep assist only for real goals
           assist: (!e.ownGoal && e.assistInput) || undefined,
           assistFa: !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
+          assistId: !e.ownGoal ? posId(e.assistPlayerId) : undefined,
         });
       }
     }
