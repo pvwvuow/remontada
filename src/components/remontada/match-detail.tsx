@@ -128,6 +128,13 @@ interface DetailData {
   // update cycle-110: match insights («بینش‌ها») — mirrors /api/match/[id];
   // curated Persian templates only (unknown upstream ids never reach here)
   insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
+  // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
+  // تیم») — mirrors /api/match/[id]; rendered on the h2h tab, hidden when
+  // the payload lacks the block (cycle-111 legend convention)
+  topScorers?: {
+    home: TopScorerSide | null;
+    away: TopScorerSide | null;
+  } | null;
   playerOfTheMatch?: {
     id?: number;
     name: string; nameFa: string; rating?: string | null;
@@ -136,6 +143,22 @@ interface DetailData {
     stats: { title: string; display: string }[];
   } | null;
   error?: string;
+}
+
+// update cycle-117: one side's season top scorer (mirrors /api/match/[id]'s
+// exported TopScorerSide — local copy per this file's self-contained types)
+interface TopScorerSide {
+  playerId?: number; // >0 → /player/{id} link
+  name: string;
+  nameFa: string;
+  side: "home" | "away";
+  goals?: number;
+  assists?: number;
+  xg?: number;
+  minsPerGoal?: number;
+  motm?: number;
+  rating?: number;
+  games?: number;
 }
 
 interface PlayerStatRow {
@@ -1238,6 +1261,95 @@ function RefereeStadiumCard({ info }: { info: DetailData["info"] }) {
   );
 }
 
+// ---------- season top scorers of the two sides (update cycle-117) ----------
+// matchFacts.topScorers block, unconsumed since the beginning (the per-match
+// playerStats table consumed by cycle-47 is a DIFFERENT section). Two side-
+// by-side mini-panels on the h2h tab: each side's league season top scorer
+// with the season line. Stats render only when the payload carries them
+// (honest convention); names ride the playerFa map with the honest-English
+// fallback (unmapped → raw upstream name, Loftus-Cheek contract); every
+// linked entry rides /player/{id}. Hidden entirely when the block is absent.
+function TopScorerIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <circle cx="12" cy="12" r="9" fillOpacity="0.12" />
+      <path d="M12 6.8l4 2.9-1.5 4.7h-5L8 9.7l4-2.9z" fillOpacity="0.25" />
+    </svg>
+  );
+}
+function TopScorersCard({
+  ts,
+  match,
+}: {
+  ts: NonNullable<DetailData["topScorers"]>;
+  match: DetailData["match"];
+}) {
+  const sides = ["home", "away"] as const;
+  const entries = sides.map((s) => ts[s]).filter((e): e is NonNullable<DetailData["topScorers"]>["home"] => !!e);
+  if (entries.length === 0) return null;
+  return (
+    <section className="glass-card p-4" data-testid="match-topscorers" aria-label="گلزنان فصل دو تیم">
+      <div className="flex items-center justify-between gap-2 mb-3">
+        <h3 className="text-[11px] font-black text-[#b6cce3] flex items-center gap-1.5">
+          <TopScorerIcon className="text-chart-3" />
+          گلزنان فصل دو تیم
+        </h3>
+        <span className="text-[9px] font-bold text-muted-foreground">آقای گل لیگ هر تیم</span>
+      </div>
+      <div className="grid grid-cols-2 gap-2.5">
+        {sides.map((side) => {
+          const e = ts[side];
+          if (!e) return null;
+          const tm = side === "home" ? match.home : match.away;
+          const rows: { label: string; value: string }[] = [];
+          if (e.assists != null) rows.push({ label: "پاس گل", value: faDigits(e.assists) });
+          if (e.xg != null) rows.push({ label: "xG فصل", value: faDigits(e.xg.toFixed(1)) });
+          if (e.minsPerGoal != null && e.minsPerGoal > 0) rows.push({ label: "سرعت گلزنی", value: `${faDigits(e.minsPerGoal)} دقیقه` });
+          if (e.motm != null && e.motm > 0) rows.push({ label: "بهترین بازیکن", value: `${faDigits(e.motm)} بار` });
+          if (e.rating != null) rows.push({ label: "امتیاز فصل", value: faDigits(e.rating.toFixed(2)) });
+          const nameEl = (
+            <span className="block text-[13px] font-black text-[#f1f7fd] truncate" title={e.nameFa !== e.name ? e.name : undefined}>
+              {e.nameFa || e.name}
+            </span>
+          );
+          return (
+            <div key={side} className="rounded-xl border border-[color:var(--glass-border-soft)] bg-white/[0.03] p-3 flex flex-col gap-2 min-w-0">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <img src={tm.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(ev) => { ev.currentTarget.style.visibility = "hidden"; }} />
+                <span className="text-[10px] font-bold text-steel truncate">{tm.fa || tm.name}</span>
+              </div>
+              {e.playerId ? (
+                <Link href={`/player/${e.playerId}`} prefetch={false} className="hover:text-primary transition-colors w-fit max-w-full">
+                  {nameEl}
+                </Link>
+              ) : (
+                nameEl
+              )}
+              {e.games != null && (
+                <p className="text-[9px] text-muted-foreground tabular-persian">{faDigits(e.games)} بازی در فصل</p>
+              )}
+              <div className="flex items-end justify-between gap-2 mt-auto pt-1">
+                <span className="text-[30px] leading-none font-light text-[#dfedff] tabular-persian">{e.goals != null ? faDigits(e.goals) : "—"}</span>
+                <span className="text-[9px] font-bold text-[#c6dcf3] pb-0.5">گل فصل</span>
+              </div>
+              {rows.length > 0 && (
+                <ul className="border-t border-[color:var(--glass-hairline)] pt-1.5 flex flex-col gap-1">
+                  {rows.map((r) => (
+                    <li key={r.label} className="flex items-center justify-between gap-2 text-[10.5px]">
+                      <span className="text-muted-foreground font-bold shrink-0">{r.label}</span>
+                      <span className="font-bold text-start tabular-persian">{r.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 // ---------- head-to-head ----------
 interface H2HTeam { id: number; name: string; fa: string; logo: string }
 interface H2HMeeting {
@@ -1684,7 +1796,14 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             <RefereeStadiumCard info={data.info} />
           </div>
         )}
-        {tab === "h2h" && <H2HPanel data={h2h} loading={h2hLoading} />}
+        {tab === "h2h" && (
+          <div className="flex flex-col gap-4">
+            {/* cycle-117: the two sides' season top scorers — instant from the
+                main payload while the h2h fetch loads below it */}
+            {data.topScorers && <TopScorersCard ts={data.topScorers} match={data.match} />}
+            <H2HPanel data={h2h} loading={h2hLoading} />
+          </div>
+        )}
       </div>
     </div>
   );

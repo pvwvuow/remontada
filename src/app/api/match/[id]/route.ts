@@ -170,6 +170,29 @@ const MATCH_INSIGHT_FA: Record<string, string> = {
   "insights_player_chances_created_rank_in_competition": "{0} در ساختن موقعیت طلایی رتبهٔ {1} رقابت را دارد ({2}).",
   "insights_player_goals_scored": "{0} آقای گل رقابت است ({1}).",
 };
+// update cycle-117 probed (UA Chrome/124, live sweep across MLS/Brazil/
+// Libertadores, 2026-10-29): matchFacts.topScorers — each side's LEAGUE
+// season top scorer + their season line. Shape uniform across the probe
+// pool {playerId, fullName, lastName, stats{...}} but the whole block is
+// ABSENT on some feeds (e.g. Brazilian Série A) → honest-hide upstream.
+interface FMTopScorerStats {
+  goals?: number;
+  goalAssist?: number;
+  expectedGoals?: number;
+  gamesPlayed?: number;
+  minsPlayedGoal?: number; // minutes per goal
+  ontargetScoringAtt?: number; // shots on target per match
+  motm?: number; // man-of-the-match awards this season
+  playerRating?: number; // season average FotMob rating
+  minsPlayed?: number;
+}
+interface FMTopScorerPlayer {
+  playerId?: number;
+  fullName?: string;
+  lastName?: string;
+  stats?: FMTopScorerStats;
+}
+
 interface FMMatchDetails {
   general?: {
     matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
@@ -197,6 +220,13 @@ interface FMMatchDetails {
       ];
       playerOfTheMatch?: FMPotm | null;
       insights?: FMInsight[];
+      // update cycle-117: the two sides' season top scorers («گلزنان فصل
+      // دو تیم») — unconsumed since the beginning (the per-match playerStats
+      // block consumed by cycle-47 is a DIFFERENT payload section)
+      topScorers?: {
+        homePlayer?: FMTopScorerPlayer | null;
+        awayPlayer?: FMTopScorerPlayer | null;
+      } | null;
     };
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
     lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
@@ -509,6 +539,14 @@ export interface MatchDetailNormalized {
   // unknown localizedTextId are dropped (honest convention, like the weather
   // keys); empty when the payload has none (or all unmapped)
   insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
+  // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
+  // تیم») — one entry per side, only finite stats carried (honest absence
+  // per field); null when the payload lacks the block (some feeds do) or
+  // neither side carries a displayable season line
+  topScorers?: {
+    home: TopScorerSide | null;
+    away: TopScorerSide | null;
+  } | null;
   // fix cycle-45: shootout attempts were dropped entirely before — the
   // decisive phase of knockout matches was invisible to the user
   shootout?: {
@@ -563,6 +601,24 @@ export interface MatchDetailNormalized {
     stats: { title: string; display: string }[];
   } | null;
   fetchedAt: string;
+}
+
+// update cycle-117: one side's season top scorer for the h2h tab card.
+// Name rides playerFa with the honest-English fallback (Loftus-Cheek
+// contract); stats are the raw upstream numbers, each present only when
+// finite.
+export interface TopScorerSide {
+  playerId?: number; // >0 → /player/{id} link
+  name: string;
+  nameFa: string;
+  side: "home" | "away";
+  goals?: number;
+  assists?: number;      // goalAssist
+  xg?: number;           // season expectedGoals, 1 decimal
+  minsPerGoal?: number;  // minsPlayedGoal — «هر X دقیقه یک گل»
+  motm?: number;         // man-of-the-match awards this season
+  rating?: number;       // season average FotMob rating
+  games?: number;        // gamesPlayed
 }
 
 // update cycle-47: one normalized player row for the «بازیکن‌ها» tab
@@ -1122,6 +1178,47 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     }
   }
 
+  // ---------------- season top scorers of the two sides (update cycle-117) ----------------
+  // matchFacts.topScorers: each side's LEAGUE season top scorer + their
+  // season line (goals/assists/xG/minutes-per-goal/MOTM/rating/games).
+  // Every number coerced through the finite guard; a side with no name or
+  // no displayable season numbers drops; the whole block is null when the
+  // payload lacks it (some feeds do — probed Brazilian Série A) → the h2h
+  // tab hides the card (cycle-111 legend convention). No cache-key bump:
+  // the 25s matchDetails cache self-heals.
+  let topScorers: MatchDetailNormalized["topScorers"] = null;
+  {
+    const ts = raw.content?.matchFacts?.topScorers;
+    const n = (v: unknown): number | undefined =>
+      typeof v === "number" && Number.isFinite(v) ? v : undefined;
+    const sideOf = (p?: FMTopScorerPlayer | null, side?: "home" | "away"): TopScorerSide | null => {
+      if (!p || !side) return null;
+      const nm = (p.fullName || p.lastName || "").trim();
+      if (!nm) return null;
+      const goals = n(p.stats?.goals);
+      const assists = n(p.stats?.goalAssist);
+      const xgRaw = n(p.stats?.expectedGoals);
+      // need at least one displayable season number to justify the entry
+      if (goals == null && assists == null && xgRaw == null) return null;
+      return {
+        ...(typeof p.playerId === "number" && p.playerId > 0 ? { playerId: p.playerId } : {}),
+        name: nm,
+        nameFa: playerFa(nm),
+        side,
+        ...(goals != null ? { goals } : {}),
+        ...(assists != null ? { assists } : {}),
+        ...(xgRaw != null ? { xg: Math.round(xgRaw * 10) / 10 } : {}),
+        ...(n(p.stats?.minsPlayedGoal) != null ? { minsPerGoal: n(p.stats?.minsPlayedGoal) } : {}),
+        ...(n(p.stats?.motm) != null ? { motm: n(p.stats?.motm) } : {}),
+        ...(n(p.stats?.playerRating) != null ? { rating: n(p.stats?.playerRating) } : {}),
+        ...(n(p.stats?.gamesPlayed) != null ? { games: n(p.stats?.gamesPlayed) } : {}),
+      };
+    };
+    const h = sideOf(ts?.homePlayer, "home");
+    const a = sideOf(ts?.awayPlayer, "away");
+    if (h || a) topScorers = { home: h, away: a };
+  }
+
   return {
     match: {
       id: matchId,
@@ -1150,6 +1247,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     zones,
     weather,
     insights,
+    topScorers,
     shootout,
     shots,
     xg,
