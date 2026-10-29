@@ -280,6 +280,39 @@ export const LEAGUES: LeagueConfig[] = [
   // contradicting profile — the exact evidence class the Dennis-Eckert
   // false positive lacked).
   { key: "swiss",      fotmobId: 69,          ccode3: "SUI",  faName: "سوپرلیگ سوئیس",      enName: "Swiss Super League", espnSlug: "sui.1",          priority: 20 },
+  // cycle-161: Croatian HNL — the TWENTY-FIRST competition and the NINTH
+  // consecutive new global-race participant (no globalMerge flag: 17
+  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
+  // exactly — same cadence as superlig/scottish/saudi/championship/
+  // portugal/uae/qatar/eredivisie/swiss). Blocks live-probed 2026-10-30
+  // (UA Chrome/124, /api/data/leagues?id=252&ccode3=CRO — the id surfaced
+  // from the day feed, the acl2/UEL crack): flat 10-row 2026/2027 table
+  // (هایدوک اسپلیت 23 / دیناموزاگرب 22 / واراژدین 18 — the Eternal Derby),
+  // Top scorer category with a data.fotmob.com fetchAllUrl (72-row
+  // PascalCase FMStatFullRow goals.json — the cycle-23 parser's native
+  // shape; leader دیون درنا بلیو 12 دیناموزاگرب), 35 title seasons (newest
+  // 2025/2026 دیناموزاگرب over هایدوک اسپلیت; رییکا the 2024/2025
+  // champion; oldest 1992 هایدوک over the defunct ان‌کی زاگرب),
+  // transfers.data = flat list → 100 entries (DOMESTIC league), playoff =
+  // null in the CURRENT window → bracket tab honestly absent (cycle-56
+  // contract). NO espnSlug (ESPN answers HTTP 400 for cro.1 and
+  // croatia.1 — the Gulf pattern). ARCHIVED seasons serve FLAT 10-row
+  // tables with the top-scorer block PRESENT (probed 2025/2026 AND
+  // 2023/2024) → the 2023/2024 historical race honestly grows 16→17
+  // participants. The Persian-fan pick of the day-feed id sweep (the
+  // cycle-160 runner-ups Belgian/Greek/Danish/Egyptian/Austrian stay
+  // zero-Iranian probed): the live Iranian hook — محمد محبی, the Iran
+  // international winger wearing the Rijeka №9 (squad ccode IRN + cname
+  // «Iran» + nationalTeamId 6711 + born 1998-12-20 + 187cm ST/LW with a
+  // ~1.5M transferValue and live 2026/2027 stats; his individual FotMob
+  // profile 404s — the documented no-page evidence class, three agreeing
+  // club-side fields with NO contradicting profile, the cycle-160
+  // Heydari standard). The Ex-Yugoslav footprint completes its Persian
+  // sports-media relevance: هایدوک/دینامو the Eternal Derby rides the
+  // portal daily. Day-feed bare «HNL» (ccode CRO) rides a plain
+  // COMPETITION_FA key (unique upstream name — no AMBIGUOUS_NAMES entry
+  // needed).
+  { key: "hnl",        fotmobId: 252,         ccode3: "CRO",  faName: "لیگ برتر کرواسی",    enName: "Croatian HNL",                                  priority: 21 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -292,6 +325,10 @@ const COMPETITION_FA: Record<string, string> = {
   "europa league": "لیگ اروپا",
   "uefa europa league": "لیگ اروپا",
   "conference league": "لیگ کنفرانس اروپا",
+  // cycle-161: the day feed serves bare «HNL» for Croatia (probed
+  // 2026-10-31/11-02 ccode=CRO) — unique upstream name, no
+  // AMBIGUOUS_NAMES entry needed
+  "hnl": "لیگ برتر کرواسی",
   "premier league": "پریمیرلیگ انگلیس",
   "laliga": "لالیگا",
   "la liga": "لالیگا",
@@ -1021,6 +1058,51 @@ const TEAM_FA: Record<string, string> = {
   "örgryte": "اورگریته", "orgryte": "اورگریته",
   "železničar pančevo": "ژلزنیچار پانچوو", "zeleznicar pancevo": "ژلزنیچار پانچوو",
   "1.fc köln": "کلن", "1.fc koln": "کلن",
+  // cycle-161: Croatian HNL — the table's short forms are mostly mapped by
+  // earlier sweeps (dinamo zagreb / hajduk split / rijeka / osijek /
+  // nk lokomotiva / nk varaždin / rudeš / hnk gorica) — the missing two
+  // table clubs + the scorer-file long forms ride the SAME Persian values
+  // (byte-exact key families, the cycle-159 convention), the defunct 1992
+  // runner-up ان‌کی زاگرب stays distinct from دیناموزاگرب, and the
+  // 85-distinct-club transfer sweep fills the rest.
+  "nk istra 1961": "ایسترا ۱۹۶۱", "istra 1961": "ایسترا ۱۹۶۱",
+  "slaven": "اسلاون بلوپو", "slaven belupo koprivnica": "اسلاون بلوپو",
+  "nk osijek": "اوسیک", "hnk rijeka": "رییکا", "lokomotiva zagreb": "لوکوموتیوا",
+  "nk zagreb": "ان‌کی زاگرب",
+  "apoel nicosia": "آپوئل نیکوزیا",
+  "al ahly sc": "الاهلی مصر",
+  "aldosivi": "آلدوسیوی",
+  "aluminij": "آلومینی",
+  "anorthosis": "آنورتوسیس",
+  "asia talas": "آسیا تالاس",
+  "bursaspor": "بورسااسپور",
+  "cibalia": "تسیبالیا",
+  "dac 1904 dunajska streda": "داک ۱۹۰۴ دونای‌سکا استردا",
+  "dukagjini": "دوکاجینی",
+  "dukla praha": "دوکلا پراگ",
+  "fc arges pitesti": "آرژ پیتشتی",
+  "hapoel ironi kiryat shmona": "هاپوئل کریات‌شمونه",
+  "independiente medellín": "ایندپندینته مدئین", "independiente medellin": "ایندپندینته مدئین",
+  "kispest honvéd": "کیس‌پشت هونود", "kispest honved": "کیس‌پشت هونود",
+  "koper": "کوپر",
+  "lugo": "لوگو",
+  "milan futuro": "میلان فیوتورو",
+  "mura": "مورا",
+  "nfc volos": "ولوس",
+  "nk radomlje": "رادوملیه",
+  "oțelul galați": "تسلول گالاتس", "otelul galati": "تسلول گالاتس",
+  "pfc sochi": "سوچی", "sochi": "سوچی",
+  "persija jakarta": "پرسیجا جاکارتا",
+  "rfs": "آر‌اف‌اس ریگا",
+  "sv lafnitz": "لافنیتس",
+  "sigma olomouc": "سیگما اولوموتس",
+  "vejle boldklub": "وایله",
+  "vukovar 91": "ووکوار ۹۱",
+  "wieczysta kraków": "ویچیستا کراکوف", "wieczysta krakow": "ویچیستا کراکوف",
+  "zabbar st. patrick fc": "زاببار سنت پاتریک",
+  "zira": "زیرا",
+  "újpest": "اوی‌پشت", "ujpest": "اوی‌پشت",
+  "široki brijeg": "شیروکی بریگ", "siroki brijeg": "شیروکی بریگ",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

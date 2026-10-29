@@ -21,7 +21,7 @@
 # V6a /topscorers default → honest «۱۴ لیگ و جام برتر», no stale ۱۳ copy
 # V6b season-selected → dynamic «۱۶ لیگ مشارکت‌کننده» + «۲۰۲۳/۲۴» (swiss joins, cycle-160)
 # V7 dedicated paths /topscorers/{uae,championship,portugal} alive
-# V8 /players → «هفده لیگ و جام برتر» (gate-synced cycle-160: swiss joins)
+# V8 /players → «هجده لیگ و جام برتر» (gate-synced cycle-161: hnl joins)
 # + new chips + REAL two-step
 #    click mode-teams → league-uae (URL sync + Persian team grid)
 # V9 /team/102101 الجزیره → the newest league's top team page
@@ -66,12 +66,12 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 20 league cards with the newest routes really present
-# (gate-synced cycle-160: swiss is the 20th card)
+# V1: the hub — 21 league cards with the newest routes really present
+# (gate-synced cycle-161: hnl is the 21st card)
 # (gate-synced cycle-157: acl2 is the 19th card — the FIFTH live cup)
-hunt "V1 leagues hub 20 cards" "http://localhost:3000/leagues" \
+hunt "V1 leagues hub 21 cards" "http://localhost:3000/leagues" \
 "" "" \
-"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
+"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\")&&!!document.querySelector(\"a[href='/league/acl2']\")&&!!document.querySelector(\"a[href='/league/swiss']\")&&!!document.querySelector(\"a[href='/league/hnl']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
 # V2: championship — h1, live top میدلزبورو, scorers+transfers tabs, honest bracket absence
 hunt "V2 championship page tabs" "http://localhost:3000/league/championship" \
@@ -115,16 +115,16 @@ collect "$TOP5 $FEAT5" "V5 uae jazira-top + transfers click"
 # race honestly grows 15→16 with eredivisie)
 hunt "V6a race default copy" "http://localhost:3000/topscorers" \
 "(document.body.innerText||\"\").includes(\"مصاف گلزنان\")" "" \
-"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\"),noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false,noStale15:(document.body.innerText||\"\").includes(\"۱۵ لیگ و جام برتر\")===false})"
+"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy18:(document.body.innerText||\"\").includes(\"۱۸ لیگ و جام برتر\"),noStale17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\")===false,noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false})"
 
 # V6b: season-selected race — the DYNAMIC participants subtitle. Live truth
-# (re-probed cycle-160): qatar's ARCHIVED 2023/2024 payload still carries NO
-# top-scorer category (honestly out), but eredivisie's (Pavlidis 29) AND
-# swiss's archived 2023/2024 payloads DO have the block — the dynamic
-# subtitle grows ۱۵ → ۱۶ (computed from live perLeague, not baked).
-hunt "V6b race season dyn16 (eredivisie+swiss archived seasons HAVE a scorer block)" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
+# (re-probed cycle-161): qatar's ARCHIVED 2023/2024 payload still carries NO
+# top-scorer category (honestly out), but eredivisie's, swiss's AND hnl's
+# archived 2023/2024 payloads DO have the block — the dynamic subtitle
+# grows to ۱۷ (computed from live perLeague, not baked).
+hunt "V6b race season dyn17 (eredivisie+swiss+hnl archived seasons HAVE a scorer block)" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"مشارکت‌کننده\")" "" \
-"({dyn16:(document.body.innerText||\"\").includes(\"۱۶ لیگ مشارکت‌کننده\"),noDyn14:(document.body.innerText||\"\").includes(\"۱۴ لیگ مشارکت‌کننده\")===false,noDyn15:(document.body.innerText||\"\").includes(\"۱۵ لیگ مشارکت‌کننده\")===false,seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
+"({dyn17:(document.body.innerText||\"\").includes(\"۱۷ لیگ مشارکت‌کننده\"),noDyn15:(document.body.innerText||\"\").includes(\"۱۵ لیگ مشارکت‌کننده\")===false,noDyn16:(document.body.innerText||\"\").includes(\"۱۶ لیگ مشارکت‌کننده\")===false,seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
 
 # V7a: dedicated uae scorers path (newest) — Persian names + fa-digit goals
 hunt "V7a uae scorers path" "http://localhost:3000/topscorers/uae" \
@@ -145,7 +145,7 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('هفده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('هجده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 # the league chips live in the TEAMS mode - real click mode-teams FIRST
 # (the cycle-134/143 two-step fan path), then the uae chip
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
@@ -220,14 +220,14 @@ for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, 
         report(f"standings {lk}", good, f"rows={len(rows)} top={rows[0].get('fa') if rows else None}")
     except Exception as e:
         report(f"standings {lk}", False, str(e))
-# A2: global race — 340 scorers, 17 perLeague incl. the newest eight, honest
+# A2: global race — 360 scorers, 18 perLeague incl. the newest nine, honest
 # leader shape (gate-synced cycle-156: eredivisie adds its 20-scorer window)
 try:
     d = get("http://localhost:3000/api/topscorers?league=all")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 340 and len(pl) == 17 and {"superlig","scottish","saudi","championship","portugal","uae","qatar","eredivisie","swiss"} <= set(pl) \
+    good = len(ts) == 360 and len(pl) == 18 and {"superlig","scottish","saudi","championship","portugal","uae","qatar","eredivisie","swiss","hnl"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) and lead.get("goals", 0) > 0 \
         and not ascii_leak(lead.get("team"))
     report("topscorers all", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
@@ -270,15 +270,15 @@ for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers
         report(f"search {q}", good, f"{r.get('fa')}→{r.get('leagueKey')}")
     except Exception as e:
         report(f"search {q}", False, str(e))
-# A6: historic season 2023/2024 — participants grow 15→16: qatar's archived
+# A6: historic season 2023/2024 — participants grow 16→17: qatar's archived
 # season payload still has NO top-scorer category (honestly out) while
-# eredivisie's archived payload DOES (Pavlidis 29 — live-probed cycle-156)
-# and swiss's archived payload DOES too (gateway-synced cycle-160), so the
-# historical window includes both (the DEFAULT race is 17/340).
+# eredivisie's, swiss's AND hnl's archived payloads DO (gateway-synced
+# cycles 156/160/161), so the historical window includes all three (the
+# DEFAULT race is 18/360).
 try:
     d = get("http://localhost:3000/api/topscorers?league=all&season=2023/2024")
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-    report("topscorers 2023/2024 participants", len(pl) == 16 and "qatar" not in pl and "eredivisie" in pl and "swiss" in pl, f"perLeague={len(pl)} qatar-out eredivisie+swiss-in")
+    report("topscorers 2023/2024 participants", len(pl) == 17 and "qatar" not in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl, f"perLeague={len(pl)} qatar-out eredivisie+swiss+hnl-in")
 except Exception as e:
     report("topscorers 2023/2024 participants", False, str(e))
 # A7: transfers feeds ×3 — the route wraps the payload: {ok, transfers:

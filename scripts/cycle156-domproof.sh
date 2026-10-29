@@ -83,15 +83,15 @@ try:
     seas = d.get('allSeasons') or []
     scorers = d.get('scorers') or []
     leader = scorers[0] if scorers else {}
-    good = (len(pl) == 17 and 'swiss' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl
-            and len(scorers) == 340 and len(seas) == 12
+    good = (len(pl) == 18 and 'hnl' in pl and 'swiss' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl
+            and len(scorers) == 360 and len(seas) == 12
             and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
             and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
             and leader.get('leagueKey') != 'eredivisie')
-    report('A2 race 17 participants', good,
+    report('A2 race 18 participants', good,
            f"n={len(scorers)} perLeague={len(pl)} leader={leader.get('name')}/{leader.get('goals')} window={seas[:1]}..{seas[-1:]}")
 except Exception as e:
-    report('A2 race 17 participants', False, str(e))
+    report('A2 race 18 participants', False, str(e))
 
 # A3: bracket — current window honestly null; the ARCHIVED 2025/2026 window
 # serves a real 2-round European-playoff bracket (نیمه‌نهایی/فینال) through
@@ -147,13 +147,13 @@ try:
     pl = [x.get('leagueKey') for x in (d.get('perLeague') or [])]
     ts = d.get('scorers') or []
     names = [t.get('nameFa') for t in ts[:5]]
-    good = (len(pl) == 16 and 'eredivisie' in pl and 'qatar' not in pl and 'swiss' in pl
+    good = (len(pl) == 17 and 'eredivisie' in pl and 'qatar' not in pl and 'swiss' in pl and 'hnl' in pl
             and ts[0].get('nameFa') == 'هری کین' and ts[0].get('goals') == 36
             and 'کریستیانو رونالدو' in names and 'لوک دی یونگ' in names
             and 'وانگلیس پاولیدیس' in names and not any(has_ascii(n) for n in names))
-    report('A6 historical race 16 participants (swiss, cycle-160)', good, f"perLeague={len(pl)} top5={names}")
+    report('A6 historical race 17 participants (hnl, cycle-161)', good, f"perLeague={len(pl)} top5={names}")
 except Exception as e:
-    report('A6 historical race 16 participants (swiss, cycle-160)', False, str(e))
+    report('A6 historical race 17 participants (hnl, cycle-161)', False, str(e))
 
 # A7: THE LIVE IRANIAN HOOK — our own player API answers country=Iran for
 # fotmob 466890 (علیرضا جهانبخش, Excelsior)
@@ -165,9 +165,9 @@ try:
 except Exception as e:
     report('A7 jahanbakhsh country=Iran', False, str(e))
 
-# A8: mapping-sweep duplicate-key guard — 960 team keys / 458 player keys
+# A8: mapping-sweep duplicate-key guard — 1009 team keys / 486 player keys
 # zero duplicates (the 152/155/159 sweep guard, re-run at the new totals;
-# gate-synced cycle-160: swiss +49 team / +27 player keys)
+# gate-synced cycle-161: hnl +49 team / +28 player keys)
 import collections
 def keys_of(path, obj):
     src = open(path, encoding='utf-8').read()
@@ -178,7 +178,7 @@ tk = keys_of('src/lib/leagues.ts', 'const TEAM_FA')
 pk = keys_of('src/lib/player-names-fa.ts', 'export const PLAYER_NAME_FA')
 td = [k for k, c in collections.Counter(tk).items() if c > 1]
 pd = [k for k, c in collections.Counter(pk).items() if c > 1]
-report('A8 duplicate-key guard', len(tk) == 960 and len(pk) == 458 and not td and not pd,
+report('A8 duplicate-key guard', len(tk) == 1009 and len(pk) == 486 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dupTeam={td} dupPlayer={pd}")
 
 print('API_TRUTH', 'OK' if ok else 'BAD')
@@ -273,14 +273,14 @@ echo "$FEAT3" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the global race — copy ۱۷ honest (swiss joined cycle-160), old ۱۶/۱۵
 # copies gone, the eredivisie chip rides the participant list
-probe "http://localhost:3000/topscorers?league=all" "D4 race copy ۱۷" \
-"b=document.body.innerText;return {copy17:b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),old15gone:!b.includes('۱۵ لیگ و جام برتر'),chip:b.includes('اردیویزهٔ هلند'),raphinha:b.includes('رافینیا')}"
+probe "http://localhost:3000/topscorers?league=all" "D4 race copy ۱۸" \
+"b=document.body.innerText;return {copy18:b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),chip:b.includes('اردیویزهٔ هلند'),raphinha:b.includes('رافینیا')}"
 
 # D5: the dedicated /topscorers/eredivisie SSG path — ویلیومسون with fa digits
 probe "http://localhost:3000/topscorers/eredivisie" "D5 dedicated eredivisie scorers" \
 "h1=(document.querySelector('h1')||{}).innerText||'';b=document.body.innerText;return {ok:h1.includes('اردیویزه'),willumsson:b.includes('ویلیومسون'),groningen:b.includes('خرونینگن'),faGoals:/[۰-۹]+\s*گل/.test(b)}"
 
-# D6: players hub — هفده copy (gate-synced cycle-160) + the eredivisie chip
+# D6: players hub — هجده copy (gate-synced cycle-161) + the eredivisie chip
 # + REAL two-step click
 # mode-teams → league-eredivisie with URL sync and the فاینورد grid
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
@@ -288,7 +288,7 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('هفده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('هجده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const l=document.querySelector("[data-testid=\"league-eredivisie\"]");if(l)l.click();return l?"clicked":"no-chip"})()' >/dev/null 2>&1
@@ -304,13 +304,13 @@ try:
   d=json.load(sys.stdin); es=d['data']['errors']
   print(len([e for e in es if e.get('url')]))
 except Exception: print('ERR')")
-echo "D6 players hub eredivisie click → $OUT6 | copy17=$COPY16 feat=$FEAT6 | console=$C6 appErrors=$E6"
+echo "D6 players hub eredivisie click → $OUT6 | copy18=$COPY16 feat=$FEAT6 | console=$C6 appErrors=$E6"
 echo "$COPY16 $FEAT6" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 [ "$OUT6" != "{sw:390,cw:390,h1n:1,vbroken:0}" ] && TOTAL_BAD=$((TOTAL_BAD+1))
 [ "$C6" = "0" ] && [ "$E6" = "0" ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D7: /leagues — 20 cards + the eredivisie + acl2 cards (gate-synced cycle-160)
-probe "http://localhost:3000/leagues" "D7 leagues hub 20 cards" \
+# D7: /leagues — 21 cards + the eredivisie + acl2 cards (gate-synced cycle-161)
+probe "http://localhost:3000/leagues" "D7 leagues hub 21 cards" \
 "cards=document.querySelectorAll(\"a[href^='/league/']\").length,ereCard=!!document.querySelector(\"a[href='/league/eredivisie']\"),acl2Card=!!document.querySelector(\"a[href='/league/acl2']\"),h1Fa=((document.querySelector(\"h1\")||{}).innerText||'').includes('لیگ');return {cards,ereCard,acl2Card,h1Fa}"
 
 # D8: the hook's club page — اکسلسیور (10218) with the squad grid alive
@@ -346,7 +346,7 @@ echo "$FEAT9" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 
 echo "== RESULT =="
 if [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 8/8 + DOM 9/9 green — اردیویزهٔ هلند honest end-to-end: the 18th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (فاینورد ۲۴/آژاکس ۲۱/پی‌اس‌وی آیندهوون ۲۰) on an 18/18 Persian table, برینجولفور ویلیومسون 8 atop the scorers with PERSIAN name AND team (خرونینگن), the LIVE Iranian علیرضا جهانبخش (اکسلسیور — country=Iran verified through our own /api/player/466890) as the Persian hook, 320-scorer race now 340 (17 leagues) with رافینیا still honest leader, 127 titles topped by 2025/2026 پی‌اس‌وی over فاینورد (pre-war defunct champions honestly English), transfers 100 items, the CURRENT-season bracket honestly absent while the ARCHIVED 2025/2026 season serves a real ۲-round European-playoff bracket through the SAME season-aware API (نیمه‌نهایی/فینال proven in D3), historical 2023/2024 race honestly 16 participants (swiss joined cycle-160) with the all-Persian top (کریستیانو رونالدو/لوک دی یونگ/وانگلیس پاولیدیس), espnSlug ned.1 verified (the ESPN fallback covers the league too, Gulf pattern reversed), attribution truth live-verified: فاینورد/خرونینگن/اکسلسیور ride the new eredivisie index while آژاکس keeps its uecl-first truth (same live class as Celtic→uel, recorded since 153); race copy ۱۷ + players hub هفده + search guide ۲۰ + /leagues 20th card (swiss, gate-synced cycle-160), mapping sweep 960 team / 458 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 8/8 + DOM 9/9 green — اردیویزهٔ هلند honest end-to-end: the 18th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (فاینورد ۲۴/آژاکس ۲۱/پی‌اس‌وی آیندهوون ۲۰) on an 18/18 Persian table, برینجولفور ویلیومسون 8 atop the scorers with PERSIAN name AND team (خرونینگن), the LIVE Iranian علیرضا جهانبخش (اکسلسیور — country=Iran verified through our own /api/player/466890) as the Persian hook, 360-scorer race (18 leagues) with رافینیا still honest leader, 127 titles topped by 2025/2026 پی‌اس‌وی over فاینورد (pre-war defunct champions honestly English), transfers 100 items, the CURRENT-season bracket honestly absent while the ARCHIVED 2025/2026 season serves a real ۲-round European-playoff bracket through the SAME season-aware API (نیمه‌نهایی/فینال proven in D3), historical 2023/2024 race honestly 17 participants (hnl joined cycle-161) with the all-Persian top (کریستیانو رونالدو/لوک دی یونگ/وانگلیس پاولیدیس), espnSlug ned.1 verified (the ESPN fallback covers the league too, Gulf pattern reversed), attribution truth live-verified: فاینورد/خرونینگن/اکسلسیور ride the new eredivisie index while آژاکس keeps its uecl-first truth (same live class as Celtic→uel, recorded since 153); race copy ۱۸ + players hub هجده + search guide ۲۱ + /leagues 21st card (hnl, gate-synced cycle-161), mapping sweep 1009 team / 486 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (TOTAL_BAD=$TOTAL_BAD)"; exit 1
 fi

@@ -523,6 +523,32 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "elias pihlström": "الیاس پیلشتروم", "elias pihlstrom": "الیاس پیلشتروم",
   "mostafa heydari": "مصطفی حیدری",
 
+  // cycle-161: Croatian HNL — the 72-row goals.json top-20 window plus the
+  // Persian hook himself: محمد محبی, the Iran international winger at
+  // رییکا (born 1998-12-20, the Rijeka №9). Diacritic forms byte-exact
+  // AND plain-ASCII variants (the cycle-145 İ lesson).
+  "dion drena beljo": "دیون درنا بلیو",
+  "emil frederiksen": "امیل فردریکسن",
+  "ilija nestorovski": "ایلیا نستوروفسکی",
+  "armando león": "آرماندو لئون", "armando leon": "آرماندو لئون",
+  "hamza jaganjac": "حمزه یگاناتس",
+  "michele šego": "میکله شگو", "michele sego": "میکله شگو",
+  "nail omerović": "نایل عمراوچ", "nail omerovic": "نایل عمراوچ",
+  "daniel adu-adjei": "دانیل آدو-آجی",
+  "luka mamić": "لوکا مامیچ", "luka mamic": "لوکا مامیچ",
+  "samuel vignato": "ساموئل وینیاتو",
+  "bruno bogojević": "برونو بوگویه‌واچ", "bruno bogojevic": "برونو بوگویه‌واچ",
+  "dukan ahmeti": "دوکان آحمتی",
+  "dušan vuković": "دوشان ووکوویچ", "dusan vukovic": "دوشان ووکوویچ",
+  "ivan canjuga": "ایوان تسیانیوگا",
+  "marko livaja": "مارکو لیوایا",
+  "niko galešić": "نیکو گالشیچ", "niko galesic": "نیکو گالشیچ",
+  "noa skoko": "نوا شوکو",
+  "toni fruk": "تونی فراک",
+  "tiago dantas": "تیاگو دانتاس",
+  "abdoulie sanyang": "عبدوله سانیانگ",
+  "mohammad mohebbi": "محمد محبی",
+
 };
 
 // Persian display name for an upstream player name — exact lowercased map

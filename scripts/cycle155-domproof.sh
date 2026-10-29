@@ -67,15 +67,15 @@ try:
     report("standings qatar", good, f"rows={len(rows)} top={rows[0].get('fa')}({rows[0].get('pts')})")
 except Exception as e:
     report("standings qatar", False, str(e))
-# A2: global race — 340 scorers (320 + 20 swiss rows, gate-synced
-# cycle-160), 17 perLeague incl. qatar, honest leader shape (رافینیا ۱۳ stays
+# A2: global race — 360 scorers (340 + 20 hnl rows, gate-synced
+# cycle-161), 18 perLeague incl. qatar, honest leader shape (رافینیا ۱۳ stays
 # top), 12-season window intact
 try:
     d = get(f"{B}/api/topscorers?league=all")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 340 and len(pl) == 17 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl \
+    good = len(ts) == 360 and len(pl) == 18 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl \
         and {"superlig","scottish","saudi","championship","portugal","uae"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) \
         and not ascii_leak(lead.get("team"))
@@ -165,7 +165,7 @@ except Exception: ok = False
 try:
     d = get(f"{B}/api/topscorers?league=all")
     ts = d.get("scorers") or []; pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-    ok = ok and len(ts) == 340 and len(pl) == 17 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl
+    ok = ok and len(ts) == 360 and len(pl) == 18 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl
 except Exception: ok = False
 try:
     d = get(f"{B}/api/topscorers/qatar"); ts = d.get("scorers") or []
@@ -229,7 +229,7 @@ echo "$FEAT2" | grep -q "false\|null" && RC2=1
 
 # D3: the race default copy — honest ۱۶, no stale ۱۵/۱۴ (gate-synced cycle-156)
 probe "$BASE/topscorers" "D3 race copy 16" \
-"return {h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\"),noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false,noStale15:(document.body.innerText||\"\").includes(\"۱۵ لیگ و جام برتر\")===false}"
+"return {h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy18:(document.body.innerText||\"\").includes(\"۱۸ لیگ و جام برتر\"),noStale17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\")===false,noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false}"
 
 # D4: the dedicated /topscorers/qatar — عفیف with Persian digits
 probe "$BASE/topscorers/qatar" "D4 dedicated qatar scorers" \
@@ -275,7 +275,7 @@ probe "$BASE/team/101895" "D7 al-sadd team page" \
 
 echo "== RESULT =="
 if [ "$A_BAD" -eq 0 ] && [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 4/4 + DOM 7/7 green — لیگ ستارگان قطر honest end-to-end: the 17th competition and the SEVENTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الریان ۱۷/السد ۱۵/الدحیل ۱۵) on a 12/12 Persian table, اکرم عفیف 7 atop the scorers with PERSIAN name AND team (السد), the LIVE Iranian فرهاد زوشی (لوسیل، ۳ گل) in the pool, 320-scorer race now 340 (17 leagues, gate-synced cycle-160) with رافینیا still honest leader, 22 titles topped by 2025/2026 السد over الشمال (oldest 2004/2005 الغرافه, الجیش runner rows), transfers 17 items zero-ASCII, bracket honestly absent, NO espnSlug (ESPN 400 — persiangulf/uae Gulf pattern, probed live), attribution truth live-verified: الراین/لوسیل/السیلیه ride the new qatar index while Al-Sadd keeps its dual ACL truth and the eight prior first-seen truths stay put (پورتو→portugal, خورفکان→uae, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۷ + players hub هفده + search guide ۲۰ + /leagues 20th card (swiss, gate-synced cycle-160), /players qatar grid with URL sync — the Gulf arc COMPLETION (persiangulf + saudi + uae + qatar); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 4/4 + DOM 7/7 green — لیگ ستارگان قطر honest end-to-end: the 17th competition and the SEVENTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الریان ۱۷/السد ۱۵/الدحیل ۱۵) on a 12/12 Persian table, اکرم عفیف 7 atop the scorers with PERSIAN name AND team (السد), the LIVE Iranian فرهاد زوشی (لوسیل، ۳ گل) in the pool, 360-scorer race (18 leagues, gate-synced cycle-161) with رافینیا still honest leader, 22 titles topped by 2025/2026 السد over الشمال (oldest 2004/2005 الغرافه, الجیش runner rows), transfers 17 items zero-ASCII, bracket honestly absent, NO espnSlug (ESPN 400 — persiangulf/uae Gulf pattern, probed live), attribution truth live-verified: الراین/لوسیل/السیلیه ride the new qatar index while Al-Sadd keeps its dual ACL truth and the eight prior first-seen truths stay put (پورتو→portugal, خورفکان→uae, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۸ + players hub هجده + search guide ۲۱ + /leagues 21st card (hnl, gate-synced cycle-161), /players qatar grid with URL sync — the Gulf arc COMPLETION (persiangulf + saudi + uae + qatar); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1
 fi
