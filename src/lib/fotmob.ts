@@ -3096,10 +3096,19 @@ export interface TeamIndexEntry {
   aliases?: string;
 }
 
-/** Normalize a search query / team name: lowercase, strip ZWNJ/diacritics, unify Arabic→Persian chars. */
+/** Normalize a search query / team name: lowercase, strip ZWNJ/diacritics, unify Arabic→Persian chars.
+ *  fix cycle-169: Latin diacritics now fold to base letters (ń→n, á→a, ç→c) so a plain-Latin
+ *  keyboard query («Poznan», «Sanchez») matches the accented feed names («Lech Poznań»,
+ *  «Jordi Sánchez») — probed live 2026-10-30: BOTH returned 0 hits before this fold while the
+ *  accented spellings hit. The query AND every haystack (aliases/name/fa) pass through here,
+ *  so one fold repairs both sides at once (the cycle-149 separator lesson). Persian/Arabic
+ *  characters have no canonical decomposition — NFD is a no-op for them, so the existing
+ *  matches (case/ZWNJ/ي→ی/ك→ک) behave byte-identically. */
 export function normalizeQuery(q: string): string {
   return (q || "")
     .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
     .replace(/[\u200c\u200e\u200f\u0640]/g, "")
     .replace(/[\u064b-\u0652]/g, "")
     .replace(/ي/g, "ی")
@@ -3113,7 +3122,8 @@ export function normalizeQuery(q: string): string {
     .trim();
 }
 
-let teamIndexCache: { at: number; data: TeamIndexEntry[] } | null = null;
+let teamIndexCache: { at: number; data: TeamIndexEntry[]; full: boolean } | null = null;
+let teamIndexLastGood: TeamIndexEntry[] | null = null;
 
 // Teams whose league page is unavailable via FotMob keyless API (e.g. Persian Gulf Pro
 // League returns `null`) or which sit outside the portal's 8 leagues/cups entirely, but
@@ -3134,9 +3144,18 @@ const SEARCH_FALLBACK_TEAMS: { teamId: number; name: string; fa: string; leagueK
   { teamId: 9860, name: "Heart of Midlothian FC", fa: "هارت", leagueKey: "scotland", leagueFa: "لیگ برتر اسکاتلند" },
 ];
 
-/** Flat index of every team in our 8 league/cup standings (getStandings is cached, so this is cheap). */
+/** Flat index of every team in our 8 league/cup standings (getStandings is cached, so this is cheap).
+ *  cycle-169 hardening (live-observed 2026-10-30): a cold sweep can drop some upstream feeds
+ *  (Promise.allSettled swallows) — a PARTIAL index (e.g. poland/bundesliga teams missing) was
+ *  cached for the full 10-min TTL and /api/search answered 0 for «Poznań» for minutes while
+ *  the teams existed upstream. Now: a FULL sweep caches 10 min as before; a PARTIAL sweep
+ *  serves the last good index when one exists (stale-but-complete beats fresh-but-partial)
+ *  and is itself cached only 30s so a retry comes soon instead of 10 minutes later. */
 export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
-  if (teamIndexCache && Date.now() - teamIndexCache.at < 10 * 60_000) return teamIndexCache.data;
+  if (teamIndexCache) {
+    const ttl = teamIndexCache.full ? 10 * 60_000 : 30_000;
+    if (Date.now() - teamIndexCache.at < ttl) return teamIndexCache.data;
+  }
   // domestic leagues first, UCL last — a team playing both (e.g. Real Madrid)
   // should be attributed to its domestic league
   const ordered = [...LEAGUES].sort((a, b) => {
@@ -3169,7 +3188,13 @@ export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
       aliases: `${fb.name} ${fb.fa}`,
     });
   }
-  teamIndexCache = { at: Date.now(), data: out };
+  const failed = settled.filter((r) => r.status !== "fulfilled").length;
+  const full = failed === 0;
+  if (full) teamIndexLastGood = out;
+  teamIndexCache = { at: Date.now(), data: out, full };
+  if (!full && teamIndexLastGood && teamIndexLastGood.length > out.length) {
+    return teamIndexLastGood; // fresh-but-partial: the stale complete index wins
+  }
   return out;
 }
 
@@ -3190,12 +3215,24 @@ function rangeOf(display: string, nq: string): [number, number] | null {
   for (let i = 0; i < display.length; i++) {
     const cp = display.charCodeAt(i);
     if (cp === 0x200c || cp === 0x200e || cp === 0x200f || cp === 0x0640 || (cp >= 0x064b && cp <= 0x0652)) continue;
+    // fix cycle-169: an already-decomposed (NFD) display keeps the combining
+    // mark in its OWN code unit — skip it so the folded haystack stays aligned
+    // (the base char was pushed at its own index one iteration earlier)
+    if (cp >= 0x0300 && cp <= 0x036f) continue;
     let c = display[i].toLowerCase();
     if (c === "ي") c = "ی";
     else if (c === "ك") c = "ک";
     // fix cycle-149: fold separators here too so the highlight range stays
     // consistent with the folded matcher (map indices stay display-correct)
     else if (c === "-" || c === "_") c = " ";
+    else {
+      // fix cycle-169: precomposed (NFC) Latin diacritics fold to their base
+      // letter (ń→n, á→a) — one base char maps to ONE original index, so the
+      // highlight range lands on the ACCENTED original text (e.g. «Sánchez»
+      // highlights [6,13) exactly), never drifting into the mark
+      const d = c.normalize("NFD");
+      if (d.length > 1) c = d[0];
+    }
     chars.push(c);
     map.push(i);
   }
@@ -3261,10 +3298,16 @@ export interface PlayerSearchResult extends PlayerIndexEntry {
   hl?: { fa?: [number, number] | null; name?: [number, number] | null };
 }
 
-let playerIndexCache: { at: number; data: PlayerIndexEntry[] } | null = null;
+let playerIndexCache: { at: number; data: PlayerIndexEntry[]; full: boolean } | null = null;
+let playerIndexLastGood: PlayerIndexEntry[] | null = null;
 
 export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
-  if (playerIndexCache && Date.now() - playerIndexCache.at < 10 * 60_000) return playerIndexCache.data;
+  // cycle-169 hardening: same partial-sweep rule as getTeamIndex — a full sweep
+  // caches 10 min, a partial one serves the last good index and caches only 30s
+  if (playerIndexCache) {
+    const ttl = playerIndexCache.full ? 10 * 60_000 : 30_000;
+    if (Date.now() - playerIndexCache.at < ttl) return playerIndexCache.data;
+  }
   const ordered = [...LEAGUES].sort((a, b) => {
     const rank = (k: string) => (k === "ucl" ? 1 : 0);
     return rank(a.key) - rank(b.key);
@@ -3291,7 +3334,13 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
       });
     }
   });
-  playerIndexCache = { at: Date.now(), data: out };
+  const failed = settled.filter((r) => r.status !== "fulfilled").length;
+  const full = failed === 0;
+  if (full) playerIndexLastGood = out;
+  playerIndexCache = { at: Date.now(), data: out, full };
+  if (!full && playerIndexLastGood && playerIndexLastGood.length > out.length) {
+    return playerIndexLastGood; // fresh-but-partial: the stale complete index wins
+  }
   return out;
 }
 
