@@ -1338,7 +1338,9 @@ function LastLineupSection({ data }: { data: TeamLastLineup }) {
       extra={
         data.formation ? (
           <span className="shrink-0 rounded-md border border-glass-border-soft bg-white/[0.04] px-1.5 py-px text-[9px] font-black text-steel/80 tabular-persian whitespace-nowrap">
-            {data.formation}
+            {/* cycle-154: formations are digits too — «4-4-2» → «۴-۴-۲» to match
+                the all-Persian numeral contract of every other portal surface */}
+            {faDigits(String(data.formation))}
           </span>
         ) : undefined
       }
@@ -1718,7 +1720,11 @@ export function TeamView({ teamId }: { teamId: number }) {
               ].map((x) => (
                 <div key={x.l} className="rounded-xl border border-glass-border-soft bg-white/[0.03] px-3 py-2">
                   <p className="text-[9px] text-steel/70 font-bold">{x.l}</p>
-                  <p className="text-sm font-black tabular-persian">{typeof x.v === "number" ? faDigits(x.v) : x.v}</p>
+                  {/* cycle-154: the GD chip is always a string («+9») — the old
+                      typeof guard let the string path render Latin digits inside
+                      an otherwise all-faDigits header. faDigits is safe on any
+                      string (dashes/+ pass through untouched). */}
+                  <p className="text-sm font-black tabular-persian">{faDigits(String(x.v))}</p>
                 </div>
               ))}
             </div>
