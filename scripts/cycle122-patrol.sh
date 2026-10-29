@@ -197,9 +197,9 @@ def report(name, good, detail):
     global ok
     ok = ok and bool(good)
     print(f"{name}: {detail} {'OK' if good else 'BAD'}")
-# cycle-111 legends (persiangulf checked separately: designed 503 per the
-# cycle-16 guard + cycle-114 byte-identical contract — upstream payload
-# permanently null there, so 503 «موقتاً در دسترس نیست» IS the contract)
+# cycle-111 legends (persiangulf checked separately: since cycle-136 the
+# placeholder id became the real FotMob league 523 — the home league serves
+# its own table, so its legend is the AFC trio, not a designed 503)
 want = {"pl": 3, "seriea": 4, "ucl": 2}
 for lk, n in want.items():
     try:
@@ -208,12 +208,11 @@ for lk, n in want.items():
     except Exception as e:
         report(f"legend {lk}", False, str(e))
 try:
-    try:
-        get("http://localhost:3000/api/standings?league=persiangulf")
-        report("legend persiangulf", False, "expected designed 503, got 200")
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "replace")
-        report("legend persiangulf", e.code == 503 and "در دسترس نیست" in body, f"designed {e.code}")
+    d = get("http://localhost:3000/api/standings?league=persiangulf")
+    leg = d.get("legend") or []
+    titles = [x.get("fa") for x in leg]
+    good = d.get("ok") is True and len(leg) == 3 and "لیگ قهرمانان آسیا" in titles
+    report("legend persiangulf", good, f"n={len(leg)} titles={titles}")
 except Exception as e:
     report("legend persiangulf", False, str(e))
 # cycle-110 insights
@@ -259,7 +258,8 @@ for mid, hg in (("5749720", 4), ("5071457", 25)):
     except Exception as e:
         report(f"topScorers {mid}", False, str(e))
 # cycle-121 league titles: pl=127 newest-first (آرسنال ۲۰۲۵/۲۰۲۶), ucl=71,
-# designed 503 on persiangulf, 400 on unknown key
+# since cycle-136 persiangulf serves 24 live (newest 2024/2025 تراکتور),
+# 400 on unknown key
 # real contract (route + domproof-121): titles = LeagueTitleHistory {total, items[] newest-first}
 try:
     t = get("http://localhost:3000/api/league-titles?league=pl").get("titles") or {}
@@ -275,12 +275,11 @@ try:
 except Exception as e:
     report("titles ucl", False, str(e))
 try:
-    try:
-        get("http://localhost:3000/api/league-titles?league=persiangulf")
-        report("titles persiangulf", False, "expected designed 503, got 200")
-    except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", "replace")
-        report("titles persiangulf", e.code == 503 and "در دسترس نیست" in body, f"designed {e.code}")
+    t = get("http://localhost:3000/api/league-titles?league=persiangulf").get("titles") or {}
+    titems = t.get("items") or []
+    ttop = titems[0] if titems else {}
+    good = t.get("total") == 24 and len(titems) == 24 and ttop.get("season") == "2024/2025" and "تراکتور" in (ttop.get("championFa") or "")
+    report("titles persiangulf", good, f"total={t.get('total')} n={len(titems)} newest={ttop.get('season')}/{ttop.get('championFa')}")
 except Exception as e:
     report("titles persiangulf", False, str(e))
 try:

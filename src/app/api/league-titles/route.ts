@@ -6,8 +6,10 @@
 // The SAME cached raw payload the standings/fixtures/bracket/transfers
 // reads use, so this adds zero upstream hits. Season-independent by
 // design. titles: null with ok: true when the source has no list so the
-// UI can hide the tab (same contract as league-bracket, cycle-56); the
-// persiangulf null payload keeps its designed 503 contract.
+// UI can hide the tab (same contract as league-bracket, cycle-56); any
+// league whose payload is unavailable keeps the designed 503 path.
+// cycle-136: persiangulf now SERVES 24 title seasons (2001/2002 →
+// 2024/2025) — the «قهرمانان» tab lights up for the home league too.
 // ------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
 import { getLeagueTitleHistory, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";

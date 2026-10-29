@@ -384,9 +384,11 @@ interface FMTableLegendRow {
   targetLeague?: { id?: number; name?: string; tKey?: string };
 }
 // cycle-111: standings zone legend — upstream tKey → curated Persian title
-// (probed live, UA Chrome/124, 2026-10-29: 8 distinct tKeys across the 6
-// table-carrying leagues; persiangulf has no table/legend — empty-state
-// design). Unknown tKeys never render (honest convention).
+// (probed live, UA Chrome/124, 2026-10-29: 8 distinct tKeys across the
+// European table-carrying leagues; cycle-136 added the two AFC tKeys of the
+// now-live persiangulf table — tr_afcchampionsleague[0-1] + tr_afcccup[2],
+// relegation rides the existing "relegation" key). Unknown tKeys never
+// render (honest convention).
 const STANDINGS_LEGEND_FA: Record<string, string> = {
   "championsleague": "لیگ قهرمانان اروپا",
   "europaleague": "لیگ اروپا",
@@ -396,6 +398,9 @@ const STANDINGS_LEGEND_FA: Record<string, string> = {
   "q1of16finals": "صعود به یک‌شانزدهم نهایی",
   "relegationqual": "سهمیهٔ سقوط",
   "relegation": "سقوط",
+  // cycle-136: Persian Gulf Pro League (league 523) — probed tKeys
+  "tr_afcchampionsleague": "لیگ قهرمانان آسیا",
+  "tr_afcccup": "لیگ قهرمانان آسیا ۲",
 };
 
 interface FotMobLeague {
@@ -411,8 +416,9 @@ interface FotMobLeague {
     // relegationqual; laliga/seriea add europa_conference_league.
     legend?: FMTableLegendRow[];
   } };
-  // cycle-102: hasOngoingMatch typed (probed: boolean; null on persiangulf's
-  // null fixtures block) — the matchday detector reads it for free
+  // cycle-102: hasOngoingMatch typed (probed: boolean; null on payloads whose
+  // fixtures block is absent — rare, since cycle-136 every configured league
+  // serves a real fixtures block) — the matchday detector reads it for free
   fixtures?: { allMatches?: unknown[]; hasOngoingMatch?: boolean | null };
   playoff?: { rounds?: FMBracketRoundRaw[] };
   // cycle-121 probed (UA Chrome/124, 2026-10-29): top-level seasons = the
@@ -420,9 +426,9 @@ interface FotMobLeague {
   // first: {seasonName, winner {id, name, seasonName, winner:true},
   // loser {…}} where winner = champion and loser = runner-up. Uniform:
   // pl=127 (oldest 1888), seriea=121 (1898), laliga=95 (1929), ucl=71
-  // (1955/1956) — every entry carries both names; persiangulf's payload
-  // is null upstream (designed 503 path) so this surface is honestly
-  // absent there.
+  // (1955/1956) — every entry carries both names; since cycle-136
+  // persiangulf (league 523) serves it too (24 entries, 2001/2002 →
+  // 2024/2025). Leagues without the list keep the honest absence path.
   seasons?: FMTitleSeasonRaw[];
   transfers?: FMTransfersRaw;
   stats?: {
@@ -456,8 +462,9 @@ interface FotMobRow {
   qualColor?: string | null;
 }
 
-// Thrown when FotMob has no usable payload for a league (e.g. Persian Gulf
-// Pro League returns a literal `null` body). Routes translate this into a
+// Thrown when FotMob has no usable payload for a league (a literal `null`
+// body — historically the placeholder persiangulf id, today only transient
+// upstream gaps). Routes translate this into a
 // friendly 503 Persian message instead of a raw engine TypeError.
 export class LeagueUnavailableError extends Error {
   constructor(leagueKey: string) {
@@ -4490,10 +4497,11 @@ export interface LeagueTitleHistory {
  *  from the SAME cached data/leagues payload the standings/fixtures/bracket/
  *  transfers reads use (top-level raw.seasons: winner = champion, loser =
  *  runner-up; probed uniform pl=127 / seriea=121 / laliga=95 / ucl=71 with
- *  both names on every entry). Season-independent — fetched on the current
+ *  both names on every entry; since cycle-136 persiangulf serves 24 too).
+ *  Season-independent — fetched on the current
  *  raw, so zero upstream hits and no cache-key bump. Null when the source
- *  has no list (UI hides the tab, legend-111 contract); the persiangulf
- *  null payload surfaces as LeagueUnavailableError → designed 503 like
+ *  has no list (UI hides the tab, legend-111 contract); a null upstream
+ *  payload still surfaces as LeagueUnavailableError → designed 503 like
  *  every other league surface. */
 export async function getLeagueTitleHistory(leagueKey: string, season?: string): Promise<LeagueTitleHistory | null> {
   const { raw } = await getLeagueRaw(leagueKey, season);

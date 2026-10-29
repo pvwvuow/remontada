@@ -23,10 +23,12 @@ export const dynamic = "force-dynamic";
 // directions: they never READ the snapshot (a current-season table must
 // never masquerade as 2023/2024) and never WRITE one (a historical merge
 // must never evict the current-season last-known-good). Feeds that don't
-// serve the season (probed: UCL historical → upstream failure,
-// persiangulf → designed 503) just drop out of the merge — the UI shows
-// exactly which leagues contributed. No param = the cycle-42 path,
-// byte-identical.
+// serve the season (probed: UCL historical → upstream failure) just drop
+// out of the merge — the UI shows exactly which leagues contributed. No
+// param = the cycle-42 path, byte-identical.
+// cycle-136: persiangulf left the designed-503 club — the live league-523
+// payload made it the merge's 6th participant (the «۶ لیگ مشارکت‌کننده»
+// subtitle is the payload's own count).
 // ------------------------------------------------------------------
 const SNAPSHOT_KEY = "topscorers:snapshot";
 const MIN_FULL = Number(process.env.TOPSCORERS_MIN_SCORERS || 30);

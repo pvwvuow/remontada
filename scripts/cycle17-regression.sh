@@ -26,7 +26,7 @@ echo "=== pages (12) ==="
 check "home"                  "/" 200
 check "leagues index"         "/leagues" 200
 check "league pl"             "/league/pl" 200
-check "league persiangulf graceful" "/league/persiangulf" 200
+check "league persiangulf live"    "/league/persiangulf" 200
 check "topscorers global"     "/topscorers" 200
 check "topscorers pl"         "/topscorers/pl" 200
 check "team real (8633)"      "/team/8633" 200
@@ -39,7 +39,9 @@ check "unknown league 404"    "/league/doesnotexist" 404
 echo "=== api contracts (13) ==="
 body_has "api matches"        "/api/matches?d=0" '"ok":true' 200
 body_has "api standings pl"   "/api/standings?league=pl" '"ok":true' 200
-body_has "api standings persiangulf 503 fa" "/api/standings?league=persiangulf" 'ok":false' 503
+# cycle-136: the placeholder id became the real FotMob league 523 — the
+# designed-503 era ended; the home league now serves its live table
+body_has "api standings persiangulf live" "/api/standings?league=persiangulf" '"ok":true' 200
 body_has "api league-fixtures pl" "/api/league-fixtures?league=pl" '"ok":true' 200
 body_has "api topscorers"     "/api/topscorers" '"ok":true' 200
 body_has "api news"           "/api/news" '"ok":true' 200

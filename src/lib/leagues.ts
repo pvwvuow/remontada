@@ -19,7 +19,16 @@ export const LEAGUES: LeagueConfig[] = [
   { key: "seriea",     fotmobId: 55,         ccode3: "ITA",  faName: "سری‌آ ایتالیا",       enName: "Serie A",          espnSlug: "ita.1",          priority: 4 },
   { key: "bundesliga", fotmobId: 54,         ccode3: "GER",  faName: "بوندسلیگا آلمان",     enName: "Bundesliga",       espnSlug: "ger.1",          priority: 5 },
   { key: "ligue1",     fotmobId: 53,         ccode3: "FRA",  faName: "لیگ ۱ فرانسه",        enName: "Ligue 1",          espnSlug: "fra.1",          priority: 6 },
-  { key: "persiangulf",fotmobId: 1000001715, ccode3: "IRN",  faName: "لیگ خلیج فارس ایران", enName: "Persian Gulf Pro League", priority: 7 },
+  // cycle-136: fotmobId 1000001715 was a PLACEHOLDER (upstream answered a
+  // literal null body → the designed 503 era). Live probe 2026-10-29 (UA
+  // Chrome/124) found the real id — fotmob.com/leagues/523 — serving the
+  // full 2026/2027 table (18 teams, Persepolis/Sepahan/Esteghlal 20 pts),
+  // 17 historical seasons, top-scorer category with fetchAllUrl, 24-entry
+  // title history (2001/2002 → 2024/2025) and real transfers. One id flip
+  // lights up every league surface for the home league (standings, fixtures,
+  // scorers + the global merge's 6th league, transfers, titles, /players
+  // all-teams mode, team index/search).
+  { key: "persiangulf",fotmobId: 523,           ccode3: "IRN",  faName: "لیگ خلیج فارس ایران", enName: "Persian Gulf Pro League", priority: 7 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -123,6 +132,22 @@ const TEAM_FA: Record<string, string> = {
   // ---- Iranian Persian Gulf Pro League ----
   "persepolis": "پرسپولیس", "esteghlal": "استقلال", "tractor": "تراکتور",
   "tractor sazi": "تراکتور", "sepahan": "سپاهان", "foolad": "فولاد خوزستان",
+  // cycle-136: exact upstream row names of the live 523 table (teamFa matches
+  // on the exact lower-cased name, so the historical aliases above are not
+  // enough) — probed row names: Persepolis, Sepahan, Esteghlal, Tractor,
+  // Foolad Khuzestan, Aluminium Arak, Kheybar Khorramabad, Fajr Sepasi,
+  // Gol Gohar, Chadormalu Ardakan SC, Nassaji Mazandaran FC, Malavan,
+  // Paykan, Esteghlal Khuzestan, Zob Ahan, Shams Azar Qazvin,
+  // Sanat Naft Abadan, Mes Shahr Babak
+  "foolad khuzestan": "فولاد خوزستان",
+  // ("gol gohar" already mapped below — FotMob spelling variant block)
+  "aluminium arak": "آلومینیوم اراک", "aluminum arak": "آلومینیوم اراک",
+  "kheybar khorramabad": "خیبر خرم‌آباد",
+  "chadormalu ardakan sc": "چادرملو اردکان",
+  "nassaji mazandaran fc": "نساجی مازندران",
+  "shams azar qazvin": "شمس‌آذر قزوین",
+  "sanat naft abadan": "صنعت نفت آبادان",
+  "mes shahr babak": "مس شهربابک",
   "golgohar": "گل‌گهر", "esteghlal khuzestan": "استقلال خوزستان",
   "zob ahan": "ذوب‌آهن", "aluminum": "آلومینیوم هرمزگان", "malavan": "ملوان",
   "havadar": "هوادار", "shams azar": "شمس‌آذر قزوین", "kheybar": "خیبر خرم‌آباد",

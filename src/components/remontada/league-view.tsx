@@ -813,8 +813,8 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
 // ---------------- cycle-121: league title history («قهرمانان») ----------------
 // The league's full per-season champions from the SAME cached data/leagues
 // payload (top-level seasons[]: winner = champion, loser = runner-up —
-// probed uniform across pl/seriea/laliga/ucl; the persiangulf null payload
-// never reaches here — designed 503 path). Newest first; the tab is hidden
+// probed uniform across pl/seriea/laliga/ucl; since cycle-136 persiangulf
+// serves 24 too). Newest first; the tab is hidden
 // when the source has no list (legend-111 contract). Champion bold with a
 // /team/ link, runner-up muted, honest legend note at the tail.
 function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
