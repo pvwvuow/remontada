@@ -6,7 +6,7 @@ import { JsonLd } from "@/components/remontada/json-ld";
 import { LEAGUES } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 
-// unknown league keys → hard 404 (only the 7 known leagues are valid)
+// unknown league keys → hard 404 (only the 10 known competitions are valid)
 export const dynamicParams = false;
 
 export async function generateStaticParams() {

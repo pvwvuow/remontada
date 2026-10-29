@@ -3,7 +3,7 @@
 // ------------------------------------------------------------------
 // Remontada — league page: standings | fixtures | recent | scorers
 // ------------------------------------------------------------------
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard, LeagueTitleHistory } from "@/lib/fotmob";
 // cycle-99: same strict season shape as the API guard — one regex, one
@@ -620,6 +620,18 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
   const hasSides = !!(data.home?.length && data.away?.length);
   const rows = mode === "home" && hasSides ? data.home! : mode === "away" && hasSides ? data.away! : data.rows;
   const modeLabel = hasSides && mode === "home" ? "جدول خانه" : hasSides && mode === "away" ? "جدول بیرون" : "جدول رده‌بندی";
+  // cycle-141: composite league-phase feeds (AFC CL Elite — West/East) — the
+  // lib flattens the regional sub-tables into `rows` and records the segment
+  // boundaries in data.groups; the walk draws a full-width region header row
+  // at each boundary. Absent on every flat feed → zero rendering change.
+  const groupStarts = new Map<number, string>();
+  if (data.groups) {
+    let off = 0;
+    for (const g of data.groups) {
+      if (g.fa) groupStarts.set(off, g.fa);
+      off += g.count;
+    }
+  }
   return (
     <div className="glass-card overflow-hidden">
       <GlassLeagueHeader
@@ -651,11 +663,19 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
             </tr>
           </thead>
           <tbody>
-            {rows.map((r) => {
+            {rows.map((r, i) => {
               const leader = r.idx === 1;
+              const groupHeader = groupStarts.get(i);
               return (
+                <Fragment key={r.teamId}>
+                {groupHeader && (
+                  <tr data-testid="standings-group-row" className="border-y border-[color:var(--glass-hairline)] bg-[#9ec3e50d]">
+                    <td colSpan={10} className="py-1.5 ps-3 text-[10px] sm:text-[11px] font-black text-[#b6cce3] tracking-wide">
+                      {groupHeader}
+                    </td>
+                  </tr>
+                )}
                 <tr
-                  key={r.teamId}
                   className={cn(
                     "border-b border-[color:var(--glass-hairline)] last:border-0 glass-row-hover transition-colors",
                     leader && "glass-leader"
@@ -697,6 +717,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                     </span>
                   </td>
                 </tr>
+                </Fragment>
               );
             })}
           </tbody>

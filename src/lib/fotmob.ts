@@ -137,6 +137,12 @@ export interface StandingsData {
   /** cycle-55 additive: seasons FotMob offers for this league (newest first, capped 12). */
   allSeasons?: string[];
   rows: StandingsRow[];
+  /** cycle-141 additive: composite league-phase feeds only (AFC CL Elite —
+   *  West/East). `rows` stays the FLAT concatenation (West rows first, each
+   *  region's own idx preserved — both regional leaders are rank 1, honest),
+   *  and `groups` records the segment boundaries so the UI can draw the
+   *  region section rows. Absent on every flat (domestic/UCL) feed. */
+  groups?: { fa: string; count: number }[];
   home?: StandingsRow[];   // cycle-52 additive: FotMob per-side split (optional — hidden when absent)
   away?: StandingsRow[];
   scorers: ScorerEntry[];
@@ -409,6 +415,17 @@ interface FotMobLeague {
   table?: { data?: {
     table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] };
     selectedSeason?: string;
+    // cycle-141 probed (UA Chrome/124, 2026-10-29, league 525 AFC CL Elite):
+    // COMPOSITE league-phase feeds — `composite: true` with the real tables
+    // in `tables[]` (West/East regional sub-tables; `table` itself is an
+    // EMPTY object there). Each sub-table carries the SAME row shape as a
+    // domestic `all` block (probed keys identical) plus its own legend.
+    composite?: boolean;
+    tables?: {
+      leagueId?: number;
+      leagueName?: string;   // "West" / "East" on league 525
+      table?: { all?: FotMobRow[] };
+    }[];
     // cycle-111 probed (UA Chrome/124, 2026-10-29, 6 leagues): zone legend of
     // the standings — {title, tKey, color, indices} (+ targetLeague on
     // relegation rows). PL: championsleague[0-3]/europaleague[4]/relegation[17-19];
@@ -420,6 +437,10 @@ interface FotMobLeague {
   // fixtures block is absent — rare, since cycle-136 every configured league
   // serves a real fixtures block) — the matchday detector reads it for free
   fixtures?: { allMatches?: unknown[]; hasOngoingMatch?: boolean | null };
+  // cycle-141 probed (UA Chrome/124, 2026-10-29, league 525): overview.
+  // selectedSeason = the season the payload ACTUALLY serves (the composite
+  // table block never echoes it) — the honesty marker for echo-less feeds.
+  overview?: { selectedSeason?: string; season?: string };
   playoff?: { rounds?: FMBracketRoundRaw[] };
   // cycle-121 probed (UA Chrome/124, 2026-10-29): top-level seasons = the
   // league's FULL title history — one entry per completed season, newest
@@ -923,7 +944,34 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         ...(form && form.length > 0 ? { form: form.slice(-5) } : {}),
       };
     };
-    const rows: StandingsRow[] = (fmTable?.all || []).map((r) => mapRow(r, true));
+    // cycle-141: COMPOSITE league-phase feeds (AFC Champions League Elite —
+    // probed live UA Chrome/124, 2026-10-29, league 525). Upstream splits the
+    // league phase into regional sub-tables under data.tables[] (West/East,
+    // same FotMobRow shape each) and leaves data.table EMPTY — a domestic
+    // read of fmTable.all would throw "No standings data". Flatten West→East
+    // with each region's own idx preserved (both regional leaders stay rank
+    // 1 — re-indexing 1..32 would strip the East podium, a dishonest table),
+    // and record the segments in `groups` (curated Persian labels, unknown
+    // names fall back to the raw string) so the UI draws the region rows.
+    // The 9 flat feeds never enter this branch — byte-identical output.
+    const COMPOSITE_REGION_FA: Record<string, string> = { west: "منطقهٔ غرب", east: "منطقهٔ شرق" };
+    const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
+    const rows: StandingsRow[] = [];
+    const groups: { fa: string; count: number }[] = [];
+    if (Array.isArray(compositeSubs) && compositeSubs.length > 0) {
+      for (const sub of compositeSubs) {
+        const mapped = ((sub?.table?.all || []) as FotMobRow[]).map((r) => mapRow(r, true));
+        rows.push(...mapped);
+        if (mapped.length > 0) {
+          groups.push({
+            fa: COMPOSITE_REGION_FA[(sub?.leagueName || "").toLowerCase()] || sub?.leagueName || "",
+            count: mapped.length,
+          });
+        }
+      }
+    } else {
+      rows.push(...(fmTable?.all || []).map((r) => mapRow(r, true)));
+    }
     if (rows.length === 0) throw new Error("No standings data");
 
     // update cycle-111: zone legend («راهنمای سهمیه‌ها») — the upstream table
@@ -1029,8 +1077,20 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // consumer of the mapped `season` field must treat it as optional.
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     // cycle-55: FotMob's own selected-season label + the seasons it offers —
-    // additive fields so the v2 cache shape stays backward compatible
-    const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+    // additive fields so the v2 cache shape stays backward compatible.
+    // cycle-141: composite cups never echo selectedSeason in the table block
+    // (live-probed league 525: absent on every request) — but overview.
+    // selectedSeason carries the ACTUALLY SERVED season (probed: 2024/2025
+    // request → "2024/2025"; a bogus 2019/2020 request silently serves the
+    // current table and the marker says "2026/2027" — the exact cycle-99
+    // honest-snap contract, just carried by a different field). The marker
+    // chain therefore ends at overview, never at the requested param: the
+    // league-view snap (selectedSeason ≠ season → strip URL) keeps working
+    // for echo-less feeds. The 9 echo-carrying feeds never reach it.
+    const selectedSeason = raw.table?.[0]?.data?.selectedSeason
+      || raw.overview?.selectedSeason
+      || season
+      || undefined;
     const allSeasons = Array.isArray(raw.allAvailableSeasons)
       ? raw.allAvailableSeasons.filter((s) => SEASON_PARAM_RE.test(s)).slice(0, 12)
       : undefined;
@@ -1044,6 +1104,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     const matchday = isLeagueMatchday(raw);
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
+      ...(groups.length > 0 ? { groups } : {}),
       ...(selectedSeason ? { selectedSeason } : {}),
       ...(allSeasons && allSeasons.length > 1 ? { allSeasons } : {}),
       ...(homeRows ? { home: homeRows } : {}),

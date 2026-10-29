@@ -59,6 +59,26 @@ export const LEAGUES: LeagueConfig[] = [
   // shaped stats blocks and transfers.data = null (cups). ESPN fallback slug
   // probed live: uefa.europa.conf → 200.
   { key: "uecl",       fotmobId: 10216,       ccode3: "INT",  faName: "کنفرانس لیگ اروپا",  enName: "Conference League", espnSlug: "uefa.europa.conf", priority: 9, globalMerge: false },
+  // cycle-141: the cups footprint's fourth live cup — and the one the Persian
+  // fan actually bleeds for: AFC Champions League Elite (fotmob.com/leagues/525,
+  // probed live UA Chrome/124, 2026-10-29; the day-feed ids 943983/943984 are
+  // the West/East day-tournaments and answer null as league pages — the real
+  // page id surfaced via matchDetails content.matchFacts.infoBox.Tournament.
+  // parentLeagueId = 525, the same crack UEL used in cycle-139). Feed shape:
+  // COMPOSITE table (data.composite = true, data.tables[] = West 16 + East 16
+  // sub-tables, data.table itself empty — the cycle-141 parser extension in
+  // fotmob.ts flattens them), 128 season fixtures, stats dict exactly like
+  // UCL's (players/teams with fetchAllUrl), transfers.data = null (cups) and
+  // playoff = null until the knockout rounds are drawn (the honest hidden
+  // bracket tab, cycle-56 contract). Seasons: only 4 modern slash-format
+  // entries (2026/2027 → 2023/2024; older years are plain "2022"-style
+  // strings the strict SEASON_PARAM_RE contract can never address) — joining
+  // the cycle-132 race with a 4-season feed would SHRINK the 12-season
+  // window, so globalMerge: false (the UECL cycle-140 flag, one meaning:
+  // per-league surfaces live, the two global merges untouched). Historical
+  // probe: season=2025/2026 serves the true 12-per-region table (Tractor in
+  // the West top three). ESPN fallback slug probed live: afc.champions → 200.
+  { key: "acl",        fotmobId: 525,         ccode3: "INT",  faName: "لیگ قهرمانان آسیا (الیت)", enName: "AFC Champions League Elite", espnSlug: "afc.champions", priority: 10, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -92,6 +112,12 @@ const COMPETITION_FA: Record<string, string> = {
   "friendlies": "بازی دوستانه",
   "saudi pro league": "لیگ حرفه‌ای عربستان",
   "pro league": "لیگ حرفه‌ای عربستان",
+  // cycle-141: AFC CL Elite day-feed tournament names (West/East are the
+  // day-level ids 943983/943984 the /matches grid renders before dedup)
+  "afc champions league elite": "لیگ قهرمانان آسیا (الیت)",
+  "afc champions league elite west": "لیگ قهرمانان آسیا (الیت) — غرب",
+  "afc champions league elite east": "لیگ قهرمانان آسیا (الیت) — شرق",
+  "afc champions league two": "لیگ قهرمانان آسیا ۲",
   "eredivisie": "اردیویزه هلند",
   "primeira liga": "لیگ پرتغال",
   "liga portugal": "لیگ پرتغال",
@@ -200,6 +226,23 @@ const TEAM_FA: Record<string, string> = {
   "al taawoun": "التعاون", "al khaleej": "الخلیج", "al riyadh": "الریاض",
   "al okhdood": "الاخدود", "al kholood": "الخلود", "damac": "دامک",
   "neom": "نیوم", "al qadsiah": "القادسیه",
+  // cycle-141: AFC Champions League Elite (league 525) — exact upstream row
+  // names of the live composite West/East tables not already mapped above
+  // (al hilal / al ahli / al ittihad / al qadsiah / al nassr ride the Saudi
+  // block; gamba osaka / kashima antlers / pohang steelers / al-gharafa ride
+  // existing entries). Probed row spellings 2026-10-29, UA Chrome/124.
+  "al-ain": "العین",
+  "shabab al-ahli dubai fc": "شباب الاهلی دبی",
+  "al-shamal": "الشمال", "al nassr fc": "النصر",
+  "neftchi fargona": "نفتچی فرغانه", "al quwa al jawiya": "القوه الجویه",
+  "pakhtakor tashkent": "پخاکتور تاشکند", "al-sadd": "السد",
+  "al-wasl": "الوصل", "vissel kobe": "ویسل کوبه",
+  "johor darul ta'zim": "جوهور دارالتعظیم", "beijing guoan": "بیجینگ گوآن",
+  "kyoto sanga fc": "کیوتو سانگا", "kashiwa reysol": "کاشیوا ریسول",
+  "shanghai port": "شانگهای پورت", "daejeon hana citizen": "دئژئون هانا",
+  "jeonbuk hyundai motors fc": "جونبوک هیوندای", "công an hà nội": "کونگ آن هانوی",
+  "buriram united": "بوریرام یونایتد", "ratchaburi fc": "راتچابوری",
+  "port fc": "پورت اف‌سی", "newcastle jets": "نیوکاسل جتس",
   // ---- Turkey / Netherlands / Portugal / Greece ----
   "galatasaray": "گالاتاسارای", "fenerbahçe": "فنرباغچه", "fenerbahce": "فنرباغچه",
   "beşiktaş": "بشیک‌تاش", "besiktas": "بشیک‌تاش", "trabzonspor": "ترابزون‌اسپور",
