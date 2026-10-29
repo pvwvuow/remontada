@@ -384,6 +384,34 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "antonio nusa": "آنتونیو نوسا",
   "cristian cásseres": "کریستیان کاسرس",
   "alberto moleiro": "آلبرتو مولیرو",
+  // cycle-152: UAE Pro League (league 538) — the remaining Iranian
+  // internationals the cycle-104 pool had not yet met (the goals.json file
+  // live-probed 2026-10-29 carries SEVEN Iranians: طارمی/آزمون/قایدی/قدوس
+  // already lived above; عزت‌اللهی/نوراللهی/قربانی join now) + the
+  // well-known transfer-window stars of the new feed, confident
+  // transliterations only — everything else rides the honest English
+  // fallback (cycle-96 convention).
+  "saeid ezatolahi": "سعید عزت‌اللهی",
+  "ahmad nourollahi": "احمد نوراللهی",
+  "mohammad ghorbani": "محمد قربانی",
+  "dušan tadić": "دوشان تادچ",
+  "nabil fekir": "نبیل فکیر",
+  "talisca": "تالیسکا",
+  "kristjan asllani": "کریستیان آسلاانی",
+  "christian benteke": "کریستین بنتکه",
+  "valentino lazaro": "والنتینو لازارو",
+  "simon banza": "سیمون بانزا",
+  "igor coronado": "ایگور کورونادو",
+  "mahmoud dahoud": "محمود دحود",
+  "cameron puertas": "کامرون پورتاس",
+  "wout faes": "ووت فاس",
+  "georgios giakoumakis": "جورجوس گیاکوماکیس",
+  "ersin destanoğlu": "ارسین دستان‌اوغلو",
+  "koray günter": "کورای گونتر",
+  "soufiane rahimi": "سوفیان رحیمی",
+  "ali mabkhout": "علی مبخوت",
+  "fabio de lima": "فابیو دی لیما",
+  "caio lucas": "کایو لوکاس",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

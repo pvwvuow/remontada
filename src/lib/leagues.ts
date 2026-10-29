@@ -154,6 +154,27 @@ export const LEAGUES: LeagueConfig[] = [
   // the Eredivisie guess (id 49) returned literal null and id 50 turned
   // out to be EURO — Portugal won on live data truth.
   { key: "portugal",   fotmobId: 61,          ccode3: "POR",  faName: "لیگ پرتغال",         enName: "Liga Portugal",    espnSlug: "por.1",          priority: 15 },
+  // cycle-152: UAE Pro League — the SIXTEENTH competition and the SIXTH
+  // consecutive new global-race participant (no globalMerge flag: 17
+  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
+  // exactly — same cadence as superlig/scottish/saudi/championship/
+  // portugal). Blocks live-probed 2026-10-29 (UA Chrome/124,
+  // /api/data/leagues?id=538&ccode3=UAE): flat 14-row 2026/2027 table
+  // (الجزیره top on 14, شباب الاهلی دبی 2nd on 13, الوصل 3rd on 13;
+  // بنی‌یاس bottom on 1), Top scorer category with a data.fotmob.com
+  // fetchAllUrl (ویلی سمدو 4 — an 85-scorer full goals.json file), 19
+  // title seasons (newest 2025/2026 العین over شباب الاهلی دبی, oldest
+  // 2005/2006), and transfers.data = 100 entries (domestic). playoff =
+  // null → bracket tab honestly absent. NO espnSlug (the persiangulf
+  // pattern): ESPN's full soccer index (220 leagues, 9 pages scanned
+  // live) does not serve UAE Pro League fixtures — the optional field is
+  // simply omitted so the fallback loop skips it gracefully. The
+  // Persian-fan pick — the STRONGEST of the whole Gulf arc: SEVEN
+  // Iranian internationals live in the scorer file right now (عزت‌اللهی
+  // 3, طارمی 2, آزمون 2, نوراللهی 1, قایدی 1, قربانی 1, قدوس 1) —
+  // daily-relevant to a Persian audience like no other candidate
+  // (Qatar probed the same day: ZERO Iranians in its 76-scorer file).
+  { key: "uae",        fotmobId: 538,         ccode3: "UAE",  faName: "لیگ برتر امارات",    enName: "UAE Pro League",                              priority: 16 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -666,6 +687,31 @@ const TEAM_FA: Record<string, string> = {
   "sporting braga": "اسپورتینگ براگا", "sporting covilhã": "اسپورتینگ کوویلیا",
   "unionistas de salamanca": "یونیونیستاس سالامانکا", "vianense": "ویاننزه",
   "vitória de setúbal": "ویتوریا ستوبال", "zeleziarne podbrezová": "پودبرزووا",
+  // cycle-152: UAE Pro League (league 538) — the 14-row table sweep + the
+  // 100-entry transfer-feed sweep (72 distinct club names after dedup) +
+  // the 19-season title-history sweep including the historic runner-up /
+  // folded sides (Al Shabab Dubai merged into شباب الاهلی in 2017). The
+  // five UAE clubs already mapped by the cycle-140 ACL West sweep
+  // (al-jazira / shabab al-ahli dubai fc / al-wasl / al-ain / sharjah
+  // cultural club) stay untouched. "al-nasr sc" (Dubai) is deliberately
+  // disambiguated as «النصر امارات» — the famous Saudi Al-Nassr keeps
+  // «النصر» under its own keys. Byte-exact from the live feed; additive
+  // keys only, zero shape change.
+  "ajman": "عجمان", "al bataeh": "البطایه", "al dhafra": "الظفره",
+  "al-dhafra": "الظفره", "al fujairah": "الفجیره", "al nasr": "النصر",
+  "al-nasr sc": "النصر امارات", "al shabab (dubai)": "الشباب دبی",
+  "al shorta": "الشرطه", "al wahda": "الوحده", "al-wahda": "الوحده",
+  "athletico paranaense": "اتلتیکو پارانونسه", "baniyas": "بنی‌یاس",
+  "cruz azul": "کروز آزول", "difaâ el jadida": "الجدیده", "dinamo": "دینامو",
+  "dinamo moscow": "دینامو مسکو", "fk sarajevo": "سارایوو",
+  "flamengo": "فلامنگو", "gulf united": "گلف یونایتد", "hatta": "حتا",
+  "kalba fc": "کلبا", "khorfakkan": "خورفکان", "ldu de quito": "ال‌دی‌یو کیتو",
+  "las palmas": "لاس پالماس", "maribor": "ماریبور", "oh leuven": "لوون",
+  "orlando": "اورلاندو", "orlando city": "اورلاندو سیتی",
+  "pardubice": "پاردوبیتسه", "rs berkane": "برکان",
+  "raja casablanca": "رجا کازابلانکا", "saint-étienne": "سن‌اتین",
+  "san lorenzo": "سان لورنزو", "shimizu s-pulse": "شیمیزو اس‌پالس",
+  "united fc": "یونایتد", "zamalek sc": "زمالک",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

@@ -66,9 +66,10 @@ try:
 except Exception as e:
     ok = False; print('A1: ERR', e)
 
-# A2: THE race invariants — 13 participants WITH portugal, the scorers
-# total the live truth gives (260 = 240 + 20 Portugal rows), the cycle-132
-# window byte-identical, honest leader (رافینیا ۱۳ stays top), cards alive
+# A2: THE race invariants — 14 participants WITH portugal AND uae (cycle-152
+# joined), the scorers total the live truth gives (280 = 240 + 20 Portugal
+# + 20 UAE rows), the cycle-132 window byte-identical, honest leader
+# (رافینیا ۱۳ stays top), cards alive
 try:
     d = json.loads(get('http://localhost:3000/api/topscorers').read().decode())
     pl = [x.get('leagueKey') for x in (d.get('perLeague') or [])]
@@ -77,9 +78,9 @@ try:
     leader = scorers[0] if scorers else {}
     cards = d.get('cards') or {}
     y = cards.get('yellow') if isinstance(cards, dict) else None
-    report('A2 race 13 participants + window byte-identical',
-           len(pl) == 13 and 'portugal' in pl and 'championship' in pl and 'saudi' in pl
-           and len(scorers) == 260 and len(seas) == 12
+    report('A2 race 14 participants + window byte-identical',
+           len(pl) == 14 and 'portugal' in pl and 'uae' in pl and 'championship' in pl and 'saudi' in pl
+           and len(scorers) == 280 and len(seas) == 12
            and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
            and d.get('selectedSeason') == '2026/2027'
            and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
@@ -198,10 +199,10 @@ probe "http://localhost:3000/league/portugal" "D2 transfers tab live + zero brok
 "document.body.innerText.includes('بنفیکا') || document.body.innerText.includes('پورتو')"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D3: the global race — the copy honestly says THIRTEEN, the old 12 copy is
-# gone, the Portugal chip rides the participant list
-probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۳ + portugal chip" \
-"const b=document.body.innerText;return {copy13:b.includes('۱۳ لیگ و جام برتر'),old12gone:!b.includes('۱۲ لیگ و جام برتر'),chip:b.includes('لیگ پرتغال')}"
+# D3: the global race — the copy honestly says FOURTEEN (cycle-152: UAE
+# joined), the old 13 copy is gone, the Portugal chip rides the list
+probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۴ + portugal chip" \
+"const b=document.body.innerText;return {copy14:b.includes('۱۴ لیگ و جام برتر'),old13gone:!b.includes('۱۳ لیگ و جام برتر'),chip:b.includes('لیگ پرتغال')}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the dedicated /topscorers/portugal page (new SSG path) — live rows

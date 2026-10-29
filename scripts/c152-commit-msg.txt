@@ -1,0 +1,65 @@
+Update (cycle 152): UAE Pro League — 16th competition, 14th race participant, the Iranians' league in Persian
+
+Live probe (UA Chrome/124, 2026-10-29): the UAE Pro League feed
+(fotmobId 538, UAE) serves all four blocks: flat 14-row 2026/2027 table
+(Al-Jazira top on 14, Shabab Al-Ahli Dubai 2nd on 13, Al-Wasl 3rd on 13;
+Baniyas bottom on 1), allAvailableSeasons = 17 slash-format seasons
+2026/2027 → 2010/2011 — the sliced-12 cycle-132 window covered EXACTLY,
+so NO globalMerge flag: the race honestly grows 13 → 14 participants
+with the window byte-identical. Top scorer category with a
+data.fotmob.com fetchAllUrl (Willy Semedo, United FC, 4 — an 85-scorer
+full goals.json file). 19 title seasons (newest 2025/2026 Al-Ain over
+Shabab Al-Ahli Dubai, oldest 2005/2006 Shabab Al-Ahli Dubai, no
+runner-up recorded). transfers.data = 100 entries (domestic, 99 ride
+the serve layer). playoff = null → bracket tab honestly absent. NO
+espnSlug (the persiangulf pattern): ESPN's full soccer index (220
+leagues, 9 pages scanned live) does not serve UAE Pro League fixtures —
+the optional field is omitted so the fallback loop skips it gracefully.
+
+The Persian-fan pick — the STRONGEST of the whole Gulf arc: SEVEN
+Iranian internationals live in the scorer file right now (Ezatolahi 3,
+Taremi 2, Azmoun 2, Nourollahi 1, Ghayedi 1, Ghorbani 1, Ghoddos 1);
+the same-day Qatar probe (535) carried ZERO Iranians in its 76-scorer
+file, so the UAE won on live data truth. The three named footprints of
+the recent cards (season selector / cups bracket / transfers) were all
+already live — the bracket probe even surfaced the ACL 2025/2026
+16-team knockout (Al Hilal–Al Sadd) as further proof the cups arc is
+complete.
+
+Generic pipeline lights up everything: standings, fixtures (20),
+dedicated /topscorers/uae (Semedo 4; Ezatolahi 3 with a Persian team
+field), titles, LIVE transfers, players hub, and the race at 14
+participants / 280 scorers with رافینیا still the honest leader. Copy
+truth: race ۱۴ / players hub چهارده / search guide ۱۶ / /leagues
+metadata lists all 16.
+
+Mapping sweep (58 additive keys): 37 TEAM_FA — the 14-row table
+spellings the older blocks missed + the 72-distinct-club transfer sweep
++ the 19-season title sweep including the folded Al Shabab Dubai
+(merged 2017) + defensive space-variant spellings; "al-nasr sc" (Dubai)
+deliberately disambiguated as «النصر امارات» so the Saudi Al-Nassr
+keeps «النصر»; the five UAE clubs already mapped by the cycle-140 ACL
+West sweep stay untouched. + 21 PLAYER_NAME_FA — the three remaining
+Iranians (Ezatolahi/Nourollahi/Ghorbani; Taremi/Azmoun/Ghayedi/Ghoddos
+already lived) + the transfer-window stars (Tadić/Fekir/Talisca/
+Benteke/Asllani/Lazaro/Banza/Coronado/Dahoud/Puertas/Faes/Giakoumakis/
+Destanoğlu/Günter/Rahimi/Mabkhout/De Lima/Caio Lucas). Duplicate-key
+guard: 763 team keys + 369 player keys, zero dups.
+
+Attribution truth (live-verified — the D5 lesson): خورفکان rides the
+NEW uae index while the seven prior first-seen truths stay put
+(پورتو→portugal, وست‌هم→championship, گالاتاسارای→superlig,
+رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel) — all eight asserted
+in the proof.
+
+Stale numeric gates synced to the new live truth (stale claims, not
+product bugs): cycle148-hunt V1 15→16 cards + uae link, V6a copy ۱۳→۱۴,
+V6b dyn13→dyn14, V8 hub copy چهارده, A1/A3/A4 uae added, A2 260→280 /
+13→14 with uae in the set, A5 eighth truth Khorfakkan→uae, A6 13→14;
+cycle151-domproof A2 13→14 / 260→280 with uae, D3 copy ۱۳→۱۴ — both
+rerun exit 0.
+
+Proof: scripts/cycle152-domproof.sh one-pass green (API 4/4 + DOM 6/6
+at 390x844, console=0, appErr=0 — the cycle-145 TeamLogo placeholder
+now proven on the NINTH league consumer) + drift sweep WITH uae stays
+PORTAL_LEAKS=0 (358 squads) + regression 28/28.
