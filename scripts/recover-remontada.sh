@@ -106,6 +106,15 @@ fi
 
 # ── 9) گیت تازگی sync بیرونی: present؟ نبود → درج ──
 SYNC=$OUTER/scripts/sync-to-github.sh
+# ── 9-pre) جهت سنک بیرونی (درس PROTOCOL-sync-direction-2): اسنپ‌شات‌های
+# بازیافتی نسخهٔ باستانی مخرّب را برمی‌گردانند (outer→repo + auto-push،
+# کامیت «auto-sync from sandbox:») که دو بار کار زندهٔ origin را برگرداند
+# (9866915→056d15b و d6813b8→c56e9d9). نسخهٔ کانونی یک‌طرفهٔ مخزن→بیرون در
+# خود مخزن است — اگر نسخهٔ بیرونی امضای قدیمی را داشت، جایگزینش کن.
+if [ -f "$SYNC" ] && grep -q "auto-sync from sandbox" "$SYNC" && [ -f "$APP/scripts/sync-to-github.sh" ]; then
+  cp "$APP/scripts/sync-to-github.sh" "$SYNC"
+  stage "outer sync DIRECTION-FIXED from repo canonical copy (old outer→repo auto-push version detected)"
+fi
 if [ ! -f "$SYNC" ]; then
   die "outer sync script missing entirely — recreate it first (see worklog PROTOCOL-recovery-2 card)"
 fi
