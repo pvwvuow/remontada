@@ -11,6 +11,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalScorersData, GlobalCard } from "@/lib/fotmob";
+// cycle-132: same client-safe one-regex season contract as league-view (a
+// value import from fotmob.ts would drag the server graph into the bundle)
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -20,6 +23,12 @@ import { cn } from "@/lib/utils";
 
 const ALL_KEY = "all";
 const FILTER_STORAGE_KEY = "remontada:topscorers-filter";
+
+/** cycle-132: "2024/2025" → «۲۰۲۴/۲۵» — same label as the league page selector. */
+function faSeasonShort(s: string): string {
+  const m = /^(\d{4})\/(\d{4})$/.exec(s);
+  return m ? faDigits(`${m[1]}/${m[2].slice(2)}`) : faDigits(s);
+}
 
 function ScorerBadges({ s }: { s: GlobalScorer }) {
   const badges: { label: string; cls: string; title: string }[] = [];
@@ -258,6 +267,23 @@ export function TopScorersView() {
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<string>(ALL_KEY);
   const [filterReady, setFilterReady] = useState(false);
+  // cycle-132: selected historical season — null = current race
+  const [season, setSeason] = useState<string | null>(null);
+  // cycle-132: deep-link seeding gate (league-view, cycle-99 pattern) — the
+  // URL is read exactly once so a shared /topscorers?season=2023/2024 link
+  // performs ONE fetch with the right season
+  const [seeded, setSeeded] = useState(false);
+
+  // cycle-132: read the deep-linked season once on mount — strict
+  // SEASON_PARAM_RE shape; anything else is ignored and the current race loads
+  useEffect(() => {
+    if (seeded) return;
+    setSeeded(true);
+    try {
+      const raw = new URLSearchParams(window.location.search).get("season");
+      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
+    } catch { /* no window — ignore */ }
+  }, [seeded]);
 
   // restore the league filter once on mount — URL ?league= takes precedence over localStorage
   useEffect(() => {
@@ -301,14 +327,33 @@ export function TopScorersView() {
   }, [filter, filterReady]);
 
   useEffect(() => {
+    if (!seeded) return; // cycle-132: wait for the URL seed pass (one fetch per deep link)
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/topscorers", { cache: "no-store" });
+        const sp = season ? `?season=${encodeURIComponent(season)}` : "";
+        const res = await fetch(`/api/topscorers${sp}`, { cache: "no-store" });
         const json = await res.json();
         if (cancelled) return;
-        if (json.ok) setData(json as GlobalScorersData);
-        else setError("دریافت داده گلزنان ناموفق بود.");
+        if (json.ok) {
+          setData(json as GlobalScorersData);
+          // cycle-132: honesty snap (league-view cycle-99 pattern) — upstream
+          // serves the CURRENT season for a well-formed season it does not
+          // offer; the merge's selectedSeason marker (mode of the feeds'
+          // own markers) is the truth anchor. On disagreement: snap the
+          // selector back to the current race and strip the stale URL param
+          // so selector, label and URL never contradict the data on screen.
+          const sel = (json as GlobalScorersData).selectedSeason;
+          if (season && sel && sel !== season) {
+            setSeason(null);
+            try {
+              const usp = new URLSearchParams(window.location.search);
+              usp.delete("season");
+              const qs = usp.toString();
+              window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+            } catch { /* ignore */ }
+          }
+        } else setError("دریافت داده گلزنان ناموفق بود.");
       } catch {
         if (!cancelled) setError("ارتباط برقرار نشد.");
       } finally {
@@ -316,7 +361,7 @@ export function TopScorersView() {
       }
     })();
     return () => { cancelled = true; };
-  }, []);
+  }, [season, seeded]);
 
   const leaguesWithScorers = useMemo(
     () => LEAGUES.filter((l) => data?.perLeague.some((p) => p.leagueKey === l.key)),
@@ -344,13 +389,49 @@ export function TopScorersView() {
       ? data?.scorers.length
       : data?.perLeague.find((p) => p.leagueKey === key)?.scorers.length;
 
+  // cycle-132: season selector contract — options come from the merge's own
+  // allSeasons (intersection across the fulfilled feeds), so a merge without
+  // season metadata (pre-132 snapshot) simply hides the control. shownSeason
+  // follows the payload's selectedSeason marker (mode), exactly like the
+  // league page follows its own marker.
+  const allSeasons = data?.allSeasons || [];
+  const shownSeason = data?.selectedSeason || "";
+  // cycle-132 (port of the league page's cycle-99 invariant): a deep-linked
+  // season upstream really serves (marker matches) can sit outside the
+  // payload's allSeasons window (e.g. 2010/2011 — upstream offers more than
+  // the 12-season list). It is APPENDED so the selector never contradicts the
+  // data on screen; truly unoffered seasons were already snapped back in the
+  // fetch effect's honesty snap. Plain derivation (no hook — after early
+  // returns, hooks are not allowed here).
+  const seasonOptions =
+    season && data?.selectedSeason === season && !allSeasons.includes(season)
+      ? [...allSeasons, season]
+      : allSeasons;
+  const applySeason = (s: string | null) => {
+    setSeason(s);
+    try {
+      const usp = new URLSearchParams(window.location.search);
+      if (s) usp.set("season", s);
+      else usp.delete("season");
+      const qs = usp.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    } catch { /* ignore */ }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
           <h1 className="text-lg font-black">مصاف گلزنان</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">
-            بهترین گلزنان {faDigits(7)} لیگ بزرگ در یک جدول واحد
+            {season && shownSeason ? (
+              <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
+            ) : (
+              <>بهترین گلزنان {faDigits(7)} لیگ بزرگ در یک جدول واحد</>
+            )}
+            {season && data?.perLeague.length ? (
+              <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>
+            ) : null}
             {data?.scorers.length ? <> — {faDigits(data.scorers.length)} بازیکن</> : null}
             {/* cycle-43: data freshness — mirrors the stale-while-error snapshot honesty */}
             {data?.updatedAt ? <> · به‌روزرسانی {timeAgoFa(data.updatedAt)}</> : null}
@@ -361,6 +442,39 @@ export function TopScorersView() {
           <path d="M8.5 12.5L7 22l5-3 5 3-1.5-9.5" />
         </svg>
       </div>
+
+      {/* cycle-132: season selector — same look/contract as the league page
+          (cycle-55/99): options from the payload itself, deep-link via
+          ?season=, honesty snap back when upstream serves the current season */}
+      {seasonOptions.length > 1 && (
+        <div className="flex items-center gap-2 px-1">
+          <label htmlFor="season-select" className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+              <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+              <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            </svg>
+            فصل
+          </label>
+          <select
+            id="season-select"
+            value={season ?? seasonOptions[0]}
+            onChange={(e) => {
+              const s = e.target.value === seasonOptions[0] ? null : e.target.value;
+              applySeason(s);
+            }}
+            className="text-[12px] font-bold text-foreground bg-white/[0.04] border border-[color:var(--glass-border-soft)] rounded-lg px-2 py-1.5 outline-none focus:border-sky-soft/50 cursor-pointer"
+          >
+            {seasonOptions.map((s) => (
+              <option key={s} value={s} className="bg-[#10161f] text-foreground">
+                {faSeasonShort(s)}{s === seasonOptions[0] ? " (فعلی)" : ""}
+              </option>
+            ))}
+          </select>
+          {loading && season != null && (
+            <span className="text-[10px] text-muted-foreground animate-pulse">در حال بارگذاری…</span>
+          )}
+        </div>
+      )}
 
       {/* filter chips (persisted in localStorage) */}
       <div className="flex gap-2 overflow-x-auto pb-1.5 -mx-1 px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="فیلتر لیگ">

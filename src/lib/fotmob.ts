@@ -2754,6 +2754,19 @@ export interface GlobalScorersData {
    *  section rather than showing a dishonest empty state. */
   cards?: GlobalCardsData;
   perLeague: { leagueKey: string; leagueFa: string; scorers: StandingsData["scorers"] }[];
+  /** cycle-132: seasons the selector may offer — the INTERSECTION of
+   *  allSeasons across the fulfilled league feeds of this very merge (a season
+   *  only some feeds serve would make the «race» silently partial, so the
+   *  common set is the honest offer). Optional: snapshots stored before this
+   *  cycle lack it and the UI hides the selector (same convention as cards). */
+  allSeasons?: string[];
+  /** cycle-132: the season the payloads actually served — the mode (most
+   *  common) of the fulfilled feeds' own selectedSeason markers. For the
+   *  current view this is the current season; for a historical request the
+   *  view compares it against the requested season and snaps back when
+   *  upstream silently served the current one (same honesty snap as the
+   *  league page, cycle-99). */
+  selectedSeason?: string;
   updatedAt: string;
   /** cycle-42: true when the response comes from the last-known-good snapshot
    *  (cold start / upstream outage) instead of a fresh live merge — the UI
@@ -2761,15 +2774,39 @@ export interface GlobalScorersData {
   stale?: boolean;
 }
 
-export async function getAllTopScorers(): Promise<GlobalScorersData> {
-  const settled = await Promise.allSettled(LEAGUES.map((lg) => getStandings(lg.key)));
+/**
+ * cycle-132: optional `season` ("YYYY/YYYY", already shape-guarded by the
+ * callers) — threads the historical season into every per-league
+ * getStandings read so the merged race covers past seasons too. The
+ * per-league reads are cache-backed per season, so a historical merge only
+ * pays on the first request of that season. Card leaders stay a
+ * current-season-only feed (probed) and are simply omitted from historical
+ * merges — the UI already hides the section when `cards` is undefined.
+ */
+export async function getAllTopScorers(season?: string): Promise<GlobalScorersData> {
+  const settled = await Promise.allSettled(LEAGUES.map((lg) => getStandings(lg.key, season)));
   const merged: GlobalScorer[] = [];
   const mergedAssists: GlobalAssist[] = [];
   const perLeague: GlobalScorersData["perLeague"] = [];
+  // cycle-132: intersection of the feeds' allSeasons + mode of their
+  // selectedSeason markers (see the GlobalScorersData field docs above)
+  let seasonsCommon: string[] | undefined;
+  const seasonVotes = new Map<string, number>();
   settled.forEach((r, i) => {
     const lg = LEAGUES[i];
     if (r.status !== "fulfilled") return;
     const st = r.value;
+    // cycle-132: per-feed season contract bookkeeping (before the scorers
+    // guard — a feed with an empty scorer list still votes its marker and
+    // still narrows the intersection)
+    if (st.selectedSeason) seasonVotes.set(st.selectedSeason, (seasonVotes.get(st.selectedSeason) || 0) + 1);
+    if (Array.isArray(st.allSeasons) && st.allSeasons.length > 0) {
+      if (!seasonsCommon) seasonsCommon = [...st.allSeasons];
+      else {
+        seasonsCommon = seasonsCommon.filter((s) => (st.allSeasons as string[]).includes(s));
+        if (seasonsCommon.length === 0) seasonsCommon = undefined;
+      }
+    }
     if (st.scorers?.length) {
       perLeague.push({ leagueKey: lg.key, leagueFa: lg.faName, scorers: st.scorers });
       for (const s of st.scorers) {
@@ -2806,13 +2843,27 @@ export async function getAllTopScorers(): Promise<GlobalScorersData> {
   const assists = mergedAssists.filter((a) => (seenA.has(a.name) ? false : (seenA.add(a.name), true))).slice(0, 10);
   // cycle-50: card leaders ride along in the same payload (all per-league
   // fetches are cache-backed, so the merge only pays on a cold start)
+  // cycle-132: current-season-only — historical merges omit cards entirely
   let cards: GlobalCardsData | undefined;
-  try {
-    cards = await getAllCardLeaders();
-  } catch {
-    // cards stay undefined — the UI hides the section, the table itself is untouched
+  if (!season) {
+    try {
+      cards = await getAllCardLeaders();
+    } catch {
+      // cards stay undefined — the UI hides the section, the table itself is untouched
+    }
   }
-  return { scorers: merged, assists, perLeague, cards, updatedAt: new Date().toISOString() };
+  // cycle-132: mode of the served-season markers (tie → the value seen first)
+  let selectedSeason: string | undefined;
+  let best = 0;
+  seasonVotes.forEach((n, s) => {
+    if (n > best) { best = n; selectedSeason = s; }
+  });
+  return {
+    scorers: merged, assists, perLeague, cards,
+    ...(seasonsCommon && seasonsCommon.length > 1 ? { allSeasons: seasonsCommon } : {}),
+    ...(selectedSeason ? { selectedSeason } : {}),
+    updatedAt: new Date().toISOString(),
+  };
 }
 
 /**
