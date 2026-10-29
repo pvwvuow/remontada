@@ -1,0 +1,45 @@
+Update (cycle 151): Liga Portugal — 15th competition, 13th race participant, Taremi's league in Persian
+
+Live probe (UA Chrome/124, 2026-10-29): the Liga Portugal feed
+(fotmobId 61, POR — found via the Sunday matches feed after the id=49
+Eredivisie guess returned literal null and id=50 turned out to be EURO)
+serves all four blocks: flat 18-row 2026/2027 table (FC Porto top on 27,
+Benfica 2nd on 22, Sporting Lisbon 3rd on 18; Rio Ave/Estoril propping
+up), allAvailableSeasons = 17 slash-format seasons 2026/2027 → 2010/2011
+— the sliced-12 cycle-132 window covered EXACTLY, so NO globalMerge
+flag: the race honestly grows 12 → 13 participants with the window
+byte-identical. Top scorer category with a data.fotmob.com fetchAllUrl
+(Pavlidis, Benfica, 9; Luis Suárez 8 — a 124-scorer full goals.json
+file). 92 title seasons (newest 2025/2026 Porto over Sporting Lisbon,
+oldest 1934/1935 Porto). transfers.data = 100 entries (domestic).
+playoff = null → bracket tab honestly absent. ESPN slug probed:
+por.1 → 200.
+
+Generic pipeline lights up everything: standings, fixtures (20),
+dedicated /topscorers/portugal (Pavlidis 9), titles, LIVE transfers,
+players hub, and the race at 13 participants / 260 scorers with رافینیا
+still the honest leader. Copy truth: race ۱۳ / players hub سیزده /
+search guide ۱۵ / /leagues metadata lists all 15.
+
+Mapping sweep (54 additive keys): the 18-row table spellings the older
+blocks missed + the 110-distinct-name transfer sweep + the 92-season
+title-history sweep INCLUDING runner-up sides + four stat-file spellings
+(CD Nacional / Estoril Praia / Estrela / Sporting Braga). "FC Porto B"
+rides the qualifier fallback («پورتو دوم»); "sporting lisbon" already
+lived in an earlier block. Duplicate-key guard: 726 keys, zero dups.
+
+Attribution truth (live-verified — the D5 lesson): پورتو rides the NEW
+portugal index while the six prior first-seen truths stay put
+(وست‌هم→championship, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi,
+الهلال→acl, سلتیک→uel) — all seven asserted in the proof.
+
+Stale numeric gates synced to the new live truth (stale claims, not
+product bugs): cycle148-hunt V1 14→15 cards, V6a/V6b copy ۱۲→۱۳ +
+dyn12→dyn13, A1/A3/A4 portugal added, A2 240→260 scorers / 12→13
+perLeague with portugal in the set, A5 seventh truth FC Porto→portugal,
+F-part message → FIXED in cycle-149 — rerun exit 0.
+
+Proof: scripts/cycle151-domproof.sh one-pass green (API 4/4 + DOM 6/6 at
+390x844, console=0, appErr=0 — the cycle-145 TeamLogo placeholder now
+proven on the EIGHTH league consumer) + drift sweep WITH portugal stays
+PORTAL_LEAKS=0 (344 squads) + regression 28/28.

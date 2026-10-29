@@ -1,11 +1,11 @@
 #!/bin/bash
 # cycle-148 bug-hunt — the three NEWEST league surfaces (145 superlig /
 # 146 scottish / 147 saudi) walked the way a fan does, viewport 390x844,
-# REAL clicks, plus API truth for the whole 14-league portal state (cycle-150 added the Championship).
+# REAL clicks, plus API truth for the whole 15-league portal state (cycle-151 added Liga Portugal).
 # Lessons baked in (D5): assertions follow LIVE truth probed 2026-10-29
-# (tops: گالاتاسارای 22 / سلتیک 28 / الهلال 27; global race 240 scorers (cycle-150: the Championship joined),
-# perLeague=12 (cycle-150 joined the Championship), leader honest-pattern — no stale claims.
-# V1 /leagues → 14 cards (cycle-150: 13 + the Championship) + the three new routes really present
+# (tops: گالاتاسارای 22 / سلتیک 28 / الهلال 27; global race 260 scorers (cycle-151: Liga Portugal joined),
+# perLeague=13 (cycle-151 joined Liga Portugal), leader honest-pattern — no stale claims.
+# V1 /leagues → 15 cards (cycle-151: 14 + Liga Portugal) + the three new routes really present
 # V2 /league/superlig → h1, top گالاتاسارای, «آقای گل»+«انتقال‌ها» tabs,
 #    bracket tab ABSENT (playoff=null honest-absence contract)
 # V3 superlig → real click «انتقال‌ها» → panel alive (aria-label section),
@@ -61,8 +61,8 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 14 league cards with the three newest routes really present
-hunt "V1 leagues hub 14 cards" "http://localhost:3000/leagues" \
+# V1: the hub — 15 league cards with the three newest routes really present
+hunt "V1 leagues hub 15 cards" "http://localhost:3000/leagues" \
 "" "" \
 "({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new3:!!document.querySelector(\"a[href='/league/superlig']\")&&!!document.querySelector(\"a[href='/league/scottish']\")&&!!document.querySelector(\"a[href='/league/saudi']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
@@ -102,17 +102,17 @@ sleep 3
 FEAT5=$($B eval "JSON.stringify((()=>{return {panel:!!document.querySelector('section[aria-label=\"انتقال‌های لیگ\"]'),alive:(document.body.innerText||'').includes('انتقال')}})())" 2>/dev/null | tr -d '"\\')
 collect "$TOP5 $FEAT5" "V5 saudi hilal-top + transfers click"
 
-# V6a: the global race DEFAULT view — honest «۱۲ لیگ و جام برتر» copy
+# V6a: the global race DEFAULT view — honest «۱۳ لیگ و جام برتر» copy
 # (the dynamic «N لیگ مشارکت‌کننده» subtitle renders ONLY with a selected
 # season — designed contract, proven in V6b on 2023/2024)
 hunt "V6a race default copy" "http://localhost:3000/topscorers" \
 "(document.body.innerText||\"\").includes(\"مصاف گلزنان\")" "" \
-"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy12:(document.body.innerText||\"\").includes(\"۱۲ لیگ و جام برتر\"),noStale8:(document.body.innerText||\"\").includes(\"۸ لیگ مشارکت‌کننده\")===false})"
+"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy13:(document.body.innerText||\"\").includes(\"۱۳ لیگ و جام برتر\"),noStale8:(document.body.innerText||\"\").includes(\"۸ لیگ مشارکت‌کننده\")===false})"
 
-# V6b: season-selected race — the DYNAMIC participants subtitle: 12 live
-hunt "V6b race season dyn12" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
+# V6b: season-selected race — the DYNAMIC participants subtitle: 13 live
+hunt "V6b race season dyn13" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"مشارکت‌کننده\")" "" \
-"({dyn12:(document.body.innerText||\"\").includes(\"۱۲ لیگ مشارکت‌کننده\"),seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
+"({dyn13:(document.body.innerText||\"\").includes(\"۱۳ لیگ مشارکت‌کننده\"),seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
 
 # V7: dedicated superlig scorers path — alive with Persian names + digit goals
 hunt "V7 superlig scorers path" "http://localhost:3000/topscorers/superlig" \
@@ -125,7 +125,7 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY11=$($B eval "JSON.stringify((document.body.innerText||'').includes('دوازده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY11=$($B eval "JSON.stringify((document.body.innerText||'').includes('سیزده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 # the league chips live in the TEAMS mode - real click mode-teams FIRST
 # (the cycle-134/143 two-step fan path), then the saudi chip
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
@@ -147,7 +147,7 @@ for Q in "Al-Hilal" "Al Hilal" "Al-Nassr" "Al-Ittihad" "Real-Madrid" "Man-United
 done
 echo "  root cause: normalizeQuery (src/lib/fotmob.ts) folds ZWNJ/diacritics but"
 echo "  NOT [-_] separators — hyphen Latin queries miss space-formed feed names."
-echo "  → FIX IN cycle-149 (فیکس): fold [-_] to space inside normalizeQuery."
+echo "  → FIXED in cycle-149 (9ae2740): [-_]+ folds to space on both sides."
 
 echo "== PART C: API truth =="
 python3 - <<'PY'
@@ -162,8 +162,8 @@ def report(name, good, detail):
     print(f"{name}: {detail} {'OK' if good else 'BAD'}")
 import re
 ascii_leak = lambda s: bool(re.search(r"[A-Za-z]", s or ""))
-# A1: the three new standings — row counts, live tops, zero ASCII in top-5 fa
-for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, "سلتیک"), ("saudi", 18, "الهلال")):
+# A1: the three new standings + the 151 pick — row counts, live tops, zero ASCII in top-5 fa
+for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, "سلتیک"), ("saudi", 18, "الهلال"), ("portugal", 18, "پورتو")):
     try:
         d = get(f"http://localhost:3000/api/standings?league={lk}")
         rows = d.get("rows") or []
@@ -171,30 +171,30 @@ for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, 
         report(f"standings {lk}", good, f"rows={len(rows)} top={rows[0].get('fa') if rows else None}")
     except Exception as e:
         report(f"standings {lk}", False, str(e))
-# A2: global race — 240 scorers, 12 perLeague incl. the new four, honest leader shape
+# A2: global race — 260 scorers, 13 perLeague incl. the new five, honest leader shape
 try:
     d = get("http://localhost:3000/api/topscorers?league=all")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 240 and len(pl) == 12 and {"superlig","scottish","saudi","championship"} <= set(pl) \
+    good = len(ts) == 260 and len(pl) == 13 and {"superlig","scottish","saudi","championship","portugal"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) and lead.get("goals", 0) > 0 \
         and not ascii_leak(lead.get("team"))
     report("topscorers all", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 except Exception as e:
     report("topscorers all", False, str(e))
-# A3: bracket honest-absence on all three (playoff=null → tab absent is DOM-proven)
-for lk in ("superlig", "scottish", "saudi"):
+# A3: bracket honest-absence on all three + portugal (playoff=null → tab absent is DOM-proven)
+for lk in ("superlig", "scottish", "saudi", "portugal"):
     try:
         d = get(f"http://localhost:3000/api/league-bracket?league={lk}")
         report(f"bracket {lk} null", d.get("ok") is True and d.get("bracket") is None, f"bracket={d.get('bracket')}")
     except Exception as e:
         report(f"bracket {lk} null", False, str(e))
-# A4: dedicated scorers paths ×3 — the REAL endpoint is /api/topscorers/<key>
+# A4: dedicated scorers paths ×4 — the REAL endpoint is /api/topscorers/<key>
 # (?league= is ignored by the merged route by design — it reads only season).
 # Player names may ride the honest English fallback (cycle-104 convention);
 # TEAM names in the Persian field must be zero-ASCII.
-for lk in ("superlig", "scottish", "saudi"):
+for lk in ("superlig", "scottish", "saudi", "portugal"):
     try:
         d = get(f"http://localhost:3000/api/topscorers/{lk}")
         ts = d.get("scorers") or []
@@ -203,9 +203,10 @@ for lk in ("superlig", "scottish", "saudi"):
         report(f"topscorers {lk}", good, f"n={len(ts)} top={top.get('nameFa')}({top.get('goals')}) team={top.get('team')}")
     except Exception as e:
         report(f"topscorers {lk}", False, str(e))
-# A5: search attribution two-truths (live-probed 2026-10-29)
+# A5: search attribution truths (live-probed 2026-10-29; portugal joined in 151)
 for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers","رنجرز","scottish"),
-                  ("Abha","ابها","saudi"), ("الهلال","الهلال","acl"), ("Celtic","سلتیک","uel")):
+                  ("Abha","ابها","saudi"), ("الهلال","الهلال","acl"), ("Celtic","سلتیک","uel"),
+                  ("FC Porto","پورتو","portugal")):
     try:
         d = get(f"http://localhost:3000/api/search?q={urllib.parse.quote(q)}")
         r = (d.get("results") or [{}])[0]
@@ -218,7 +219,7 @@ for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers
 try:
     d = get("http://localhost:3000/api/topscorers?league=all&season=2023/2024")
     pl = d.get("perLeague") or []
-    report("topscorers 2023/2024 participants", len(pl) == 12, f"perLeague={len(pl)} (dynamic honest copy)")
+    report("topscorers 2023/2024 participants", len(pl) == 13, f"perLeague={len(pl)} (dynamic honest copy)")
 except Exception as e:
     report("topscorers 2023/2024 participants", False, str(e))
 import urllib.parse
