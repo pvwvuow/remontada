@@ -85,9 +85,9 @@ try:
     leader = scorers[0] if scorers else {}
     cards = d.get('cards') or {}
     y = cards.get('yellow') if isinstance(cards, dict) else None
-    report('A2 race 14 participants + window byte-identical',
-           len(pl) == 14 and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
-           and len(scorers) == 280 and len(seas) == 12
+    report('A2 race 15 participants + window byte-identical',
+           len(pl) == 15 and 'qatar' in pl and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
+           and len(scorers) == 300 and len(seas) == 12
            and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
            and d.get('selectedSeason') == '2026/2027'
            and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
@@ -209,10 +209,10 @@ probe "http://localhost:3000/league/uae" "D2 transfers tab live + zero broken" \
 "document.body.innerText.includes('الجزیره') || document.body.innerText.includes('الوصل')"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D3: the global race — the copy honestly says FOURTEEN, the old 13 copy is
-# gone, the UAE chip rides the participant list
-probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۴ + uae chip" \
-"const b=document.body.innerText;return {copy14:b.includes('۱۴ لیگ و جام برتر'),old13gone:!b.includes('۱۳ لیگ و جام برتر'),chip:b.includes('لیگ برتر امارات')}"
+# D3: the global race — the copy honestly says FIFTEEN, the old 14 copy is
+# gone, the Qatar chip rides the participant list
+probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۵ + qatar chip" \
+"const b=document.body.innerText;return {copy15:b.includes('۱۵ لیگ و جام برتر'),old14gone:!b.includes('۱۴ لیگ و جام برتر'),chip:b.includes('لیگ ستارگان قطر')}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the dedicated /topscorers/uae page (new SSG path) — live rows with the

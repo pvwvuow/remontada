@@ -175,6 +175,27 @@ export const LEAGUES: LeagueConfig[] = [
   // daily-relevant to a Persian audience like no other candidate
   // (Qatar probed the same day: ZERO Iranians in its 76-scorer file).
   { key: "uae",        fotmobId: 538,         ccode3: "UAE",  faName: "لیگ برتر امارات",    enName: "UAE Pro League",                              priority: 16 },
+  // cycle-155: Qatar Stars League — the SEVENTEENTH competition and the
+  // SEVENTH consecutive new global-race participant (no globalMerge flag:
+  // 17 slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132
+  // window exactly — same cadence as superlig/scottish/saudi/championship/
+  // portugal/uae). Blocks live-probed 2026-10-29 (UA Chrome/124,
+  // /api/data/leagues?id=535&ccode3=QAT): flat 12-row 2026/2027 table
+  // (الراین top on 17, السد 2nd on 15, الدحیل 3rd on 15), Top scorer
+  // category with a data.fotmob.com fetchAllUrl (اکرم عفیف 7 — a
+  // 76-scorer full goals.json file), 22 title seasons (newest 2025/2026
+  // السد, oldest 2004/2005 الغرافه — runner rows include the defunct
+  // الجیش), and transfers.data = 17 entries (domestic + regional).
+  // playoff = null → bracket tab honestly absent. NO espnSlug (the
+  // persiangulf/uae Gulf pattern): ESPN answers HTTP 400 for qat.1 and
+  // qatar.1 — the optional field is simply omitted so the fallback loop
+  // skips it gracefully. The Persian-fan pick — the Gulf-arc COMPLETION:
+  // the portal now serves all four Persian-Gulf leagues (persiangulf +
+  // saudi + uae + qatar), and the scorer file carries a LIVE Iranian:
+  // فرهاد زوشی (Lusail SC, 3 goals, rank 9 — player.info.country = "Iran",
+  // probed via /api/player/1828115 on 2026-10-29), the 152 probe's
+  // runner-up finally paying off with a Persian hook of its own.
+  { key: "qatar",      fotmobId: 535,         ccode3: "QAT",  faName: "لیگ ستارگان قطر",    enName: "Qatar Stars League",                          priority: 17 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -712,6 +733,23 @@ const TEAM_FA: Record<string, string> = {
   "raja casablanca": "رجا کازابلانکا", "saint-étienne": "سن‌اتین",
   "san lorenzo": "سان لورنزو", "shimizu s-pulse": "شیمیزو اس‌پالس",
   "united fc": "یونایتد", "zamalek sc": "زمالک",
+  // cycle-155: Qatar Stars League (league 535) — exact upstream row names of
+  // the live 12-team 2026/2027 table + the 17-item transfer feed + the 22
+  // title seasons not already mapped above (al-sadd / al-duhail sc /
+  // al-rayyan / al-gharafa / al-ahli / al-shamal / abha / al qadsiah ride
+  // existing entries — «Al-Ahli» is the SAME raw string in the Saudi table,
+  // so Qatar's side honestly shares «الاهلی»; teamId keeps attribution
+  // distinct). Probed row spellings 2026-10-29, UA Chrome/124.
+  "al-arabi": "العربی", "al arabi": "العربی",
+  "al-wakrah": "الوکره", "al wakrah": "الوکره",
+  "al-shahaniya": "الشحانیه", "al shahaniya": "الشحانیه",
+  "lusail sc": "لوسیل",
+  "al gharafa": "الغرافه",
+  "qatar sc": "قطر",
+  "al-sailiya": "السیلیه", "al sailiya": "السیلیه",
+  "el jaish": "الجیش", // defunct Lekhwiya-era side (merged into الدحیل 2017) — title-runner rows 2011–2015
+  "far rabat": "فار رباط",
+  "zulte waregem": "زولته وارخم",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

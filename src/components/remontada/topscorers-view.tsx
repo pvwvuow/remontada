@@ -429,7 +429,7 @@ export function TopScorersView() {
             {season && shownSeason ? (
               <>بهترین گلزنان لیگ‌های بزرگ در فصل {faSeasonShort(shownSeason)}</>
             ) : (
-              <>بهترین گلزنان {faDigits(14)} لیگ و جام برتر در یک جدول واحد</>
+              <>بهترین گلزنان {faDigits(15)} لیگ و جام برتر در یک جدول واحد</>
             )}
             {season && data?.perLeague.length ? (
               <> · {faDigits(data.perLeague.length)} لیگ مشارکت‌کننده</>

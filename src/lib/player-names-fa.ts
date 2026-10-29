@@ -412,6 +412,29 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "ali mabkhout": "علی مبخوت",
   "fabio de lima": "فابیو دی لیما",
   "caio lucas": "کایو لوکاس",
+  // cycle-155: Qatar Stars League scorer file (76-scorer goals.json probed
+  // 2026-10-29) — the top-20 window the race + dedicated path actually
+  // render, incl. the LIVE Iranian فرهاد زوشی (Lusail SC, 3 goals —
+  // player.info.country = "Iran"). Duplicate-key audit: all keys below were
+  // absent before this block (joão pedro rides the line above).
+  "akram afif": "اکرم عفیف",
+  "pablo sarabia": "پابلو سارابیا",
+  "roberto firmino": "روبرتو فیرمینو",
+  "amine zouhzouh": "امین زهزوه",
+  "róger guedes": "روژر گدس", "roger guedes": "روژر گدس",
+  "ahmed alaa": "احمد علاء",
+  "gabriel pereira": "گابریل پریرا",
+  "almoez ali": "المعز علی",
+  "baghdad bounedjah": "بغداد بونجاح",
+  "claudinho": "کلادینیو",
+  "farhad zavoshi": "فرهاد زوشی",
+  "gelson dala": "ژلسون دالا",
+  "naïm sliti": "نعیم سلتی", "naim sliti": "نعیم سلتی",
+  "oussama tannane": "اسامه تنانه",
+  "yusuf abdurisag": "یوسف عبدریساگ",
+  "yacine brahimi": "یاسین براهیمی",
+  "julian draxler": "یولیان درکسلر",
+  "francesco antonucci": "فرانچسکو آنتونوچی",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
