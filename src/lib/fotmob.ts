@@ -3052,6 +3052,17 @@ interface FMTeamDataRaw {
     // 9 clubs), matchDateUtc}. Present on all 9 probed clubs (domestic
     // leagues incl. Premiership); null/absent → section hidden (honest).
     fixtureDifficulty?: FMFixtureDifficultyRaw;
+    // cycle-120 probed (UA Chrome/124, 2026-10-29): lastLineupStats = the XI
+    // that actually started the team's most recent played match — flat object
+    // {id, name, rating (team match rating), formation, coach, lastMatch
+    // {matchId, home/awayTeamId+Name}, averageStarterAge,
+    // totalStarterMarketValue, starters[11], subs[], unavailable[]} where each
+    // starter carries {id, name, shirtNumber, marketValue, performance
+    // {rating (this match), seasonRating, seasonGoals, seasonAssists,
+    // totalDistanceCovered (m), topSpeed (km/h), playerOfTheMatch?, events[]}}.
+    // Shape uniform across probed clubs (City/Arsenal/Brighton: 11 starters
+    // each); absent/empty → section hidden (honest, legend-111 contract).
+    lastLineupStats?: FMLastLineupStatsRaw;
   };
   stats?: {
     players?: FMStatBlock[];
@@ -4063,6 +4074,131 @@ const DIFFICULTY_VERDICT_FA: Record<string, string> = {
   difficulty_moderate: "میانه",
   difficulty_hard: "سخت",
 };
+
+// cycle-120: raw lastLineupStats (see FMTeamDataRaw.overview comment)
+interface FMLastLineupStatsRaw {
+  id?: number;
+  name?: string;
+  rating?: number;
+  formation?: string;
+  coach?: { id?: number; name?: string; countryName?: string } | null;
+  averageStarterAge?: number;
+  totalStarterMarketValue?: number;
+  lastMatch?: {
+    matchId?: number;
+    homeTeamId?: number;
+    homeTeamName?: string;
+    awayTeamId?: number;
+    awayTeamName?: string;
+  } | null;
+  starters?: Array<{
+    id?: number;
+    name?: string;
+    shirtNumber?: string;
+    marketValue?: number;
+    performance?: {
+      rating?: number;
+      seasonRating?: number;
+      seasonGoals?: number;
+      seasonAssists?: number;
+      totalDistanceCovered?: number;
+      topSpeed?: number;
+      playerOfTheMatch?: boolean;
+      events?: Array<{ type?: string }> | null;
+    } | null;
+  }> | null;
+}
+
+export interface TeamLastLineupPlayer {
+  id: number;                  // player id-space; >0 → /player/{id} link (cycle-117 contract)
+  name: string;                // Persian via playerFa when mapped, honest English otherwise
+  shirt: string | null;
+  matchRating: number | null;  // performance.rating — the last match only
+  seasonRating: number | null;
+  seasonGoals: number | null;
+  seasonAssists: number | null;
+  distanceKm: number | null;   // totalDistanceCovered m → km, one decimal
+  topSpeedKmh: number | null;
+  marketValueFa: string | null; // cycle-116 formatter, same EUR wording (no drift)
+  yellow: boolean;
+  red: boolean;
+  motm: boolean;               // performance.playerOfTheMatch
+}
+
+export interface TeamLastLineup {
+  formation: string | null;
+  coachName: string | null;    // honest English (coach names unmapped — Loftus-Cheek contract)
+  teamMatchRating: number | null;
+  averageAge: number | null;
+  totalMarketValueFa: string | null;
+  lastMatch: { matchId: number; opponentId: number; opponentFa: string } | null;
+  starters: TeamLastLineupPlayer[];
+}
+
+/** cycle-120 additive export: «آخرین ترکیب» — the XI that actually started the
+ *  team's most recent played match, from the SAME cached data/teams payload
+ *  the squad/transfers/trophies/venue/stats/history/coaches/top-players and
+ *  fixtureDifficulty reads use, so this adds zero upstream hits. Null when
+ *  the source has no block (UI hides the section, legend-111 contract). */
+export async function getTeamLastLineup(teamId: number): Promise<TeamLastLineup | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const lls = raw?.overview?.lastLineupStats;
+  const startersRaw = lls?.starters;
+  if (!lls || !Array.isArray(startersRaw) || startersRaw.length === 0) return null;
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+  const starters: TeamLastLineupPlayer[] = [];
+  for (const s of startersRaw) {
+    const id = Number(s?.id || 0);
+    const name = String(s?.name || "");
+    if (!id || !name) continue;
+    const perf = s?.performance || null;
+    const evs = Array.isArray(perf?.events) ? perf.events : [];
+    const dist = num(perf?.totalDistanceCovered);
+    const mv = num(s?.marketValue);
+    starters.push({
+      id,
+      name: playerFa(name),
+      shirt: typeof s?.shirtNumber === "string" && s.shirtNumber ? s.shirtNumber : null,
+      matchRating: num(perf?.rating),
+      seasonRating: num(perf?.seasonRating),
+      seasonGoals: num(perf?.seasonGoals),
+      seasonAssists: num(perf?.seasonAssists),
+      distanceKm: dist != null ? Math.round(dist / 100) / 10 : null,
+      topSpeedKmh: num(perf?.topSpeed),
+      marketValueFa: mv != null && mv > 0 ? marketValueFa(mv) : null,
+      yellow: evs.some((e) => e?.type === "yellowCard"),
+      red: evs.some((e) => e?.type === "redCard" || e?.type === "yellowredCard"),
+      motm: perf?.playerOfTheMatch === true,
+    });
+  }
+  if (starters.length === 0) return null;
+  const lm = lls.lastMatch || null;
+  let lastMatch: TeamLastLineup["lastMatch"] = null;
+  if (lm && typeof lm.matchId === "number" && lm.matchId > 0) {
+    const isHome = Number(lm.homeTeamId) === teamId;
+    const oppName = isHome ? String(lm.awayTeamName || "") : String(lm.homeTeamName || "");
+    if (oppName) {
+      lastMatch = {
+        matchId: lm.matchId,
+        opponentId: isHome ? Number(lm.awayTeamId || 0) : Number(lm.homeTeamId || 0),
+        opponentFa: teamFa(oppName) || oppName,
+      };
+    }
+  }
+  const age = num(lls.averageStarterAge);
+  const tmv = num(lls.totalStarterMarketValue);
+  return {
+    formation: typeof lls.formation === "string" && lls.formation ? lls.formation : null,
+    coachName: typeof lls.coach?.name === "string" && lls.coach.name ? lls.coach.name : null,
+    teamMatchRating: num(lls.rating),
+    averageAge: age,
+    totalMarketValueFa: tmv != null && tmv > 0 ? marketValueFa(tmv) : null,
+    lastMatch,
+    starters,
+  };
+}
 
 export async function getTeamFixtureDifficulty(teamId: number): Promise<TeamFixtureDifficulty | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return null;

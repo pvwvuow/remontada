@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -1267,6 +1267,110 @@ function DifficultySection({ data }: { data: TeamFixtureDifficulty }) {
   );
 }
 
+// ---------------- cycle-120: team last lineup («آخرین ترکیب») ----------------
+// The XI that actually started the team's most recent played match (FotMob's
+// overview.lastLineupStats): formation + per-player match rating, season
+// goals/assists, distance covered, top speed and market value — a snapshot
+// neither the fixtures list nor the squad section carries. Lazily probed,
+// hidden when absent (legend-111 contract). Chips reuse the proven token
+// grammar of the difficulty verdicts (amber/emerald/rose).
+const LINEUP_CHIP = {
+  amber: "bg-amber-500/15 text-amber-300 border-amber-400/30",
+  emerald: "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+  rose: "bg-rose-500/15 text-rose-300 border-rose-400/30",
+} as const;
+
+function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
+  const facts = [
+    p.seasonGoals != null && p.seasonGoals > 0 ? `${faDigits(p.seasonGoals)} گل فصل` : null,
+    p.seasonAssists != null && p.seasonAssists > 0 ? `${faDigits(p.seasonAssists)} پاس گل فصل` : null,
+    p.seasonRating != null ? `فصل ${faDigits(p.seasonRating.toFixed(2))}` : null,
+    p.distanceKm != null && p.distanceKm > 0 ? `${faDigits(p.distanceKm.toFixed(1))} کیلومتر` : null,
+    p.topSpeedKmh != null && p.topSpeedKmh > 0 ? `${faDigits(p.topSpeedKmh.toFixed(1))} کیلومتر/ساعت` : null,
+    p.marketValueFa,
+  ].filter(Boolean) as string[];
+  const inner = (
+    <div className="grid grid-cols-[26px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-2.5">
+      <span className="w-[24px] h-[24px] rounded-md bg-white/[0.06] border border-glass-border-soft flex items-center justify-center text-[9.5px] font-black text-steel/80 tabular-persian shrink-0">
+        {p.shirt ?? "—"}
+      </span>
+      <div className="min-w-0">
+        <p className="truncate text-[12.5px] font-black">{p.name}</p>
+        {facts.length > 0 && (
+          <p className="text-[9px] text-steel/70 truncate tabular-persian mt-0.5">{facts.join(" · ")}</p>
+        )}
+      </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        {p.matchRating != null && (
+          <span className="text-[14px] font-black tabular-persian text-[#e0efff] leading-none">
+            {faDigits(p.matchRating.toFixed(1))}
+          </span>
+        )}
+        {(p.motm || p.yellow || p.red) && (
+          <span className="flex items-center gap-1">
+            {p.motm && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.emerald)}>بهترین بازیکن</span>}
+            {p.yellow && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.amber)}>کارت زرد</span>}
+            {p.red && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.rose)}>کارت قرمز</span>}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+  return p.id > 0 ? (
+    <Link href={`/player/${p.id}`} prefetch={false} className="glass-row-hover block">{inner}</Link>
+  ) : (
+    <div>{inner}</div>
+  );
+}
+
+function LastLineupSection({ data }: { data: TeamLastLineup }) {
+  const meta = [
+    data.coachName ? `سرمربی: ${data.coachName}` : null,
+    data.averageAge != null ? `میانگین سن: ${faDigits(data.averageAge.toFixed(1))} سال` : null,
+    data.totalMarketValueFa ? `ارزش بازار ترکیب: ${data.totalMarketValueFa}` : null,
+  ].filter(Boolean) as string[];
+  return (
+    <Section
+      title="آخرین ترکیب"
+      extra={
+        data.formation ? (
+          <span className="shrink-0 rounded-md border border-glass-border-soft bg-white/[0.04] px-1.5 py-px text-[9px] font-black text-steel/80 tabular-persian whitespace-nowrap">
+            {data.formation}
+          </span>
+        ) : undefined
+      }
+    >
+      {data.lastMatch && (
+        <Link
+          href={`/match/${data.lastMatch.matchId}`}
+          prefetch={false}
+          className="flex items-center justify-end gap-1.5 px-3 sm:px-4 pb-1.5 text-[9.5px] text-steel/70 hover:text-sky-soft transition-colors min-w-0"
+        >
+          <span className="truncate tabular-persian">آخرین بازی: در برابر {data.lastMatch.opponentFa}</span>
+          <img
+            src={fotmobTeamLogo(data.lastMatch.opponentId)}
+            alt=""
+            width={14}
+            height={14}
+            loading="lazy"
+            className="w-[14px] h-[14px] object-contain shrink-0"
+            onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+          />
+        </Link>
+      )}
+      <div className="flex flex-col" data-testid="team-last-lineup">
+        {data.starters.map((p, i) => (
+          <LastLineupRow key={`${p.id}-${i}`} p={p} />
+        ))}
+      </div>
+      {meta.length > 0 && (
+        <p className="text-[9.5px] text-steel/70 tabular-persian px-1 pt-1.5">{meta.join(" · ")}</p>
+      )}
+      <p className="text-[9px] text-muted-foreground px-1 pt-1">امتیاز بزرگ = امتیاز همان بازی از فوت‌ماب؛ «فصل» = میانگین فصل بازیکن.</p>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1452,6 +1556,25 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* difficulty stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-120: lazy last lineup («آخرین ترکیب») — same data/teams source
+  // (shared upstream cache), fetched after mount; stays null → section
+  // hidden (same contract as difficulty/squad).
+  const [lastLineup, setLastLineup] = useState<TeamLastLineup | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-last-lineup/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.lastLineup) setLastLineup(j.lastLineup as TeamLastLineup);
+      })
+      .catch(() => {
+        /* lastLineup stays null → section hidden */
       });
     return () => {
       alive = false;
@@ -1652,6 +1775,10 @@ export function TeamView({ teamId }: { teamId: number }) {
           <EmptyState icon="ball" compact title="بازی پایان‌یافته‌ای در بازه‌ی اخیر یافت نشد" sub="بازی‌های قبلی تیم پس از به‌روزرسانی فید روزانه نمایش داده می‌شوند." />
         )}
       </Section>
+
+      {/* cycle-120: last lineup («آخرین ترکیب») — the XI that actually started
+          the most recent played match; lazily probed, hidden when absent */}
+      {lastLineup && <LastLineupSection data={lastLineup} />}
 
       {/* cycle-70: team squad («ترکیب تیم») — lazily probed, hidden when absent */}
       {squad && <SquadSection squad={squad} />}
