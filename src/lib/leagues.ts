@@ -136,24 +136,6 @@ export const LEAGUES: LeagueConfig[] = [
   // the historic second tier where the relegated giants — وست‌هم/ساوتهمپتون/
   // ولورهمپتون — now ride, with کوونتری the reigning champion.
   { key: "championship", fotmobId: 48,       ccode3: "ENG",  faName: "چمپیونشیپ انگلیس",    enName: "EFL Championship", espnSlug: "eng.2",          priority: 14 },
-  // cycle-151: Liga Portugal — the FIFTEENTH competition and the FIFTH
-  // consecutive new global-race participant (no globalMerge flag: 17
-  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
-  // exactly — same cadence as the Championship in cycle-150). Blocks
-  // live-probed 2026-10-29 (UA Chrome/124, /api/data/leagues?id=61&ccode3=
-  // POR): flat 18-row 2026/2027 table (پورتو top on 27, بنفیکا 2nd on 22,
-  // اسپورتینگ‌لیسبون 3rd on 18; ریو آوه/استوریل propping up), Top scorer
-  // category with a data.fotmob.com fetchAllUrl (پاولیدیس بنفیکا 9;
-  // لوئیس سوارز 8 — a 124-scorer full goals.json file), 92 title seasons
-  // (newest 2025/2026 پورتو over اسپورتینگ‌لیسبون, oldest 1934/1935
-  // پورتو), and transfers.data = 100 entries (domestic). playoff = null →
-  // bracket tab honestly absent. ESPN fallback slug probed live: por.1 →
-  // 200. The Persian-fan pick: طارمی's league — the Iranian striker came
-  // to Europe through ریو آوه and shone four seasons at پورتو (2020–2024),
-  // making Liga Portugal a daily Persian follow. Feasibility sweep noted:
-  // the Eredivisie guess (id 49) returned literal null and id 50 turned
-  // out to be EURO — Portugal won on live data truth.
-  { key: "portugal",   fotmobId: 61,          ccode3: "POR",  faName: "لیگ پرتغال",         enName: "Liga Portugal",    espnSlug: "por.1",          priority: 15 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -637,35 +619,6 @@ const TEAM_FA: Record<string, string> = {
   "stevenage": "استیونج", "stoke": "استوک", "swansea": "سوانزی",
   "sydney fc": "سیدنی", "são paulo": "سائوپائولو", "tokyo verdy": "وردی توکیو",
   "west brom": "وست برومویچ آلبیون", "wigan athletic": "ویگان اتلتیک",
-  // cycle-151: Liga Portugal (league 61) — the 18-row table sweep (spellings
-  // the blocks above missed) + the 100-entry transfer-feed sweep (110 distinct
-  // club names after dedup) + the 92-season title-history sweep (winner AND
-  // runner-up sides — both go through teamFa) + the alternate spellings the
-  // 41 stat files serve (CD Nacional / Estoril Praia / Estrela / Sporting
-  // Braga). "FC Porto B" rides the qualifier fallback («پورتو دوم»); "sporting
-  // lisbon" already lived in an earlier block (اسپورتینگ‌لیسبون). Byte-exact
-  // from the live feed; additive keys only, zero shape change.
-  "aik": "آیک", "avs futebol sad": "ای‌وی‌اس",
-  "académica": "آکادمیکا", "académico viseu": "آکادمیکو ویزئو",
-  "alverca": "آلورکا", "amarante fc": "آمارانته", "arouca": "آروکا",
-  "athletic club mg": "اتلتیک میناس", "atlético madrileño": "اتلتیکو مادریلنیو",
-  "atlético nacional": "اتلتیکو ناسیونال", "avaí": "آوایی",
-  "beerschot": "بیرشات", "boavista": "بوآویشتا", "botafogo": "بوتافوگو",
-  "camacha": "کاماشا", "casa pia ac": "کازا پیا", "düsseldorf": "دوسلدورف",
-  "estoril": "استوریل", "estoril praia": "استوریل", "estrela": "استرلا",
-  "famalicão": "فامالیکاو", "feirense": "فیرنسه", "felgueiras": "فلگیراس",
-  "gil vicente": "ژیل ویسنته", "grenoble": "گرونوبل", "grêmio": "گرمیو",
-  "hnk gorica": "اچ‌ان‌کی گوریتسا", "kv mechelen": "مشلن",
-  "laval": "لاوال", "leixões": "لیشویش", "lommel": "لومل", "mas fès": "ام‌ای‌اس فاس",
-  "marítimo": "ماریتیمو", "moreirense": "موریرنسه", "nacional": "ناسیونال",
-  "cd nacional": "ناسیونال", "new england": "نیو انگلند",
-  "os belenenses sad": "بلننسس", "osijek": "اوسیک", "ourense": "اورنسه",
-  "racing": "راسینگ", "racing de ferrol": "راسینگ د فرول",
-  "real zaragoza": "رئال ساراگوسا", "rijeka": "رییکا", "rio ave": "ریو آوه",
-  "rodez": "رودز", "santa clara": "سانتا کلارا", "santarém": "سانتارم",
-  "sporting braga": "اسپورتینگ براگا", "sporting covilhã": "اسپورتینگ کوویلیا",
-  "unionistas de salamanca": "یونیونیستاس سالامانکا", "vianense": "ویاننزه",
-  "vitória de setúbal": "ویتوریا ستوبال", "zeleziarne podbrezová": "پودبرزووا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
