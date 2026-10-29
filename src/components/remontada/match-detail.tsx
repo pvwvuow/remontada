@@ -950,9 +950,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
           <span className="font-black truncate">{t.fa || t.name}</span>
           {t.formation && (
             <span className="text-[10px] font-bold text-steel border border-glass-border-soft rounded-md px-1.5 py-0.5" dir="ltr">
-              {/* cycle-154: Persian numerals for the formation badge, same
-                  contract as team-view — «4-4-2» → «۴-۴-۲» */}
-              {faDigits(String(t.formation))}
+              {t.formation}
             </span>
           )}
         </div>
