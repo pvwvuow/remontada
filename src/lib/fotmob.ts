@@ -122,6 +122,8 @@ export interface ScorerEntry {
 export interface AssistEntry {
   rank: number;
   name: string;
+  /** cycle-170 additive: honest Persian name (playerFa) — raw English fallback, same rule as scorers. */
+  nameFa?: string;
   team: string;
   teamId: number;
   assists: number;
@@ -872,7 +874,10 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     ...(st.home ? { home: st.home.map(rowFa) } : {}),
     ...(st.away ? { away: st.away.map(rowFa) } : {}),
     scorers: st.scorers.map((s) => ({ ...s, nameFa: playerFa(s.name), team: teamFa(s.team) || s.team })),
-    assists: st.assists.map((a) => ({ ...a, team: teamFa(a.team) || a.team })),
+    // cycle-170 additive: assists gain the honest Persian name like scorers —
+    // the league page surfaces the block (بهترین پاس‌دهندگان) and the raw
+    // English name alone would dead-end the profile network (the 167 lesson)
+    assists: st.assists.map((a) => ({ ...a, team: teamFa(a.team) || a.team, nameFa: playerFa(a.name) })),
     ...(st.boards
       ? {
           boards: st.boards.map((b) =>

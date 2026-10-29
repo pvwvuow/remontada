@@ -508,6 +508,54 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
             );
           })}
         </ol>
+        {/* cycle-170: بهترین پاس‌دهندگان — the standings payload always carried the
+            assists block (freshenHonestNames freshened only the team) but the
+            league page dropped it; compact 3-row list under the scorers table,
+            same link contract (playerId → /player, title = English original when
+            Persian shown), honest absence when the feed has no assists (mas) */}
+        {(data.assists || []).length > 0 && (
+          <div className="mt-2 border-t border-[color:var(--glass-hairline)] pt-2.5">
+            <div className="flex items-center gap-1.5 px-0.5 pb-1.5">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
+                <path d="M4 19h16" />
+                <path d="M5 15l5-5 4 3 5-7" />
+              </svg>
+              <h3 className="text-[11.5px] font-black text-[#dceafd]">بهترین پاس‌دهندگان</h3>
+              <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">پاس گل فصل</span>
+            </div>
+            <ol className="flex flex-col">
+              {(data.assists || []).map((a, i) => {
+                const rank = a.rank ?? i + 1;
+                const inner = (
+                  <>
+                    <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                      {faDigits(pad2(rank))}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{a.nameFa || a.name}</span>
+                      {a.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{a.team}</span>}
+                    </span>
+                    <span className="shrink-0 min-w-[36px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[14px] font-semibold text-[#e0efff] tabular-persian">
+                      {faDigits(a.assists)}
+                    </span>
+                  </>
+                );
+                const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+                return (
+                  <li key={`${a.name}-${i}`}>
+                    {a.playerId ? (
+                      <Link href={`/player/${a.playerId}`} prefetch={false} className={cls} title={a.nameFa && a.nameFa !== a.name ? a.name : `پروفایل ${a.name}`}>
+                        {inner}
+                      </Link>
+                    ) : (
+                      <div className={cls}>{inner}</div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+        )}
       </div>
     </div>
   );
