@@ -55,12 +55,15 @@ try:
 except Exception as e:
     report("A1 pl assists ride route", False, repr(e))
 
-# A2: legacy top-level parity — OLD keys + EXACTLY {assists}
+# A2: legacy top-level parity — OLD keys + the additive era line.
+# cycle-174 pinned extra == {assists}; cycle-179 (the same 108 additive
+# line, one surface over) added cards from the SAME cached payload —
+# the pinned era advances deliberately: extra == {assists, cards}.
 try:
     d = get(BASE + "/api/topscorers/pl")
     old = {"ok", "leagueKey", "leagueFa", "season", "scorers", "updatedAt"}
     extra = set(d.keys()) - old
-    good = extra == {"assists"}
+    good = extra == {"assists", "cards"}
     report("A2 top-level key parity", good, f"extra={sorted(extra)}")
 except Exception as e:
     report("A2 top-level key parity", False, repr(e))

@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -25,6 +25,9 @@ interface LeagueScorersData {
   // cycle-174 additive: the assists block rides the same payload — the
   // per-league page renders it like the league page (honest absence = []).
   assists?: AssistEntry[];
+  // cycle-179 additive: the cycle-176 cards block rides the same payload —
+  // sister-page consistency (the 174 pattern one surface over).
+  cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
   updatedAt: string;
 }
 
@@ -298,6 +301,70 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               );
             })}
           </ol>
+        </div>
+      )}
+
+      {/* cycle-179: کارت‌ها — sister-page consistency (the 174 pattern one
+          surface over): the SAME cached getStandings payload has carried the
+          cycle-176 cards block since the v8 bump; the route dropped it exactly
+          like it dropped assists before 174. Two compact columns (زرد/قرمز,
+          top 5 each), same 170/176 link contract (playerId → /player with
+          prefetch=false, title = English original when Persian shown, id>0
+          guard — the 167 lesson), per-kind honest absence (mas = red-only,
+          old seasons hide the whole card with the payload's own omission). */}
+      {data && !loading && data.cards && ((data.cards.yellow || []).length > 0 || (data.cards.red || []).length > 0) && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <span className="flex gap-1" aria-hidden>
+              <span className="w-1.5 h-2.5 rounded-[2px] bg-[#f2c94c]" />
+              <span className="w-1.5 h-2.5 rounded-[2px] bg-[#eb5757]" />
+            </span>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">کارت‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">زرد / قرمز فصل</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 px-2 pb-2.5">
+            {(["yellow", "red"] as const).map((kind) => {
+              const rows = (data.cards?.[kind] || []).slice(0, 5);
+              if (rows.length === 0) return null;
+              const dot = kind === "yellow" ? "bg-[#f2c94c]" : "bg-[#eb5757]";
+              const label = kind === "yellow" ? "کارت زرد" : "کارت قرمز";
+              return (
+                <div key={kind} className="min-w-0">
+                  <div className="flex items-center gap-1 px-0.5 pb-1">
+                    <span className={`w-1.5 h-2.5 rounded-[2px] ${dot}`} aria-hidden />
+                    <span className="text-[9.5px] font-bold text-[#92adc9]">{label}</span>
+                  </div>
+                  <ol className="flex flex-col">
+                    {rows.map((c, i) => {
+                      const inner = (
+                        <>
+                          <span className="w-5 h-5 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[9.5px] font-bold shrink-0 tabular-persian">
+                            {faDigits(i + 1)}
+                          </span>
+                          <span className="min-w-0 flex-1 text-[11px] font-bold text-[#e5eefb] truncate">{c.nameFa || c.name}</span>
+                          <span className="shrink-0 min-w-[26px] text-center rounded-md bg-[#a9cdf611] px-1.5 py-0.5 text-[11.5px] font-semibold text-[#e0efff] tabular-persian">
+                            {faDigits(c.value)}
+                          </span>
+                        </>
+                      );
+                      const cls = "flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+                      return (
+                        <li key={`${c.name}-${i}`}>
+                          {c.playerId && c.playerId > 0 ? (
+                            <Link href={`/player/${c.playerId}`} prefetch={false} className={cls} title={c.nameFa && c.nameFa !== c.name ? c.name : `پروفایل ${c.name}`}>
+                              {inner}
+                            </Link>
+                          ) : (
+                            <div className={cls}>{inner}</div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
