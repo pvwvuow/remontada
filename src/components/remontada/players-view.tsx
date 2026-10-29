@@ -407,7 +407,7 @@ export function PlayersView() {
         <div>
           <h1 className="text-lg font-black">بازیکنان</h1>
           <p className="text-[10.5px] text-steel mt-0.5">
-            {mode === "stars" ? "ستاره‌های ده لیگ و جام برتر با عکس و پروفایل کامل" : "اسکواد کامل همهٔ تیم‌ها — انتخاب لیگ و تیم"}
+            {mode === "stars" ? "ستاره‌های یازده لیگ و جام برتر با عکس و پروفایل کامل" : "اسکواد کامل همهٔ تیم‌ها — انتخاب لیگ و تیم"}
           </p>
         </div>
         {mode === "stars" && data?.updatedAt && (

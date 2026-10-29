@@ -8,7 +8,7 @@
 // Run: BASE=http://localhost:3000 bun scripts/cycle144-drift.ts
 export {}; // module marker — top-level await requires a module under tsc
 const BASE = process.env.BASE || "http://localhost:3000";
-const KEYS = ["ucl", "pl", "laliga", "seriea", "bundesliga", "ligue1", "persiangulf", "uel", "uecl", "acl", "superlig", "scottish"];
+const KEYS = ["ucl", "pl", "laliga", "seriea", "bundesliga", "ligue1", "persiangulf", "uel", "uecl", "acl", "superlig", "scottish", "saudi"];
 const CUPS = ["ucl", "uel", "uecl", "acl"];
 
 type Leak = { surface: string; path: string; field: string; val: string; name?: string };

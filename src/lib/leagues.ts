@@ -101,6 +101,22 @@ export const LEAGUES: LeagueConfig[] = [
   // 2025/2026 Celtic over Rangers), transfers.data = 100 entries (domestic).
   // ESPN fallback slug probed live: sco.1 → 200.
   { key: "scottish",   fotmobId: 64,          ccode3: "SCO",  faName: "لیگ برتر اسکاتلند",   enName: "Scottish Premiership", espnSlug: "sco.1",      priority: 12 },
+  // cycle-147: Saudi Pro League — the THIRTEENTH competition and the THIRD
+  // consecutive new global-race participant (no globalMerge flag: 17
+  // slash-format seasons 2026/2027 → 2010/2011 cover the cycle-132 window
+  // exactly). Four blocks live-probed 2026-10-29: flat 18-row table
+  // (الهلال top on 27, النصر 2nd — the Gulf Classic; القادسیه third),
+  // Top scorer category with data.fotmob.com fetchAllUrl (Ivan Toney, Al
+  // Ahli, 12; En-Nesyri/Retegui on 7 — the thin early-season full file),
+  // 22 title seasons (newest 2025/2026 النصر over الهلال), and
+  // transfers.data = 100 entries (DOMESTIC league — the cups' honest
+  // transfers-hide contract does not apply). ESPN fallback slug probed
+  // live: ksa.1 → 200. The Persian-fan pick over the Championship: the
+  // Gulf neighbor league — الهلال already lives in the portal as an ACL
+  // league-phase participant (the cycle-141 priority dedup keeps it
+  // there, exactly like سلتیک on uel), while النصر/الاتحاد/الاهلی now
+  // join the search index honestly.
+  { key: "saudi",      fotmobId: 536,         ccode3: "KSA",  faName: "لیگ حرفه‌ای عربستان", enName: "Saudi Pro League", espnSlug: "ksa.1",          priority: 13 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -251,6 +267,22 @@ const TEAM_FA: Record<string, string> = {
   "al taawoun": "التعاون", "al khaleej": "الخلیج", "al riyadh": "الریاض",
   "al okhdood": "الاخدود", "al kholood": "الخلود", "damac": "دامک",
   "neom": "نیوم", "al qadsiah": "القادسیه",
+  // cycle-147: Saudi Pro League (league 536) — the 8 table-team spellings the
+  // 2026/2027 feed serves that the block above missed (hyphen/short variants
+  // are byte-exact from the live rows) + 23 more transfer-side names from the
+  // 100-entry feed sweep. Zero shape change — additive keys only.
+  "al-ettifaq": "الاتفاق", "al diriyah": "الدرعیه", "al hazem": "الهزمة",
+  "al-faisaly": "الفیصلی", "al-fayha": "الفیحا", "al fateh fc": "الفتح",
+  "neom sc": "نیوم", "abha": "ابها", "al akhdoud": "الأخدود",
+  "al najma": "النجمة", "al taee": "الطایی", "al anwar": "الأنوار",
+  "al jabalain": "الجبلین", "al-jeel": "الجیل",
+  "al-wehda": "الوحده", "al-jazira": "الجزیره", "al ain": "العین",
+  "al-duhail sc": "الدحیل", "al-rayyan": "الریان", "almería": "آلمریا",
+  "américa-mg": "آمریکا مینه‌ایرو", "ceramica cleopatra": "سرامیکا کلئوپاترا",
+  "cruzeiro": "کروزیرو", "gimnasia mendoza": "جیمنازیا مندوزا",
+  "jerash fc": "جرش", "kalamata": "کالاماتا", "orlando pirates": "اورلاندو پایرتس",
+  "pyramids fc": "پیرامیدز", "sk beveren": "بورن", "sporting charleroi": "شارلروا",
+  "wydad casablanca": "وداد کازابلانکا",
   // cycle-141: AFC Champions League Elite (league 525) — exact upstream row
   // names of the live composite West/East tables not already mapped above
   // (al hilal / al ahli / al ittihad / al qadsiah / al nassr ride the Saudi
