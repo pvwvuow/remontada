@@ -3081,6 +3081,11 @@ export interface TeamSquadPlayer {
 }
 
 export interface TeamSquad {
+  // cycle-134 additive: the raw payload's details.name (honest English name)
+  // so the /players squad panel can label the header on deep links (?team=)
+  // without a second fetch; UI prefers the Persian name from the standings
+  // rows when the team is in the loaded league list
+  teamName?: string;
   coach: { id: number; name: string; age?: number; nationality?: string } | null;
   groups: {
     key: "keepers" | "defenders" | "midfielders" | "attackers";
@@ -3307,6 +3312,15 @@ export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
   const list = raw?.squad?.squad;
   if (!Array.isArray(list) || list.length === 0) return null;
 
+  // cycle-134: honest English name from the same cached payload (details.name,
+  // live-probed 2026-10-29: "Barcelona" for id 8634) — additive, consumers
+  // that never read it are unaffected
+  const teamName =
+    typeof (raw as { details?: { name?: string } })?.details?.name === "string" &&
+    (raw as { details?: { name?: string } }).details!.name!.trim() !== ""
+      ? (raw as { details?: { name?: string } }).details!.name!.trim()
+      : undefined;
+
   let coach: TeamSquad["coach"] = null;
   const groups: TeamSquad["groups"] = [];
   for (const g of list) {
@@ -3338,7 +3352,7 @@ export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
     groups.push({ key: title as TeamSquad["groups"][number]["key"], titleFa: SQUAD_GROUP_FA[title], players });
   }
   if (groups.length === 0 && !coach) return null;
-  return { coach, groups };
+  return { ...(teamName ? { teamName } : {}), coach, groups };
 }
 
 export interface TeamTransferItem {
