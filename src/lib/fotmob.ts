@@ -671,12 +671,25 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
  * player id. Fully graceful — any failure returns [] and callers fall
  * back to the short category list.
  */
-export async function getFullGoalScorers(leagueKey: string, limit = 20): Promise<ScorerEntry[]> {
+// cycle-124: season-aware — the caller (getStandings) serves BOTH current and
+// historical season views, so this file fetch MUST follow the requested
+// season or the merge below leaks the CURRENT season's goal counts into
+// historical views (live-proven incident: /league/pl?season=2023/2024 ranked
+// João Pedro 5-goals 4th — a 2026/27 count — right after the true 2023/24
+// topThree, because the old season-blind fetch appended the current goals.json
+// under it; Watkins 19 / Foden 19 / Solanke 19 were displaced). The seasonal
+// raw carries the season's OWN fetchAllUrl (probed live: 2023/2024 PL →
+// data.fotmob.com/stats/47/season/20720/goals.json = 298 rows, Haaland 27 ✓),
+// so one parameter both fixes the leak AND gives historical views the full
+// per-season depth (current behavior byte-identical: current fetchAllUrl is
+// the same file). Cache key bumped v2→v3 so no mixed payload survives the
+// deploy.
+export async function getFullGoalScorers(leagueKey: string, limit = 20, season?: string): Promise<ScorerEntry[]> {
   try {
-    return await cached(`fullGoals:v2:${leagueKey}`, 60 * 60_000, async () => {
+    return await cached(`fullGoals:v3:${leagueKey}:${season || "cur"}`, 60 * 60_000, async () => {
       // v2 (cycle-107): rows gained the required `nameFa` — old v1 entries
       // would violate the ScorerEntry shape (same convention as standings v5)
-      const { raw } = await getLeagueRaw(leagueKey);
+      const { raw } = await getLeagueRaw(leagueKey, season);
       const cat = raw.stats?.players?.find?.((p) => /top scorer/i.test(p.header || ""));
       const url = cat?.fetchAllUrl;
       if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
@@ -817,6 +830,11 @@ function freshCardNames<T extends { name: string; nameFa: string; team: string }
 
 export async function getStandings(leagueKey: string, season?: string): Promise<StandingsData> {
   const { lg, raw } = await getLeagueRaw(leagueKey, season);
+  // cycle-124: capture the REQUESTED season before build()'s own local `season`
+  // (line below the merge — raw.details.seasons is always empty per the
+  // cycle-94 probe) shadows the parameter inside this block; the full-goals
+  // fetch must follow the same season the raw was fetched with
+  const requestedSeason = season;
   const build = async () => {
     // ---- team form (last 5 league results per team, one pass over season fixtures) ----
     const formMap = new Map<number, ("W" | "D" | "L")[]>();
@@ -932,7 +950,9 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // cycle-23: merge the full-season goals file on top of the ~4 category
     // names — enriched entries (assists/xG/rating) stay first, the rest of
     // the ranking is appended so /topscorers + the sitemap get real depth
-    const fullScorers = await getFullGoalScorers(leagueKey, 24);
+    // cycle-124: season flows through — historical views merge the season's
+    // own goals file (see getFullGoalScorers comment for the live-proven leak)
+    const fullScorers = await getFullGoalScorers(leagueKey, 24, requestedSeason);
     const enrichedIds = new Set(
       uniqueScorers.map((s) => s.playerId).filter((id): id is number => id != null),
     );
@@ -1009,8 +1029,14 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // would collide the current season and EVERY historical season of a league
   // into `:cur` for the whole 60-min TTL. Verified: 2020/2021 and current
   // responses stay distinct end-to-end (honest rows/boards/xG both ways).
+  // v6 (cycle-124): correctness bump — v5 historical entries were built with
+  // the season-blind full-goals merge (getFullGoalScorers without season) and
+  // carry CURRENT-season goal counts inside historical scorers lists
+  // (live-proven: 2023/2024 PL ranked João Pedro 5-goals 4th). The producer
+  // is now season-pure; v6 forces an immediate clean rebuild instead of
+  // serving the mixed payloads for up to a full TTL generation.
   return freshenHonestNames(
-    await cached(`standings:v5:${leagueKey}:${season || "cur"}`, (mapped) =>
+    await cached(`standings:v6:${leagueKey}:${season || "cur"}`, (mapped) =>
       typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET, build),
   );
 }
