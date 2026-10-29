@@ -787,6 +787,54 @@ export async function getFullGoalScorers(leagueKey: string, limit = 20, season?:
 }
 
 /**
+ * cycle-175: full-season ASSISTS list for one league — the cycle-23 move for
+ * playmakers. The "Assists" category rides the SAME league payload as the
+ * goals list and carries its own fetchAllUrl → data.fotmob.com
+ * stats/{leagueId}/season/{sid}/goal_assist.json (live-probed 2026-10-30, UA
+ * Chrome/124: PL = 106 ranked rows vs the 3-4 category entries; gzip-served,
+ * fetch decompresses transparently — the exact mechanism goals.json has used
+ * since cycle-23). Same cache + cycle-127 thin-TTL guard as the goals file;
+ * feeds without fetchAllUrl (mas) degrade to [] and the honest category list
+ * stays. Rows map with the honest-name contract: playerFa + teamFa fallbacks.
+ */
+export async function getFullAssists(leagueKey: string, season?: string): Promise<AssistEntry[]> {
+  try {
+    return await cached(
+      `fullAssists:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^assists$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: AssistEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            assists: Math.round(r.StatValue ?? 0),
+            playerId: id,
+          });
+          if (out.length >= 20) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1087,8 +1135,19 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         ...(p.id ? { playerId: p.id } : {}),
       }))
       .sort((a, b) => b.assists - a.assists || a.name.localeCompare(b.name))
-      .map((e, i) => ({ ...e, rank: i + 1 }))
-      .slice(0, 6);
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    // cycle-175: the cycle-23 move for playmakers — merge the full-season
+    // assists file on top of the 3-4 category names, then rank deep.
+    // Enriched category entries stay first when tied (same merge order as
+    // the scorers); feeds without fetchAllUrl degrade honestly.
+    const fullAssists = await getFullAssists(leagueKey, requestedSeason);
+    const enrichedAIds = new Set(
+      assistEntries.map((a) => a.playerId).filter((id): id is number => id != null),
+    );
+    const mergedAssists = [...assistEntries, ...fullAssists.filter((a) => a.playerId == null || !enrichedAIds.has(a.playerId))]
+      .sort((a, b) => b.assists - a.assists || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
 
     // ⚠️ cycle-94 probe (UA Chrome/124): `details.seasons` is EMPTY in every
     // data/leagues payload — current AND historical (e.g. ?season=2020/2021) —
@@ -1133,7 +1192,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ...(matchday ? { matchday: true } : {}),
       ttlMinutes: matchday ? 15 : 60,
       scorers: mergedScorers,
-      assists: assistEntries,
+      assists: mergedAssists,
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
     };
@@ -1167,7 +1226,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
   // is now season-pure; v6 forces an immediate clean rebuild instead of
   // serving the mixed payloads for up to a full TTL generation.
   return freshenHonestNames(
-    await cached(`standings:v6:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-175: v7 — the deep merged assists list (fullAssists merge) forces
+    // an immediate clean rebuild instead of serving 3-row assists for up to a
+    // full TTL generation (the same reasoning that produced v6 for scorers).
+    await cached(`standings:v7:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1176,7 +1238,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // goals.json fetch, or a payload without the stats block — now re-probes
       // in 90s (upstream-free: reads the cached leagueRaw); healthy tables
       // keep the exact matchday-aware TTL.
-      Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN
+      // cycle-175: the same end-to-end guard now covers thin merged ASSISTS —
+      // a league whose assists category exists but whose goal_assist.json
+      // fetch was dropped would bake 3-4 rows for a full ttlMinutes
+      // generation; re-probe in 90s (upstream-free: leagueRaw is cached and
+      // the thin fullAssists row re-probes its own file). Honest-empty feeds
+      // (assists == []) keep the normal TTL. Healthy tables keep the exact
+      // matchday-aware TTL.
+      (Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN) &&
+      !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN)
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
         : 90_000,
       build),
