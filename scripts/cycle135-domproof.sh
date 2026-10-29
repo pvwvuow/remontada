@@ -142,10 +142,13 @@ probe "http://localhost:3000/player/696679" "D1 raphinha positions section" \
 "const s=document.querySelector('[data-testid=\"player-positions\"]');const chips=s?[...s.querySelectorAll('span[title]')]:[];const first=chips[0]||{};return {section:!!s,chips:chips.length,firstFa:(first.innerText||'').includes('وینگر چپ'),mainStarred:!!(first.querySelector('svg[aria-label=\"پست اصلی\"]')),hasFootnote:(s?s.innerText:'').includes('پست اصلی با ستاره'),hasCount:chips.some(c=>/بازی/.test(c.innerText))}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-# D2: Joan García profile — exactly one «دروازه‌بان» chip with «۵۳ بازی»
-# (Persian digits), proving the Keeper refinement reaches the DOM
+# D2: Joan García profile — exactly one «دروازه‌بان» chip with a live
+# Persian-digit occurrence count (cycle-143 hunt: the baked «۵۳» went stale
+# as the season moved on — the feed now says ۵۴; the honest assertion is the
+# PATTERN «X بازی», not a frozen number), proving the Keeper refinement
+# reaches the DOM
 probe "http://localhost:3000/player/1167220" "D2 keeper single chip" \
-"const s=document.querySelector('[data-testid=\"player-positions\"]');const chips=s?[...s.querySelectorAll('span[title]')]:[];return {section:!!s,chipN:chips.length,gkFa:chips.length===1&&chips[0].innerText.includes('دروازه‌بان'),occ53:chips.length===1&&chips[0].innerText.includes('۵۳ بازی'),enTitle:chips.length===1&&chips[0].title==='Keeper'}"
+"const s=document.querySelector('[data-testid=\"player-positions\"]');const chips=s?[...s.querySelectorAll('span[title]')]:[];return {section:!!s,chipN:chips.length,gkFa:chips.length===1&&chips[0].innerText.includes('دروازه‌بان'),occLive:chips.length===1&&/[۰-۹]+ بازی/.test(chips[0].innerText),enTitle:chips.length===1&&chips[0].title==='Keeper'}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D3: the section sits between injury and season stats and the profile stays

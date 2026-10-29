@@ -177,15 +177,17 @@ probe "http://localhost:3000/players?league=persiangulf" "D2 hub all-teams persi
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D3: the global race tells the merge truth twice — the CURRENT view's
-# hardcoded «۷ لیگ بزرگ» claim is true for the first time (all 7 feeds
-# fulfill), and the HISTORICAL view's payload-derived «مشارکت‌کننده» count
-# shows 6 (PGPL joins; UCL historical still drops honestly)
-probe "http://localhost:3000/topscorers?league=all" "D3 global current 7-league claim" \
-"const b=document.body.innerText;return {sevenLeagues:b.includes('۷ لیگ بزرگ'),playersCount:b.includes('بازیکن'),h1:(document.querySelector('h1')||{}).innerText||''}"
+# designed claim (cycle-139 raised «۷ لیگ بزرگ» to «۸ لیگ و جام برتر» when
+# UEL became the 8th contestant — cycle-143 hunt: the old baked «۷» was a
+# stale assertion, not a product bug), and the HISTORICAL view's
+# payload-derived «مشارکت‌کننده» count now shows 8 (with UEL in the merge
+# all 8 contestants serve 2023/2024)
+probe "http://localhost:3000/topscorers?league=all" "D3 global current 8-league claim" \
+"const b=document.body.innerText;return {eightCups:b.includes('۸ لیگ و جام برتر'),playersCount:b.includes('بازیکن'),h1:(document.querySelector('h1')||{}).innerText||''}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
-probe "http://localhost:3000/topscorers?league=all&season=2023/2024" "D3b historical 6 participating" \
-"const b=document.body.innerText;return {participating:b.includes('۶ لیگ مشارکت‌کننده'),seasonLabel:b.includes('۲۰۲۳/۲۴')||b.includes('2023/2024')}"
+probe "http://localhost:3000/topscorers?league=all&season=2023/2024" "D3b historical 8 participating" \
+"const b=document.body.innerText;return {participating:b.includes('۸ لیگ مشارکت‌کننده'),seasonLabel:b.includes('۲۰۲۳/۲۴')||b.includes('2023/2024')}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the Persepolis team page — real h1 through the exact teamFa row name,
@@ -195,4 +197,4 @@ probe "http://localhost:3000/team/101610" "D4 persepolis team page" \
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 echo "== RESULT =="
-if [ "$TOTAL_BAD" -eq 0 ] && [ "$A_BAD" -eq 0 ]; then echo "DOM_PROOF OK (API 6/6 + DOM 4/4 green — خلیج فارس honest end-to-end: live 18-row table with پرسپولیس/سپاهان/استقلال top trio + AFC legend trio, global merge's 7th participant with the 12-season window intact, real transfers with Persian club names (Munir Esteghlal→Albabaste), 24-season title history (2001/2002 Persepolis → 2024/2025 تراکتور), fixtures + Persepolis squad with Persian groups, /players 18-team grid, «۷ لیگ مشارکت‌کننده» subtitle; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"; else echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1; fi
+if [ "$TOTAL_BAD" -eq 0 ] && [ "$A_BAD" -eq 0 ]; then echo "DOM_PROOF OK (API 6/6 + DOM 4/4 green — خلیج فارس honest end-to-end: live 18-row table with پرسپولیس/سپاهان/استقلال top trio + AFC legend trio, global merge now 8 contestants by the designed cycle-139 copy «۸ لیگ و جام برتر» with the 12-season window intact, real transfers with Persian club names (Munir Esteghlal→Albabaste), 24-season title history (2001/2002 Persepolis → 2024/2025 تراکتور), fixtures + Persepolis squad with Persian groups, /players 18-team grid, «۸ لیگ مشارکت‌کننده» historical subtitle; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"; else echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1; fi
