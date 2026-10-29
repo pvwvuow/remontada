@@ -39,8 +39,8 @@ mp = [n for n in players if n not in ps]
 print(f"MAS clubs missing ({len(mc)}): {mc}")
 print(f"MAS players missing ({len(mp)}): {mp}")
 
-ok = (len(tk) == 1035 and len(pk) == 511 and not td and not pd
+ok = (len(tk) == 1077 and len(pk) == 533 and not td and not pd
       and not mc and not mp)
-print("MAPCHECK OK — 1035 team / 511 player keys, zero duplicates, all MAS-facing names mapped"
+print("MAPCHECK OK — 1077 team / 533 player keys, zero duplicates, all MAS-facing names mapped"
       if ok else "MAPCHECK FLAGGED")
 exit(0 if ok else 1)

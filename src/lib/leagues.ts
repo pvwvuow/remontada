@@ -332,6 +332,24 @@ export const LEAGUES: LeagueConfig[] = [
   // Day-feed bare «Liga Super» (ccode MAS) is a UNIQUE upstream name — plain
   // COMPETITION_FA key, no AMBIGUOUS_NAMES entry (the hnl pattern).
   { key: "mas",        fotmobId: 8985,        ccode3: "MAS",  faName: "سوپرلیگ مالزی",      enName: "Malaysia Super League",                         priority: 22, globalMerge: false },
+  // cycle-165: Ekstraklasa — 23rd competition, 19th race participant. TWO live
+  // Iranian hooks in ONE club (لخ پوزنان 2182): صیادمنش (887680, active since
+  // 2026-07-01, rank 7 of the race window with 5 goals, cc=IRN probed in the
+  // goals.json StatList) + غلی‌زاده (746018, at the club since 2023). Live-probed
+  // 2026-10-30 (UA Chrome/124, page id 196 — the day-feed id 937879 is a
+  // day-group id; primaryId=196 resolved from the feed, the 156 lesson):
+  // flat 18-row 2026/2027 table (لخ پوزنان 28 / گورنیک زابژه 27 / پوگون شچچین 24),
+  // 17 slash-format seasons 2026/2027→2010/2011 (allAvailableSeasons) covering
+  // the cycle-132 window exactly, no globalMerge flag → merges into the race
+  // (360→380 scorers / 18→19 perLeague); the ARCHIVED 2023/2024 payload carries
+  // its own Goals fetchAllUrl (season/20954) → historical race 17→18 participants.
+  // 99 title seasons (newest 2025/2026 لخ پوزنان over گورنیک زابژه, oldest
+  // 1912/1913 — pre-war champions ride the honest English fallback by design,
+  // cycle-96/104 convention). transfers.data=100 (91 distinct clubs).
+  // playoff=null → bracket tab honestly absent (cycle-56 contract). NO espnSlug
+  // (ESPN 400 for pol.1/poland.1 — Gulf pattern). Table is a NORMAL flat
+  // payload (data.table.all — no composite parser needed).
+  { key: "poland",     fotmobId: 196,         ccode3: "POL",  faName: "اکستراکلاسا لهستان", enName: "Ekstraklasa",                                   priority: 23 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -353,6 +371,11 @@ const COMPETITION_FA: Record<string, string> = {
   // rides «Superliga», Romania «Superliga», Serbia «Super Liga»), no
   // AMBIGUOUS_NAMES entry needed
   "liga super": "سوپرلیگ مالزی",
+  // cycle-165: the day feed serves bare «Ekstraklasa» for Poland
+  // (probed 2026-10-30/11-01 ccode=POL, primaryId 196) — unique upstream
+  // name (Slovakia rides «Super liga»), no AMBIGUOUS_NAMES entry needed
+  // (the hnl/mas pattern)
+  "ekstraklasa": "اکستراکلاسا لهستان",
   "premier league": "پریمیرلیگ انگلیس",
   "laliga": "لالیگا",
   "la liga": "لالیگا",
@@ -1161,6 +1184,64 @@ const TEAM_FA: Record<string, string> = {
   "star city": "استار سیتی",
   "terengganu": "ترنگگانو",
   "uitm": "اوی‌تی‌ام",
+  // ---- cycle-165: Ekstraklasa (Poland) — table (8 unmapped of 18; the
+  // other 10 ride earlier sweeps: لخ پوزنان/گورنیک زابژه/پوگون شچچین/لگیا
+  // ورشو/ویسوا کراکوف/یگیلونیا/ویدزف ووتس/شلونسک وروتسواو/
+  // ویچیستا کراکوف/راکوف چنستوخووا) + the goals-file «Legia Warsaw»
+  // spelling + title-only clubs + the 91-club transfer sweep (23 unmapped).
+  // Diacritics preserved in keys per the teamFa norm (lowercase only).
+  "piast gliwice": "پیاست گلیویتسه",
+  "zagłębie lubin": "زاگوله لوبین",
+  "gks katowice": "گکس کاتوویتسه",
+  "korona kielce": "کورونا کیلتسه",
+  "wisła płock": "ویسوا پلوک",
+  "motor lublin": "موتور لوبلین",
+  "cracovia": "کراکوویا",
+  "radomiak radom": "رادومیاک رادوم",
+  // goals.json spells the Warsaw club «Legia Warsaw» while the table/titles
+  // carry «Legia Warszawa» — both keys, same club (the al-nassr collision
+  // class caught by the 157 guard)
+  "legia warsaw": "لگیا ورشو",
+  // title-only clubs (99-season history; pre-war ones ride the honest
+  // English fallback by design — these ten are confident)
+  "polonia bytom": "پولونیا بیتوم",
+  "polonia warszawa": "پولونیا ورشو",
+  "ruch chorzów": "روخ خوشوف",
+  "stal mielec": "استال میلتس",
+  "warta poznań": "وارتا پوزنان",
+  "zagłębie sosnowiec": "زاگوله سوسنوویتس",
+  "łks łódź": "ال‌کی‌اس وودز",
+  "gks bełchatów": "گکس بلاتشاتوف",
+  "lks pogoń lwów": "پوگون لویو",
+  // transfer-sweep clubs (unmapped of the 91 distinct from/to clubs across
+  // transfers.data=100)
+  "al-ula fc": "العلا",
+  "arka gdynia": "آرکا گدینیا",
+  "athens kallithea fc": "کالیتئا آتن",
+  "brøndby if": "بروندبی",
+  "cúcuta": "کوکوتا",
+  "fcv dender eh": "دندر",
+  "fredrikstad": "فردریکستاد",
+  "gks tychy": "گکس تیشی",
+  "luton": "لوتون",
+  "mardinspor": "ماردین‌اسپور",
+  "miedź legnica": "میج لگنیتسا",
+  "minnesota": "مینه‌سوتا",
+  "ny red bulls": "نیویورک ردبولز",
+  "ob": "اودنسه",
+  "psim yogyakarta": "پسیم یوگیاکارتا",
+  "paços de ferreira": "پاسوش دی فرییرا",
+  "sabadell": "سابادل",
+  "stal stalowa wola": "استال ستالووا وولا",
+  "standard liège": "استاندارد لیژ",
+  "ts podbeskidzie bielsko-biała": "پودبسکیدزه بیلسکو-بیاوا",
+  "termalica nieciecza": "ترمالیکا نیه‌چیتسا",
+  "ud ibiza": "ایبیزا",
+  "vfl osnabrück": "اسنابروک",
+  // ghost-id (-1) club surfaced by the live zero-ASCII sweep of OUR OWN
+  // /api/league-transfers?league=poland panel (the 92nd distinct club —
+  // a transfer target outside the 91-id sweep because upstream omits its id)
+  "busko-zdroj": "بوسکو زدروی",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

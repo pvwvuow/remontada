@@ -85,9 +85,9 @@ try:
     leader = scorers[0] if scorers else {}
     cards = d.get('cards') or {}
     y = cards.get('yellow') if isinstance(cards, dict) else None
-    report('A2 race 18 participants + window byte-identical (gate-synced cycle-161: hnl joins swiss)',
-           len(pl) == 18 and 'hnl' in pl and 'swiss' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
-           and len(scorers) == 360 and len(seas) == 12
+    report('A2 race 19 participants + window byte-identical (gate-synced cycle-165: poland joins)',
+           len(pl) == 19 and 'hnl' in pl and 'swiss' in pl and 'poland' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
+           and len(scorers) == 380 and len(seas) == 12
            and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
            and d.get('selectedSeason') == '2026/2027'
            and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
@@ -211,8 +211,8 @@ probe "http://localhost:3000/league/uae" "D2 transfers tab live + zero broken" \
 
 # D3: the global race — the copy honestly says FIFTEEN, the old 14 copy is
 # gone, the Qatar chip rides the participant list
-probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۸ + eredivisie chip" \
-"const b=document.body.innerText;return {copy18:b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),chip:b.includes('لیگ ستارگان قطر'),ere:b.includes('اردیویزهٔ هلند')}"
+probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۹ + eredivisie chip" \
+"const b=document.body.innerText;return {copy19:b.includes('۱۹ لیگ و جام برتر'),old18gone:!b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),chip:b.includes('لیگ ستارگان قطر'),ere:b.includes('اردیویزهٔ هلند')}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the dedicated /topscorers/uae page (new SSG path) — live rows with the

@@ -577,6 +577,32 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "stoichkov": "استویچکوف",
   "mojtaba esmaeilzadeh": "مجتبی اسماعیل‌زاده",
 
+  // — cycle-165: Ekstraklasa (Poland) — the race window (top-20 rows of
+  // season/37304 goals.json, ranks 1..19 incl. the two rank-19 ties that
+  // make the slice) + the second Iranian hook غلی‌زاده. صیادمنش already
+  // rides the map (line 231) — the rank-7 IRN scorer of the window.
+  "jordi sánchez": "خوردی سانچز",
+  "ilya shkurin": "ایلیا شکورین",
+  "pablo rodríguez": "پابلو رودریگز",
+  "karol czubak": "کارول چوباک",
+  "mariusz stępiński": "ماریوش استمپینسکی",
+  "patryk makuch": "پاتریک ماکوخ",
+  "hugo vallejo": "اوگو والخو",
+  "patrik wålemark": "پاتریک واله‌مارک",
+  "ajdin hasić": "آیدین هاسیت",
+  "kacper urbański": "کاسپر اوربانسکی",
+  "ángel rodado": "آنخل رودادو",
+  "leandro sanca": "لئاندرو سانکا",
+  "łukasz zjawiński": "ووکاش ژاوینسکی",
+  "peter gonzález": "پیتر گونزالس",
+  "przemysław banaszak": "پرزمیسلاو باناشاک",
+  "rafał adamski": "رافائو آدامسکی",
+  "lisandro semedo": "لیزاندرو سمدو",
+  "bartosz nowak": "بارتوش نواک",
+  "lamine diaby-fadiga": "لامین دیابی-فادیگا",
+  "piotr samiec-talar": "پیوتر سامیتس-تالار",
+  "rafał augustyniak": "رافائو آگوستینیاک",
+  "ali gholizadeh": "علی غلی‌زاده",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
