@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -1194,6 +1194,79 @@ function TeamFixturesSection({ data, teamId }: { data: TeamFixturesAll; teamId: 
   );
 }
 
+// ---------------- cycle-112: fixture difficulty («سختی بازی‌های پیش‌رو») ----------------
+// FotMob's difficulty widget: an overall verdict + the next fixtures each
+// carrying a small int rating (1..3 observed across 9 clubs). Rows reuse the
+// SeasonFixtureRow grammar (date | opponent | dots) but the third column is
+// the difficulty dots — a NEW dimension the fixtures list does not carry.
+const DIFFICULTY_CHIP: Record<string, string> = {
+  "سخت": "bg-rose-500/15 text-rose-300 border-rose-400/30",
+  "میانه": "bg-amber-500/15 text-amber-300 border-amber-400/30",
+  "مدیریت‌پذیر": "bg-emerald-500/15 text-emerald-300 border-emerald-400/30",
+};
+
+function DifficultyDots({ value }: { value: number | null }) {
+  if (value == null) return <span className="text-[10px] text-steel/40 tabular-persian">—</span>;
+  const filled = value <= 1 ? "bg-emerald-400" : value === 2 ? "bg-amber-400" : "bg-rose-400";
+  return (
+    <span
+      className="inline-flex items-center gap-[3px]"
+      title={`سختی این بازی: ${faDigits(value)} از ۵`}
+      aria-label={`سختی این بازی: ${faDigits(value)} از ۵`}
+    >
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className={cn("w-[7px] h-[7px] rounded-full shrink-0", i <= value ? filled : "bg-white/10")} />
+      ))}
+    </span>
+  );
+}
+
+function DifficultySection({ data }: { data: TeamFixtureDifficulty }) {
+  const chip = data.verdictFa ? DIFFICULTY_CHIP[data.verdictFa] : undefined;
+  return (
+    <Section
+      title="سختی بازی‌های پیش‌رو"
+      extra={
+        <span className="flex items-center gap-1.5 min-w-0">
+          {data.leagueFa && <span className="text-[9px] font-bold text-steel/60 truncate">{data.leagueFa}</span>}
+          {chip && data.verdictFa && (
+            <span className={cn("shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black whitespace-nowrap", chip)}>
+              {data.verdictFa}
+            </span>
+          )}
+        </span>
+      }
+    >
+      <div className="flex flex-col" data-testid="team-difficulty">
+        {data.fixtures.map((f, i) => {
+          const j = jalaliShort(f.utcTime);
+          const row = (
+            <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
+              <div className="flex flex-col items-center leading-tight min-w-0">
+                <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
+                <span className="text-[9px] font-bold text-muted-foreground/70">{f.isHome ? "خانه" : "بیرون"}</span>
+              </div>
+              <div className="flex items-center justify-end gap-2 min-w-0 text-[13px]">
+                <span className="truncate font-black">{f.opponentFa}</span>
+                <img src={fotmobTeamLogo(f.opponentId)} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+              </div>
+              <div className="flex justify-end">
+                <DifficultyDots value={f.difficulty} />
+              </div>
+            </div>
+          );
+          return f.matchId ? (
+            <Link key={i} href={`/match/${f.matchId}`} prefetch={false} className="glass-row-hover block">{row}</Link>
+          ) : (
+            <div key={i}>{row}</div>
+          );
+        })}
+      </div>
+      <p className="text-[9.5px] text-muted-foreground px-1 pt-1">نقطه‌های پرشده بیشتر یعنی بازی سخت‌تر — برآورد سختی از فوت‌ماب.</p>
+    </Section>
+  );
+}
+
 export function TeamView({ teamId }: { teamId: number }) {
   const [data, setData] = useState<TeamData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -1360,6 +1433,25 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* fixtures stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
+  // cycle-112: lazy fixture difficulty («سختی بازی‌های پیش‌رو») — same
+  // data/teams source (shared upstream cache), fetched after mount; stays
+  // null → section hidden (same contract as topPlayers/fixturesAll).
+  const [difficulty, setDifficulty] = useState<TeamFixtureDifficulty | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-difficulty/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.difficulty) setDifficulty(j.difficulty as TeamFixtureDifficulty);
+      })
+      .catch(() => {
+        /* difficulty stays null → section hidden */
       });
     return () => {
       alive = false;
@@ -1547,6 +1639,11 @@ export function TeamView({ teamId }: { teamId: number }) {
           <EmptyState icon="calendar" compact title="در ۱۰ روز آینده بازی‌ای ثبت نشده است" sub="بعد از اعلام برنامه‌ی جدید، بازی‌ها همین‌جا نمایش داده می‌شوند." />
         )}
       </Section>
+
+      {/* cycle-112: fixture difficulty («سختی بازی‌های پیش‌رو») — lazily probed,
+          hidden when absent; the difficulty dimension for the fixtures beyond
+          the 10-day feed window above */}
+      {difficulty && <DifficultySection data={difficulty} />}
 
       <Section title="نتایج اخیر">
         {data.recent.length > 0 ? (

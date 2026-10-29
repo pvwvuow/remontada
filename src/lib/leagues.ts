@@ -74,7 +74,9 @@ const COMPETITION_FA: Record<string, string> = {
 const TEAM_FA: Record<string, string> = {
   // ---- Premier League ----
   "arsenal": "آرسنال", "aston villa": "استون‌ویلا", "bournemouth": "بورنموث",
+  "afc bournemouth": "بورنموث",
   "brentford": "برنتفورد", "brighton": "برایتون", "brighton and hove albion": "برایتون",
+  "brighton & hove albion": "برایتون",
   "burnley": "بارنلی", "chelsea": "چلسی", "crystal palace": "کریستال‌پالاس",
   "everton": "اورتون", "fulham": "فولام", "leeds": "لیدز", "leeds united": "لیدز",
   "liverpool": "لیورپول", "man city": "منچسترسیتی", "manchester city": "منچسترسیتی",

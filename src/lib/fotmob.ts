@@ -3007,6 +3007,16 @@ interface FMTeamDataRaw {
     // name, rank (league-wide rank in that stat), value, stat{format,
     // fractions}} + a seeAllUrl (unused — portal links /player/{id} instead).
     topPlayers?: FMTopPlayersRaw;
+    // cycle-112 probed (UA Chrome/124, 2026-10-29): fixtureDifficulty = the
+    // fixture-difficulty widget payload. Flat object: {leagueId, leagueName,
+    // subheader ("Next 3", subheaderKey next_three_matches_short),
+    // difficulty ("Moderate"/"Manageable"/"Hard" + difficultyKey enum),
+    // matchesLeft (league games remaining), difficultyMatches, fixtures[≤5]}
+    // where each fixture carries {matchId, opponentId, opponentName,
+    // opponentShortName, isHome, difficulty (small int; 1..3 observed across
+    // 9 clubs), matchDateUtc}. Present on all 9 probed clubs (domestic
+    // leagues incl. Premiership); null/absent → section hidden (honest).
+    fixtureDifficulty?: FMFixtureDifficultyRaw;
   };
   stats?: {
     players?: FMStatBlock[];
@@ -3019,6 +3029,27 @@ interface FMTopPlayersRaw {
   byRating?: FMTopPlayerBlockRaw;
   byGoals?: FMTopPlayerBlockRaw;
   byAssists?: FMTopPlayerBlockRaw;
+}
+
+// cycle-112: raw fixtureDifficulty (see FMTeamDataRaw.overview comment)
+interface FMFixtureDifficultyRaw {
+  leagueId?: number;
+  leagueName?: string;
+  subheader?: string;
+  subheaderKey?: string;
+  difficulty?: string;
+  difficultyKey?: string;
+  matchesLeft?: number;
+  difficultyMatches?: number;
+  fixtures?: {
+    matchId?: number;
+    opponentId?: number;
+    opponentName?: string;
+    opponentShortName?: string;
+    isHome?: boolean;
+    difficulty?: number;
+    matchDateUtc?: string;
+  }[];
 }
 
 interface FMTopPlayerBlockRaw {
@@ -3964,4 +3995,65 @@ export async function getTeamFixturesAll(teamId: number): Promise<TeamFixturesAl
   results.sort((a, b) => b.utcTime.localeCompare(a.utcTime));
   upcoming.sort((a, b) => a.utcTime.localeCompare(b.utcTime));
   return { total: results.length + upcoming.length, results, upcoming };
+}
+
+// ---------------- FotMob: fixture difficulty («سختی بازی‌های پیش‌رو», cycle-112) ----------------
+// The fixture-difficulty widget payload from the SAME cached data/teams raw
+// fetch (overview.fixtureDifficulty, probed cycle-112) — zero extra upstream.
+// FotMob's own rating of each of the next fixtures (small int, 1..3 observed
+// across 9 clubs) plus an overall verdict enum. Unknown verdict keys drop the
+// verdict (honest convention — same as weather keys / match insights); a
+// payload without fixtures → null so the UI hides the section.
+
+export interface TeamDifficultyFixture {
+  matchId: number | null; // → links to /match/{id} when known
+  opponentId: number;
+  opponentFa: string; // curated Persian via teamFa when mapped, else raw upstream (honest contract)
+  isHome: boolean;
+  difficulty: number | null; // upstream small int; rendered as filled dots on a 1..5 scale
+  utcTime: string; // ISO
+}
+
+export interface TeamFixtureDifficulty {
+  leagueFa: string; // league context of the fixtures (LEAGUES/competitionFa map, honest fallback)
+  verdictFa: string | null; // curated verdict («سخت»/«میانه»/«مدیریت‌پذیر»); unknown key → null (chip hidden)
+  fixtures: TeamDifficultyFixture[];
+}
+
+// cycle-112 probed enum across 9 clubs: difficulty_moderate (City/Arsenal/
+// Milan/Brighton), difficulty_manageable (Bologna/Celtic/Coventry),
+// difficulty_hard (Fulham/Venezia). Unknown keys drop (honest convention).
+const DIFFICULTY_VERDICT_FA: Record<string, string> = {
+  difficulty_manageable: "مدیریت‌پذیر",
+  difficulty_moderate: "میانه",
+  difficulty_hard: "سخت",
+};
+
+export async function getTeamFixtureDifficulty(teamId: number): Promise<TeamFixtureDifficulty | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const fd = raw?.overview?.fixtureDifficulty;
+  const list = fd?.fixtures;
+  if (!fd || !Array.isArray(list) || list.length === 0) return null;
+  const fixtures: TeamDifficultyFixture[] = [];
+  for (const f of list) {
+    const oppId = Number(f?.opponentId || 0);
+    const utcTime = String(f?.matchDateUtc || "");
+    if (!oppId || !utcTime) continue;
+    const d = typeof f?.difficulty === "number" && Number.isFinite(f.difficulty) ? f.difficulty : null;
+    fixtures.push({
+      matchId: Number(f?.matchId) > 0 ? Number(f.matchId) : null,
+      opponentId: oppId,
+      opponentFa: teamFa(f?.opponentName || undefined) || f?.opponentName || "",
+      isHome: Boolean(f?.isHome),
+      difficulty: d && d >= 1 && d <= 5 ? d : null,
+      utcTime,
+    });
+  }
+  if (fixtures.length === 0) return null;
+  return {
+    leagueFa: leagueFaById(fd.leagueId, fd.leagueName),
+    verdictFa: fd.difficultyKey ? DIFFICULTY_VERDICT_FA[fd.difficultyKey] ?? null : null,
+    fixtures,
+  };
 }
