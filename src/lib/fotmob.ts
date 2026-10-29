@@ -3505,6 +3505,35 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
         rank: a.rank ?? 0,
       });
     }
+    // cycle-177: the «کارت‌ها» block (the cycle-176 surface) rides the SAME
+    // payload — card kings who are neither top-20 scorers nor assist leaders
+    // (live probe 2026-10-30: Janelt 688273 = the pl yellow leader returned
+    // ZERO rows for q=Janelt/q=یانلت while his row sat in the very same
+    // cached standings answer; Alizadeh 900771 persiangulf yellow; mas red =
+    // Fazly Mazlan 694010) were unsearchable. ZERO extra upstream fetches:
+    // fold yellow then red after the assists; the seen-set keeps a
+    // dual-listed player once (as the scorer/assist row). playerId is
+    // OPTIONAL on card rows (GlobalCard.playerId?) → the null/<=0 guard is
+    // mandatory here, not just hygiene (the 167 dead-id lesson). Card rows
+    // carry no rank (LeagueCardEntry = Omit<GlobalCard, "rank"|"leagueKey"|
+    // "leagueFa">) and no goals → rank 0 (the no-hint convention) and no
+    // goals field, same as the 171 assists fold.
+    for (const kind of [r.value.cards?.yellow, r.value.cards?.red]) {
+      for (const c of kind || []) {
+        if (c.playerId == null || c.playerId <= 0 || seen.has(c.playerId)) continue;
+        seen.add(c.playerId);
+        out.push({
+          playerId: c.playerId,
+          name: c.name,
+          fa: c.nameFa || c.name,
+          teamFa: c.team || undefined,
+          teamId: c.teamId ?? undefined,
+          leagueKey: lg.key,
+          leagueFa: lg.faName,
+          rank: 0,
+        });
+      }
+    }
   });
   const failed = settled.filter((r) => r.status !== "fulfilled").length;
   const full = failed === 0;
