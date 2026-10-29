@@ -220,6 +220,15 @@ interface FMMatchDetails {
       ];
       playerOfTheMatch?: FMPotm | null;
       insights?: FMInsight[];
+      // update cycle-125: the official YouTube highlight video link +
+      // thumbnail (live-probed UA Chrome/124, 2026-10-29: present for FEATURED
+      // finished matches only — 2 of 3 sampled; absent/None otherwise → the
+      // surface honest-hides). Flat dict: {image, url, source}.
+      highlights?: {
+        image?: string;
+        url?: string;
+        source?: string;
+      } | null;
       // update cycle-117: the two sides' season top scorers («گلزنان فصل
       // دو تیم») — unconsumed since the beginning (the per-match playerStats
       // block consumed by cycle-47 is a DIFFERENT payload section)
@@ -599,6 +608,15 @@ export interface MatchDetailNormalized {
     minutes?: number;
     role?: string;
     stats: { title: string; display: string }[];
+  } | null;
+  // update cycle-125: the official YouTube highlight video («ویدیوی خلاصهٔ
+  // بازی») — only https youtube.com/watch links normalize; the thumbnail is
+  // optional (card degrades to a text row when absent/foreign); null when
+  // upstream lacks the block (legend-111 honest absence)
+  highlights?: {
+    url: string;
+    image: string;
+    source: string;
   } | null;
   fetchedAt: string;
 }
@@ -1126,6 +1144,27 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
       }
     : null;
 
+  // ---------------- video highlights (update cycle-125) ----------------
+  // matchFacts.highlights = the official YouTube highlight link + thumbnail
+  // (live-probed: featured finished matches only — 5071457/5795486 have it,
+  // 5071463 does not). Strict protocol guards: ONLY https youtube.com/watch
+  // links normalize (anything else → null, legend-111 honest absence); the
+  // thumbnail is guarded separately and may be empty (the card degrades to a
+  // text row — no broken-image risk on blocked-CDN clients thanks to the
+  // site-wide onError-hide pattern).
+  const hl = raw.content?.matchFacts?.highlights;
+  const highlights =
+    hl && typeof hl.url === "string" && /^https:\/\/(www\.)?youtube\.com\/watch/.test(hl.url)
+      ? {
+          url: hl.url,
+          image:
+            typeof hl.image === "string" && /^https:\/\/i\.ytimg\.com\//.test(hl.image)
+              ? hl.image
+              : "",
+          source: typeof hl.source === "string" && hl.source ? hl.source : "www.youtube.com",
+        }
+      : null;
+
   // ---------------- match insights (update cycle-110) ----------------
   // Pre-match story lines (matchFacts.insights): only curated localizedTextId
   // templates render; numbers → Persian digits, team/player refs ride the
@@ -1253,6 +1292,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     xg,
     playerStats,
     playerOfTheMatch,
+    highlights,
     fetchedAt: new Date().toISOString(),
   };
 }

@@ -142,6 +142,14 @@ interface DetailData {
     minutes?: number; role?: string;
     stats: { title: string; display: string }[];
   } | null;
+  // update cycle-125: the official YouTube highlight video («ویدیوی خلاصهٔ
+  // بازی») — mirrors /api/match/[id]; url protocol-guarded server-side,
+  // image may be "" (text-row degradation), null → card hidden
+  highlights?: {
+    url: string;
+    image: string;
+    source: string;
+  } | null;
   error?: string;
 }
 
@@ -1597,6 +1605,59 @@ function H2HPanel({ data, loading }: { data: H2HData | null; loading: boolean })
   );
 }
 
+// ---------- update cycle-125: official YouTube highlight video ----------
+// A compact header-level card: the official highlight link (new tab) with the
+// upstream thumbnail when available. The thumbnail rides the site-wide
+// onError-hide pattern (blocked CDN → hidden img, text row stays); without a
+// thumbnail the card renders as a pure text row. Everything rides the glass
+// token grammar; the label is honest about the source (یوتیوب).
+function HighlightsCard({ hl }: { hl: NonNullable<DetailData["highlights"]> }) {
+  return (
+    <a
+      href={hl.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="glass-card px-3 py-2.5 flex items-center gap-3 group transition-colors hover:border-[color:var(--glass-border)]"
+      aria-label="ویدیوی خلاصهٔ بازی (یوتیوب)"
+    >
+      {hl.image ? (
+        <span className="relative shrink-0 w-[104px] h-[58px] rounded-lg overflow-hidden border border-[color:var(--glass-border-soft)]">
+          <img
+            src={hl.image}
+            alt=""
+            width={104}
+            height={58}
+            loading="lazy"
+            className="w-full h-full object-cover"
+            onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+          />
+          <span className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden>
+            <span className="w-6 h-6 rounded-full bg-black/55 backdrop-blur-[2px] flex items-center justify-center">
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="#fff" aria-hidden>
+                <path d="M8 5.5v13l11-6.5-11-6.5z" />
+              </svg>
+            </span>
+          </span>
+        </span>
+      ) : (
+        <span className="shrink-0 w-9 h-9 rounded-full bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] flex items-center justify-center" aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <rect x="2.5" y="5" width="19" height="14" rx="3" />
+            <path d="M10 9.5v5l4.5-2.5-4.5-2.5z" fill="currentColor" stroke="none" />
+          </svg>
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[13px] font-black text-[#ecf3fa] group-hover:text-primary transition-colors">ویدیوی خلاصهٔ بازی</span>
+        <span className="block text-[10px] font-bold text-muted-foreground mt-0.5">خلاصهٔ رسمی دیدار · منبع: یوتیوب — در تب جدید باز می‌شود</span>
+      </span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" aria-hidden>
+        <path d="M7 17L17 7M9 7h8v8" />
+      </svg>
+    </a>
+  );
+}
+
 // ---------- main ----------
 export function MatchDetail({ matchId }: { matchId: string }) {
   const [data, setData] = useState<DetailData | null>(null);
@@ -1703,6 +1764,15 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       </Link>
 
       <Scoreboard m={m} scorers={data.scorers || []} potm={data.playerOfTheMatch} shootout={data.shootout} />
+
+      {/* update cycle-125: official YouTube highlight video («ویدیوی خلاصهٔ بازی»)
+          — header-level (not tab-bound): it belongs to the MATCH, like the
+          scoreboard. External link opens in a new tab; the ytimg thumbnail
+          rides the site-wide onError-hide pattern so a blocked CDN degrades
+          to the text row instead of a broken image (cycle-108 vbroken=0
+          invariant stays true everywhere). Hidden when the block is absent
+          (legend-111) — probed: featured finished matches only. */}
+      {data.highlights && <HighlightsCard hl={data.highlights} />}
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (
