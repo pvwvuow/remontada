@@ -903,6 +903,48 @@ const TEAM_FA: Record<string, string> = {
   // "al nassr fc" rides the existing saudi entry (النصر — the FC-suffixed
   // spelling was already mapped by the cycle-147 sweep; duplicate-key guard
   // caught the re-add and it was removed, the 152/155 sweep convention)
+  // ---- cycle-159: player-career Latin-leak sweep (D5 live probe, 31 player
+  // feeds: 101 distinct unmapped career rows). Sub-class D = historic foreign
+  // club stops. Accented keys are the byte-exact lowercased feed forms
+  // (norm() strips only U+0307 — the cycle-145 İ lesson); plain-ASCII
+  // variants added defensively where feeds alternate spellings.
+  "shahr khodrou fc": "شهرخودرو", "shahr khodrou": "شهرخودرو",
+  "al mokawloon al arab": "المکاولون العرب",
+  "barça atlètic": "بارسلونا اتلتیک", "barca atletic": "بارسلونا اتلتیک",
+  "real madrid castilla": "رئال مادرید کاستیا",
+  "sl benfica": "بنفیکا", "paok thessaloniki fc": "پائوک",
+  "jong psv": "یونگ پی‌اس‌وی",
+  "bochum": "بوخوم", "nürnberg": "نورنبرگ", "nurnberg": "نورنبرگ",
+  "crotone": "کروتونه", "salernitana": "سالرنیتانا", "spezia": "اسپتزیا",
+  "ternana": "ترنانا",
+  "giresunspor": "گیرسون‌اسپور",
+  "cd mirandés": "میراندس", "cd mirandes": "میراندس",
+  "gimnàstic": "خیمناستیک", "gimnastic": "خیمناستیک",
+  "sporting gijón": "اسپورتینگ خیخون", "sporting gijon": "اسپورتینگ خیخون",
+  "boca juniors": "بوکا جونیورز", "estudiantes": "استودیانتس",
+  "talleres": "تایرس", "tigre": "تیگره", "leones": "لئونس",
+  "lyngby": "لینگبی", "silkeborg": "سیلکبورگ", "ifk norrköping": "نورشوپینگ",
+  "ifk norrkoping": "نورشوپینگ",
+  "bryne": "برینه", "kristiansund": "کریستیان‌سوند", "stabæk": "استابک",
+  "stabak": "استابک", "breidablik": "بریدابلیک",
+  "pogoń szczecin": "پوگون شچچین", "pogon szczecin": "پوگون شچچین",
+  "chrobry głogów": "خروبری گووگوف", "chrobry glogow": "خروبری گووگوف",
+  "scunthorpe united": "اسکانتورپ‌یونایتد", "shrewsbury town": "شروزبری‌تاون",
+  "portimonense": "پورتیموننزه", "eupen": "یوپن",
+  "qarabağ fk": "قره‌باغ", "qarabag fk": "قره‌باغ",
+  "fc rostov": "روستوف", "rostov": "روستوف",
+  "bunyodkor tashkent": "بونیودکار تاشکند", "bunyodkor": "بونیودکار",
+  "fk mash'al mubarek": "ماشال مبارک",
+  "inter zapresic": "اینتر زاپرشیچ",
+  "ks besa kavajë": "بسا کاواجه", "ks besa kavaje": "بسا کاواجه",
+  "teuta durrës": "تئوتا دراج", "teuta durres": "تئوتا دراج",
+  "sc lusitânia": "لوزیتانیا", "sc lusitania": "لوزیتانیا",
+  "union touarga sportif": "یونیون توارگا",
+  "mls all-stars": "ستارگان ام‌ال‌اس", "mls all stars": "ستارگان ام‌ال‌اس",
+  "orléans": "اورلئان", "orleans": "اورلئان",
+  "us orléans loiret": "اورلئان", "us orleans loiret": "اورلئان",
+  "vitória sc guimarães": "ویتوریا گیمارایش", "vitoria sc guimaraes": "ویتوریا گیمارایش",
+  "épinal": "اپینال", "epinal": "اپینال",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -955,6 +997,10 @@ const TEAM_QUALIFIERS: { re: RegExp; fa: string }[] = [
   { re: /\sladies$/i, fa: " (زنان)" },
   { re: /\su1[789]$/i, fa: " جوانان" },
   { re: /\su2[013]$/i, fa: " جوانان" },
+  // cycle-159: live feeds also spell youth sides out — «Iceland Under 20»,
+  // «Morocco Under 19», «SL Benfica Under 21» all leaked through the bare
+  // U-regexes before this line
+  { re: /\sunder\s(?:1[789]|20|2[013])$/i, fa: " جوانان" },
   { re: /\s(?:ii|ll)$/i, fa: " دوم" },
   { re: /\s(?:b|2)$/i, fa: " دوم" },
 ];
@@ -975,6 +1021,10 @@ export function teamFa(...candidates: (string | undefined)[]): string {
     if (COUNTRY_FA[key]) return COUNTRY_FA[key];
   }
   // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
+  // cycle-159: the base must also ride COUNTRY_FA — national youth sides
+  // («Iran U23», «Qatar U19», «Poland U21»…) build on country names that live
+  // in the cycle-86 map, not TEAM_FA; the TEAM_FA-only probe left every one
+  // of them leaking Latin through player career grids (D5 probe: 43 rows).
   for (const c of candidates) {
     if (!c) continue;
     const key = norm(c);
@@ -982,7 +1032,8 @@ export function teamFa(...candidates: (string | undefined)[]): string {
       const m = key.match(q.re);
       if (m && m.index !== undefined) {
         const base = key.slice(0, m.index).trim();
-        if (TEAM_FA[base]) return `${TEAM_FA[base]}${q.fa}`;
+        const baseFa = TEAM_FA[base] || COUNTRY_FA[base];
+        if (baseFa) return `${baseFa}${q.fa}`;
       }
     }
   }
@@ -1022,6 +1073,9 @@ const COUNTRY_FA: Record<string, string> = {
   "north macedonia": "مقدونیه شمالی", "albania": "آلبانی", "kosovo": "کوزوو",
   "georgia": "گرجستان", "cyprus": "قبرس", "jamaica": "جامائیکا", "canada": "کانادا",
   "montenegro": "مونته‌نگرو", "kazakhstan": "قزاقستان", "uzbekistan": "ازبکستان",
+  // cycle-159: Iceland leaked through player careers (senior + U17/U19/U21
+  // + «Iceland Under 20» — the D5 career sweep found it unmapped)
+  "iceland": "آیسلند",
 };
 
 export function countryFa(name: string | undefined | null): string {

@@ -2838,7 +2838,12 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // the optional positions[] map AND the detail-mapper refined fa labels
   // ("Keeper" → «دروازه‌بان»), so a v5-cached shape would serve the stale
   // unrefined labels for up to the TTL (same convention as cycle-52/86/87/96)
-  const payload = await cached(`player:v6:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-159: key bumped to v7 — normalized output changed in place: career
+  // + recentTeams fa now resolve through the widened teamFa (qualifier
+  // fallback rides COUNTRY_FA + the 159 mapping sweep), so a v6-cached shape
+  // would serve Latin career rows («Iran U23», «Shahr Khodrou FC») from the
+  // persistent L2 for up to the TTL (same convention as cycle-52/86/87/96/135)
+  const payload = await cached(`player:v7:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

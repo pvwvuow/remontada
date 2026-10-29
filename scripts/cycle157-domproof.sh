@@ -176,7 +176,7 @@ except Exception as e:
     report("gol-gohar iranian squad", False, repr(e))
     report("player-level Iran verify", False, repr(e))
 
-# A7: mapping-sweep duplicate-key guard — 841 team keys / 431 player keys,
+# A7: mapping-sweep duplicate-key guard — 911 team keys / 431 player keys,
 # zero duplicates (the 152/155/156 sweep guard at the new totals)
 def keys_of(path, anchor):
     s = open(path).read()
@@ -187,7 +187,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A7 duplicate-key guard", len(tk) == 841 and len(pk) == 431 and not td and not pd,
+report("A7 duplicate-key guard", len(tk) == 911 and len(pk) == 431 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 # A8: day-feed group splits ride the eight exact-match keys — the
@@ -255,7 +255,7 @@ probe "$BASE/team/389880" "B7 gol-gohar team page" \
 
 echo "== RESULT =="
 if [ "$A_BAD" -eq 0 ] && [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 8/8 + DOM 7/7 green — لیگ قهرمانان آسیا ۲ honest end-to-end: the 19th competition, the FIFTH live cup and the «براکت جام‌ها» footprint's Persian-club crown jewel, joining with the uecl/acl globalMerge:false flag because only FOUR slash-format seasons exist (2026/2027 → 2023/2024) — the race stays 320 scorers / 16 participants with رافینیا honest leader in every window; the COMPOSITE 8-group feed flattens to a 32-row table with Persian group labels گروه A–H, top الوحده ۹, and گل‌گهر سیرجان (Group B, ۲ امتیاز) visible on the page — the club whose squad is Iranian 32/33 members deep (player-level /api/player/196041 = country Iran, the D5 rule); مالکوم ۴ الجزیره leads the 91-scorer file with PERSIAN name AND team on the dedicated /topscorers/acl2 path; 21 title seasons topped by 2025/2026 گامبا اوساکا over النصر (oldest 2004 — defunct champions ride the honest English fallback by design); transfers honestly empty (cup contract) and the bracket tab honestly absent (knockouts not drawn); NO espnSlug (ESPN 400 — Gulf pattern); day-feed group splits ride eight exact-match keys («لیگ قهرمانان آسیا ۲ — گروه X» on the real home grid); race copy ۱۶ stays honest, search guide ۱۹, /leagues 19th card; mapping sweep 841 team / 431 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 8/8 + DOM 7/7 green — لیگ قهرمانان آسیا ۲ honest end-to-end: the 19th competition, the FIFTH live cup and the «براکت جام‌ها» footprint's Persian-club crown jewel, joining with the uecl/acl globalMerge:false flag because only FOUR slash-format seasons exist (2026/2027 → 2023/2024) — the race stays 320 scorers / 16 participants with رافینیا honest leader in every window; the COMPOSITE 8-group feed flattens to a 32-row table with Persian group labels گروه A–H, top الوحده ۹, and گل‌گهر سیرجان (Group B, ۲ امتیاز) visible on the page — the club whose squad is Iranian 32/33 members deep (player-level /api/player/196041 = country Iran, the D5 rule); مالکوم ۴ الجزیره leads the 91-scorer file with PERSIAN name AND team on the dedicated /topscorers/acl2 path; 21 title seasons topped by 2025/2026 گامبا اوساکا over النصر (oldest 2004 — defunct champions ride the honest English fallback by design); transfers honestly empty (cup contract) and the bracket tab honestly absent (knockouts not drawn); NO espnSlug (ESPN 400 — Gulf pattern); day-feed group splits ride eight exact-match keys («لیگ قهرمانان آسیا ۲ — گروه X» on the real home grid); race copy ۱۶ stays honest, search guide ۱۹, /leagues 19th card; mapping sweep 911 team / 431 player keys with ZERO duplicates; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1
 fi

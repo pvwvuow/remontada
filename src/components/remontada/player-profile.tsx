@@ -559,7 +559,11 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="font-bold text-[12.5px] truncate">{t.leagueName}</p>
-                  <p className="text-[10px] text-muted-foreground truncate">{t.teamName}</p>
+                  {/* cycle-159: trophy rows carried the RAW upstream team name
+                      («Benfica», youth sides) — the career class sibling of the
+                      Latin leak fixed this cycle; teamFa keeps the single
+                      mapping source (the cycle-145 convention) */}
+                  <p className="text-[10px] text-muted-foreground truncate">{teamFa(t.teamName) || t.teamName}</p>
                 </div>
                 <div className="text-end shrink-0">
                   {t.seasonsWon.length > 0 && (

@@ -321,7 +321,7 @@ report("match acl2 persian sides",
        and (m.get("away") or {}).get("fa") == "السیب",
        f"home={(m.get('home') or {}).get('fa')} away={(m.get('away') or {}).get('fa')}")
 
-# A9: duplicate-key guard — 841 team / 431 player keys, zero duplicates
+# A9: duplicate-key guard — 911 team / 431 player keys, zero duplicates
 def keys_of(path, anchor):
     s = open(path).read()
     i = s.index(anchor)
@@ -331,7 +331,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A9 duplicate-key guard", len(tk) == 841 and len(pk) == 431 and not td and not pd,
+report("A9 duplicate-key guard", len(tk) == 911 and len(pk) == 431 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 print("API_TRUTH", "OK" if not fails else f"BAD {fails}")
