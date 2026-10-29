@@ -17,7 +17,11 @@ interface NewsItem {
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
 
-async function fetchText(url: string, timeoutMs = 12000): Promise<string> {
+// cycle-138: 12s → 10s. The five feeds run in parallel so the feed phase is
+// bounded by the slowest one; together with the 10s translation budget below
+// the whole cold producer is hard-bounded at ~20s — inside the regression
+// suite's 25s curl budget even on a fully cold process right after a restart.
+async function fetchText(url: string, timeoutMs = 10_000): Promise<string> {
   const ctrl = new AbortController();
   const t = setTimeout(() => ctrl.abort(), timeoutMs);
   try {
@@ -78,30 +82,54 @@ async function espnNews(slug: string, league: string): Promise<NewsItem[]> {
   })).filter((n) => n.title);
 }
 
-// Translate titles to Persian in ONE batched LLM call
+// Translate titles to Persian in ONE batched LLM call.
+// cycle-138: the LLM round-trip now has a HARD 10s budget. On a cold
+// (expired-cache) request the unbounded translation call was the one stage
+// that could push /api/news past the regression's 25s curl budget right after
+// a restart — the twice-documented first-run 27/28 transient (cycles 134/135:
+// the slow first fill only warmed the cache in time for the SECOND run). On
+// timeout — as on any SDK failure — the route keeps the honest English titles
+// instead of hanging; a still-running background completion is discarded.
+const TRANSLATE_BUDGET_MS = 10_000;
+
 async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
   const toTranslate = items.slice(0, 16);
+  if (toTranslate.length === 0) return items; // nothing to translate — skip the LLM entirely
   const titles = toTranslate.map((n) => n.title.replace(/"/g, "'"));
   const payload = JSON.stringify(titles);
+  const work = (async (): Promise<string> => {
+    try {
+      const { default: ZAI } = await import("z-ai-web-dev-sdk");
+      const zai = await ZAI.create();
+      const completion = await zai.chat.completions.create({
+        messages: [
+          {
+            role: "assistant",
+            content:
+              "You are a professional Persian (Farsi) sports translator. You translate football news headlines into natural, fluent Persian used by Iranian football media. Use proper football terminology. Respond with valid JSON only — no explanations, no markdown.",
+          },
+          {
+            role: "user",
+            content:
+              `Translate this JSON array of football headlines to Persian. Return ONLY a JSON array of translated strings, same order and same length as input (length ${titles.length}). Input: ${payload}`,
+          },
+        ],
+        thinking: { type: "disabled" },
+      });
+      return completion.choices[0]?.message?.content || "";
+    } catch {
+      return ""; // any SDK failure → the JSON match below throws → English titles
+    }
+  })();
+  let timer: ReturnType<typeof setTimeout> | null = null;
   try {
-    const { default: ZAI } = await import("z-ai-web-dev-sdk");
-    const zai = await ZAI.create();
-    const completion = await zai.chat.completions.create({
-      messages: [
-        {
-          role: "assistant",
-          content:
-            "You are a professional Persian (Farsi) sports translator. You translate football news headlines into natural, fluent Persian used by Iranian football media. Use proper football terminology. Respond with valid JSON only — no explanations, no markdown.",
-        },
-        {
-          role: "user",
-          content:
-            `Translate this JSON array of football headlines to Persian. Return ONLY a JSON array of translated strings, same order and same length as input (length ${titles.length}). Input: ${payload}`,
-        },
-      ],
-      thinking: { type: "disabled" },
-    });
-    const text = completion.choices[0]?.message?.content || "";
+    const text = await Promise.race([
+      work,
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), TRANSLATE_BUDGET_MS);
+      }),
+    ]);
+    if (text === null) throw new Error("translation budget exceeded");
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error("no json in response");
     const arr = JSON.parse(jsonMatch[0]) as string[];
@@ -110,7 +138,9 @@ async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
       if (arr[i] && typeof arr[i] === "string") n.titleFa = arr[i];
     });
   } catch {
-    // keep English titles on any failure
+    // keep English titles on any failure (translation timeout included)
+  } finally {
+    if (timer) clearTimeout(timer);
   }
   return items;
 }
