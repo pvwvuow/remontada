@@ -3279,13 +3279,16 @@ export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResul
 
 export { LEAGUES };
 
-// ---------------- FotMob: player search index (cycle-166) ----------------
+// ---------------- FotMob: player search index (cycle-166, +assists cycle-171) ----------------
 // The header search covered TEAMS only (the team index from standings rows)
 // while every league's standings payload ALSO carries a 20-scorer block that
 // getTeamIndex discarded — so the searchable player pool (460 «آقای گل» rows
 // incl. the Iranian hooks صیادمنش/زاهدی) rides the SAME getStandings calls,
-// ZERO extra upstream fetches. Keys/aliases ride PLAYER_NAME_FA through the
-// standings mapper, so Persian queries («صیادمنش») match by design.
+// ZERO extra upstream fetches. cycle-171 folds the SAME payload's assists
+// block («بهترین پاس‌دهندگان», the cycle-170 surface) into the pool — the
+// Dybala/Rice/Zaccagni class of creators is searchable now. Keys/aliases ride
+// PLAYER_NAME_FA through the standings mapper, so Persian queries («صیادمنش»)
+// match by design.
 export interface PlayerIndexEntry {
   playerId: number;
   name: string; // honest upstream English name
@@ -3336,6 +3339,28 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
         leagueFa: lg.faName,
         goals: s.goals ?? undefined,
         rank: s.rank ?? 0,
+      });
+    }
+    // cycle-171: the «بهترین پاس‌دهندگان» block rides the SAME payload (the
+    // cycle-170 surface) — assist kings who are not top-20 scorers (live probe
+    // 2026-10-30: 16 of 27 across 9 leagues — Dybala/Rice/Zaccagni…) were
+    // unsearchable while their rows sit in the very same cached standings
+    // answer. ZERO extra upstream fetches: fold them after the scorers; the
+    // seen-set keeps a dual-listed player once (as the scorer row). The
+    // playerId<=0 guard mirrors the 167 transfer lesson (a dead id would
+    // dead-end the /player link network).
+    for (const a of r.value.assists || []) {
+      if (a.playerId == null || a.playerId <= 0 || seen.has(a.playerId)) continue;
+      seen.add(a.playerId);
+      out.push({
+        playerId: a.playerId,
+        name: a.name,
+        fa: a.nameFa || a.name,
+        teamFa: a.team || undefined,
+        teamId: a.teamId ?? undefined,
+        leagueKey: lg.key,
+        leagueFa: lg.faName,
+        rank: a.rank ?? 0,
       });
     }
   });
