@@ -21,7 +21,7 @@
 # V6a /topscorers default → honest «۱۴ لیگ و جام برتر», no stale ۱۳ copy
 # V6b season-selected → dynamic «۱۴ لیگ مشارکت‌کننده» + «۲۰۲۳/۲۴»
 # V7 dedicated paths /topscorers/{uae,championship,portugal} alive
-# V8 /players → «پانزده لیگ و جام برتر» + new chips + REAL two-step
+# V8 /players → «شانزده لیگ و جام برتر» (gate-synced cycle-156) + new chips + REAL two-step
 #    click mode-teams → league-uae (URL sync + Persian team grid)
 # V9 /team/102101 الجزیره → the newest league's top team page
 # V10 search_flow (149 heritage): Al-Hilal + man_united in the REAL UI —
@@ -65,10 +65,11 @@ hunt() { # $1=label $2=url $3=extra-waitfn $4=clickjs $5=featjs
   collect "$FEAT" "$1"
 }
 
-# V1: the hub — 16 league cards with the three newest routes really present
-hunt "V1 leagues hub 17 cards" "http://localhost:3000/leagues" \
+# V1: the hub — 18 league cards with the newest routes really present
+# (gate-synced cycle-156: eredivisie is the 18th card)
+hunt "V1 leagues hub 18 cards" "http://localhost:3000/leagues" \
 "" "" \
-"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new4:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
+"({cards:document.querySelectorAll(\"a[href^='/league/']\").length,new5:!!document.querySelector(\"a[href='/league/championship']\")&&!!document.querySelector(\"a[href='/league/portugal']\")&&!!document.querySelector(\"a[href='/league/uae']\")&&!!document.querySelector(\"a[href='/league/qatar']\")&&!!document.querySelector(\"a[href='/league/eredivisie']\"),h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"لیگ\")})"
 
 # V2: championship — h1, live top میدلزبورو, scorers+transfers tabs, honest bracket absence
 hunt "V2 championship page tabs" "http://localhost:3000/league/championship" \
@@ -106,21 +107,22 @@ sleep 3
 FEAT5=$($B eval "JSON.stringify((()=>{return {panel:!!document.querySelector('section[aria-label=\"انتقال‌های لیگ\"]'),alive:(document.body.innerText||'').includes('انتقال')}})())" 2>/dev/null | tr -d '"\\')
 collect "$TOP5 $FEAT5" "V5 uae jazira-top + transfers click"
 
-# V6a: the global race DEFAULT view — honest «۱۴ لیگ و جام برتر» copy
+# V6a: the global race DEFAULT view — honest «۱۶ لیگ و جام برتر» copy
 # (the dynamic «N لیگ مشارکت‌کننده» subtitle renders ONLY with a selected
-# season — designed contract, proven in V6b)
+# season — designed contract, proven in V6b; gate-synced cycle-156: the
+# race honestly grows 15→16 with eredivisie)
 hunt "V6a race default copy" "http://localhost:3000/topscorers" \
 "(document.body.innerText||\"\").includes(\"مصاف گلزنان\")" "" \
-"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy15:(document.body.innerText||\"\").includes(\"۱۵ لیگ و جام برتر\"),noStale14:(document.body.innerText||\"\").includes(\"۱۴ لیگ و جام برتر\")===false})"
+"({h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\"),noStale15:(document.body.innerText||\"\").includes(\"۱۵ لیگ و جام برتر\")===false,noStale14:(document.body.innerText||\"\").includes(\"۱۴ لیگ و جام برتر\")===false})"
 
 # V6b: season-selected race — the DYNAMIC participants subtitle. Live truth
-# (2026-10-29): qatar's ARCHIVED 2023/2024 payload carries NO top-scorer
-# category at all (probed: stats.players lacks the block; the table exists),
-# so qatar honestly sits OUT the historical window — the dynamic subtitle
-# stays ۱۴ (computed from live perLeague, not baked).
-hunt "V6b race season dyn14 (qatar archived season has no scorer block)" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
+# (re-probed cycle-156): qatar's ARCHIVED 2023/2024 payload still carries NO
+# top-scorer category (honestly out), but eredivisie's archived 2023/2024
+# payload DOES have the block (Pavlidis 29 — probed) — the dynamic subtitle
+# grows ۱۴ → ۱۵ (computed from live perLeague, not baked).
+hunt "V6b race season dyn15 (eredivisie archived season HAS a scorer block)" "http://localhost:3000/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"مشارکت‌کننده\")" "" \
-"({dyn14:(document.body.innerText||\"\").includes(\"۱۴ لیگ مشارکت‌کننده\"),noDyn15:(document.body.innerText||\"\").includes(\"۱۵ لیگ مشارکت‌کننده\")===false,seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
+"({dyn15:(document.body.innerText||\"\").includes(\"۱۵ لیگ مشارکت‌کننده\"),noDyn14:(document.body.innerText||\"\").includes(\"۱۴ لیگ مشارکت‌کننده\")===false,noDyn16:(document.body.innerText||\"\").includes(\"۱۶ لیگ مشارکت‌کننده\")===false,seasonLabel:(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")})"
 
 # V7a: dedicated uae scorers path (newest) — Persian names + fa-digit goals
 hunt "V7a uae scorers path" "http://localhost:3000/topscorers/uae" \
@@ -141,15 +143,15 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY15=$($B eval "JSON.stringify((document.body.innerText||'').includes('پانزده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('شانزده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 # the league chips live in the TEAMS mode - real click mode-teams FIRST
 # (the cycle-134/143 two-step fan path), then the uae chip
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const l=document.querySelector("[data-testid=\"league-uae\"]");if(l)l.click();return l?"clicked":"no-chip"})()' >/dev/null 2>&1
 sleep 4
-FEAT8=$($B eval "JSON.stringify((()=>{return {teamsCopy:(document.body.innerText||'').includes('اسکواد کامل همهٔ تیم‌ها'),chipChamp:!!document.querySelector('[data-testid=\"league-championship\"]'),chipPort:!!document.querySelector('[data-testid=\"league-portugal\"]'),chipUae:!!document.querySelector('[data-testid=\"league-uae\"]'),urlLeague:location.search.includes('league=uae'),teamChips:document.querySelectorAll('[data-testid^=\"team-\"]').length>=8,jazira:(document.body.innerText||'').includes('الجزیره')}})())" 2>/dev/null | tr -d '"\\')
-collect "$COPY15 $FEAT8" "V8 players hub teams→uae click"
+FEAT8=$($B eval "JSON.stringify((()=>{return {teamsCopy:(document.body.innerText||'').includes('اسکواد کامل همهٔ تیم‌ها'),chipChamp:!!document.querySelector('[data-testid=\"league-championship\"]'),chipPort:!!document.querySelector('[data-testid=\"league-portugal\"]'),chipUae:!!document.querySelector('[data-testid=\"league-uae\"]'),chipEre:!!document.querySelector('[data-testid=\"league-eredivisie\"]'),urlLeague:location.search.includes('league=uae'),teamChips:document.querySelectorAll('[data-testid^=\"team-\"]').length>=8,jazira:(document.body.innerText||'').includes('الجزیره')}})())" 2>/dev/null | tr -d '"\\')
+collect "$COPY16 $FEAT8" "V8 players hub teams→uae click"
 
 # V9: the newest league's top team page — الجزیره (102101)
 hunt "V9 al-jazira team page" "http://localhost:3000/team/102101" \
@@ -203,10 +205,11 @@ def report(name, good, detail):
     print(f"{name}: {detail} {'OK' if good else 'BAD'}")
 import re
 ascii_leak = lambda s: bool(re.search(r"[A-Za-z]", s or ""))
-# A1: six portal standings — row counts, live tops (probed 2026-10-29), zero ASCII in top-5 fa
+# A1: seven portal standings + the 18th (cycle-156) — row counts, live tops
+# (eredivisie probed 2026-10-29: Feyenoord 24), zero ASCII in top-5 fa
 for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, "سلتیک"), ("saudi", 18, "الهلال"),
                    ("championship", 24, "میدلزبورو"), ("portugal", 18, "پورتو"), ("uae", 14, "الجزیره"),
-                   ("qatar", 12, "الریان")):
+                   ("qatar", 12, "الریان"), ("eredivisie", 18, "فاینورد")):
     try:
         d = get(f"http://localhost:3000/api/standings?league={lk}")
         rows = d.get("rows") or []
@@ -214,29 +217,32 @@ for lk, n, top in (("superlig", 18, "گالاتاسارای"), ("scottish", 12, 
         report(f"standings {lk}", good, f"rows={len(rows)} top={rows[0].get('fa') if rows else None}")
     except Exception as e:
         report(f"standings {lk}", False, str(e))
-# A2: global race — 280 scorers, 14 perLeague incl. the newest six, honest leader shape
+# A2: global race — 320 scorers, 16 perLeague incl. the newest seven, honest
+# leader shape (gate-synced cycle-156: eredivisie adds its 20-scorer window)
 try:
     d = get("http://localhost:3000/api/topscorers?league=all")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 300 and len(pl) == 15 and {"superlig","scottish","saudi","championship","portugal","uae","qatar"} <= set(pl) \
+    good = len(ts) == 320 and len(pl) == 16 and {"superlig","scottish","saudi","championship","portugal","uae","qatar","eredivisie"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) and lead.get("goals", 0) > 0 \
         and not ascii_leak(lead.get("team"))
     report("topscorers all", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 except Exception as e:
     report("topscorers all", False, str(e))
-# A3: bracket honest-absence on all seven league surfaces (playoff=null → tab absent, DOM-proven V2)
-for lk in ("superlig", "scottish", "saudi", "championship", "portugal", "uae", "qatar"):
+# A3: bracket honest-absence on all eight league surfaces (playoff=null → tab
+# absent, DOM-proven V2; eredivisie's CURRENT window is null — knockout not
+# drawn — while its 2025/2026 archived bracket is proven in cycle156-domproof)
+for lk in ("superlig", "scottish", "saudi", "championship", "portugal", "uae", "qatar", "eredivisie"):
     try:
         d = get(f"http://localhost:3000/api/league-bracket?league={lk}")
         report(f"bracket {lk} null", d.get("ok") is True and d.get("bracket") is None, f"bracket={d.get('bracket')}")
     except Exception as e:
         report(f"bracket {lk} null", False, str(e))
-# A4: dedicated scorers paths ×7 — the REAL endpoint is /api/topscorers/<key>.
+# A4: dedicated scorers paths ×8 — the REAL endpoint is /api/topscorers/<key>.
 # Player names may ride the honest English fallback (cycle-104 convention);
 # TEAM names in the Persian field must be zero-ASCII.
-for lk in ("superlig", "scottish", "saudi", "championship", "portugal", "uae", "qatar"):
+for lk in ("superlig", "scottish", "saudi", "championship", "portugal", "uae", "qatar", "eredivisie"):
     try:
         d = get(f"http://localhost:3000/api/topscorers/{lk}")
         ts = d.get("scorers") or []
@@ -251,7 +257,9 @@ for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers
                   ("FC Porto","پورتو","portugal"), ("Khorfakkan","خورفکان","uae"),
                   ("Al-Hilal","الهلال","acl"), ("Real-Madrid","رئال\u200cمادرید","laliga"),
                   ("Man-United","منچستریونایتد","pl"), ("real_madrid","رئال\u200cمادرید","laliga"),
-                  ("Al-Rayyan","الریان","qatar"), ("Lusail","لوسیل","qatar"), ("Al-Sadd","السد","acl")):
+                  ("Al-Rayyan","الریان","qatar"), ("Lusail","لوسیل","qatar"), ("Al-Sadd","السد","acl"),
+                  ("Feyenoord","فاینورد","eredivisie"), ("FC Groningen","خرونینگن","eredivisie"),
+                  ("Excelsior","اکسلسیور","eredivisie"), ("Ajax","آژاکس","uecl")):
     try:
         d = get(f"http://localhost:3000/api/search?q={urllib.parse.quote(q)}")
         r = (d.get("results") or [{}])[0]
@@ -259,13 +267,14 @@ for q, fa, lk in (("Galatasaray","گالاتاسارای","superlig"), ("Rangers
         report(f"search {q}", good, f"{r.get('fa')}→{r.get('leagueKey')}")
     except Exception as e:
         report(f"search {q}", False, str(e))
-# A6: historic season 2023/2024 — participants stay 14: qatar's archived
-# season payload has NO top-scorer category (live-probed 2026-10-29), so the
-# historical window honestly excludes it (the DEFAULT race is 15/300).
+# A6: historic season 2023/2024 — participants grow 14→15: qatar's archived
+# season payload still has NO top-scorer category (honestly out) while
+# eredivisie's archived payload DOES (Pavlidis 29 — live-probed cycle-156),
+# so the historical window now includes eredivisie (the DEFAULT race is 16/320).
 try:
     d = get("http://localhost:3000/api/topscorers?league=all&season=2023/2024")
-    pl = d.get("perLeague") or []
-    report("topscorers 2023/2024 participants", len(pl) == 14 and "qatar" not in pl, f"perLeague={len(pl)} qatar-archived-no-scorer-block")
+    pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
+    report("topscorers 2023/2024 participants", len(pl) == 15 and "qatar" not in pl and "eredivisie" in pl, f"perLeague={len(pl)} qatar-out eredivisie-in")
 except Exception as e:
     report("topscorers 2023/2024 participants", False, str(e))
 # A7: transfers feeds ×3 — the route wraps the payload: {ok, transfers:
@@ -289,7 +298,7 @@ case "$API_OUT" in *"API_TRUTH OK"*) : ;; *) BAD=$((BAD+1)) ;; esac
 
 echo "== RESULT =="
 if [ "$BAD" -eq 0 ]; then
-  echo "HUNT OK — patrol contracts green (cycle-153 targets: championship/portugal/uae fan-path + 16-league API truth)"
+  echo "HUNT OK — patrol contracts green (cycle-153 targets, gates synced to the 18-league cycle-156 truth)"
 else
   echo "HUNT FLAGGED (BAD=$BAD)"; exit 1
 fi

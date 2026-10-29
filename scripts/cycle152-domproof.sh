@@ -85,9 +85,9 @@ try:
     leader = scorers[0] if scorers else {}
     cards = d.get('cards') or {}
     y = cards.get('yellow') if isinstance(cards, dict) else None
-    report('A2 race 15 participants + window byte-identical',
-           len(pl) == 15 and 'qatar' in pl and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
-           and len(scorers) == 300 and len(seas) == 12
+    report('A2 race 16 participants + window byte-identical (gate-synced cycle-156: eredivisie joins)',
+           len(pl) == 16 and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl and 'portugal' in pl and 'saudi' in pl
+           and len(scorers) == 320 and len(seas) == 12
            and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
            and d.get('selectedSeason') == '2026/2027'
            and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
@@ -211,8 +211,8 @@ probe "http://localhost:3000/league/uae" "D2 transfers tab live + zero broken" \
 
 # D3: the global race — the copy honestly says FIFTEEN, the old 14 copy is
 # gone, the Qatar chip rides the participant list
-probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۵ + qatar chip" \
-"const b=document.body.innerText;return {copy15:b.includes('۱۵ لیگ و جام برتر'),old14gone:!b.includes('۱۴ لیگ و جام برتر'),chip:b.includes('لیگ ستارگان قطر')}"
+probe "http://localhost:3000/topscorers?league=all" "D3 race copy ۱۶ + eredivisie chip" \
+"const b=document.body.innerText;return {copy16:b.includes('۱۶ لیگ و جام برتر'),old15gone:!b.includes('۱۵ لیگ و جام برتر'),old14gone:!b.includes('۱۴ لیگ و جام برتر'),chip:b.includes('لیگ ستارگان قطر'),ere:b.includes('اردیویزهٔ هلند')}"
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D4: the dedicated /topscorers/uae page (new SSG path) — live rows with the
@@ -233,4 +233,4 @@ probe "http://localhost:3000/players?league=uae" "D6 players hub uae grid" \
 [ $? -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 echo "== RESULT =="
-if [ "$TOTAL_BAD" -eq 0 ] && [ "$A_BAD" -eq 0 ]; then echo "DOM_PROOF OK (API 4/4 + DOM 6/6 green — لیگ برتر امارات honest end-to-end: the 16th competition and the SIXTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الجزیره ۱۴/شباب الاهلی دبی ۱۳/الوصل ۱۳) on a 14/14 Persian table, Willy Semedo 4 atop the scorers with a PERSIAN team field (یونایتد), 280-scorer race with رافینیا still honest leader, 19 titles topped by 2025/2026 العین over شباب الاهلی دبی (oldest 2005/2006 شباب الاهلی دبی), transfers LIVE and ALL-Persian (37-name sweep, 99 items zero-ASCII), bracket honestly absent, NO espnSlug (ESPN serves no UAE fixtures — persiangulf pattern, probed live), attribution truth live-verified: خورفکان rides the new uae index while the seven prior first-seen truths stay put (پورتو→portugal, وست‌هم→championship, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۴ + players hub چهارده + search guide ۱۶ + /leagues 16th card, /players uae grid with URL sync, the SEVEN Iranians عزت‌اللهی/طارمی/آزمون/نوراللهی/قایدی/قربانی/قدوس live in the scorer pool; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"; else echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1; fi
+if [ "$TOTAL_BAD" -eq 0 ] && [ "$A_BAD" -eq 0 ]; then echo "DOM_PROOF OK (API 4/4 + DOM 6/6 green — لیگ برتر امارات honest end-to-end: the 16th competition and the SIXTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (الجزیره ۱۴/شباب الاهلی دبی ۱۳/الوصل ۱۳) on a 14/14 Persian table, Willy Semedo 4 atop the scorers with a PERSIAN team field (یونایتد), 320-scorer race (16 leagues, gate-synced cycle-156) with رافینیا still honest leader, 19 titles topped by 2025/2026 العین over شباب الاهلی دبی (oldest 2005/2006 شباب الاهلی دبی), transfers LIVE and ALL-Persian (37-name sweep, 99 items zero-ASCII), bracket honestly absent, NO espnSlug (ESPN serves no UAE fixtures — persiangulf pattern, probed live), attribution truth live-verified: خورفکان rides the new uae index while the seven prior first-seen truths stay put (پورتو→portugal, وست‌هم→championship, گالاتاسارای→superlig, رنجرز→scottish, ابها→saudi, الهلال→acl, سلتیک→uel), race copy ۱۶ + players hub شانزده + search guide ۱۸ + /leagues 18th card (eredivisie), /players uae grid with URL sync, the SEVEN Iranians عزت‌اللهی/طارمی/آزمون/نوراللهی/قایدی/قربانی/قدوس live in the scorer pool; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"; else echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1; fi

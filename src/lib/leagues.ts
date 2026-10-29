@@ -196,6 +196,26 @@ export const LEAGUES: LeagueConfig[] = [
   // probed via /api/player/1828115 on 2026-10-29), the 152 probe's
   // runner-up finally paying off with a Persian hook of its own.
   { key: "qatar",      fotmobId: 535,         ccode3: "QAT",  faName: "لیگ ستارگان قطر",    enName: "Qatar Stars League",                          priority: 17 },
+  // cycle-156: Eredivisie (league 57, ccode3 NED — primaryId recovered live
+  // from the 2026-10-31 matches feed after the id=49 guess answered payload
+  // null: evidence over memory, the D5 lesson). The Persian-fan pick of the
+  // five cycle-155 runner-up candidates (Egyptian/Belgian/Greek/Swiss also
+  // probed complete): the live 154-scorer goals.json + squads of all 18
+  // clubs carry a LIVE Iranian — علیرضا جهانبخش (Excelsior, fotmob 466890,
+  // squad ccode IRN + player.info.country = "Iran" verified through our own
+  // /api/player/466890). Belgium's lone IRN-flagged hit («Dennis Eckert»,
+  // a German-Spanish striker) is WRONG upstream ccode data — the D5
+  // player-level verification killed it. Complete blocks: 18-row flat
+  // 2026/2027 table (Feyenoord 24 / Ajax 21 / PSV 20), 17 slash-format
+  // seasons, Top scorer category with fetchAllUrl (Willumsson 8 FC
+  // Groningen), 127 title seasons (newest 2025/2026 PSV over Feyenoord,
+  // oldest 1897/1898 R.U.N. — pre-war defunct names ride the honest
+  // English fallback by design), transfers.data = 100, playoff = null in
+  // the CURRENT window (knockout not drawn) while 2025/2026 serves a real
+  // 2-round European-playoff bracket — the season-aware bracket API
+  // already honors it. espnSlug ned.1 verified live (200), unlike the Gulf
+  // leagues — the matches ESPN fallback covers it too.
+  { key: "eredivisie", fotmobId: 57,          ccode3: "NED",  faName: "اردیویزهٔ هلند",     enName: "Eredivisie",        espnSlug: "ned.1",          priority: 18 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -238,7 +258,7 @@ const COMPETITION_FA: Record<string, string> = {
   "afc champions league elite west": "لیگ قهرمانان آسیا (الیت) — غرب",
   "afc champions league elite east": "لیگ قهرمانان آسیا (الیت) — شرق",
   "afc champions league two": "لیگ قهرمانان آسیا ۲",
-  "eredivisie": "اردیویزه هلند",
+  "eredivisie": "اردیویزهٔ هلند",
   "primeira liga": "لیگ پرتغال",
   "liga portugal": "لیگ پرتغال",
   "super lig": "سوپرلیگ ترکیه",
@@ -750,6 +770,42 @@ const TEAM_FA: Record<string, string> = {
   "el jaish": "الجیش", // defunct Lekhwiya-era side (merged into الدحیل 2017) — title-runner rows 2011–2015
   "far rabat": "فار رباط",
   "zulte waregem": "زولته وارخم",
+  // cycle-156: Eredivisie (league 57) — exact upstream spellings of the
+  // live 18-team 2026/2027 table + the top-20 window of the 154-scorer
+  // goals.json + the 89-distinct-club transfer sweep + the 127 title
+  // seasons not already mapped above (ajax / feyenoord / psv / az alkmaar /
+  // fc twente / fortuna sittard / sc heerenveen / excelsior / sparta
+  // rotterdam / pec zwolle / nec nijmegen / fc utrecht ride existing ACL+
+  // UCL-era entries; scorer-file spellings «PSV» and «AZ» are the short
+  // variants of the same clubs). Pre-war defunct champions (R.U.N. Amstels
+  // en Progress, HVV Den Haag, Be Quick 1887…) deliberately ride the
+  // honest English fallback — a 19th-century transliteration nobody uses
+  // is worse than the source name (cycle-96/104 convention). Probed
+  // 2026-10-29, UA Chrome/124. Zero duplicate keys against the 776
+  // pre-existing team keys (guard asserted in cycle156-domproof).
+  "fc groningen": "خرونینگن",
+  "go ahead eagles": "گوآهد ایگلز",
+  "cambuur": "کامبور", "sc cambuur": "کامبور",
+  "telstar": "تلستار",
+  "ado den haag": "آدو دن‌هاگ",
+  "willem ii": "ویلم دوم",
+  "fc volendam": "فولندام",
+  "fc eindhoven": "آیندهوون",
+  "de graafschap": "دِ خرافسخاپ",
+  "heracles": "هراکلس",
+  "mvv maastricht": "ام‌وی‌و ماستریخت",
+  "roda jc kerkrade": "رودا",
+  "az": "آلکمار", // scorer-file short spelling of AZ Alkmaar
+  "hfc haarlem": "هارلم",
+  "rkc waalwijk": "آر‌کی‌سی والویک",
+  // transfer-feed foreign clubs not covered by earlier sweeps (23 distinct
+  // unmapped in the 100-item feed — the mapped majority ride existing keys)
+  "aab": "آلبورگ", "randers fc": "رانرس",
+  "arminia bielefeld": "آرمینیا بیله‌فلد", "greuther fürth": "گرویتر فورث",
+  "breiðablik": "بریدابلیک", "if karlstad": "ایف کارلستاد",
+  "machida zelvia": "ماچیدا زلویا", "nk lokomotiva": "لوکوموتیوا",
+  "rotherham": "روترام", "śląsk wrocław": "شلونسک وروتسواو",
+  "salt lake": "رئال سالت‌لیک", // short spelling of Real Salt Lake
 };
 
 export function competitionFa(name: string, ccode?: string): string {

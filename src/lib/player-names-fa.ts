@@ -435,6 +435,39 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "yacine brahimi": "یاسین براهیمی",
   "julian draxler": "یولیان درکسلر",
   "francesco antonucci": "فرانچسکو آنتونوچی",
+  // — Eredivisie (cycle-156) — the top-20 window of the live 154-scorer
+  // 2026/2027 goals.json + the league's live Iranian (جهانبخش, Excelsior —
+  // outside the scorer window but the Persian-fan hook of the surface) +
+  // پاولیدیس (the 2023/2024 archived window's leader, 29 — joins the
+  // historical race view after the league lands). Zero duplicate keys
+  // against the 389 pre-existing player keys (guard in cycle156-domproof).
+  "brynjólfur willumsson": "برینجولفور ویلیومسون",
+  "søren tengstedt": "سورن تنگستد",
+  "anis hadj moussa": "انیس حاج موسی",
+  "guus til": "خوس تیل",
+  "jacob trenskow": "یاکوب ترنسکو",
+  "milan zonneveld": "میلان زونه‌ولد",
+  "nacho ferri": "ناچو فرری",
+  "thom van bergen": "توم فان برخن",
+  "anthony descotte": "آنتونی دسکوت",
+  "gjivai zechiël": "گیوای زخییل",
+  "ilyès hamache": "ایلیس هماش",
+  "nicolas binder": "نیکولاس بیندر",
+  "rafik el arguioui": "رافیک ال‌ارگویویی",
+  "ro-zangelo daal": "رو-زنجلو دال",
+  "sven mijnans": "سون میینانس",
+  "tolu arokodare": "تولو آروکوداره",
+  "artem stepanov": "آرتم استپانوف",
+  "stefán sigurðarson": "استفان سیگوردارسون",
+  "tyrone owusu": "تایرون اووسو",
+  "alireza jahanbakhsh": "علیرضا جهانبخش",
+  "vangelis pavlidis": "وانگلیس پاولیدیس",
+  // surfaced live by the 2023/2024 race view (de Jong enters with the
+  // league itself — PSV 23/24, rank 3; Ronaldo rode the saudi entry):
+  // both are confident, well-known transliterations (lib criterion above)
+  "luuk de jong": "لوک دی یونگ",
+  "cristiano ronaldo": "کریستیانو رونالدو",
+
 };
 
 // Persian display name for an upstream player name — exact lowercased map
