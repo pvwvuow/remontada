@@ -565,6 +565,46 @@ export interface TeamXgEntry {
   teamXg: number;  // StatValue VERBATIM — xG decimal (34.8), the 210/217/226/230/232 convention, never rounded
 }
 
+/** cycle-240 additive: one «گل نخرده‌های تیم‌ها» row — the deep-file
+ *  family's TWENTIETH sibling, its SECOND TEAM-PARTICIPANT member and the
+ *  team-side LEVEL of the keeper clean-sheets surface (215), the team twin
+ *  relationship 237 established for xG. The "Clean sheets" TEAM category
+ *  carries its own fetchAllUrl → data.fotmob.com
+ *  stats/{id}/season/{sid}/clean_sheet_team.json (live-probed 2026-10-30,
+ *  UA Chrome/124: WIDE files on all six domestic globalMerge leagues —
+ *  laliga 18 Athletic Club 6.0 / pl 18 Arsenal 5.0 / seriea 18 Roma 5.0 /
+ *  bundesliga 16 Borussia Dortmund 5.0 / ligue1 14 Lorient 5.0 / ucl 17
+ *  Arsenal 2.0 rows; portugal 17 with the THREE-WAY tie Arouca/Porto/
+ *  Santa Clara 5,5,5 probed for breadth; persiangulf honestly absent (its
+ *  feed carries ONE team category, goals_team_match — probed) while MAS
+ *  SERVES a naturally-thin 8-row file (Johor Darul Ta'zim 6.0 — the FIRST
+ *  below-the-floor serve in the family, the 225 health-rule class on the
+ *  mas panel). INTEGER-VALUED floats (StatFormat number — probed int on
+ *  every serving file) → the 215/220/231/235/236 integer convention: the
+ *  pill renders the integer via String() (6.0 → «۶»), dir=ltr. Upstream
+ *  Rank keeps competition ties verbatim (laliga rank 2,2 Atlético+Celta
+ *  probed) — the merge re-ranks POSITIONALLY like every sibling. The
+ *  rows' ParticiantId is ALWAYS 0 (teams carry TeamId) → dedup by TeamId,
+ *  the id /team/[id] keys on. The honest-name contract rides the EXISTING
+ *  teamFa map — zero new PLAYER_NAME_FA entries. NO badge twin and NO
+ *  global-merge participation BY DESIGN (the 237 team-surface rule).
+ *  SEASON-AWARE (the 124/…/236 class): the 2020/21 laliga raw serves its
+ *  OWN file — 20 rows, Atletico Madrid 18.0 / Real Madrid 17.0 / Sevilla
+ *  17.0 — frozen, the 202 anchor pattern. Wide-enough files on the
+ *  domestics (14-20 rows, above the FULL_LIST_HEALTHY_MIN floor) → the
+ *  STANDARD guard with ONE documented mas exemption (its 8-row file is
+ *  the file's real size, not a dropped fetch — the 176 red-cards lesson);
+ *  always present (possibly []); feeds without the team category degrade
+ *  honestly to []. */
+export interface TeamCleanSheetEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamCleanSheets: number;  // StatValue VERBATIM — integer-valued float (6.0), the 215/220/231/235/236 convention, never rounded
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -910,6 +950,17 @@ export interface StandingsData {
    *  thin guard applies; always present (possibly []); feeds without
    *  the team category degrade honestly to []. */
   teamXg: TeamXgEntry[];
+  /** cycle-240 additive: «گل نخرده‌های تیم‌ها» rides the mapped payload —
+   *  the deep-file family's TWENTIETH sibling and its SECOND
+   *  TEAM-PARTICIPANT member (the team-side LEVEL of the keeper clean
+   *  sheets 215 — the team twin relationship 237 established). Integer-
+   *  valued floats verbatim (the 215/220/231/235/236 convention); the
+   *  block rides the league page only, rows link /team/[id]; mas serves
+   *  a naturally-thin 8-row file (probed) while persiangulf honestly
+   *  degrades to []; always present (possibly []). REQUIRED since the
+   *  v27 bump — old v26 rows lack it and would keep the section hidden
+   *  for a full TTL generation. */
+  teamCleanSheets: TeamCleanSheetEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2532,6 +2583,63 @@ export async function getFullTeamXg(leagueKey: string, season?: string): Promise
   }
 }
 
+/** cycle-240: the full-file fetch for the team clean-sheets block — the
+ *  exact 237 getFullTeamXg mirror one category over: stats/{id}/season/
+ *  {sid}/clean_sheet_team.json (live-probed 2026-10-30, UA Chrome/124 —
+ *  "Clean sheets" TEAM category, INTEGER-valued floats, wide files on the
+ *  six domestics 14-20 rows, ucl 17, portugal 17 with the three-way
+ *  5,5,5 tie; persiangulf honestly absent — its feed carries one team
+ *  category, goals_team_match, probed; MAS SERVES a naturally-thin 8-row
+ *  file, Johor Darul Ta'zim 6.0 — the first below-the-floor serve in the
+ *  family). Same cache + standard guard as the siblings on the domestics;
+ *  the mas 8-row file is the file's REAL size, not a dropped fetch — the
+ *  guard exemption for mas lives at the standings TTL clause (the 225
+ *  health-rule class, the 176 red-cards lesson). Season-aware like every
+ *  sibling (the 2020/21 laliga raw serves 20 rows, Atletico Madrid 18.0,
+ *  frozen). Feeds without the team category degrade to []. */
+export async function getFullTeamCleanSheets(leagueKey: string, season?: string): Promise<TeamCleanSheetEntry[]> {
+  try {
+    return await cached(
+      `fullTeamCleanSheets:v1:${leagueKey}:${season || "cur"}`,
+      // Standard guard (the 210/…/237 class) for the WIDE domestics:
+      // clean_sheet_team files serve 14-20 rows there — above the family
+      // floor, so thin means "the fetch was dropped" and re-probes in 90s.
+      // mas's 8-row file is naturally thin (probed) — its exemption is
+      // the standings TTL clause, NOT here (a fetch that DROPS mas's file
+      // returns [] which caches 90s and re-probes, the honest path).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^clean sheets$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamCleanSheetEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamCleanSheets: r.StatValue ?? 0,  // VERBATIM — the 215/220/231/235/236 integer convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -3609,6 +3717,64 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-240: the team clean-sheets block («گل نخرده‌های تیم‌ها») — the
+    // deep-file family's TWENTIETH sibling and its SECOND TEAM-PARTICIPANT
+    // member: the team-side LEVEL of the keeper clean-sheets surface (215),
+    // the team-twin relationship 237 established for xG — straight from the
+    // live clean_sheet_team.json probe (UA Chrome/124, 2026-10-30,
+    // scripts/cycle240-probe.sh): WIDE files on all six domestic globalMerge
+    // leagues (laliga 18 Athletic Club 6.0 / pl 18 Arsenal 5.0 / seriea 18
+    // Roma 5.0 / bundesliga 16 Borussia Dortmund 5.0 / ligue1 14 Lorient
+    // 5.0 / ucl 17 Arsenal 2.0 rows; portugal 17 with the THREE-WAY tie
+    // Arouca/Porto/Santa Clara 5,5,5 probed for breadth); persiangulf
+    // honestly absent (its feed carries ONE team category,
+    // goals_team_match — probed) while MAS SERVES a naturally-thin 8-row
+    // file (Johor Darul Ta'zim 6.0 — the FIRST below-the-floor serve in
+    // the family, the 225 health-rule class on the mas panel).
+    // INTEGER-VALUED floats (StatFormat number, probed int on every
+    // serving file) → the 215/220/231/235/236 integer convention: storage
+    // never rounds, the pill renders the integer via String() dir=ltr (6.0
+    // renders «۶»; the JS-number corner mirrors the 238 «۲۰.۰» proof —
+    // String() on an integer-valued float prints without the .0).
+    // Upstream Rank keeps competition ties verbatim (laliga rank 2,2
+    // Atlético+Celta probed); the merge re-ranks POSITIONALLY like every
+    // sibling. ParticiantId is ALWAYS 0 (teams carry TeamId) → dedup by
+    // TeamId. NO badge twin and NO global-merge participation BY DESIGN
+    // (the 237 team-surface rule); the block rides the league page only,
+    // rows link /team/{teamId} (the standings-view contract).
+    // SEASON-AWARE (the 124/…/236 class): the 2020/21 laliga raw serves
+    // its OWN file — 20 rows, Atletico Madrid 18.0 / Real Madrid 17.0 /
+    // Sevilla 17.0 — frozen, the 202 anchor pattern. The honest-name
+    // contract rides the EXISTING teamFa map (zero new PLAYER_NAME_FA
+    // entries) + the teamFa edition of the 170 read-time freshener line.
+    // Additive mirror of 237 end-to-end: TeamCleanSheetEntry + the
+    // REQUIRED teamCleanSheets field on the mapped payload + the team
+    // top-3-first merge (dedup by TEAM id, teamCleanSheets DESC, top-10,
+    // POSITIONAL re-rank) + standings:v26→v27 (the 52/…/236 additive-
+    // shape convention) + the /api/topscorers/[leagueKey] route field +
+    // the league-page block «گل نخرده‌های تیم‌ها» placed right after گل
+    // مورد انتظار تیم‌ها so the two team-side blocks read together while
+    // the player→team pair and the keeper QUINTET stay untouched — the
+    // older gates' relative-order asserts are index-inequality-based so
+    // the insertion provably keeps them green (all re-ran green) — with
+    // data-testid=tcs-row. The mas exemption: the standings TTL guard
+    // does NOT demand ≥10 rows on mas (its 8-row file is the file's REAL
+    // size — the 176 red-cards lesson; the 225 health-rule class), the
+    // domestics keep the standard thin-kept clause.
+    const csTeamEntries: TeamCleanSheetEntry[] = statTeamCategory(raw, /^clean sheets$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamCleanSheets: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamCleanSheets - a.teamCleanSheets || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamCleanSheets = await getFullTeamCleanSheets(leagueKey, requestedSeason);
+    const enrichedCsIds = new Set(csTeamEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamCleanSheets = [...csTeamEntries, ...fullTeamCleanSheets.filter((r) => r.teamId <= 0 || !enrichedCsIds.has(r.teamId))]
+      .sort((a, b) => b.teamCleanSheets - a.teamCleanSheets || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -3701,6 +3867,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       chancesCreated: mergedChancesCreated,
       bigChancesMissed: mergedBigChancesMissed,
       teamXg: mergedTeamXg,
+      teamCleanSheets: mergedTeamCleanSheets,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3827,7 +3994,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // the mapped payload as a REQUIRED field; old v25 rows lack it and
     // would keep the new section hidden for up to a full TTL generation.
     // Whole key bumps (the 52/…/236 additive-shape convention).
-    await cached(`standings:v26:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-240: v27 — the team clean-sheets block («گل نخرده‌های
+    // تیم‌ها») joins the mapped payload as a REQUIRED field; old v26 rows
+    // lack it and would keep the new section hidden for up to a full TTL
+    // generation. Whole key bumps (the 52/…/237 additive-shape
+    // convention).
+    await cached(`standings:v27:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -4007,6 +4179,22 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // re-probes in 90s. Honest-empty feeds (no "Expected goals" TEAM
       // category — persiangulf AND mas, probed) keep the normal TTL.
       !(Array.isArray(mapped.teamXg) && mapped.teamXg.length > 0 && mapped.teamXg.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-240: the team clean-sheets block joins the guard family —
+      // clean_sheet_team.json is WIDE on the six domestics (14-20 rows,
+      // above the floor) so a thin merged list there means the fetch was
+      // dropped → re-probes in 90s. THE MAS FLOOR (league-aware, the 225
+      // health-rule class, the 176 red-cards lesson): mas's clean-sheet
+      // file is NATURALLY thin — live-probed 2026-10-30 at EIGHT rows
+      // (Johor Darul Ta'zim 6.0 rank-1), the file's real size — so the
+      // 10-row floor would re-probe mas FOREVER. But mas still needs the
+      // dropped-fetch protection: the PROBED first cold build served the
+      // podium-only 3 rows for a full generation before the floor was
+      // fixed. The mas floor is 4 — STRUCTURAL, not a file-size pin: the
+      // podium (participant + topThree) can never exceed 3 rows, so ≥4
+      // PROVES the full file arrived while ≤3 always re-probes. mas is
+      // globalMerge:false with its own panel; the exemption is
+      // league-scoped and documented here.
+      !(Array.isArray(mapped.teamCleanSheets) && mapped.teamCleanSheets.length > 0 && mapped.teamCleanSheets.length < (leagueKey === "mas" ? 4 : FULL_LIST_HEALTHY_MIN)) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

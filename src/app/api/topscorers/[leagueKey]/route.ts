@@ -162,6 +162,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // honest [] on persiangulf AND mas, probed); old consumers never
       // read this field (the 108 rule).
       teamXg: st.teamXg,
+      // cycle-240 additive: «گل نخرده‌های تیم‌ها» rides the SAME cached
+      // payload — the deep-file family's TWENTIETH sibling and its SECOND
+      // TEAM-PARTICIPANT member: the team-side LEVEL of the keeper clean
+      // sheets surface (the team twin relationship 237 established;
+      // INTEGER values verbatim — the 215/220/231/235/236 convention;
+      // season-aware like the sisters; honest [] on persiangulf, probed;
+      // mas serves a naturally-thin 8-row file, probed); old consumers
+      // never read this field (the 108 rule).
+      teamCleanSheets: st.teamCleanSheets,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

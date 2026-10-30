@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -172,6 +172,21 @@ interface LeagueScorersData {
   // SEASON-AWARE (the 124/…/236 class): historical views serve their own
   // files (2020/21 laliga = Barcelona 74.3, frozen).
   teamXg?: TeamXgEntry[];
+  // cycle-240 additive: «گل نخرده‌های تیم‌ها» rides the same payload — the
+  // deep-file family's TWENTIETH sibling and its SECOND TEAM-PARTICIPANT
+  // member: the team-side LEVEL of the keeper clean-sheets surface (215 —
+  // the team twin relationship 237 established), rendered right after
+  // گل مورد انتظار تیم‌ها so the two team-side blocks read together while
+  // the player→team pair and the keeper QUINTET stay untouched; INTEGER
+  // pill WITH dir=ltr rendered via String() (upstream integer-valued
+  // floats, probed — the 215/220/231/235/236 integer convention), honest
+  // absence = [] (feeds without the "Clean sheets" TEAM category —
+  // persiangulf, probed — hide the section; mas serves a naturally-thin
+  // 8-row file, probed). NO badge twin BY DESIGN (badges key on PLAYER
+  // ids). Rows link /team/[id] (the standings-view contract).
+  // SEASON-AWARE (the 124/…/236 class): historical views serve their own
+  // files (2020/21 laliga = Atletico Madrid 18.0, frozen).
+  teamCleanSheets?: TeamCleanSheetEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -812,6 +827,78 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="txg-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-240: گل نخرده‌های تیم‌ها — the deep-file family's TWENTIETH
+          sibling and its SECOND TEAM-PARTICIPANT member: the team-side
+          LEVEL of the keeper clean-sheets surface (215), the team twin
+          relationship 237 established for xG.
+          stats/{id}/season/{sid}/clean_sheet_team.json — live-probed
+          2026-10-30 (UA Chrome/124): ALL SIX domestic globalMerge leagues
+          serve it (laliga 18 Athletic Club 6.0 / pl 18 Arsenal 5.0 /
+          seriea 18 Roma 5.0 / bundesliga 16 Borussia Dortmund 5.0 /
+          ligue1 14 Lorient 5.0 / ucl 17 Arsenal 2.0 rows; portugal 17
+          with the THREE-WAY tie Arouca/Porto/Santa Clara 5,5,5 probed for
+          breadth); persiangulf honestly absent (its feed carries ONE team
+          category, goals_team_match) while mas serves a naturally-thin
+          8-row file (Johor Darul Ta'zim 6.0 — the FIRST below-the-floor
+          serve in the family, the 225 health-rule class). INTEGER-VALUED
+          floats (StatFormat number, probed int on every serving file) →
+          the 215/220/231/235/236 integer convention: the pill renders
+          String(value) dir=ltr (6.0 renders «۶»). Upstream Rank keeps
+          competition ties verbatim (laliga rank 2,2 Atlético+Celta) — the
+          merge re-ranks POSITIONALLY. SEASON-AWARE: the 2020/21 laliga
+          raw serves its OWN file (Atletico Madrid 18.0 / Real Madrid
+          17.0 — frozen, the 202 anchor pattern). The honest-name contract
+          rides the EXISTING teamFa map — zero new PLAYER_NAME_FA entries.
+          Rows link /team/{teamId} (the standings-view contract). Placed
+          right after گل مورد انتظار تیم‌ها so the two team-side blocks
+          read together while the player→team pair and the keeper QUINTET
+          stay untouched — the older gates' relative-order asserts are
+          index-inequality-based so the insertion provably keeps them
+          green. Honest absence when the feed has no "Clean sheets" team
+          category → the section simply hides. */}
+      {data && !loading && (data.teamCleanSheets || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <path d="M12 3l8 3.5v5c0 4.6-3.2 8.2-8 9.5-4.8-1.3-8-4.9-8-9.5v-5z" />
+              <path d="M9 12l2 2 4-4" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">گل نخرده‌های تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">دروازهٔ بسته — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamCleanSheets || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(String(r.teamCleanSheets))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="tcs-row">
                   {r.teamId > 0 ? (
                     <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
