@@ -625,6 +625,20 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Squad value": { fa: "ارزش بازار ترکیب", sub: "جمع ارزش نقل‌وانتقالی بازیکنان" },
     "FotMob rating": { fa: "امتیاز فوت‌ماب تیم", sub: "میانگین نمره بازی‌ها" },
     "Goals per match": { fa: "گل زده در هر بازی", sub: "قدرت آفنسیو فصل" },
+    // cycle-196: the 92 catalog covered 6 of the 31 team leaderboards the
+    // SAME payload carries — the defensive/expected-goals/set-piece/card
+    // families never surfaced (probe 2026-10-30: 8/8 absent from the served
+    // boards while the upstream bytes sat in the cached leagueRaw). Same
+    // extraction, same chips, zero new fetches; categories a league's feed
+    // lacks (or a season's) simply stay hidden (the 92 honest-skip rule).
+    "Goals conceded per match": { fa: "گل خورده در هر بازی", sub: "استحکام خط دفاع فصل" },
+    "Shots on target per match": { fa: "شوت در چارچوب در هر بازی", sub: "خطرآفرینی پیوسته" },
+    "Expected goals": { fa: "گل انتظاری (xG)", sub: "کیفیت موقعیت‌های ساخته‌شده" },
+    "xG difference": { fa: "تفاضل گل انتظاری", sub: "عملکرد واقعی در برابر انتظار" },
+    Corners: { fa: "کرنر", sub: "بیشترین کرنر فصل" },
+    "Set piece goals": { fa: "گل از ضربات ایستگاهی", sub: "کرنر، پنالتی و ضربهٔ آزاد" },
+    "Penalties awarded": { fa: "پنالتی گرفته‌شده", sub: "دریافت پنالتی در بازی‌های فصل" },
+    "Yellow cards": { fa: "کارت زرد", sub: "بی‌نظمی فصل — سطح تیم" },
   },
   player: {
     "FotMob rating": { fa: "امتیاز فوت‌ماب", sub: "میانگین نمره بازی‌ها" },
@@ -633,6 +647,17 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Successful dribbles per 90": { fa: "دریبل موفق در هر ۹۰ دقیقه", sub: "میانگین دریبل‌های برنده" },
     "Goals prevented": { fa: "گل مهارشده", sub: "دروازه‌بان‌ها؛ منفی = بیش از انتظار گل خورده" },
     "Accurate passes per 90": { fa: "پاس دقیق در هر ۹۰ دقیقه", sub: "میانگین پاس‌های درست" },
+    // cycle-196: 6 more of the 46 player leaderboards — the defensive and
+    // goalkeeper families (tackles/interceptions، creator volume، xA، GK
+    // clean sheets/save percentage) join the curated set; rows keep the
+    // /player/{id} link + honest Persian club (probe: id+teamName+teamId
+    // on every new block).
+    "Tackles per 90": { fa: "تکل در هر ۹۰ دقیقه", sub: "برندگی در تن‌به‌تن" },
+    "Interceptions per 90": { fa: "قطع توپ در هر ۹۰ دقیقه", sub: "خواندن مسیر پاس" },
+    "Chances created": { fa: "موقعیت ساخته", sub: "پاس‌های منجر به شوت" },
+    "Expected assist (xA)": { fa: "پاس منجر انتظاری (xA)", sub: "کیفیت پاس‌های آخر" },
+    "Clean sheets": { fa: "کلین‌شیت", sub: "دروازه‌بان‌ها؛ بازی بدون گل خورده" },
+    "Save percentage": { fa: "درصد مهار", sub: "دروازه‌بان‌ها؛ سهم شوت‌های مهارشده" },
   },
 };
 
@@ -1308,7 +1333,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // would keep it hidden for up to a full TTL generation (the current-
     // season rows are byte-identical but share the namespace, so the whole
     // key bumps; the 176 convention repeated verbatim).
-    await cached(`standings:v9:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-196: v10 — the boards catalog grew 6→12 team + 6→12 player
+    // kinds (the 92 extraction unchanged); v9 rows carry only the old 12
+    // boards and would keep the new 12 hidden for up to a full TTL
+    // generation (the L2 survives restarts — probed: boards=12 right after
+    // a fresh build). Same shared-namespace rule: the whole key bumps
+    // (the 176/185 convention repeated verbatim).
+    await cached(`standings:v10:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
