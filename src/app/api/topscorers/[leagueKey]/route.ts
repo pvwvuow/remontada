@@ -85,6 +85,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // surface (integer minutes — the 215/216 convention); old consumers
       // never read this field (the 108 rule).
       minutes: st.minutes,
+      // cycle-221 additive: «درصد سیو» rides the SAME cached payload — the
+      // deep-file family's NINTH sibling and the THIRD keeper surface
+      // (percent values with one decimal, verbatim — the 210/217
+      // convention; honest [] on persiangulf, probed); old consumers never
+      // read this field (the 108 rule).
+      savePercentage: st.savePercentage,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

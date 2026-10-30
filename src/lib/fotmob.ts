@@ -226,6 +226,35 @@ export interface MinutesEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-221 additive: one «درصد سیو» row — the deep-file family's NINTH
+ *  sibling and the THIRD keeper surface. Live-probed 2026-10-30 UA
+ *  Chrome/124: the "Save percentage" category carries its own fetchAllUrl →
+ *  data.fotmob.com stats/{id}/season/{sid}/_save_percentage.json, serving
+ *  on SIX of the seven leagues (ucl 45 / pl 21 / laliga 21 / seriea 21 /
+ *  bundesliga 20 / ligue1 18 rows) — persiangulf honestly absent (no
+ *  keeper category at all, the 215/217 pattern). The file's row shape is
+ *  the FMStatFullRow family but the participant rides FLAT:
+ *  ParticipantName + ParticiantId (upstream's own typo the type already
+ *  handles). StatValue is a PERCENT with one decimal (82.5 = 82.5% saved —
+ *  StatFormat "percent", StatDecimals 1) kept VERBATIM — the third
+ *  non-integer member after ratings 210 and goals prevented 217. The
+ *  SubStatValue (goals conceded), MinutesPlayed and MatchesPlayed columns
+ *  ride along in the file but the surface serves the percentage only (one
+ *  stat per row, the family contract). Upstream Rank: SEQUENTIAL on the
+ *  domestics (1..21, like clean_sheet.json) but COMPETITION tie-ranked on
+ *  ucl (1,2,3,3,5,6 live-probed) — the merge re-ranks POSITIONALLY like
+ *  every sibling either way. */
+export interface SavePercentageEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  savePercentage: number;  // StatValue VERBATIM — percent, one decimal (82.5), the 210/217 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -321,6 +350,27 @@ export interface StandingsData {
    *  every sibling). Always present (possibly []) like the siblings; feeds
    *  without the category degrade honestly to []. */
   minutes: MinutesEntry[];
+  /** cycle-221 additive: «درصد سیو» — the league's own save-percentage
+   *  kings, the deep-file family's NINTH sibling (goals 23 / assists 175 /
+   *  cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
+   *  prevented 217 / minutes played 220 → save percentage 221) and the
+   *  THIRD keeper surface after clean sheets and goals prevented. The
+   *  "Save percentage" category carries its own fetchAllUrl →
+   *  data.fotmob.com stats/{id}/season/{sid}/_save_percentage.json
+   *  (live-probed 2026-10-30, UA Chrome/124: serving on SIX of the seven
+   *  leagues — laliga season/38843 = 21 rows, Ionuț Radu 82.5 / Thibaut
+   *  Courtois 76.3 / Jan Oblak 75.8; the 2025/26 raw serves its OWN file,
+   *  20 rows, Joan García 77.9 / David Soria 75.6 / Aarón Escandell 72.5 —
+   *  finished-season frozen, the 202 anchor pattern). Percent values with
+   *  one decimal kept VERBATIM (StatFormat "percent" — the third
+   *  non-integer member after ratings 210 and goals prevented 217); rank
+   *  POSITIONAL (the merge's own i+1 — ucl's file carries competition
+   *  tie-ranks 1,2,3,3,5,6, the domestics sequential; the served top-10
+   *  re-ranks like every sibling). Always present (possibly []) like the
+   *  siblings; feeds without the category degrade honestly to []
+   *  (live-probed: persiangulf carries no keeper category at all — the
+   *  section simply hides there). */
+  savePercentage: SavePercentageEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1326,6 +1376,66 @@ export async function getFullMinutes(leagueKey: string, season?: string): Promis
 }
 
 /**
+ * Full «درصد سیو» leaderboard for one league (cycle-221) — the deep-file
+ * family's NINTH sibling, the THIRD keeper surface. The "Save percentage"
+ * category carries its own fetchAllUrl →
+ * stats/{id}/season/{sid}/_save_percentage.json (live-probed 2026-10-30,
+ * UA Chrome/124: serving on SIX of the seven leagues — ucl 45 / pl 21 /
+ * laliga 21 / seriea 21 / bundesliga 20 / ligue1 18 rows; persiangulf has
+ * no keeper category at all → honest []; the finished 2025/26 laliga raw
+ * serves its OWN file, 20 rows, Joan García 77.9 / David Soria 75.6 /
+ * Aarón Escandell 72.5 — frozen, the 202 anchor pattern). The row shape is
+ * the FMStatFullRow family with the participant carried FLAT
+ * (ParticipantName + ParticiantId — upstream's own typo the type already
+ * handles) and StatValue a PERCENT with one decimal (82.5) kept VERBATIM —
+ * the rating/gp convention (210/217), never the rounding one. Upstream
+ * Rank is sequential on the domestics but COMPETITION tie-ranked on ucl
+ * (1,2,3,3,5,6 live-probed); this loader keeps the file's own order and
+ * rank verbatim — the merge re-ranks POSITIONALLY like every sibling.
+ * Same cache + cycle-127 thin-TTL guard as the siblings (healthy = ≥10
+ * rows); season-aware like every sibling (a historical raw carries its OWN
+ * fetchAllUrl — the 2020/21 raw serves Oblak 80.5 / Courtois 76.3 / Bounou
+ * 74.1). Feeds without the category degrade to [] and the honest category
+ * fallback still feeds the merge.
+ */
+export async function getFullSavePercentage(leagueKey: string, season?: string): Promise<SavePercentageEntry[]> {
+  try {
+    return await cached(
+      `fullSavePercentage:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^save percentage$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: SavePercentageEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            savePercentage: r.StatValue ?? 0,  // percent VERBATIM — the 210/217 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1459,6 +1569,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // profile network (the 167 lesson). Integer value untouched (rounded
     // once at build).
     minutes: (st.minutes || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-221 additive: save-percentage rows gain the honest Persian names
+    // like the siblings — «درصد سیو» renders on the per-league topscorers
+    // page and the raw English name alone would dead-end the profile
+    // network (the 167 lesson). Percent value untouched (verbatim).
+    savePercentage: (st.savePercentage || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1829,6 +1944,38 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-221: «درصد سیو» — the deep-file family's NINTH sibling and the
+    // THIRD keeper surface rides the SAME cached payload (zero extra
+    // upstream cost beyond the one gzip file on cold build, exactly like
+    // the siblings): stats/{id}/season/{sid}/_save_percentage.json
+    // (live-probed 2026-10-30 UA Chrome/124: SIX of the seven leagues —
+    // ucl 45 / pl 21 / laliga 21 / seriea 21 / bundesliga 20 / ligue1 18
+    // rows; persiangulf honestly absent — no keeper category at all; the
+    // 2025/26 frozen anchor Joan García 77.9 / Soria 75.6 / Escandell
+    // 72.5). Category top-3 first (the 175 merge order), then the full
+    // file merged on top, deduped by player id, sorted by percentage DESC
+    // (stable), top-10, POSITIONAL rank re-assignment (the family
+    // contract — ucl's competition tie-ranks 1,2,3,3,5,6 are honest
+    // upstream data but the served top-10 re-ranks like every sibling).
+    // SEQUENTIAL after the minutes merge (the 176 discipline: one L2
+    // write at a time).
+    const savePercentageEntries: SavePercentageEntry[] = statCategory(raw, /^save percentage$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, savePercentage: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.savePercentage - a.savePercentage || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullSavePercentage = await getFullSavePercentage(leagueKey, requestedSeason);
+    const enrichedSVIds = new Set(
+      savePercentageEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedSavePercentage = [...savePercentageEntries, ...fullSavePercentage.filter((r) => r.playerId == null || !enrichedSVIds.has(r.playerId))]
+      .sort((a, b) => b.savePercentage - a.savePercentage || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1910,6 +2057,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       gPlusA: mergedGPlusA,
       goalsPrevented: mergedGoalsPrevented,
       minutes: mergedMinutes,
+      savePercentage: mergedSavePercentage,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1984,7 +2132,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215/216/217 convention).
-    await cached(`standings:v15:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-221: v16 — the save-percentage block («درصد سیو») joins the
+    // mapped payload as a REQUIRED field; old v15 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215/216/217/220 convention).
+    await cached(`standings:v16:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -2075,6 +2228,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // a thin merged minutes list re-probes in 90s; honest-empty feeds
       // (no "Minutes played" category) keep the normal TTL.
       !(Array.isArray(mapped.minutes) && mapped.minutes.length > 0 && mapped.minutes.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-221: the same thin-kept-for-a-generation class closes for the
+      // save-percentage block (the 175/210/215/216/217/220 guard family
+      // grows by one) — a thin merged save-percentage list re-probes in 90s;
+      // honest-empty feeds (no "Save percentage" category — persiangulf,
+      // probed) keep the normal TTL.
+      !(Array.isArray(mapped.savePercentage) && mapped.savePercentage.length > 0 && mapped.savePercentage.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

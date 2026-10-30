@@ -899,6 +899,18 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "amirali madadizadeh": "امیرعلی مددی‌زاده",
   "aref haji eydi": "عارف حاجی عیدی",
   "aria yousefi": "آریا یوسفی",
+  // cycle-221: the fallbacks on the SERVED «درصد سیو» top-10s (the 167
+  // lesson — a raw English name dead-ends the profile network; the 104
+  // rule holds: all confident sports-media transliterations).
+  "konstantinos tzolakis": "کونستانتینوس تسولاکیس",
+  "karl hein": "کارل هاین",
+  "jaume domènech": "خائومه دومنک",
+  // cycle-221 DEAD-KEY FIX: the map carried "caomhín kelleher" — the i/m
+  // letters TRANSPOSED vs the live spelling the feeds serve (Caoimhín) —
+  // so the entry never fired and Kelleher honestly fell back to English on
+  // the served pl top-10. The corrected live-spelling key joins (the 219
+  // variant-class lesson: both spellings stay, exact hits always win).
+  "caoimhín kelleher": "کاویمین کلهر",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
