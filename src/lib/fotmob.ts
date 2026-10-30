@@ -177,6 +177,26 @@ export interface GPlusAEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-217 additive: one «گل‌های پیشگیری‌شده» row — the goalkeeper QUALITY
+ *  twin (the 215 clean-sheet block is the keeper's COUNT, this is the
+ *  keeper's WORTH: xG-on-target faced minus goals actually conceded). The
+ *  170 honest-name contract included. The value is a DECIMAL kept verbatim
+ *  (the rating convention, NOT the integer one) — and the family's FIRST
+ *  SIGNED leaderboard: live-probed laliga season/38843 carries negatives
+ *  at the tail (David Soria −2.4 at rank 21), a keeper who conceded more
+ *  than expected renders a negative pill. Sorting is the plain desc order
+ *  (most-prevented first) — negatives sink to the tail naturally. */
+export interface GoalsPreventedEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  goalsPrevented: number;  // xGOT faced − goals conceded, kept VERBATIM (8.2, −2.4) — storage never rounds
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -237,6 +257,24 @@ export interface StandingsData {
    *  present (possibly []) like the siblings; feeds without the category
    *  degrade honestly to []. */
   gPlusA: GPlusAEntry[];
+  /** cycle-217 additive: «گل‌های پیشگیری‌شده» — the league's own
+   *  goals-prevented kings, the deep-file family's SEVENTH sibling (goals
+   *  23 / assists 175 / cards 50+185 / rating 210 / clean sheets 215 / G+A
+   *  216 → goals prevented 217) and the FIRST SIGNED one. The "Goals
+   *  prevented" category carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/_goals_prevented.json (live-probed
+   *  2026-10-30, UA Chrome/124: laliga season/38843 = 21 ranked rows,
+   *  Álvaro Vallés 8.2, Unai Simón 2.8, Ionuț Radu 2.7 — and NEGATIVES at
+   *  the tail, David Soria −2.4; pl season/36781 = 21 rows, Bart
+   *  Verbruggen 3.3; the 2025/26 raw serves its OWN file, season/27233,
+   *  20 rows, Joan García 10.3 — finished-season frozen, the 202 anchor
+   *  pattern). Decimal values kept VERBATIM — the second non-integer
+   *  family member after ratings (the value pill renders the decimal dot
+   *  AND the minus sign, dir=ltr). Always present (possibly []) like the
+   *  siblings; feeds without the category degrade honestly to []
+   *  (live-probed: persiangulf has no "Goals prevented" category — the
+   *  section simply hides there). */
+  goalsPrevented: GoalsPreventedEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1127,6 +1165,64 @@ export async function getFullGPlusA(leagueKey: string, season?: string): Promise
 }
 
 /**
+ * cycle-217: full-season GOALS PREVENTED list for one league («گل‌های
+ * پیشگیری‌شده») — the deep-file family's SEVENTH sibling and the keeper
+ * QUALITY surface (the 215 clean-sheet block is the keeper's COUNT). The
+ * "Goals prevented" category rides the SAME league payload and carries its
+ * own fetchAllUrl → data.fotmob.com
+ * stats/{leagueId}/season/{sid}/_goals_prevented.json (live-probed
+ * 2026-10-30, UA Chrome/124: laliga season/38843 = 21 ranked rows, Álvaro
+ * Vallés 8.2, Unai Simón 2.8, Ionuț Radu 2.7; pl season/36781 = 21 rows,
+ * Bart Verbruggen 3.3; gzip-served — the exact mechanism every sibling
+ * file has used). StatValue is a SIGNED DECIMAL (8.2 … −2.4 — the family's
+ * first negative-capable leaderboard) and is stored VERBATIM: the rating
+ * convention, never Math.round. Same cache + cycle-127 thin-TTL guard as
+ * the siblings (healthy = ≥10 rows — both probed leagues carry 21; the
+ * category fallback is ~3); season-aware like every sibling (a historical
+ * raw carries its OWN file — probed: 2025/26 → season/27233, 20 rows,
+ * Joan García 10.3 — finished = frozen, the 202 anchor pattern). Top-10
+ * cap matches the render contract; feeds without the category degrade to
+ * [] (probed: persiangulf has no such category) and the honest category
+ * fallback still feeds the merge.
+ */
+export async function getFullGoalsPrevented(leagueKey: string, season?: string): Promise<GoalsPreventedEntry[]> {
+  try {
+    return await cached(
+      `fullGoalsPrevented:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^goals prevented$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: GoalsPreventedEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            goalsPrevented: r.StatValue ?? 0,  // SIGNED DECIMAL kept verbatim — 8.2 / −2.4, the rating convention (storage never rounds)
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1248,6 +1344,12 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // raw English name alone would dead-end the profile network (the 167
     // lesson). Integer value untouched (rounded once at build).
     gPlusA: (st.gPlusA || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-217 additive: goals-prevented rows gain the honest Persian
+    // names like the siblings — «گل‌های پیشگیری‌شده» renders on the
+    // per-league topscorers page and the raw English name alone would
+    // dead-end the profile network (the 167 lesson). SIGNED DECIMAL value
+    // untouched (storage never rounds).
+    goalsPrevented: (st.goalsPrevented || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1558,6 +1660,34 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-217: «گل‌های پیشگیری‌شده» — the deep-file family's SEVENTH
+    // sibling rides the SAME cached payload (zero extra upstream cost
+    // beyond the one gzip file on cold build, exactly like the siblings).
+    // Category top-3 first (enriched entries stay first when tied — the
+    // 175 merge order), then the full goals-prevented file merged on top,
+    // deduped by player id, ranked by the SIGNED DECIMAL value (verbatim
+    // float — the rating convention; negatives sink to the tail by the
+    // plain desc sort), top-10. Feeds without the category (persiangulf,
+    // probed) degrade honestly to []. SEQUENTIAL after the G+A merge (the
+    // 176 discipline: one L2 write at a time — the mas cold-build race
+    // lesson).
+    const goalsPreventedEntries: GoalsPreventedEntry[] = statCategory(raw, /^goals prevented$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, goalsPrevented: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.goalsPrevented - a.goalsPrevented || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullGoalsPrevented = await getFullGoalsPrevented(leagueKey, requestedSeason);
+    const enrichedGPIds = new Set(
+      goalsPreventedEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedGoalsPrevented = [...goalsPreventedEntries, ...fullGoalsPrevented.filter((r) => r.playerId == null || !enrichedGPIds.has(r.playerId))]
+      .sort((a, b) => b.goalsPrevented - a.goalsPrevented || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1637,6 +1767,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ratings: mergedRatings,
       cleanSheets: mergedCleanSheets,
       gPlusA: mergedGPlusA,
+      goalsPrevented: mergedGoalsPrevented,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1701,7 +1832,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // a REQUIRED field; old v12 rows lack it and would keep the new section
     // hidden for up to a full TTL generation. Whole key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215 convention).
-    await cached(`standings:v13:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-217: v14 — the goals-prevented block («گل‌های پیشگیری‌شده»)
+    // joins the mapped payload as a REQUIRED field; old v13 rows lack it
+    // and would keep the new section hidden for up to a full TTL
+    // generation. Whole key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215/216 convention).
+    await cached(`standings:v14:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1774,6 +1910,19 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // category at all) keep the normal TTL — the same convention as the
       // assists/ratings/clean-sheets guards.
       !(Array.isArray(mapped.gPlusA) && mapped.gPlusA.length > 0 && mapped.gPlusA.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-217: the same end-to-end guard for a thin-but-nonempty
+      // goals-prevented list — the _goals_prevented.json fetch dropped at
+      // build time would bake the 3-row category fallback for a full
+      // ttlMinutes generation (the 210/215/216 incident class). The
+      // assists-guard precedent applies verbatim: a stat that grows
+      // through the season is legitimately thin EARLY and self-heals — the
+      // thin row re-probes its own static gzip file after 90s
+      // (upstream-free: leagueRaw is cached and the thin fullGoalsPrevented
+      // row re-probes with its own cycle-127 guard). Honest-empty feeds
+      // (persiangulf: no "Goals prevented" category, probed) keep the
+      // normal TTL — the same convention as the assists/ratings/
+      // clean-sheets/G+A guards.
+      !(Array.isArray(mapped.goalsPrevented) && mapped.goalsPrevented.length > 0 && mapped.goalsPrevented.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

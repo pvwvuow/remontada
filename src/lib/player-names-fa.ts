@@ -118,6 +118,19 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "alex remiro": "الکس رمیرو",
   "marc-andré ter stegen": "مارک-آندره تر اشتگان",
   "david soria": "داوید سوریا",
+  // cycle-217: the goals-prevented curation (the 215 lesson — a new keeper
+  // leaderboard surfaces unmapped names; confident transliterations only).
+  // live-probed 2026-10-30 laliga season/38843 top-10 + the pl leaders;
+  // ionuț radu / antonio sivera / sergio herrera / álvaro vallés /
+  // james trafford were already mapped above.
+  "emil audero": "امیل آئودرو",
+  "péter gulácsi": "پیتر گولاچی",
+  "leo román": "لئو رومان",
+  "alfonso herrero": "آلفونسو هررو",
+  "lukás hornícek": "لوکاش هورنیچک",
+  "aarón escandell": "آرون اسکانل",
+  "julen agirrezabala": "خولن آگیرسابالا",
+  "aitor fernández": "آیتور فرناندس",
   // — Serie A —
   "christian pulisic": "کریسچن پولیسیچ",
   "michael olise": "مایکل اولیسه",
