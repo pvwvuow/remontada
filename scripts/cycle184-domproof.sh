@@ -90,14 +90,23 @@ good = extra == {"assists", "cards", "selectedSeason", "allSeasons"} \
 report("A4 plain race parity", good,
        f"extra={sorted(extra)} n={len(d.get('scorers') or [])} s0={s0.get('playerId')}")
 
-# A5: historical season unchanged — Kane anchor + cards ABSENT (132 rule)
+# A5: historical season — Kane anchor. ADVANCED by cycle-186 (the
+# in-gate-comment convention): the global historical merge now CARRIES the
+# season's own card kings (the 132 rule retired end-to-end — the 186
+# merge-side lift; the laliga 23/24 yellow file verified upstream: 454
+# rows, Iván Alejo 17, pid 640089).
 d = get(BASE + "/api/topscorers?season=2023%2F2024")
 s0 = (d.get("scorers") or [{}])[0]
+y0 = ((d.get("cards") or {}).get("yellow") or [{}])[0]
+r0 = ((d.get("cards") or {}).get("red") or [{}])[0]
 good = d.get("ok") is True and len(d.get("scorers") or []) == 380 \
     and s0.get("playerId") == 194165 and s0.get("goals") == 36 \
-    and "cards" not in d
-report("A5 hist 2023/2024 Kane+no-cards", good,
-       f"n={len(d.get('scorers') or [])} s0={s0.get('playerId')}/{s0.get('goals')}")
+    and y0.get("name") == "Iván Alejo" and y0.get("value") == 17 \
+    and y0.get("playerId") == 640089 \
+    and r0.get("name") == "Christopher Bonsu Baah" and r0.get("value") == 3
+report("A5 hist 2023/2024 Kane+own-cards (186)", good,
+       f"n={len(d.get('scorers') or [])} s0={s0.get('playerId')}/{s0.get('goals')} "
+       f"y0={y0.get('playerId')}/{y0.get('value')} r0={r0.get('playerId')}/{r0.get('value')}")
 
 # A6: the 132/55 season guard intact
 c, d = code_body(BASE + "/api/topscorers?season=nonsense")

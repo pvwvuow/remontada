@@ -91,18 +91,27 @@ try:
     d = get(f"{BASE}/api/topscorers?season={q}")
     s0 = (d.get("scorers") or [{}])[0]
     a = d.get("assists") or []
+    # ADVANCED by cycle-186 (the in-gate-comment convention): the global
+    # historical merge now CARRIES the season's own cards (y0 Iván Alejo
+    # 17/640089 laliga, r0 Bonsu Baah 3/1452385 belgium — the 132 rule
+    # retired end-to-end; the dataless 2013/2014 season keeps its honest
+    # omission, pinned by A3 below).
+    y0 = ((d.get("cards") or {}).get("yellow") or [{}])[0]
+    r0 = ((d.get("cards") or {}).get("red") or [{}])[0]
     good = d.get("selectedSeason") == "2023/2024" \
         and len(d.get("scorers") or []) == 380 \
         and s0.get("playerId") == 194165 and s0.get("name") == "Harry Kane" \
         and s0.get("nameFa") == "هری کین" and s0.get("team") == "بایرن‌مونیخ" \
         and s0.get("goals") == 36 \
         and len(a) == 10 and (a[0] or {}).get("playerId") == 980381 \
-        and "cards" not in d
-    report("A2 hist race Kane pin", good,
+        and y0.get("name") == "Iván Alejo" and y0.get("value") == 17 \
+        and y0.get("playerId") == 640089 \
+        and r0.get("playerId") == 1452385
+    report("A2 hist race Kane + own cards (186)", good,
            f"sel={d.get('selectedSeason')} s0={s0.get('name')}/{s0.get('goals')}g "
-           f"ass={len(a)} cardsAbsent={'cards' not in d}")
+           f"ass={len(a)} y0={y0.get('playerId')}/{y0.get('value')} r0={r0.get('playerId')}/{r0.get('value')}")
 except Exception as e:
-    report("A2 hist race Kane pin", False, repr(e))
+    report("A2 hist race Kane + own cards (186)", False, repr(e))
 
 # A3: offered-but-dataless season — honest 200-with-zero, cards ABSENT
 try:

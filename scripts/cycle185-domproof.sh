@@ -127,14 +127,24 @@ good = c is not None and len(y) == 0 and len(r) == 8 \
     and r0.get("playerId") == 694010
 report("A6 mas red-only intact", good, f"y{len(y)} r{len(r)} r0={r0.get('playerId')}")
 
-# A7: THE SCOPE BOUNDARY — the global historical merge still omits cards
-# (Layer 2 untouched by design; the 132 rule now lives ONLY here)
+# A7: ADVANCED by cycle-186 (the in-gate-comment convention): this gate
+# pinned the global-merge SCOPE BOUNDARY left by 185 («the 132 rule now
+# lives ONLY here») — cycle-186 lifted the merge-side gate and the
+# boundary is GONE: the historical global race now CARRIES the season's
+# own card kings (y0 Iván Alejo 17/640089 laliga — verified against the
+# upstream laliga 23/24 file: 454 rows; r0 Bonsu Baah 3/1452385 belgium).
 d = get(BASE + "/api/topscorers?season=2023%2F2024")
 s0 = (d.get("scorers") or [{}])[0]
+y0 = ((d.get("cards") or {}).get("yellow") or [{}])[0]
+r0 = ((d.get("cards") or {}).get("red") or [{}])[0]
 good = d.get("ok") is True and len(d.get("scorers") or []) == 380 \
-    and s0.get("playerId") == 194165 and "cards" not in d
-report("A7 global hist cards still absent", good,
-       f"n={len(d.get('scorers') or [])} s0={s0.get('playerId')} cards={'cards' in d}")
+    and s0.get("playerId") == 194165 \
+    and y0.get("name") == "Iván Alejo" and y0.get("value") == 17 \
+    and y0.get("playerId") == 640089 and y0.get("leagueKey") == "laliga" \
+    and r0.get("playerId") == 1452385 and r0.get("leagueKey") == "belgium"
+report("A7 global hist joins cards era (186)", good,
+       f"n={len(d.get('scorers') or [])} s0={s0.get('playerId')} "
+       f"y0={y0.get('playerId')}/{y0.get('leagueKey')} r0={r0.get('playerId')}/{r0.get('leagueKey')}")
 
 # A8: the 132/55 season guard + the 184 league guard both intact
 c1 = code(BASE + "/api/topscorers?season=nonsense")

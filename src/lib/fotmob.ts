@@ -3206,14 +3206,26 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
   const assists = mergedAssists.filter((a) => (seenA.has(a.name) ? false : (seenA.add(a.name), true))).slice(0, 10);
   // cycle-50: card leaders ride along in the same payload (all per-league
   // fetches are cache-backed, so the merge only pays on a cold start)
-  // cycle-132: current-season-only — historical merges omit cards entirely
+  // cycle-186: the cycle-132 current-season gate is GONE — the rule is
+  // retired END-TO-END. Cycle-185 made the per-league card files
+  // season-aware (the third season-blind fetch joined its 124/175 sisters)
+  // and documented the global-merge boundary as the declared remainder;
+  // this lift closes it. Historical merges now aggregate each season's
+  // own card kings exactly like the scorers/assists merges above; a
+  // failure still degrades honestly (cards stay undefined, the UI hides
+  // the section, the table itself is untouched — and a season with no
+  // card files at all, like 2013/2014, stays an honest omission).
   let cards: GlobalCardsData | undefined;
-  if (!season) {
-    try {
-      cards = await getAllCardLeaders();
-    } catch {
-      // cards stay undefined — the UI hides the section, the table itself is untouched
+  try {
+    const merged_cards = await getAllCardLeaders(season);
+    // the 176 contract verbatim: both-empty → block omitted, never
+    // {yellow:[],red:[]} — an offered-but-dataless season (2013/2014) keeps
+    // its byte-honest "no cards key" shape instead of a fake empty block
+    if ((merged_cards.yellow || []).length > 0 || (merged_cards.red || []).length > 0) {
+      cards = merged_cards;
     }
+  } catch {
+    // cards stay undefined — the UI hides the section, the table itself is untouched
   }
   // cycle-132: mode of the served-season markers (tie → the value seen first)
   let selectedSeason: string | undefined;
@@ -3234,8 +3246,15 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
  * are attributed first and UCL last — a player listed in both competitions
  * keeps the domestic entry (same rule as the team index). Dense global rank
  * per kind, top 10 each.
+ *
+ * cycle-186: season-aware — the merge side of the 185 move. The optional
+ * season threads into every per-league getLeagueCardLeaders call (whose
+ * cache keys already carry the season segment — no new namespace needed);
+ * the current-season call is byte-identical (`cur` segment). Same
+ * merge-exemption (globalMerge: false) and domestic-first attribution as
+ * the cycle-50 current-season merge.
  */
-export async function getAllCardLeaders(): Promise<GlobalCardsData> {
+export async function getAllCardLeaders(season?: string): Promise<GlobalCardsData> {
   // cycle-140: same merge-exemption as the scorers race (globalMerge: false)
   // — one flag, one semantic: the /topscorers page shows one participant set,
   // never a 9th competition in the cards section while the race says 8.
@@ -3244,7 +3263,7 @@ export async function getAllCardLeaders(): Promise<GlobalCardsData> {
     (["yellow", "red"] as const).map(async (kind) => ({
       lg,
       kind,
-      rows: await getLeagueCardLeaders(lg.key, kind, 15),
+      rows: await getLeagueCardLeaders(lg.key, kind, 15, season),
     }))
   );
   const settled = await Promise.allSettled(jobs);
