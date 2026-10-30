@@ -489,11 +489,19 @@
 
 /* cycle-60 — respect players who prefer calm: freeze every decoration
    (twinkle, pulses, later campaign motion) to its first frame */
+/* ui-cycle-8 (BL-8 audit): zero the DELAYS too. The staggered entrances
+   ride inline animation-delay (news cards up to 660ms, standings rows up
+   to 560ms) with fill-mode both — under reduce the duration was already
+   0.01ms but the delay survived, so reduced-motion users stared at
+   invisible from-frames (opacity:0) that popped in piecewise for ~0.7s.
+   Zeroing both delay species makes every entrance land instantly. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
   }
 }
 

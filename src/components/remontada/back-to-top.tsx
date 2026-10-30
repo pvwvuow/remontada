@@ -16,10 +16,19 @@ export function BackToTop() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // ui-cycle-8 (BL-8 audit): the CSS reduced-motion guard cannot reach
+  // JS-driven scrolling — behavior:"smooth" animated the whole viewport
+  // trip for motion-sensitive users. Honor the media query at click time
+  // (not module load) so a mid-session OS toggle is respected too.
+  const scrollToTop = () => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+  };
+
   return (
     <button
       type="button"
-      onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+      onClick={scrollToTop}
       aria-label="بازگشت به بالای صفحه"
       className={cn(
         "fixed bottom-24 sm:bottom-5 start-5 z-30 w-11 h-11 rounded-full glass-popover text-sky-soft flex items-center justify-center transition-all duration-300 hover:text-foreground hover:border-sky-soft/45",

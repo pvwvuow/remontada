@@ -3067,3 +3067,14 @@ eslint 0/0 ← tsc 0 ← build ✓ ← استارت رسمی pid=2644 (HTTP=200)
 - **پذیرش**: eslint 0/0 ← tsc 0 ← build ✔ ← استارت رسمی pid=2421 (try=2، HTTP 200) ← رگرسیون 28/28 ← cycle247-domproof 12/12.
 - **data-testid ها و گیت‌های دائمی**: دست‌نخورده و سبز.
 - **چرخهٔ UI بعدی: ui-cycle-8** (نوبت بعدی بک‌لاگ: BL-8 — ممیزی prefers-reduced-motion روی انیمیشن‌های ورود). کمپین: 7/30؛ لوپ گردشی دست‌نخورده (نوبت ۲۴۸=بررسی باگ، پس از کمپین).
+
+---
+
+## Task ID: ui-cycle-8 (2026-10-31 07:34 slot, UI cron Job 488017)
+- **هدف BL-8**: ممیزی prefers-reduced-motion روی انیمیشن‌های ورود.
+- **نتیجهٔ ممیزی**: گارد سراسری cycle-60 (duration/iteration صفر) و بلوک لایهٔ فانتزی (animation:none) موجود بودند؛ دو شکاف واقعی پیدا شد: (۱) گارد سراسری «delay» را صفر نمی‌کرد — استگرهای inline (اخبار تا 660ms با ۱۶ کارت، رده‌بندی تا 560ms) با fill:both یعنی قاب from نامرئی، کاربر reduced-motion محتوا را تکه‌تکه و دیر می‌دید؛ (۲) دکمهٔ بازگشت‌به‌بالا با behavior:"smooth" جابه‌جایی کل viewport را انیمیت می‌کرد که گارد CSS به آن نمی‌رسد.
+- **اصلاح**: بلوک reduce سراسری += `animation-delay:0ms !important; transition-delay:0ms !important` (ورودها آنی)؛ `back-to-top.tsx` — matchMedia در لحظهٔ کلیک (toggle وسط جلسه هم رعایت می‌شود) → reduce=auto، عادی=smooth.
+- **اثبات DOM (agent-browser، viewport 390×844، emulation واقعی `set media dark reduced-motion`)**: /news حالت عادی → کارت آخر `delay=0.66s,dur=0.38s`؛ حالت reduce → `delay=0s,dur=0s,opacity=1` در t≈1s. back-to-top: reduce → `scrollYRightAfterClick=0` (پرش آنی)؛ عادی → `1500→1490` (انیمیت smooth زنده). کنسول ۰ خطا.
+- **پذیرش**: eslint 0/0 ← tsc 0 ← build ✔ (58 صفحه) ← استارت رسمی pid=2092 (try=2، 200) ← رگرسیون 28/28 ← cycle247-domproof 12/12 (ALL GREEN).
+- **data-testid ها و گیت‌های دائمی**: دست‌خورده و سبز.
+- **چرخهٔ UI بعدی: ui-cycle-9** (نوبت بعدی بک‌لاگ: BL-9 — اسکلتون/حالت خالیِ سوییچ فصل لیگ). کمپین: 8/30؛ لوپ گردشی دست‌نخورده (نوبت ۲۴۸=بررسی باگ، پس از کمپین).
