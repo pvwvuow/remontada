@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -34,6 +34,10 @@ interface LeagueScorersData {
   // family's next sibling rendered between ratings and cards; integer value
   // pill, honest absence = []. The portal's first goalkeeper surface.
   cleanSheets?: CleanSheetEntry[];
+  // cycle-216 additive: «گل+پاس» rides the same payload — the deep-file
+  // family's sixth sibling rendered between assists and ratings; the
+  // upstream's OWN combined order (integer pill), honest absence = [].
+  gPlusA?: GPlusAEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -411,6 +415,61 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                 <li key={`${a.name}-${i}`}>
                   {a.playerId ? (
                     <Link href={`/player/${a.playerId}`} prefetch={false} className={cls} title={a.nameFa && a.nameFa !== a.name ? a.name : `پروفایل ${a.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-216: گل+پاس — sister-page consistency (the 215 pattern one
+          surface over): the SAME cached getStandings payload now carries the
+          combined-participation block (the deep-file family's sixth
+          sibling, stats/{id}/season/{sid}/_goals_and_goal_assist.json —
+          the upstream's OWN combined ORDER, never recomputed from the
+          scorers list; integer values — the goals/assists convention, so
+          the value pill is plain Persian digits WITHOUT dir=ltr). Same
+          170/215 link contract (playerId → /player with prefetch=false,
+          title = English original when Persian shown), honest absence when
+          the feed has no G+A category (→ the section simply hides). */}
+      {data && !loading && (data.gPlusA || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="9" cy="9" r="5.2" />
+              <path d="M15.5 8.5h6M18.5 5.5v6" />
+              <path d="M4.5 20.5l6.5-6.5" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">گل+پاس</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">گل و پاسِ فصل</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.gPlusA || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span className="shrink-0 min-w-[36px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[14px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.gPlusA)}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="gpa-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
                     </Link>
                   ) : (

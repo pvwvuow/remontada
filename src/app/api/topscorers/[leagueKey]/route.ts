@@ -70,6 +70,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // goalkeeper surface, integer values; old consumers never read this
       // field (the 108 rule).
       cleanSheets: st.cleanSheets,
+      // cycle-216 additive: «گل+پاس» rides the SAME cached payload — the
+      // deep-file family's sixth sibling, the upstream's OWN combined
+      // participation ranking (integer values); old consumers never read
+      // this field (the 108 rule).
+      gPlusA: st.gPlusA,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

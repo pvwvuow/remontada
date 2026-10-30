@@ -160,6 +160,23 @@ export interface CleanSheetEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-216 additive: one «گل+پاس» row — the participation twin of
+ *  CleanSheetEntry/AssistEntry (the 170 honest-name contract included);
+ *  the value is a plain INTEGER (StatValue 16.0 → 16, the goals/assists
+ *  convention). NOT computed as goals+assists of the scorers list — it is
+ *  the upstream's OWN combined ranking, a genuinely different order (an
+ *  8G+8A player outranks a 13G+0A one). */
+export interface GPlusAEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  gPlusA: number;  // combined goals+assists kept as an integer (StatValue 16.0 → 16)
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -205,6 +222,21 @@ export interface StandingsData {
    *  honestly to []. The FIRST goalkeeper surface of the portal — keepers
    *  were invisible on every leaderboard before this field. */
   cleanSheets: CleanSheetEntry[];
+  /** cycle-216 additive: «گل+پاس» — the league's own combined-participation
+   *  kings, the deep-file family's sixth sibling (goals 23 / assists 175 /
+   *  cards 50+185 / rating 210 / clean sheets 215 → G+A 216). The "Goals +
+   *  Assists" category carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/_goals_and_goal_assist.json (live-probed
+   *  2026-10-30, UA Chrome/124: laliga season/38843 = 213 ranked rows,
+   *  Raphinha 16, Yamal 14, Mbappé 13; pl season/36781 = 186 rows, Haaland
+   *  9; the 2025/26 raw serves its OWN file, season/27233, 371 rows,
+   *  Mbappé 30 — finished-season frozen, the 202 anchor pattern). The
+   *  upstream's OWN combined order — a genuinely different leaderboard
+   *  than the goals one (the ScorerBadges gPlusA badge on the scorer hero
+   *  is a per-scorer decoration, not this ranking). Integer values. Always
+   *  present (possibly []) like the siblings; feeds without the category
+   *  degrade honestly to []. */
+  gPlusA: GPlusAEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1038,6 +1070,63 @@ export async function getFullCleanSheets(leagueKey: string, season?: string): Pr
 }
 
 /**
+ * cycle-216: full-season GOALS+ASSISTS list for one league («گل+پاس»)
+ * — the deep-file family's sixth sibling, the combined-participation
+ * ranking. The "Goals + Assists" category rides the SAME league payload
+ * and carries its own fetchAllUrl → data.fotmob.com
+ * stats/{leagueId}/season/{sid}/_goals_and_goal_assist.json (live-probed
+ * 2026-10-30, UA Chrome/124: laliga season/38843 = 213 ranked rows,
+ * Raphinha 16, Yamal 14, Mbappé 13; pl season/36781 = 186 rows, Haaland
+ * 9; gzip-served — the exact mechanism every sibling file has used).
+ * StatValue arrives as a float (16.0) and is stored ONCE rounded
+ * (Math.round → 16): the integer convention. The upstream's OWN combined
+ * order — a genuinely different leaderboard than the goals one. Same
+ * cache + cycle-127 thin-TTL guard as the siblings (healthy = ≥10 rows —
+ * even matchday-9 pl already carries 186; the category fallback is ~3);
+ * season-aware like every sibling (a historical raw carries its OWN file
+ * — probed: 2025/26 → season/27233, 371 rows, Mbappé 30 — finished =
+ * frozen, the 202 anchor pattern). Top-10 cap matches the render
+ * contract; feeds without the category degrade to [] and the honest
+ * category fallback still feeds the merge.
+ */
+export async function getFullGPlusA(leagueKey: string, season?: string): Promise<GPlusAEntry[]> {
+  try {
+    return await cached(
+      `fullGPlusA:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^goals \+ assists$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: GPlusAEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            gPlusA: Math.round(r.StatValue ?? 0),  // 16.0 → 16 — the integer convention
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1154,6 +1243,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // the raw English name alone would dead-end the profile network (the
     // 167 lesson). Integer value untouched (rounded once at build).
     cleanSheets: (st.cleanSheets || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-216 additive: G+A rows gain the honest Persian names like the
+    // siblings — «گل+پاس» renders on the per-league topscorers page and the
+    // raw English name alone would dead-end the profile network (the 167
+    // lesson). Integer value untouched (rounded once at build).
+    gPlusA: (st.gPlusA || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1438,6 +1532,32 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-216: «گل+پاس» — the deep-file family's sixth sibling rides the
+    // SAME cached payload (zero extra upstream cost beyond the one gzip
+    // file on cold build, exactly like the siblings). Category top-3 first
+    // (enriched entries stay first when tied — the 175 merge order), then
+    // the full G+A file merged on top, deduped by player id, ranked by the
+    // INTEGER value, top-10. The upstream's OWN combined order — never
+    // recomputed from the scorers list. Feeds without the category degrade
+    // honestly to []. SEQUENTIAL after the clean-sheets merge (the 176
+    // discipline: one L2 write at a time — the mas cold-build race lesson).
+    const gPlusAEntries: GPlusAEntry[] = statCategory(raw, /^goals \+ assists$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, gPlusA: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.gPlusA - a.gPlusA || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullGPlusA = await getFullGPlusA(leagueKey, requestedSeason);
+    const enrichedGAIds = new Set(
+      gPlusAEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedGPlusA = [...gPlusAEntries, ...fullGPlusA.filter((r) => r.playerId == null || !enrichedGAIds.has(r.playerId))]
+      .sort((a, b) => b.gPlusA - a.gPlusA || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1516,6 +1636,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       assists: mergedAssists,
       ratings: mergedRatings,
       cleanSheets: mergedCleanSheets,
+      gPlusA: mergedGPlusA,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1576,7 +1697,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // mapped payload as a REQUIRED field; old v11 rows lack it and would
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the 52/55/90/92/107/175/176/185/196/210 convention).
-    await cached(`standings:v12:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-216: v13 — the G+A block («گل+پاس») joins the mapped payload as
+    // a REQUIRED field; old v12 rows lack it and would keep the new section
+    // hidden for up to a full TTL generation. Whole key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215 convention).
+    await cached(`standings:v13:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1637,6 +1762,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // guard). Honest-empty feeds (no "Clean sheets" category at all) keep
       // the normal TTL — the same convention as the assists/ratings guards.
       !(Array.isArray(mapped.cleanSheets) && mapped.cleanSheets.length > 0 && mapped.cleanSheets.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-216: the same end-to-end guard for a thin-but-nonempty G+A
+      // list — the _goals_and_goal_assist.json fetch dropped at build time
+      // would bake the 3-row category fallback for a full ttlMinutes
+      // generation (the 210/215 incident class). The assists-guard
+      // precedent applies verbatim: a count-stat that grows through the
+      // season is legitimately thin EARLY and self-heals — the thin row
+      // re-probes its own static gzip file after 90s (upstream-free:
+      // leagueRaw is cached and the thin fullGPlusA row re-probes with its
+      // own cycle-127 guard). Honest-empty feeds (no "Goals + Assists"
+      // category at all) keep the normal TTL — the same convention as the
+      // assists/ratings/clean-sheets guards.
+      !(Array.isArray(mapped.gPlusA) && mapped.gPlusA.length > 0 && mapped.gPlusA.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
