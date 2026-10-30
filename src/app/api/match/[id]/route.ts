@@ -244,6 +244,28 @@ interface FMMatchDetails {
         lang?: string;
         dateUpdated?: string;
       }[] | null;
+      // update cycle-192: the top-5 rated players per side («برترین‌های بازی»)
+      // — live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries
+      // (playerId, name{fullName}, playerRatingRounded, playerRating, color,
+      // manOfTheMatch, teamId, positionLabel{label,key}); the upcoming
+      // 5868120 carries EMPTY arrays; content.table sits beside this block
+      // but is only a pointer to a data.fotmob.com XML blob (set aside).
+      topPlayers?: {
+        homeTopPlayers?: {
+          playerId?: number;
+          name?: { fullName?: string };
+          playerRatingRounded?: string;
+          manOfTheMatch?: boolean;
+          positionLabel?: { label?: string };
+        }[] | null;
+        awayTopPlayers?: {
+          playerId?: number;
+          name?: { fullName?: string };
+          playerRatingRounded?: string;
+          manOfTheMatch?: boolean;
+          positionLabel?: { label?: string };
+        }[] | null;
+      } | null;
       // update cycle-117: the two sides' season top scorers («گلزنان فصل
       // دو تیم») — unconsumed since the beginning (the per-match playerStats
       // block consumed by cycle-47 is a DIFFERENT payload section)
@@ -697,7 +719,25 @@ export interface MatchDetailNormalized {
   // id and the "en" entry wins each group, capped at 3 articles. The image
   // is optional (row degrades to text); url is the fotmob news shareUrl.
   reviews?: MatchReview[] | null;
+  // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
+  // matchFacts.topPlayers normalized; null when both sides end up empty
+  // (honest absence — upcoming matches carry empty arrays upstream).
+  topPlayers?: MatchTopPlayerSides | null;
   fetchedAt: string;
+}
+
+export interface MatchTopPlayer {
+  id: number; // upstream playerId, guarded > 0 (the 167 convention)
+  name: string; // upstream fullName (honest Latin identity — the 189 contract)
+  nameFa: string; // playerFa at normalize time (match TTL is 25s — always fresh)
+  rating: string; // upstream playerRatingRounded ("8.7") — display string
+  motm: boolean; // upstream manOfTheMatch badge
+  pos: string; // upstream positionLabel.label ("RM") — "" when absent
+}
+
+export interface MatchTopPlayerSides {
+  home: MatchTopPlayer[];
+  away: MatchTopPlayer[];
 }
 
 export interface MatchReview {
@@ -1333,6 +1373,53 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     if (rows.length > 0) reviews = rows;
   }
 
+  // matchFacts.topPlayers = the top-5 rated players per side («برترین‌های
+  // بازی»). Live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries;
+  // the upcoming 5868120 carries EMPTY arrays. The block rides the payload
+  // already fetched (zero extra upstream calls). Guards: a row needs
+  // playerId > 0 (the 167 convention), a non-empty fullName and a non-empty
+  // playerRatingRounded; cap 5 per side (upstream's own curation). The
+  // block is null when both sides end up empty (honest absence — the 191
+  // reviews family). nameFa rides playerFa at normalize time (match TTL
+  // 25s — always fresh, no player:v7 L2 staleness surface here).
+  const tpUp = raw.content?.matchFacts?.topPlayers;
+  let topPlayers: MatchDetailNormalized["topPlayers"] = null;
+  if (tpUp && typeof tpUp === "object") {
+    const mapTpSide = (list: unknown): MatchTopPlayer[] => {
+      if (!Array.isArray(list)) return [];
+      const rows: MatchTopPlayer[] = [];
+      for (const e of list) {
+        if (!e || typeof e !== "object") continue;
+        const t = e as {
+          playerId?: unknown;
+          name?: { fullName?: unknown };
+          playerRatingRounded?: unknown;
+          manOfTheMatch?: unknown;
+          positionLabel?: { label?: unknown };
+        };
+        const id = typeof t.playerId === "number" ? t.playerId : 0;
+        const nm = t.name?.fullName;
+        const rt = t.playerRatingRounded;
+        if (!(id > 0) || typeof nm !== "string" || !nm.trim()) continue;
+        if (typeof rt !== "string" || !rt.trim()) continue;
+        const posUp = t.positionLabel?.label;
+        rows.push({
+          id,
+          name: nm,
+          nameFa: playerFa(nm),
+          rating: rt,
+          motm: t.manOfTheMatch === true,
+          pos: typeof posUp === "string" && posUp.trim() ? posUp : "",
+        });
+        if (rows.length >= 5) break;
+      }
+      return rows;
+    };
+    const tpHome = mapTpSide(tpUp.homeTopPlayers);
+    const tpAway = mapTpSide(tpUp.awayTopPlayers);
+    if (tpHome.length > 0 || tpAway.length > 0) topPlayers = { home: tpHome, away: tpAway };
+  }
+
   // ---------------- match insights (update cycle-110) ----------------
   // Pre-match story lines (matchFacts.insights): only curated localizedTextId
   // templates render; numbers → Persian digits, team/player refs ride the
@@ -1463,6 +1550,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     playerOfTheMatch,
     highlights,
     reviews,
+    topPlayers,
     fetchedAt: new Date().toISOString(),
   };
 }

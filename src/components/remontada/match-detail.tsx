@@ -180,7 +180,23 @@ interface DetailData {
     url: string; // fotmob news article, opens in a new tab
     date?: string;
   }[] | null;
+  // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
+  // mirrors /api/match/[id]; null/both-empty → the block never renders
+  // (honest absence — upcoming matches)
+  topPlayers?: {
+    home: MatchTopRow[];
+    away: MatchTopRow[];
+  } | null;
   error?: string;
+}
+
+interface MatchTopRow {
+  id: number; // /player/[id] link — the 172 family
+  name: string; // upstream Latin (honest identity — the 189 contract)
+  nameFa: string;
+  rating: string; // upstream playerRatingRounded ("8.7")
+  motm: boolean; // man-of-the-match badge
+  pos: string; // positionLabel.label ("RM") — "" when absent
 }
 
 // update cycle-117: one side's season top scorer (mirrors /api/match/[id]'s
@@ -1814,6 +1830,67 @@ function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> 
   );
 }
 
+// update cycle-192: «برترین‌های بازی» — the top-5 rated players per side
+// (matchFacts.topPlayers). Belongs to the MATCH, not a tab (the 191 reviews
+// placement philosophy): a header-level card right after the reviews card.
+// Two columns (home first = right side in RTL); each row = rating pill +
+// name (nameFa first, links to /player/[id] — the 172 family) + position
+// label; the man-of-the-match row carries the ★ badge (the PotmCard star
+// language). A side with no rows shows an honest «—» placeholder (partial
+// sides are possible upstream; upcoming matches never reach the card —
+// the block is null then).
+function TopPlayersCard({ tp, m }: { tp: NonNullable<DetailData["topPlayers"]>; m: DetailMatch }) {
+  const sides: [MatchTopRow[], { logo: string; name: string }][] = [
+    [tp.home, { logo: m.home.logo, name: m.home.fa || m.home.name }],
+    [tp.away, { logo: m.away.logo, name: m.away.fa || m.away.name }],
+  ];
+  return (
+    <section className="glass-card overflow-hidden" aria-label="برترین‌های بازی" data-testid="match-top-players">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <span className="text-[11px] font-black text-steel">برترین‌های بازی</span>
+        <span className="text-[9px] text-muted-foreground/60 shrink-0">امتیاز فوت‌ماب · ۵ برتر هر تیم</span>
+      </header>
+      <div className="grid grid-cols-2">
+        {sides.map(([rows, team], si) => (
+          <div key={si} className={cn("min-w-0", si === 0 && "border-l border-glass-border-soft")}>
+            <div className="flex items-center gap-1.5 px-2.5 py-2 border-b border-glass-border-soft bg-[#ffffff03]">
+              {team.logo && (
+                <img src={team.logo} alt="" width={14} height={14} className="w-[14px] h-[14px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
+              )}
+              <span className="text-[10px] font-black text-steel truncate">{team.name}</span>
+            </div>
+            {rows.length > 0 ? (
+              rows.map((p, i) => (
+                <Link
+                  key={p.id}
+                  href={`/player/${p.id}`}
+                  prefetch={false}
+                  data-testid="match-top-players-row"
+                  className="flex items-center gap-2 px-2.5 py-1.5 group hover:bg-[#ffffff06] transition-colors border-b border-glass-border-soft last:border-b-0"
+                  title={p.nameFa !== p.name ? p.name : "مشاهده پروفایل بازیکن"}
+                >
+                  <span className="shrink-0 w-8 h-8 rounded-full bg-[#a9cdf611] border border-glass-border-soft flex items-center justify-center">
+                    <span className="text-[10.5px] font-black text-[#dfedff] tabular-persian leading-none">{faDigits(p.rating)}</span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[11px] font-bold leading-4 truncate text-[#ecf3fa] group-hover:text-primary transition-colors">
+                      {p.motm && <span className="text-chart-3" aria-hidden>★ </span>}
+                      {p.nameFa || p.name}
+                    </span>
+                    {p.pos ? <span className="block text-[8.5px] font-bold text-muted-foreground/70">{p.pos}</span> : null}
+                  </span>
+                </Link>
+              ))
+            ) : (
+              <p className="px-2.5 py-3 text-[9.5px] text-muted-foreground/60">در دسترس نیست</p>
+            )}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ---------- main ----------
 export function MatchDetail({ matchId }: { matchId: string }) {
   const [data, setData] = useState<DetailData | null>(null);
@@ -1940,6 +2017,9 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           the feed is absent (honest absence — some finished matches have no
           postReview; upcoming matches never do). */}
       {data.reviews && data.reviews.length > 0 && <ReviewsCard reviews={data.reviews} />}
+      {data.topPlayers && (data.topPlayers.home.length > 0 || data.topPlayers.away.length > 0) && (
+        <TopPlayersCard tp={data.topPlayers} m={m} />
+      )}
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (
