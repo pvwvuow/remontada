@@ -57,6 +57,11 @@ export function SearchBox() {
   const inputRef = useRef<HTMLInputElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
 
+  // cycle-204: set only by keyboard moves (ArrowDown/ArrowUp) — the
+  // scroll-into-view effect below must never fight the mouse (a hovered
+  // row is visible by definition)
+  const kbNav = useRef(false);
+
   // close on Escape / focus input when opened
   useEffect(() => {
     if (open) {
@@ -67,8 +72,21 @@ export function SearchBox() {
       setLeagues([]);
       setNews([]);
       setActive(0);
+      kbNav.current = false;
     }
   }, [open]);
+
+  // cycle-204: keyboard navigation stays visible — the highlighted row
+  // scrolls into view inside the popover's overflow container (the list
+  // is max-h-[46vh], so a long needle like «ali» overflows and ArrowDown
+  // previously walked the user blind — the active row sat up to ~300px
+  // below the visible bottom). block:"nearest" scrolls only as much as
+  // needed and never scrolls when the row is already fully visible.
+  useEffect(() => {
+    if (!open || !kbNav.current) return;
+    kbNav.current = false;
+    boxRef.current?.querySelector(".cmd-active")?.scrollIntoView({ block: "nearest" });
+  }, [active, open]);
 
   // click-outside closes
   useEffect(() => {
@@ -170,8 +188,8 @@ export function SearchBox() {
 
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Escape") { setOpen(false); return; }
-    if (e.key === "ArrowDown") { e.preventDefault(); setActive((a) => Math.min(a + 1, totalRows - 1)); }
-    if (e.key === "ArrowUp") { e.preventDefault(); setActive((a) => Math.max(a - 1, 0)); }
+    if (e.key === "ArrowDown") { e.preventDefault(); kbNav.current = true; setActive((a) => Math.min(a + 1, totalRows - 1)); }
+    if (e.key === "ArrowUp") { e.preventDefault(); kbNav.current = true; setActive((a) => Math.max(a - 1, 0)); }
     if (e.key === "Enter") {
       e.preventDefault();
       if (active < results.length) { if (results[active]) go(results[active].teamId); }
