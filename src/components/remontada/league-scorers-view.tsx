@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -133,6 +133,18 @@ interface LeagueScorersData {
   // SEASON-AWARE (the 124/175/185/226/227/230/231 class): historical
   // views serve their own files (2020/21 laliga = Messi 32.8, frozen).
   xgot?: XgotEntry[];
+  // cycle-235 additive: «فرصت‌های خلق‌شده» rides the same payload — the
+  // deep-file family's SEVENTEENTH sibling and the TOTAL-creation VOLUME
+  // twin of the BCC surface, rendered right after سانس بزرگ خلق‌شده so
+  // the subset→total pair reads together (the xG→xGOT quality→accuracy
+  // mirror one run over) and the keeper QUINTET stays untouched; integer
+  // pill WITHOUT dir=ltr (upstream integer-valued, probed nonint=0 — the
+  // 215/216/220 convention), honest absence = [] (feeds without the
+  // "Chances created" category — persiangulf AND mas, probed — hide the
+  // section). SEASON-AWARE (the 124/175/185/226/227/230/231/232 class):
+  // historical views serve their own files (2020/21 laliga = Messi 77,
+  // frozen).
+  chancesCreated?: ChancesCreatedEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -183,6 +195,9 @@ function ScorerBadges({ s }: { s: ScorerEntry }) {
   // convention)
   if (s.xgot != null && s.xgot > 0) {
     badges.push({ label: `xGOT ${faDigits(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
+  }
+  if (s.chancesCreated != null && s.chancesCreated > 0) {
+    badges.push({ label: `${faDigits(s.chancesCreated)} فرصت‌سازی`, cls: "bg-muted border-border text-muted-foreground", title: "فرصت‌های خلق‌شده" });
   }
   if (s.minutes != null && s.minutes > 0 && s.goals > 0) {
     const mpg = Math.round(s.minutes / s.goals);
@@ -981,6 +996,79 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="bcc-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-235: فرصت‌های خلق‌شده — sister-page consistency (the
+          210/215/216/217/220/221/222/225/226/227/230/231/232 pattern one
+          surface over): the SAME cached getStandings payload now carries
+          the chances-created block (the deep-file family's SEVENTEENTH
+          sibling and the TOTAL-creation VOLUME twin of the BCC surface —
+          stats/{id}/season/{sid}/total_att_assist.json — live-probed
+          2026-10-30: WIDE on ALL SIX domestic globalMerge leagues (ucl 466
+          Thauvin 15 / pl 323 Groß 23 / laliga 363 Arda Güler 33 / seriea
+          382 Giacomo Calò 34 / bundesliga 308 Olise 25 / ligue1 304
+          Thauvin 27 rows), persiangulf AND mas honestly absent (no
+          "Chances created" category). INTEGER-VALUED floats (probed
+          nonint=0) → the 215/216/220 integer convention: rounded once at
+          build, the value pill is Persian digits WITHOUT dir=ltr (the
+          minutes/BCC contract — 33 renders «۳۳»). SEASON-AWARE (the
+          124/175/185/226/227/230/231/232 class): historical views serve
+          their OWN files (the 2020/21 laliga raw = 466 rows, Lionel Messi
+          77 — frozen, the 202 anchor pattern). Placed right after سانس
+          بزرگ خلق‌شده so the subset→total pair reads together (the
+          xG→xGOT quality→accuracy mirror one run over) and the keeper
+          QUINTET stays untouched (the 217 contract verbatim) — the
+          relative orders the 230/231/232/233 gates assert are
+          inequality-based, so the insertion provably keeps them green.
+          Same 170/176 link contract (playerId → /player with
+          prefetch=false, title = English original when Persian shown),
+          honest absence when the feed has no "Chances created" category →
+          the section simply hides. */}
+      {data && !loading && (data.chancesCreated || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="6" cy="6" r="2.2" />
+              <circle cx="18" cy="6" r="2.2" />
+              <path d="M7.5 8L12 20" />
+              <path d="M16.5 8L12 20" />
+              <path d="M8 12h8" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">فرصت‌های خلق‌شده</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم کل فرصت‌سازی</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.chancesCreated || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(String(r.chancesCreated))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="cc-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

@@ -60,6 +60,13 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   if (s.xgot != null && s.xgot > 0) {
     badges.push({ label: `xGOT ${faDigits(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
   }
+  // cycle-235 additive: the chances-created badge — the TOTAL-creation
+  // volume twin of the big-chances badge (season-total from the "Chances
+  // created" category, matched by player id; integer, the 215 display
+  // convention)
+  if (s.chancesCreated != null && s.chancesCreated > 0) {
+    badges.push({ label: `${faDigits(s.chancesCreated)} فرصت‌سازی`, cls: "bg-muted border-border text-muted-foreground", title: "فرصت‌های خلق‌شده" });
+  }
   if (badges.length === 0) return null;
   return (
     <span className="flex items-center gap-1 flex-wrap">

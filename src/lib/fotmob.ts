@@ -118,6 +118,7 @@ export interface ScorerEntry {
   xa?: number;        // cycle-230 additive: "Expected assist (xA)" — the badge twin of the xG badge
   bigChances?: number; // cycle-231 additive: "Big chances created" — the creation-volume badge (integer, the 215 convention)
   xgot?: number;      // cycle-232 additive: "Expected goals on target (xGOT)" — the on-target accuracy badge (one decimal, the 226/230 convention)
+  chancesCreated?: number; // cycle-235 additive: "Chances created" — the TOTAL-creation volume badge (integer, the 215 convention)
   rating?: number;    // "FotMob rating"
   minutes?: number;   // "Minutes played" (enables minutes-per-goal)
 }
@@ -444,6 +445,44 @@ export interface XgotEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-235 additive: one «فرصت‌های خلق‌شده» row — the deep-file family's
+ *  SEVENTEENTH sibling and the TOTAL-creation VOLUME twin of the BCC
+ *  surface (goals 23 / assists 175 / cards 50+185 / rating 210 / clean
+ *  sheets 215 / G+A 216 / goals prevented 217 / minutes 220 / save
+ *  percentage 221 / saves per 90 222 / penalty saves 225 / expected goals
+ *  226 / goals per 90 227 / expected assist 230 / big chances created 231
+ *  / expected goals on target 232 → chances created 235). The "Chances
+ *  created" category carries its own fetchAllUrl → data.fotmob.com
+ *  stats/{id}/season/{sid}/total_att_assist.json (live-probed 2026-10-30,
+ *  UA Chrome/124: serving on ALL SIX domestic globalMerge leagues with
+ *  WIDE files — ucl 466 Thauvin 15 / pl 323 Groß 23 / laliga 363 Arda
+ *  Güler 33 / seriea 382 Giacomo Calò 34 / bundesliga 308 Olise 25 /
+ *  ligue1 304 Thauvin 27 rows; persiangulf honestly absent — 5 player
+ *  cats; mas absent, empty payload). INTEGER-VALUED floats (live-probed
+ *  nonint=0 on every serving file, StatDecimals=0) → the 215/216/220
+ *  integer convention: rounded ONCE at build, the pill renders Persian
+ *  digits WITHOUT dir=ltr (the minutes/BCC contract — 33 renders «۳۳»). Upstream
+ *  Rank is COMPETITION tie-ranked on every file (ucl 10.0 → 4,5,6 / pl
+ *  18.0 → 4,4,6 / laliga 21.0 → 6,7,8 — probed); this loader keeps the
+ *  file's own order and rank verbatim — the merge re-ranks POSITIONALLY
+ *  like every sibling. SEASON-AWARE (the 124/175/185/226/227/230/231/232
+ *  class): historical raws serve their OWN files (2020/21 laliga = 466
+ *  rows, Lionel Messi 77 / David Ferreiro 73 / Toni Kroos 67 — frozen,
+ *  the 202 anchor pattern; the 229 curation rides free — «لیونل مسی»
+ *  «تونی کروس»). Wide healthy files → the STANDARD thin guard (the 210
+ *  class) applies; always present (possibly []) like the siblings; feeds
+ *  without the category degrade honestly to []. */
+export interface ChancesCreatedEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  chancesCreated: number;  // StatValue rounded ONCE at build (the 215/220 integer convention — upstream is integer-valued, probed nonint=0)
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -735,6 +774,23 @@ export interface StandingsData {
    *  present (possibly []) like the siblings; feeds without the category
    *  degrade honestly to []. */
   xgot: XgotEntry[];
+  /** cycle-235 additive: «فرصت‌های خلق‌شده» — the deep-file family's
+   *  SEVENTEENTH sibling and the TOTAL-creation VOLUME twin of the BCC
+   *  surface (→ chances created 235). The "Chances created" category
+   *  carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/total_att_assist.json (live-probed
+   *  2026-10-30, UA Chrome/124: WIDE on ALL SIX domestic globalMerge
+   *  leagues — ucl 466 / pl 323 / laliga 363 / seriea 382 / bundesliga
+   *  308 / ligue1 304 rows; persiangulf honestly absent — 5 player cats;
+   *  mas absent, empty payload). INTEGER-VALUED floats (probed nonint=0)
+   *  → the 215/216/220 integer convention: rounded once at build, pill
+   *  Persian digits WITHOUT dir=ltr. SEASON-AWARE (the
+   *  124/175/185/226/227/230/231/232 class): historical raws serve their
+   *  OWN files (2020/21 laliga = 466 rows, Lionel Messi 77 — frozen, the
+   *  202 anchor pattern). Wide healthy files → the STANDARD thin guard
+   *  (the 210 class) applies; always present (possibly []) like the
+   *  siblings; feeds without the category degrade honestly to []. */
+  chancesCreated: ChancesCreatedEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2138,6 +2194,71 @@ export async function getFullXgot(leagueKey: string, season?: string): Promise<X
   }
 }
 
+/** cycle-235: the deep-file family's SEVENTEENTH sibling — the TOTAL-creation
+ *  VOLUME twin of getFullBigChances. total_att_assist.json (live-probed
+ *  2026-10-30 UA Chrome/124: serving on ALL SIX domestic globalMerge
+ *  leagues with WIDE files — ucl 466 Thauvin 15 / pl 323 Groß 23 / laliga
+ *  363 Arda Güler 33 / seriea 382 Giacomo Calò 34 / bundesliga 308 Olise
+ *  25 / ligue1 304 Thauvin 27 rows; persiangulf honestly absent — 5
+ *  player cats; mas absent, empty payload). INTEGER-VALUED floats
+ *  (live-probed nonint=0 on every serving file, StatDecimals=0) → the
+ *  215/216/220 integer convention: rounded ONCE at build, pill Persian
+ *  digits WITHOUT dir=ltr. Upstream Rank is COMPETITION tie-ranked on
+ *  every file (ucl 10.0 → 4,5,6 / pl 18.0 → 4,4,6 / laliga 21.0 → 6,7,8
+ *  — probed); this loader keeps the file's own order and rank verbatim —
+ *  the merge re-ranks POSITIONALLY like every sibling. Same cache +
+ *  cycle-127 thin-TTL guard as the siblings (healthy = ≥10 rows — every
+ *  serving league probed ≥304, no natural-thinness class); season-aware
+ *  like every sibling (a historical raw carries its OWN fetchAllUrl —
+ *  the 2020/21 laliga raw serves 466 rows, Lionel Messi 77 / David
+ *  Ferreiro 73 / Toni Kroos 67, frozen; the 229 curation rides free —
+ *  «لیونل مسی» «تونی کروس»). Feeds without the category degrade to []
+ *  and the honest category fallback still feeds the merge.
+ */
+export async function getFullChancesCreated(leagueKey: string, season?: string): Promise<ChancesCreatedEntry[]> {
+  try {
+    return await cached(
+      `fullChancesCreated:v1:${leagueKey}:${season || "cur"}`,
+      // Standard wide-file guard (the 210/222/226/227/230/231/232 class):
+      // total_att_assist.json is a WIDE file (live-probed 2026-10-30:
+      // 304-466 rows across the six serving domestic leagues — every
+      // outfield creator), so thin means "the fetch was dropped" and
+      // re-probes in 90s. Season-aware like every production sibling — a
+      // historical raw carries its OWN fetchAllUrl (the 2020/21 laliga raw
+      // serves 466 rows, Messi 77).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^chances created$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: ChancesCreatedEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            chancesCreated: Math.round(r.StatValue ?? 0),  // integer convention (the 215/220 class) — upstream is integer-valued, probed nonint=0
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -2412,6 +2533,12 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // nameFa; statCategory carries raw names only). Decimal value
     // untouched (verbatim, storage never rounds).
     xgot: (st.xgot || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-235 additive: chances-created rows gain the same read-time
+    // honest names (the 222 lesson — the category top-3 rows enter the
+    // merge WITHOUT a nameFa; statCategory carries raw names only).
+    // Integer value untouched (rounded once at build, the 215/220
+    // convention).
+    chancesCreated: (st.chancesCreated || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2597,6 +2724,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // (header "Expected goals on target (xGOT)", probed verbatim off the
     // laliga category list)
     const xgotMap = new Map(statCategory(raw, /^expected goals on target \(xgot\)$/i).map((p) => [p.id, p.value ?? 0]));
+    // cycle-235 additive: the chances-created badge map — the TOTAL-creation
+    // volume twin (header "Chances created", probed verbatim off the
+    // laliga category list; integer values, nonint=0)
+    const ccMap = new Map(statCategory(raw, /^chances created$/i).map((p) => [p.id, Math.round(p.value ?? 0)]));
     const ratingMap = new Map(statCategory(raw, /fotmob rating/i).map((p) => [p.id, p.value ?? 0]));
     const minutesMap = new Map(statCategory(raw, /^minutes played$/i).map((p) => [p.id, p.value ?? 0]));
 
@@ -2614,6 +2745,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         ...(xaMap.has(s.id) ? { xa: xaMap.get(s.id) } : {}),
         ...(bccMap.has(s.id) ? { bigChances: bccMap.get(s.id) } : {}),
         ...(xgotMap.has(s.id) ? { xgot: xgotMap.get(s.id) } : {}),
+        ...(ccMap.has(s.id) ? { chancesCreated: ccMap.get(s.id) } : {}),
         ...(ratingMap.has(s.id) ? { rating: ratingMap.get(s.id) } : {}),
         ...(minutesMap.has(s.id) ? { minutes: minutesMap.get(s.id) } : {}),
       });
@@ -3079,6 +3211,41 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-235: «فرصت‌های خلق‌شده» — the SEVENTEENTH sibling joins the
+    // SAME merge on the SAME cached payload, the TOTAL-creation VOLUME
+    // twin of the BCC merge one block over. total_att_assist.json
+    // (live-probed 2026-10-30 UA Chrome/124: ALL SIX domestic globalMerge
+    // leagues — ucl 466 Thauvin 15 / pl 323 Groß 23 / laliga 363 Arda
+    // Güler 33 / seriea 382 Giacomo Calò 34 / bundesliga 308 Olise 25 /
+    // ligue1 304 Thauvin 27 rows; persiangulf honestly absent — 5 player
+    // cats; mas absent, empty payload; SEASON-AWARE (the
+    // 124/175/185/226/227/230/231/232 class): the 2020/21 raw serves its
+    // OWN file, 466 rows, Lionel Messi 77 / David Ferreiro 73 / Toni
+    // Kroos 67 — frozen, the 202 anchor pattern). INTEGER-VALUED floats
+    // (probed nonint=0) → the 215/216/220 integer convention: rounded once
+    // at build, pill Persian digits WITHOUT dir=ltr. Category top-3 first
+    // (the 175 merge order), then the full file merged on top, deduped by
+    // player id, sorted chancesCreated DESC then name, top-10, POSITIONAL
+    // rank re-assignment. Standard thin guard applies (wide files — the
+    // 210 class). SEQUENTIAL after the xGOT merge (the 176 discipline:
+    // one L2 write at a time).
+    const ccEntries: ChancesCreatedEntry[] = statCategory(raw, /^chances created$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, chancesCreated: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.chancesCreated - a.chancesCreated || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullChancesCreated = await getFullChancesCreated(leagueKey, requestedSeason);
+    const enrichedCcIds = new Set(
+      ccEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedChancesCreated = [...ccEntries, ...fullChancesCreated.filter((r) => r.playerId == null || !enrichedCcIds.has(r.playerId))]
+      .sort((a, b) => b.chancesCreated - a.chancesCreated || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -3168,6 +3335,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       xa: mergedXa,
       bigChancesCreated: mergedBigChances,
       xgot: mergedXgot,
+      chancesCreated: mergedChancesCreated,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3281,7 +3449,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // the mapped payload as a REQUIRED field; old v22 rows lack it and
     // would keep the new section hidden for up to a full TTL generation.
     // Whole key bumps (the 52/…/231 additive-shape convention).
-    await cached(`standings:v23:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-235: v24 — the chances-created block («فرصت‌های خلق‌شده») joins
+    // the mapped payload as a REQUIRED field; old v23 rows lack it and
+    // would keep the new section hidden for up to a full TTL generation.
+    // Whole key bumps (the 52/…/232 additive-shape convention).
+    await cached(`standings:v24:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -3434,6 +3606,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // 90s. Honest-empty feeds (no "Expected goals on target (xGOT)"
       // category — persiangulf AND mas, probed) keep the normal TTL.
       !(Array.isArray(mapped.xgot) && mapped.xgot.length > 0 && mapped.xgot.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-235: the standard thin-kept-for-a-generation guard closes for
+      // the chances-created block (the 175/210/215/216/217/220/221/222/
+      // 226/227/230/231/232 guard family grows by one) —
+      // total_att_assist.json is a WIDE file (probed 304-466 rows on the
+      // six serving domestic leagues), so a thin merged list means the
+      // fetch was dropped; re-probes in 90s. Honest-empty feeds (no
+      // "Chances created" category — persiangulf AND mas, probed) keep
+      // the normal TTL.
+      !(Array.isArray(mapped.chancesCreated) && mapped.chancesCreated.length > 0 && mapped.chancesCreated.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -5293,6 +5474,7 @@ export interface GlobalScorer {
   xa?: number;
   bigChances?: number;
   xgot?: number;   // cycle-232 additive: the xGOT badge twin (one decimal, the 226/230 convention)
+  chancesCreated?: number; // cycle-235 additive: the total-creation volume badge twin (integer, the 215 convention)
   rating?: number;
   minutes?: number;
   leagueKey: string;
@@ -5418,6 +5600,7 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
           ...(s.xa != null ? { xa: s.xa } : {}),
           ...(s.bigChances != null ? { bigChances: s.bigChances } : {}),
           ...(s.xgot != null ? { xgot: s.xgot } : {}),
+          ...(s.chancesCreated != null ? { chancesCreated: s.chancesCreated } : {}),
           ...(s.rating != null ? { rating: s.rating } : {}),
           ...(s.minutes != null ? { minutes: s.minutes } : {}),
           leagueKey: lg.key, leagueFa: lg.faName,
