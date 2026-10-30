@@ -35,6 +35,24 @@ const MIN_FULL = Number(process.env.TOPSCORERS_MIN_SCORERS || 30);
 const SNAPSHOT_TTL = 24 * 60 * 60_000; // last-known-good kept up to 24h
 
 export async function GET(req: NextRequest) {
+  // cycle-184 fix: the league is a PATH segment on this API family
+  // (/api/topscorers/[leagueKey]) — never a query param. Before this guard
+  // a request like /api/topscorers?league=belgium silently returned the
+  // GLOBAL merge with HTTP 200 (the cycle-183 probe lesson: leagueFa=None
+  // in the shape dump was the only tell). Honest 400 beats wrong-data-200,
+  // same contract as the season guard below. The /topscorers PAGE keeps
+  // its own designed ?league= UI-filter deep link (client-side only — both
+  // internal fetchers send ?season= alone), so no valid caller changes.
+  const leagueParam = req.nextUrl.searchParams.get("league");
+  if (leagueParam !== null) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: `Invalid query param "league" — the league is a path segment on this API: use /api/topscorers/${leagueParam}`,
+      },
+      { status: 400 }
+    );
+  }
   // cycle-132: optional historical season — same one-regex contract as the
   // standings/league-fixtures/league-bracket family
   const season = req.nextUrl.searchParams.get("season") || undefined;
