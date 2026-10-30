@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -157,6 +157,21 @@ interface LeagueScorersData {
   // historical views serve their own files (2020/21 laliga = Benzema 19,
   // frozen).
   bigChancesMissed?: BigChancesMissedEntry[];
+  // cycle-237 additive: «گل مورد انتظار تیم‌ها» rides the same payload — the
+  // deep-file family's NINETEENTH sibling and its FIRST TEAM-PARTICIPANT
+  // member: the team-side LEVEL of the xg surface (the 196 boards only
+  // ever showed this category as a ≤3-row podium — the full top-10 file
+  // level is new), rendered right after گل مورد انتظار so the player→team
+  // pair reads together and the rest of the analytics run + the keeper
+  // QUINTET stay untouched; decimal pill WITH dir=ltr rendered toFixed(1)
+  // (upstream precision EXACTLY one decimal, probed — the
+  // 210/217/226/230/232 decimal convention), honest absence = [] (feeds
+  // without the "Expected goals" TEAM category — persiangulf AND mas,
+  // probed — hide the section). NO badge twin BY DESIGN (badges key on
+  // PLAYER ids). Rows link /team/[id] (the standings-view contract).
+  // SEASON-AWARE (the 124/…/236 class): historical views serve their own
+  // files (2020/21 laliga = Barcelona 74.3, frozen).
+  teamXg?: TeamXgEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -731,6 +746,74 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                 <li key={`${r.name}-${i}`} data-testid="xg-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-237: گل مورد انتظار تیم‌ها — the deep-file family's
+          NINETEENTH sibling and its FIRST TEAM-PARTICIPANT member: the
+          team-side LEVEL of the xG surface (the 196 boards only ever
+          showed this category as a ≤3-row podium — the full top-10 file
+          level is new). stats/{id}/season/{sid}/expected_goals_team.json
+          — live-probed 2026-10-30 (UA Chrome/124): ALL SIX domestic
+          globalMerge leagues serve it (laliga 20 Barcelona 34.8 / pl 20
+          Manchester City 16.7 / seriea 20 Inter 25.5 / bundesliga 18
+          Bayern 23.8 / ligue1 18 PSG 20.0 / ucl 36 PSG 10.1 rows);
+          persiangulf AND mas honestly absent (no "Expected goals" team
+          category). Decimal 1-fraction (probed maxdec=1 on every serving
+          file) → the 210/217/226/230/232 VERBATIM-decimal convention:
+          the pill renders toFixed(1), dir=ltr (34.8 renders «۳۴.۸”).
+          SEASON-AWARE: the 2020/21 laliga raw serves its OWN file
+          (Barcelona 74.3 / Real Madrid 62.3 — frozen, the 202 anchor
+          pattern). The honest-name contract rides the EXISTING teamFa
+          map (the standings already curate these clubs) — zero new
+          PLAYER_NAME_FA entries. Rows link /team/{teamId} (the
+          standings-view contract). Placed right after گل مورد انتظار so
+          the player→team pair reads together while the rest of the
+          analytics run and the keeper QUINTET stay untouched — the
+          older gates' relative-order asserts are inequality-based so the
+          insertion provably keeps them green. Honest absence when the
+          feed has no team-xG category → the section simply hides. */}
+      {data && !loading && (data.teamXg || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="4.5" />
+              <circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">گل مورد انتظار تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت موقعیت‌ها — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamXg || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.teamXg.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="txg-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
                     </Link>
                   ) : (

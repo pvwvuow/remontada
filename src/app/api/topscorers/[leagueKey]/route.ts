@@ -154,6 +154,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // honest [] on persiangulf AND mas, probed); old consumers never
       // read this field (the 108 rule).
       bigChancesMissed: st.bigChancesMissed,
+      // cycle-237 additive: «گل مورد انتظار تیم‌ها» rides the SAME cached
+      // payload — the deep-file family's NINETEENTH sibling and its FIRST
+      // TEAM-PARTICIPANT member: the team-side LEVEL of the xG surface
+      // (decimal values verbatim, exactly one decimal — the
+      // 210/217/226/230/232 convention; season-aware like the sisters;
+      // honest [] on persiangulf AND mas, probed); old consumers never
+      // read this field (the 108 rule).
+      teamXg: st.teamXg,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

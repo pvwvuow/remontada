@@ -523,6 +523,48 @@ export interface BigChancesMissedEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-237 additive: one «گل مورد انتظار تیم‌ها» row — the deep-file
+ *  family's NINETEENTH sibling and its FIRST TEAM-PARTICIPANT member:
+ *  the team-side LEVEL of the xG surface (goals 23 / assists 175 / cards
+ *  50+185 / rating 210 / clean sheets 215 / G+A 216 / goals prevented
+ *  217 / minutes 220 / save percentage 221 / saves per 90 222 / penalty
+ *  saves 225 / expected goals 226 / goals per 90 227 / expected assist
+ *  230 / big chances created 231 / expected goals on target 232 /
+ *  chances created 235 / big chances missed 236 → team expected goals
+ *  237). The "Expected goals" TEAM category carries its own fetchAllUrl →
+ *  data.fotmob.com stats/{id}/season/{sid}/expected_goals_team.json
+ *  (live-probed 2026-10-30, UA Chrome/124: serving on ALL SIX domestic
+ *  globalMerge leagues with NATURALLY-THIN team files — laliga 20
+ *  Barcelona 34.8 / pl 20 Manchester City 16.7 / seriea 20 Inter 25.5 /
+ *  bundesliga 18 Bayern 23.8 / ligue1 18 PSG 20.0 / ucl 36 PSG 10.1
+ *  rows; uel 36 Leverkusen 11.0 + portugal 18 Benfica 20.8 probed for
+ *  breadth; persiangulf honestly absent — 1 team category; mas absent —
+ *  4 team cats, no xG). DECIMAL 1-fraction (probed nonint 15-32 rows
+ *  per file, maxdec=1 on every serving file) → the 210/217/226/230/232
+ *  VERBATIM-decimal convention: storage never rounds, the pill renders
+ *  toFixed(1) dir=ltr (34.8 renders «۳۴.۸»). Upstream Rank is positional
+ *  (one competition tie probed: portugal 5,5) — kept verbatim; the merge
+ *  re-ranks POSITIONALLY like every sibling. The rows' ParticiantId is
+ *  ALWAYS 0 (teams carry TeamId) → dedup by TeamId, the id /team/[id]
+ *  keys on. The honest-name contract rides the EXISTING teamFa map —
+ *  zero new PLAYER_NAME_FA entries (the standings already curate these
+ *  clubs). SEASON-AWARE (the 124/…/236 class): historical raws serve
+ *  their OWN files (2020/21 laliga = 20 rows, Barcelona 74.3 / Real
+ *  Madrid 62.3 / Real Sociedad 61.9 — frozen, the 202 anchor pattern).
+ *  Wide-enough files (18-36 rows, comfortably above the family's
+ *  FULL_LIST_HEALTHY_MIN floor) → the STANDARD guard (the 210 class)
+ *  applies with NO natural-thinness exemption (the 225 class does not
+ *  arise); always present (possibly []); feeds without the team
+ *  category degrade honestly to []. */
+export interface TeamXgEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamXg: number;  // StatValue VERBATIM — xG decimal (34.8), the 210/217/226/230/232 convention, never rounded
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -848,6 +890,26 @@ export interface StandingsData {
    *  thin guard (the 210 class) applies; always present (possibly [])
  *  like the siblings; feeds without the category degrade honestly to []. */
   bigChancesMissed: BigChancesMissedEntry[];
+  /** cycle-237 additive: «گل مورد انتظار تیم‌ها» — the deep-file family's
+   *  NINETEENTH sibling and its FIRST TEAM-PARTICIPANT member (→ team
+   *  expected goals 237). The "Expected goals" TEAM category carries its
+   *  own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/expected_goals_team.json (live-probed
+   *  2026-10-30, UA Chrome/124: NATURALLY-THIN team files on ALL SIX
+   *  domestic globalMerge leagues — laliga 20 / pl 20 / seriea 20 /
+   *  bundesliga 18 / ligue1 18 / ucl 36 rows; persiangulf honestly
+   *  absent; mas absent). DECIMAL 1-fraction (probed maxdec=1) → the
+   *  210/217/226/230/232 VERBATIM-decimal convention: storage never
+   *  rounds, pill toFixed(1) dir=ltr. NO badge twin and NO global-merge
+   *  participation BY DESIGN (the badge/merge mechanisms key on PLAYER
+   *  ids — a team surface has none); the block rides the league page
+   *  only, rows link /team/[id]. SEASON-AWARE (the 124/…/236 class):
+   *  historical raws serve their OWN files (2020/21 laliga = 20 rows,
+   *  Barcelona 74.3 — frozen, the 202 anchor pattern). Team files serve
+   *  18-36 rows — above the FULL_LIST_HEALTHY_MIN floor → the STANDARD
+   *  thin guard applies; always present (possibly []); feeds without
+   *  the team category degrade honestly to []. */
+  teamXg: TeamXgEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1283,6 +1345,26 @@ function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
   return out.filter((p) => (seen.has(p.id) ? false : (seen.add(p.id), true)));
 }
 
+/** cycle-237: pull one TEAM stats category (participant + topThree,
+ *  deduped by team id) — the team-side mirror of statCategory. The
+ *  declared FotMobLeague stats type carries only `players`, so the
+ *  `teams` block rides the same extractLeagueBoards cast (the 92
+ *  convention); the nodes carry header + fetchAllUrl + podium rows. */
+function statTeamCategory(raw: FotMobLeague, re: RegExp): FMStatTeamRow[] {
+  const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+  const cat = teams?.find?.((t) => re.test(t.header || ""));
+  if (!cat) return [];
+  const out: FMStatTeamRow[] = [];
+  if (cat.participant?.name) out.push(cat.participant);
+  for (const t of cat.topThree || []) if (t?.name) out.push(t);
+  const seen = new Set<number>();
+  return out.filter((p) =>
+    p.teamId != null && seen.has(p.teamId)
+      ? false
+      : (p.teamId != null && seen.add(p.teamId), true)
+  );
+}
+
 // ---------------- FotMob: league season boards («برترین‌های رسمی فصل», cycle-92) ----------------
 // Probed live (2026-10-29, UA Chrome/124): raw.stats carries 40+ PLAYER and
 // 30 TEAM leaderboard blocks {header, participant, topThree:[{name/teamId/
@@ -1371,6 +1453,7 @@ interface FMStatBlockTeam {
   header?: string;
   participant?: FMStatTeamRow;
   topThree?: FMStatTeamRow[];
+  fetchAllUrl?: string;  // cycle-237: the full-season TEAM stats file (data.fotmob.com, gzip) — probed present on every team category node
 }
 
 /**
@@ -2381,6 +2464,74 @@ export async function getFullBigChancesMissed(leagueKey: string, season?: string
   }
 }
 
+/** cycle-237: the deep-file family's NINETEENTH sibling — the FIRST
+ *  TEAM-participant member, the team-side LEVEL of getFullExpectedGoals.
+ *  expected_goals_team.json (live-probed 2026-10-30 UA Chrome/124:
+ *  serving on ALL SIX domestic globalMerge leagues with NATURALLY-THIN
+ *  team files — laliga 20 Barcelona 34.8 / pl 20 Manchester City 16.7 /
+ *  seriea 20 Inter 25.5 / bundesliga 18 Bayern 23.8 / ligue1 18 PSG
+ *  20.0 / ucl 36 PSG 10.1 rows; uel 36 + portugal 18 probed for
+ *  breadth; persiangulf honestly absent — 1 team category; mas absent
+ *  — 4 team cats, no xG). DECIMAL 1-fraction (probed nonint 15-32 per
+ *  file, maxdec=1 on every serving file) → the 210/217/226/230/232
+ *  VERBATIM-decimal convention: storage never rounds, the pill renders
+ *  toFixed(1) dir=ltr. The rows' ParticiantId is ALWAYS 0 (teams carry
+ *  TeamId) → dedup by TeamId. The honest-name contract rides the
+ *  EXISTING teamFa map — zero new PLAYER_NAME_FA entries. Same cache +
+ *  guard as the siblings: team files are naturally thin BUT never under
+ *  the family floor (probed 18-36 rows), so <10 means "the fetch was
+ *  dropped" — the STANDARD guard applies with NO natural-thinness
+ *  exemption (the 225 penalty-save class does NOT arise); season-aware
+ *  like every sibling (a historical raw carries its OWN fetchAllUrl —
+ *  the 2020/21 laliga raw serves 20 rows, Barcelona 74.3 / Real Madrid
+ *  62.3 / Real Sociedad 61.9, frozen). Feeds without the team category
+ *  degrade to [].
+ */
+export async function getFullTeamXg(leagueKey: string, season?: string): Promise<TeamXgEntry[]> {
+  try {
+    return await cached(
+      `fullTeamXg:v1:${leagueKey}:${season || "cur"}`,
+      // Standard guard (the 210/…/236 class): team files are naturally
+      // thin but never under the family floor — live-probed 18-36 rows
+      // on every serving league, so thin means "the fetch was dropped"
+      // and re-probes in 90s. Honest-empty feeds (no "Expected goals"
+      // team category — persiangulf AND mas, probed) degrade to []
+      // upstream of the guard. Season-aware like every production
+      // sibling — a historical raw carries its OWN fetchAllUrl (the
+      // 2020/21 laliga raw serves 20 rows, Barcelona 74.3).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^expected goals$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamXgEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamXg: r.StatValue ?? 0,  // VERBATIM — the 210/217/226/230/232 decimal convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -2667,6 +2818,12 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // Integer value untouched (rounded once at build, the 215/220
     // convention).
     bigChancesMissed: (st.bigChancesMissed || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-237 additive: the team-xg rows ARE teams — the honest Persian
+    // team name re-applies at read time exactly like the standings table
+    // rows (rowFa, the teamFa edition of the 170 contract): a teamFa map
+    // addition never waits a full generation to reach «گل مورد انتظار
+    // تیم‌ها». Decimal value untouched (verbatim, storage never rounds).
+    teamXg: (st.teamXg || []).map((r) => ({ ...r, nameFa: teamFa(r.name) || undefined })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -3413,6 +3570,45 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-237: «گل مورد انتظار تیم‌ها» — the NINETEENTH sibling joins the
+    // SAME cached payload, the FIRST TEAM-PARTICIPANT member of the family
+    // (the team-side LEVEL the 196 boards only ever showed as a ≤3-row
+    // podium). expected_goals_team.json (live-probed 2026-10-30 UA
+    // Chrome/124: ALL SIX domestic globalMerge leagues — laliga 20
+    // Barcelona 34.8 / pl 20 Manchester City 16.7 / seriea 20 Inter 25.5 /
+    // bundesliga 18 Bayern 23.8 / ligue1 18 PSG 20.0 / ucl 36 PSG 10.1
+    // rows; persiangulf honestly absent; mas absent; SEASON-AWARE: the
+    // 2020/21 raw serves its OWN file, 20 rows, Barcelona 74.3 / Real
+    // Madrid 62.3 / Real Sociedad 61.9 — frozen, the 202 anchor pattern).
+    // DECIMAL 1-fraction (probed maxdec=1 on every serving file) → the
+    // 210/217/226/230/232 VERBATIM-decimal convention: storage never
+    // rounds, the pill renders toFixed(1) dir=ltr. Team top-3 first (the
+    // 175 merge order, statTeamCategory), then the full file merged on
+    // top, deduped by TEAM id (ParticiantId is ALWAYS 0 on team files),
+    // sorted teamXg DESC then name, top-10, POSITIONAL rank
+    // re-assignment. NO badge twin and NO global-merge participation BY
+    // DESIGN: the family's badge/merge mechanisms key on PLAYER ids (the
+    // id-intersection with the scorer rows) — a team surface has none;
+    // the honest-team block rides the league page only, rows link
+    // /team/[id] (the standings-view contract). Standard thin guard
+    // applies (team files serve 18-36 rows — above the 10-row floor, no
+    // natural-thinness exemption). SEQUENTIAL after the
+    // big-chances-missed merge (the 176 discipline: one L2 write at a
+    // time).
+    const txgEntries: TeamXgEntry[] = statTeamCategory(raw, /^expected goals$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamXg: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamXg - a.teamXg || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamXg = await getFullTeamXg(leagueKey, requestedSeason);
+    const enrichedTxgIds = new Set(txgEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamXg = [...txgEntries, ...fullTeamXg.filter((r) => r.teamId <= 0 || !enrichedTxgIds.has(r.teamId))]
+      .sort((a, b) => b.teamXg - a.teamXg || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -3504,6 +3700,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       xgot: mergedXgot,
       chancesCreated: mergedChancesCreated,
       bigChancesMissed: mergedBigChancesMissed,
+      teamXg: mergedTeamXg,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3626,7 +3823,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // rows lack it and would keep the new section hidden for up to a full
     // TTL generation. Whole key bumps (the 52/…/235 additive-shape
     // convention).
-    await cached(`standings:v25:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-237: v26 — the team-xg block («گل مورد انتظار تیم‌ها») joins
+    // the mapped payload as a REQUIRED field; old v25 rows lack it and
+    // would keep the new section hidden for up to a full TTL generation.
+    // Whole key bumps (the 52/…/236 additive-shape convention).
+    await cached(`standings:v26:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -3797,6 +3998,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // chances missed" category — persiangulf AND mas, probed) keep
       // the normal TTL.
       !(Array.isArray(mapped.bigChancesMissed) && mapped.bigChancesMissed.length > 0 && mapped.bigChancesMissed.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-237: the standard thin-kept-for-a-generation guard closes for
+      // the team-xg block (the 175/210/215/216/217/220/221/222/226/227/
+      // 230/231/232/235/236 guard family grows by one) —
+      // expected_goals_team.json is a NATURALLY-THIN-BUT-NEVER-UNDER-THE-
+      // FLOOR file (probed 18-36 rows on the six serving domestic
+      // leagues), so a thin merged list means the fetch was dropped;
+      // re-probes in 90s. Honest-empty feeds (no "Expected goals" TEAM
+      // category — persiangulf AND mas, probed) keep the normal TTL.
+      !(Array.isArray(mapped.teamXg) && mapped.teamXg.length > 0 && mapped.teamXg.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
