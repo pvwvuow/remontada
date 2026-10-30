@@ -47,6 +47,12 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   if (s.xa != null && s.xa > 0) {
     badges.push({ label: `xA ${faDigits(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
   }
+  // cycle-231 additive: the big-chances badge — the creation-volume twin
+  // (season-total from the "Big chances created" category, matched by
+  // player id; integer, the 215 display convention)
+  if (s.bigChances != null && s.bigChances > 0) {
+    badges.push({ label: `${faDigits(s.bigChances)} سانس بزرگ`, cls: "bg-muted border-border text-muted-foreground", title: "سانس بزرگ خلق‌شده" });
+  }
   if (badges.length === 0) return null;
   return (
     <span className="flex items-center gap-1 flex-wrap">

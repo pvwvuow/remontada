@@ -125,6 +125,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // like goals/assists/xG/gp90; honest [] on persiangulf AND mas,
       // probed); old consumers never read this field (the 108 rule).
       xa: st.xa,
+      // cycle-231 additive: «سانس بزرگ خلق‌شده» rides the SAME cached payload —
+      // the deep-file family's FIFTEENTH sibling and the production-CREATION
+      // volume surface beside the analytics twins (integer values rounded
+      // once at build — the 215/220 convention; season-aware like the
+      // decimal sisters; honest [] on persiangulf AND mas, probed); old
+      // consumers never read this field (the 108 rule).
+      bigChancesCreated: st.bigChancesCreated,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
