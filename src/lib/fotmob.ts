@@ -278,6 +278,32 @@ export interface SavesPer90Entry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-225 additive: one «پنالتی‌های مهارشده» row — the deep-file family's
+ *  ELEVENTH sibling and the FIFTH keeper surface (clean sheets 215 / goals
+ *  prevented 217 / save percentage 221 / saves per 90 222 → penalty saves
+ *  225). Live-probed 2026-10-30 UA Chrome/124: the "Penalty saves" category
+ *  serves on SIX of the seven leagues and its penalty_save.json files are
+ *  NATURALLY THIN — ucl 2 / pl 2 / laliga 5 / seriea 5 / bundesliga 4 /
+ *  ligue1 3 rows (a penalty save is a rare event; the whole league's worth
+ *  fits in a handful of rows) — persiangulf honestly absent (no keeper
+ *  category at all, the 215/217/221/222 pattern). StatValue is a small
+ *  INTEGER rounded ONCE (1.0 → 1, the 215/216 convention — never the
+ *  verbatim-float one). CURRENT-SEASON ONLY (the cycle-132 class, probed:
+ *  the 2020/21, 2023/24 and 2025/26 finished raws carry NO "Penalty saves"
+ *  category — historical views honestly hide the section). Upstream Rank:
+ *  COMPETITION tie-ranked on the serving files (laliga 1,2,2,4,5 / ucl 1,1
+ *  — probed) — the merge re-ranks POSITIONALLY like every sibling. */
+export interface PenaltySavesEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  penaltySaves: number;  // StatValue rounded ONCE (1.0 → 1) — the 215/216 integer convention
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -418,6 +444,34 @@ export interface StandingsData {
    *  (2-5 rows — a new class below the healthy threshold) — logged as the
    *  next update's candidate, needs its own guard decision. */
   savesPer90: SavesPer90Entry[];
+  /** cycle-225 additive: «پنالتی‌های مهارشده» — the deep-file family's
+   *  ELEVENTH sibling and the FIFTH keeper surface (clean sheets 215 / goals
+   *  prevented 217 / save percentage 221 / saves per 90 222 → penalty saves
+   *  225). The "Penalty saves" category carries its own fetchAllUrl →
+   *  data.fotmob.com stats/{id}/season/{sid}/penalty_save.json (live-probed
+   *  2026-10-30, UA Chrome/124: serving on SIX of the seven leagues — ucl 2
+   *  / pl 2 / laliga 5 / seriea 5 / bundesliga 4 / ligue1 3 rows;
+   *  persiangulf honestly absent — no keeper category at all). The files
+   *  are NATURALLY THIN (a penalty save is rare — the whole league's worth
+   *  fits in a handful of rows), so this sibling carries NO thin-TTL
+   *  re-probe guard anywhere (the cycle-176 red-cards precedent — a <10
+   *  guard would re-probe forever); the loader's own rule is ≥1 row =
+   *  healthy. CURRENT-SEASON ONLY (the 132 class — the 2020/21, 2023/24
+   *  and 2025/26 finished raws lack the category, probed): historical
+   *  views honestly hide the section. Integer values (StatValue 1.0 → 1,
+   *  the 215/216 convention). Always present (possibly []) like the
+   *  siblings; feeds without the category degrade honestly to [] (the
+   *  section simply hides there). */
+  penaltySaves: PenaltySavesEntry[];
+  /** cycle-225 internal: the dropped-fetch marker for the penalty-saves block
+   *  — true ONLY when the raw carries the "Penalty saves" category (the data
+   *  genuinely exists upstream) but the penalty_save.json fetch failed after
+   *  the loader's retries (the cold-build race class, the 210/222
+   *  incidents). The standings TTL reader re-probes the payload in 90s when
+   *  set, so a dropped fetch cannot bake the short category fallback for a
+   *  full generation. NATURAL thinness (2-5 rows, probed) never sets it —
+   *  no UI/API consumer ever reads it (the 108 rule). */
+  penaltySavesDropped?: boolean;
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1507,6 +1561,67 @@ export async function getFullSavePercentage(leagueKey: string, season?: string):
  * Masip 3.0). Feeds without the category degrade to [] and the honest
  * category fallback still feeds the merge.
  */
+export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
+  // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
+  // persiangulf, probed, AND every historical raw, probed) returns [] — the
+  // honest feed-without-the-category degradation, same as the siblings. A
+  // FAILED fetch when the category EXISTS is a different class entirely: it
+  // re-THROWS after the loader-level cache, so the standings build can mark
+  // the payload penaltySavesDropped and the TTL reader re-probes in 90s
+  // instead of baking the category-only fallback for a full generation (the
+  // live-proven 210/222 cold-build race class — this block's first cold
+  // build DID drop it once, serving 3 fallback rows while the file holds 5).
+  const { raw } = await getLeagueRaw(leagueKey, season);
+  const cat = raw.stats?.players?.find?.((p) => /^penalty saves$/i.test(p.header || ""));
+  const url = cat?.fetchAllUrl;
+  if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];  // real absence — honest []
+  try {
+    return await cached(
+      `fullPenaltySaves:v1:${leagueKey}:${season || "cur"}`,
+      // THE cycle-225 GUARD DECISION (the thread the 222/224 cards left
+      // open): penalty_save.json files are NATURALLY thin — live-probed
+      // 2026-10-30 across all six serving leagues: ucl 2 / pl 2 / laliga 5
+      // / seriea 5 / bundesliga 4 / ligue1 3 rows. A penalty save is a rare
+      // event, so the FULL file will never reach FULL_LIST_HEALTHY_MIN —
+      // the cycle-127 thin guard (rows < 10 → re-probe in 90s) would
+      // re-probe FOREVER here (the cycle-176 red-cards lesson verbatim:
+      // "red files are naturally short — a red guard would re-probe
+      // forever"). Health rule for this sibling: ≥1 row = healthy (the
+      // normal 60-min TTL); 0 rows (an empty upstream file — never yet
+      // observed on a serving league) re-probe in 90s.
+      (rows) => (rows.length >= 1 ? 60 * 60_000 : 90_000),
+      async () => {
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: PenaltySavesEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            penaltySaves: Math.round(r.StatValue ?? 0),  // integer ONCE — the 215/216 convention (1.0 → 1)
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch (err) {
+    // cycle-225: NOT honest absence — the category exists upstream. Re-throw
+    // (the standings build marks the payload and the 90s re-probe heals; the
+    // throw itself never breaks the merge — the build catches it and serves
+    // the honest category fallback meanwhile).
+    throw err instanceof Error ? err : new Error("penalty_save.json fetch failed");
+  }
+}
+
 export async function getFullSavesPer90(leagueKey: string, season?: string): Promise<SavesPer90Entry[]> {
   try {
     return await cached(
@@ -1691,6 +1806,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // until this line rejoined the 219/221 curation). Per-90 value
     // untouched (verbatim).
     savesPer90: (st.savesPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-225 additive: penalty-saves rows gain the same read-time honest
+    // names (the 222 lesson — the category top-3 rows enter the merge
+    // WITHOUT a nameFa; statCategory carries raw names only). Integer value
+    // untouched (rounded once at build).
+    penaltySaves: (st.penaltySaves || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2123,6 +2243,55 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-225: «پنالتی‌های مهارشده» — the ELEVENTH sibling joins the SAME
+    // cached payload (the 175→222 merge pattern one surface over):
+    // stats/{id}/season/{sid}/penalty_save.json (live-probed 2026-10-30 UA
+    // Chrome/124: SIX of the seven leagues — ucl 2 / pl 2 / laliga 5 /
+    // seriea 5 / bundesliga 4 / ligue1 3 rows, all INTEGER StatValue 1-2
+    // with competition tie-ranks (laliga 1,2,2,4,5); persiangulf honestly
+    // absent — no keeper category; CURRENT-SEASON ONLY: the 2020/21,
+    // 2023/24 and 2025/26 finished raws carry NO "Penalty saves" category —
+    // probed — so historical views honestly hide the section, the
+    // cycle-132 class). Category top-3 first (the 175 merge order), then
+    // the full file merged on top, deduped by player id, sorted by penalty
+    // saves DESC then name, top-10 (the thin files cap well below),
+    // POSITIONAL rank re-assignment (the family contract — the upstream's
+    // tie-ranks are honest data but the served list re-ranks like every
+    // sibling). NO length-based thin guard for this block (the TTL reader
+    // below): the files are naturally short FOREVER — a <10 re-probe guard
+    // would spin eternally (the 176 red-cards lesson); the DROPPED-FETCH
+    // class is instead guarded precisely via the penaltySavesDropped marker
+    // (the catch below + the TTL reader).
+    // SEQUENTIAL after the saves-per-90 merge (the 176 discipline: one L2
+    // write at a time).
+    let penaltySavesDropped = false;
+    const penaltySavesEntries: PenaltySavesEntry[] = statCategory(raw, /^penalty saves$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, penaltySaves: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.penaltySaves - a.penaltySaves || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullPenaltySaves = await getFullPenaltySaves(leagueKey, requestedSeason).catch(() => {
+      // cycle-225: the dropped-fetch class — the category exists upstream but
+      // the file fetch failed after the retries (the 210/222 cold-build race;
+      // this block's FIRST cold build dropped exactly this way: 3 fallback
+      // rows baked while the file holds 5). The merge still serves the honest
+      // category fallback meanwhile, and the payload carries the
+      // penaltySavesDropped marker so the TTL reader re-probes in 90s
+      // instead of baking the short list for a full generation.
+      penaltySavesDropped = true;
+      return [] as PenaltySavesEntry[];
+    });
+    const enrichedPSIds = new Set(
+      penaltySavesEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedPenaltySaves = [...penaltySavesEntries, ...fullPenaltySaves.filter((r) => r.playerId == null || !enrichedPSIds.has(r.playerId))]
+      .sort((a, b) => b.penaltySaves - a.penaltySaves || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -2206,6 +2375,8 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       minutes: mergedMinutes,
       savePercentage: mergedSavePercentage,
       savesPer90: mergedSavesPer90,
+      penaltySaves: mergedPenaltySaves,
+      ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -2290,7 +2461,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215/216/217/220/221 convention).
-    await cached(`standings:v17:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-225: v18 — the penalty-saves block («پنالتی‌های مهارشده») joins
+    // the mapped payload as a REQUIRED field; old v17 rows lack it and
+    // would keep the new section hidden for up to a full TTL generation.
+    // Whole key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215/216/217/220/221/222
+    // convention).
+    await cached(`standings:v18:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -2393,6 +2570,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // honest-empty feeds (no "Saves per 90" category — persiangulf,
       // probed) keep the normal TTL.
       !(Array.isArray(mapped.savesPer90) && mapped.savesPer90.length > 0 && mapped.savesPer90.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-225: penaltySaves deliberately UNGUARDED by length here (the
+      // cycle-176 red-cards precedent — the files are NATURALLY thin
+      // FOREVER: 2-5 rows live-probed across all six serving leagues; a <10
+      // re-probe guard would re-probe eternally). The dropped-fetch class is
+      // instead covered PRECISELY by the penaltySavesDropped marker the
+      // build sets when the category exists but the file fetch failed: the
+      // payload re-probes in 90s in exactly that case, never on natural
+      // thinness. The v18 key bump already forces one clean rebuild.
+      !mapped.penaltySavesDropped &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -4899,6 +5085,9 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
       r.value.minutes || [],
       r.value.savePercentage || [],
       r.value.savesPer90 || [],
+      // cycle-225: the family's ELEVENTH sibling joins the 224 fold chain —
+      // penalty-saves kings (Turati/Vallés/Hein…) searchable too, zero fetch.
+      r.value.penaltySaves || [],
     ];
     for (const block of deepFamilyBlocks) {
       for (const row of block) {

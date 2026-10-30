@@ -97,6 +97,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // convention; honest [] on persiangulf, probed); old consumers never
       // read this field (the 108 rule).
       savesPer90: st.savesPer90,
+      // cycle-225 additive: «پنالتی‌های مهارشده» rides the SAME cached
+      // payload — the deep-file family's ELEVENTH sibling and the FIFTH
+      // keeper surface (naturally thin 2-5-row files, integer values —
+      // the 215 convention; honest [] on persiangulf AND on every
+      // historical season, probed); old consumers never read this field
+      // (the 108 rule).
+      penaltySaves: st.penaltySaves,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
