@@ -119,6 +119,7 @@ export interface ScorerEntry {
   bigChances?: number; // cycle-231 additive: "Big chances created" — the creation-volume badge (integer, the 215 convention)
   xgot?: number;      // cycle-232 additive: "Expected goals on target (xGOT)" — the on-target accuracy badge (one decimal, the 226/230 convention)
   chancesCreated?: number; // cycle-235 additive: "Chances created" — the TOTAL-creation volume badge (integer, the 215 convention)
+  bigChancesMissed?: number; // cycle-236 additive: "Big chances missed" — the missed-volume badge (integer, the 215 convention)
   rating?: number;    // "FotMob rating"
   minutes?: number;   // "Minutes played" (enables minutes-per-goal)
 }
@@ -483,6 +484,45 @@ export interface ChancesCreatedEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-236 additive: one «سانس بزرگ ازدست‌رفته» row — the deep-file
+ *  family's EIGHTEENTH sibling and the MISSED-volume twin of the BCC
+ *  surface (goals 23 / assists 175 / cards 50+185 / rating 210 / clean
+ *  sheets 215 / G+A 216 / goals prevented 217 / minutes 220 / save
+ *  percentage 221 / saves per 90 222 / penalty saves 225 / expected goals
+ *  226 / goals per 90 227 / expected assist 230 / big chances created 231
+ *  / expected goals on target 232 / chances created 235 → big chances
+ *  missed 236). The "Big chances missed" category carries its own
+ *  fetchAllUrl → data.fotmob.com
+ *  stats/{id}/season/{sid}/big_chance_missed.json (live-probed
+ *  2026-10-30, UA Chrome/124: serving on ALL SIX domestic globalMerge
+ *  leagues with WIDE files — ucl 140 Haaland 6 / pl 135 Thierno Barry 12
+ *  / laliga 142 Mbappé 13 / seriea 171 Malen 9 / bundesliga 126
+ *  Demirović 8 / ligue1 128 Mafouta 6 rows; persiangulf honestly absent;
+ *  mas absent, null payload). INTEGER-VALUED floats (live-probed
+ *  nonint=0 on every serving file, StatDecimals=0) → the 215/216/220
+ *  integer convention: rounded ONCE at build, the pill renders Persian
+ *  digits WITHOUT dir=ltr (12 renders «۱۲»). Upstream Rank is
+ *  COMPETITION tie-ranked on every file (pl 6.0 ×4 / laliga 7.0 ×3 —
+ *  probed); this loader keeps the file's own order and rank verbatim —
+ *  the merge re-ranks POSITIONALLY like every sibling. SEASON-AWARE (the
+ *  124/175/185/226/227/230/231/232/235 class): historical raws serve
+ *  their OWN files (2020/21 laliga = 257 rows, Karim Benzema 19 /
+ *  Alexander Isak 16 / Rafa Mir 16 — frozen, the 202 anchor pattern; the
+ *  229 curation rides free — «کریم بنزما» «رافا میر»). Wide healthy
+ *  files → the STANDARD thin guard (the 210 class) applies; always
+ *  present (possibly []) like the siblings; feeds without the category
+ *  degrade honestly to []. */
+export interface BigChancesMissedEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  bigChancesMissed: number;  // StatValue rounded ONCE at build (the 215/220 integer convention — upstream is integer-valued, probed nonint=0)
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -791,6 +831,23 @@ export interface StandingsData {
    *  (the 210 class) applies; always present (possibly []) like the
    *  siblings; feeds without the category degrade honestly to []. */
   chancesCreated: ChancesCreatedEntry[];
+  /** cycle-236 additive: «سانس بزرگ ازدست‌رفته» — the deep-file family's
+   *  EIGHTEENTH sibling and the MISSED-volume twin of the BCC surface (→
+   *  big chances missed 236). The "Big chances missed" category carries
+   *  its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/big_chance_missed.json (live-probed
+   *  2026-10-30, UA Chrome/124: WIDE on ALL SIX domestic globalMerge
+   *  leagues — ucl 140 / pl 135 / laliga 142 / seriea 171 / bundesliga
+   *  126 / ligue1 128 rows; persiangulf honestly absent; mas absent,
+   *  null payload). INTEGER-VALUED floats (probed nonint=0) → the
+   *  215/216/220 integer convention: rounded once at build, pill Persian
+   *  digits WITHOUT dir=ltr. SEASON-AWARE (the
+   *  124/175/185/226/227/230/231/232/235 class): historical raws serve
+   *  their OWN files (2020/21 laliga = 257 rows, Karim Benzema 19 —
+   *  frozen, the 202 anchor pattern). Wide healthy files → the STANDARD
+   *  thin guard (the 210 class) applies; always present (possibly [])
+ *  like the siblings; feeds without the category degrade honestly to []. */
+  bigChancesMissed: BigChancesMissedEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2259,6 +2316,71 @@ export async function getFullChancesCreated(leagueKey: string, season?: string):
   }
 }
 
+/** cycle-236: the deep-file family's EIGHTEENTH sibling — the MISSED-volume
+ *  twin of getFullBigChances. big_chance_missed.json (live-probed
+ *  2026-10-30 UA Chrome/124: serving on ALL SIX domestic globalMerge
+ *  leagues with WIDE files — ucl 140 Haaland 6 / pl 135 Thierno Barry 12
+ *  / laliga 142 Mbappé 13 / seriea 171 Malen 9 / bundesliga 126
+ *  Demirović 8 / ligue1 128 Mafouta 6 rows; persiangulf honestly absent;
+ *  mas absent, null payload). INTEGER-VALUED floats (live-probed nonint=0
+ *  on every serving file, StatDecimals=0) → the 215/216/220 integer
+ *  convention: rounded ONCE at build, pill Persian digits WITHOUT
+ *  dir=ltr. Upstream Rank is COMPETITION tie-ranked on every file (pl
+ *  6.0 ×4 / laliga 7.0 ×3 — probed); this loader keeps the file's own
+ *  order and rank verbatim — the merge re-ranks POSITIONALLY like every
+ *  sibling. Same cache + cycle-127 thin-TTL guard as the siblings
+ *  (healthy = ≥10 rows — every serving league probed ≥126, no
+ *  natural-thinness class); season-aware like every sibling (a historical
+ *  raw carries its OWN fetchAllUrl — the 2020/21 laliga raw serves 257
+ *  rows, Karim Benzema 19 / Alexander Isak 16 / Rafa Mir 16, frozen; the
+ *  229 curation rides free — «کریم بنزما» «رافا میر»). Feeds without the
+ *  category degrade to [] and the honest category fallback still feeds
+ *  the merge.
+ */
+export async function getFullBigChancesMissed(leagueKey: string, season?: string): Promise<BigChancesMissedEntry[]> {
+  try {
+    return await cached(
+      `fullBigChancesMissed:v1:${leagueKey}:${season || "cur"}`,
+      // Standard wide-file guard (the 210/222/226/227/230/231/232/235
+      // class): big_chance_missed.json is a WIDE file (live-probed
+      // 2026-10-30: 126-171 rows across the six serving domestic leagues —
+      // every outfield finisher), so thin means "the fetch was dropped"
+      // and re-probes in 90s. Season-aware like every production sibling —
+      // a historical raw carries its OWN fetchAllUrl (the 2020/21 laliga
+      // raw serves 257 rows, Benzema 19).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^big chances missed$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: BigChancesMissedEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            bigChancesMissed: Math.round(r.StatValue ?? 0),  // integer convention (the 215/220 class) — upstream is integer-valued, probed nonint=0
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -2539,6 +2661,12 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // Integer value untouched (rounded once at build, the 215/220
     // convention).
     chancesCreated: (st.chancesCreated || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-236 additive: big-chances-missed rows gain the same read-time
+    // honest names (the 222 lesson — the category top-3 rows enter the
+    // merge WITHOUT a nameFa; statCategory carries raw names only).
+    // Integer value untouched (rounded once at build, the 215/220
+    // convention).
+    bigChancesMissed: (st.bigChancesMissed || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2728,6 +2856,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // volume twin (header "Chances created", probed verbatim off the
     // laliga category list; integer values, nonint=0)
     const ccMap = new Map(statCategory(raw, /^chances created$/i).map((p) => [p.id, Math.round(p.value ?? 0)]));
+    // cycle-236 additive: the big-chances-missed badge map — the
+    // missed-volume twin (header "Big chances missed", probed; integer
+    // values, nonint=0)
+    const bcmMap = new Map(statCategory(raw, /^big chances missed$/i).map((p) => [p.id, Math.round(p.value ?? 0)]));
     const ratingMap = new Map(statCategory(raw, /fotmob rating/i).map((p) => [p.id, p.value ?? 0]));
     const minutesMap = new Map(statCategory(raw, /^minutes played$/i).map((p) => [p.id, p.value ?? 0]));
 
@@ -2746,6 +2878,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         ...(bccMap.has(s.id) ? { bigChances: bccMap.get(s.id) } : {}),
         ...(xgotMap.has(s.id) ? { xgot: xgotMap.get(s.id) } : {}),
         ...(ccMap.has(s.id) ? { chancesCreated: ccMap.get(s.id) } : {}),
+        ...(bcmMap.has(s.id) ? { bigChancesMissed: bcmMap.get(s.id) } : {}),
         ...(ratingMap.has(s.id) ? { rating: ratingMap.get(s.id) } : {}),
         ...(minutesMap.has(s.id) ? { minutes: minutesMap.get(s.id) } : {}),
       });
@@ -3246,6 +3379,40 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-236: «سانس بزرگ ازدست‌رفته» — the EIGHTEENTH sibling joins the
+    // SAME merge on the SAME cached payload, the MISSED-volume twin of the
+    // BCC merge two blocks over. big_chance_missed.json (live-probed
+    // 2026-10-30 UA Chrome/124: ALL SIX domestic globalMerge leagues — ucl
+    // 140 Haaland 6 / pl 135 Thierno Barry 12 / laliga 142 Mbappé 13 /
+    // seriea 171 Malen 9 / bundesliga 126 Demirović 8 / ligue1 128 Mafouta
+    // 6 rows; persiangulf honestly absent; mas absent, null payload;
+    // SEASON-AWARE (the 124/175/185/226/227/230/231/232/235 class): the
+    // 2020/21 raw serves its OWN file, 257 rows, Karim Benzema 19 /
+    // Alexander Isak 16 / Rafa Mir 16 — frozen, the 202 anchor pattern).
+    // INTEGER-VALUED floats (probed nonint=0) → the 215/216/220 integer
+    // convention: rounded once at build, pill Persian digits WITHOUT
+    // dir=ltr. Category top-3 first (the 175 merge order), then the full
+    // file merged on top, deduped by player id, sorted bigChancesMissed
+    // DESC then name, top-10, POSITIONAL rank re-assignment. Standard thin
+    // guard applies (wide files — the 210 class). SEQUENTIAL after the
+    // chances-created merge (the 176 discipline: one L2 write at a time).
+    const bcmEntries: BigChancesMissedEntry[] = statCategory(raw, /^big chances missed$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, bigChancesMissed: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.bigChancesMissed - a.bigChancesMissed || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullBigChancesMissed = await getFullBigChancesMissed(leagueKey, requestedSeason);
+    const enrichedBcmIds = new Set(
+      bcmEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedBigChancesMissed = [...bcmEntries, ...fullBigChancesMissed.filter((r) => r.playerId == null || !enrichedBcmIds.has(r.playerId))]
+      .sort((a, b) => b.bigChancesMissed - a.bigChancesMissed || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -3336,6 +3503,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       bigChancesCreated: mergedBigChances,
       xgot: mergedXgot,
       chancesCreated: mergedChancesCreated,
+      bigChancesMissed: mergedBigChancesMissed,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3453,7 +3621,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // the mapped payload as a REQUIRED field; old v23 rows lack it and
     // would keep the new section hidden for up to a full TTL generation.
     // Whole key bumps (the 52/…/232 additive-shape convention).
-    await cached(`standings:v24:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-236: v25 — the big-chances-missed block («سانس بزرگ
+    // ازدست‌رفته») joins the mapped payload as a REQUIRED field; old v24
+    // rows lack it and would keep the new section hidden for up to a full
+    // TTL generation. Whole key bumps (the 52/…/235 additive-shape
+    // convention).
+    await cached(`standings:v25:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -3615,6 +3788,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // "Chances created" category — persiangulf AND mas, probed) keep
       // the normal TTL.
       !(Array.isArray(mapped.chancesCreated) && mapped.chancesCreated.length > 0 && mapped.chancesCreated.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-236: the standard thin-kept-for-a-generation guard closes for
+      // the big-chances-missed block (the 175/210/215/216/217/220/221/222/
+      // 226/227/230/231/232/235 guard family grows by one) —
+      // big_chance_missed.json is a WIDE file (probed 126-171 rows on the
+      // six serving domestic leagues), so a thin merged list means the
+      // fetch was dropped; re-probes in 90s. Honest-empty feeds (no "Big
+      // chances missed" category — persiangulf AND mas, probed) keep
+      // the normal TTL.
+      !(Array.isArray(mapped.bigChancesMissed) && mapped.bigChancesMissed.length > 0 && mapped.bigChancesMissed.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -5475,6 +5657,7 @@ export interface GlobalScorer {
   bigChances?: number;
   xgot?: number;   // cycle-232 additive: the xGOT badge twin (one decimal, the 226/230 convention)
   chancesCreated?: number; // cycle-235 additive: the total-creation volume badge twin (integer, the 215 convention)
+  bigChancesMissed?: number; // cycle-236 additive: the missed-volume badge twin (integer, the 215 convention)
   rating?: number;
   minutes?: number;
   leagueKey: string;
@@ -5601,6 +5784,7 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
           ...(s.bigChances != null ? { bigChances: s.bigChances } : {}),
           ...(s.xgot != null ? { xgot: s.xgot } : {}),
           ...(s.chancesCreated != null ? { chancesCreated: s.chancesCreated } : {}),
+          ...(s.bigChancesMissed != null ? { bigChancesMissed: s.bigChancesMissed } : {}),
           ...(s.rating != null ? { rating: s.rating } : {}),
           ...(s.minutes != null ? { minutes: s.minutes } : {}),
           leagueKey: lg.key, leagueFa: lg.faName,

@@ -67,6 +67,13 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   if (s.chancesCreated != null && s.chancesCreated > 0) {
     badges.push({ label: `${faDigits(s.chancesCreated)} فرصت‌سازی`, cls: "bg-muted border-border text-muted-foreground", title: "فرصت‌های خلق‌شده" });
   }
+  // cycle-236 additive: the big-chances-missed badge — the missed-volume
+  // twin of the big-chances badge (season-total from the "Big chances
+  // missed" category, matched by player id; integer, the 215 display
+  // convention)
+  if (s.bigChancesMissed != null && s.bigChancesMissed > 0) {
+    badges.push({ label: `${faDigits(s.bigChancesMissed)} سانس ازدست‌رفته`, cls: "bg-muted border-border text-muted-foreground", title: "سانس بزرگ ازدست‌رفته" });
+  }
   if (badges.length === 0) return null;
   return (
     <span className="flex items-center gap-1 flex-wrap">

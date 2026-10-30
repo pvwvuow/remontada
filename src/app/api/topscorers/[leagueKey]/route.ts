@@ -147,6 +147,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // the sisters; honest [] on persiangulf AND mas, probed); old
       // consumers never read this field (the 108 rule).
       chancesCreated: st.chancesCreated,
+      // cycle-236 additive: «سانس بزرگ ازدست‌رفته» rides the SAME cached
+      // payload — the deep-file family's EIGHTEENTH sibling and the
+      // MISSED-volume twin of the BCC surface (integer values rounded once
+      // at build — the 215/220 convention; season-aware like the sisters;
+      // honest [] on persiangulf AND mas, probed); old consumers never
+      // read this field (the 108 rule).
+      bigChancesMissed: st.bigChancesMissed,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
