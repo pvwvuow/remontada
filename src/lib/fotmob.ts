@@ -144,6 +144,22 @@ export interface RatingEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-215 additive: one «گل نخرده» row — the goalkeeper twin of
+ *  AssistEntry (the 170 honest-name contract included); the value is a
+ *  plain INTEGER (upstream StatValue arrives as 6.0 → stored rounded once,
+ *  the family's integer convention — goals/assists/cards — not the rating
+ *  one). */
+export interface CleanSheetEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as scorers/assists/ratings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  cleanSheets: number;  // clean sheets kept as an integer (StatValue 6.0 → 6)
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -175,6 +191,20 @@ export interface StandingsData {
    *  dot, dir=ltr). Always present (possibly []) like assists; feeds
    *  without the category degrade honestly to []. */
   ratings: RatingEntry[];
+  /** cycle-215 additive: «گل نخرده‌ها» — the league's own clean-sheet kings,
+   *  the deep-file family's next sibling (goals 23 / assists 175 / cards
+   *  50+185 / rating 210 → clean sheets 215). The "Clean sheets" category
+   *  carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/clean_sheet.json (live-probed 2026-10-30,
+   *  UA Chrome/124: laliga season/38843 = 19 ranked rows, Unai Simón 6 —
+   *  the FULL file: goalkeepers are a short population by nature; the
+   *  2025/26 raw serves its OWN file, season/27233, 28 rows, Joan García
+   *  15 — finished-season frozen, the 202 anchor pattern). Integer values
+   *  (StatValue 6.0 → 6, the goals/assists convention). Always present
+   *  (possibly []) like ratings; feeds without the category degrade
+   *  honestly to []. The FIRST goalkeeper surface of the portal — keepers
+   *  were invisible on every leaderboard before this field. */
+  cleanSheets: CleanSheetEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -951,6 +981,63 @@ export async function getFullRatings(leagueKey: string, season?: string): Promis
 }
 
 /**
+ * cycle-215: full-season CLEAN-SHEET list for one league («گل نخرده‌ها»)
+ * — the deep-file family's next sibling and the FIRST goalkeeper surface
+ * of the portal (keepers were invisible on every leaderboard before).
+ * The "Clean sheets" category rides the SAME league payload as the
+ * siblings and carries its own fetchAllUrl → data.fotmob.com
+ * stats/{leagueId}/season/{sid}/clean_sheet.json (live-probed 2026-10-30,
+ * UA Chrome/124: laliga season/38843 = 19 ranked rows, Unai Simón 6, Ionuț
+ * Radu 5, Jan Oblak 5; gzip-served — the exact mechanism every sibling
+ * file has used). StatValue arrives as a float (6.0) and is stored ONCE
+ * rounded (Math.round → 6): the integer convention of goals/assists/cards,
+ * NOT the rating one. Same cache + cycle-127 thin-TTL guard as the
+ * siblings (healthy = ≥10 rows — a finished 20-team season is 19-30 rows;
+ * the category fallback is ~3); season-aware like every sibling since
+ * 124/175/185/210 (a historical raw carries its OWN file — probed:
+ * 2025/26 → season/27233, 28 rows, Joan García 15, Courtois 13,
+ * David Soria 12 — finished = frozen, the 202 anchor pattern). Top-10 cap matches the
+ * render contract; feeds without the category (if any) degrade to [] and
+ * the honest category fallback still feeds the merge.
+ */
+export async function getFullCleanSheets(leagueKey: string, season?: string): Promise<CleanSheetEntry[]> {
+  try {
+    return await cached(
+      `fullCleanSheets:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^clean sheets$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: CleanSheetEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            cleanSheets: Math.round(r.StatValue ?? 0),  // 6.0 → 6 — the integer convention
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1062,6 +1149,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // and the raw English name alone would dead-end the profile network
     // (the 167 lesson). Decimal value untouched (storage never rounds).
     ratings: (st.ratings || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-215 additive: clean sheets gain the honest Persian names like
+    // ratings — «گل نخرده‌ها» renders on the per-league topscorers page and
+    // the raw English name alone would dead-end the profile network (the
+    // 167 lesson). Integer value untouched (rounded once at build).
+    cleanSheets: (st.cleanSheets || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1321,6 +1413,31 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-215: «گل نخرده‌ها» — the deep-file family's next sibling rides
+    // the SAME cached payload (zero extra upstream cost beyond the one gzip
+    // file on cold build, exactly like the siblings). Category top-3 first
+    // (enriched entries stay first when tied — the 175 merge order), then
+    // the full clean-sheet file merged on top, deduped by player id, ranked
+    // by the INTEGER value, top-10. Feeds without the category degrade
+    // honestly to []. SEQUENTIAL after the ratings merge (the 176
+    // discipline: one L2 write at a time — the mas cold-build race lesson).
+    const cleanSheetEntries: CleanSheetEntry[] = statCategory(raw, /^clean sheets$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, cleanSheets: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.cleanSheets - a.cleanSheets || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullCleanSheets = await getFullCleanSheets(leagueKey, requestedSeason);
+    const enrichedCSIds = new Set(
+      cleanSheetEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedCleanSheets = [...cleanSheetEntries, ...fullCleanSheets.filter((r) => r.playerId == null || !enrichedCSIds.has(r.playerId))]
+      .sort((a, b) => b.cleanSheets - a.cleanSheets || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1398,6 +1515,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       scorers: mergedScorers,
       assists: mergedAssists,
       ratings: mergedRatings,
+      cleanSheets: mergedCleanSheets,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1454,7 +1572,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // payload as a REQUIRED field; old v10 rows lack it and would keep the
     // new section hidden for up to a full TTL generation. Whole key bumps
     // (the 52/55/90/92/107/175/176/185/196 additive-shape convention).
-    await cached(`standings:v11:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-215: v12 — the clean-sheets block («گل نخرده‌ها») joins the
+    // mapped payload as a REQUIRED field; old v11 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the 52/55/90/92/107/175/176/185/196/210 convention).
+    await cached(`standings:v12:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1503,6 +1625,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       (Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.ratings) && mapped.ratings.length > 0 && mapped.ratings.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-215: the same end-to-end guard for a thin-but-nonempty
+      // CLEAN-SHEET list — the clean_sheet.json fetch dropped at build time
+      // would bake the 3-row category fallback for a full ttlMinutes
+      // generation (the 210 ratings incident class). The assists-guard
+      // precedent applies verbatim: a count-stat that grows through the
+      // season is legitimately thin EARLY (matchday 1-4 in a 20-team league
+      // sits under 10 rows) and self-heals — the thin row re-probes its own
+      // static gzip file after 90s (upstream-free: leagueRaw is cached and
+      // the thin fullCleanSheets row re-probes with its own cycle-127
+      // guard). Honest-empty feeds (no "Clean sheets" category at all) keep
+      // the normal TTL — the same convention as the assists/ratings guards.
+      !(Array.isArray(mapped.cleanSheets) && mapped.cleanSheets.length > 0 && mapped.cleanSheets.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

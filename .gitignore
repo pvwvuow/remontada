@@ -19,3 +19,6 @@ tests/
 *.sqlite
 prisma/dev.db*
 *.tsbuildinfo
+
+# cycle-215: the push token never travels with the tree (it lives only on disk, chmod 600)
+scripts/remote-token.txt

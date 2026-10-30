@@ -65,6 +65,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // the deep-file family's next sibling, decimal ratings verbatim; old
       // consumers never read this field (the 108 rule).
       ratings: st.ratings,
+      // cycle-215 additive: «گل نخرده‌ها» rides the SAME cached payload —
+      // the deep-file family's next sibling and the portal's first
+      // goalkeeper surface, integer values; old consumers never read this
+      // field (the 108 rule).
+      cleanSheets: st.cleanSheets,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

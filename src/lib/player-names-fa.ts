@@ -102,6 +102,22 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "sergio camello": "سرخیو کاملو",
   "roberto fernández": "روبرتو فرناندز",
   "antonio raimondo": "آنتونیو رایموندو",
+  // — LaLiga goalkeepers (cycle-215: the clean-sheets block made keepers
+  // visible for the first time — the 167 lesson: an unmapped raw English
+  // name dead-ends the profile network; confident transliterations only,
+  // the map's standing convention)
+  "unai simón": "اونای سیمون",
+  "jan oblak": "یان اوبلاک",
+  "ionuț radu": "یونوتس رادو",
+  "joan garcía": "خوان گارسیا",
+  "antonio sivera": "آنتونیو سیورا",
+  "matías dituro": "ماتیاس دی‌تورو",
+  "odysseas vlachodimos": "اودیسیاس ولاخودیموس",
+  "stole dimitrievski": "ستوله دیمیتریفسکی",
+  "sergio herrera": "سرخیو هررا",
+  "alex remiro": "الکس رمیرو",
+  "marc-andré ter stegen": "مارک-آندره تر اشتگان",
+  "david soria": "داوید سوریا",
   // — Serie A —
   "christian pulisic": "کریسچن پولیسیچ",
   "michael olise": "مایکل اولیسه",
