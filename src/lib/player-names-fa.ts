@@ -636,6 +636,20 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "tiago araújo": "تیاگو آرائوخو",
   "besfort zeneli": "بسفورت زنلی",
   "kévin denkey": "کوین دنکی",
+  // — historical-season kings (cycle-189 fix: the cycle-188 hunt observation) —
+  // the seasons behind the 185/186 historical surfaces carry their own kings
+  // whose rows never enter the current standings, so the honest-Latin fallback
+  // was all they had on the profile h1/metadata and the کارت‌ها/merge rows.
+  // Transliterations follow the site's own established Persian prose (the
+  // 185/186/188 cards). Radakovic needs BOTH upstream spellings: the
+  // standings topscorer files spell him ASCII «Uros Radakovic» while the
+  // playerData profile spells «Uroš Radaković» (probed 2026-10-30, both bytes).
+  "feta fetai": "فتا فتای",
+  "uros radakovic": "اوروش راداکوویچ",
+  "uroš radaković": "اوروش راداکوویچ",
+  "iván alejo": "ایوان آلخو",
+  "hannes van der bruggen": "هانس فان در بروخن",
+  "flynn downes": "فلیین داونز",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

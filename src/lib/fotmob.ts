@@ -3043,7 +3043,18 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   if (payload === PLAYER_NOT_FOUND || !payload || typeof payload !== "object") {
     throw new PlayerNotFoundError(`player ${id} not found`);
   }
-  return payload as PlayerData;
+  // cycle-189: the root nameFa is a single playerFa(raw.name) call — re-apply
+  // it on every read (the cycle-109 read-time freshening convention,
+  // idempotent: an already-Persian string never matches the English-keyed
+  // map and falls back to itself). A curated-map addition reaches the
+  // profile h1/metadata immediately instead of waiting out the 10-min
+  // player:v7 L2 TTL (seen live this cycle: the fix's own gate caught the
+  // pre-fix probes' Latin nameFa still baked in the persistent L2 while a
+  // row whose TTL had expired already rendered Persian). The deeper fa
+  // fields (positions/career/injury labels) keep the 135/159 namespace-bump
+  // convention — those need whole-shape changes, this one does not.
+  const p = payload as PlayerData;
+  return { ...p, nameFa: playerFa(p.name) };
 }
 
 // ---------------- Global top scorers (merged across all leagues) ----------------

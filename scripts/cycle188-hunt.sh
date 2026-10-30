@@ -302,8 +302,11 @@ gate "B1 /topscorers 2024/2025 (186 2nd season)" "$FEAT"
 clean_ls
 
 # B2: click-through — the historical yellow king Fetai → /player/1516458
-# (h1 shows the unmapped-Latin fallback «Feta Fetai» — honest, recorded)
-CLICKED=$($B eval '(function(){const links=[...document.querySelectorAll("a[href=\"/player/1516458\"]")];const hit=links.find(l=>(l.innerText||"").includes("Feta"));if(hit){hit.click();return "clicked"}return "no-row"})()' 2>/dev/null | tr -d '"\\')
+# ADVANCED by cycle-189 (the in-gate-comment convention): the 189 fix mapped
+# the historical kings' Persian names (the 188 observation), so the h1 is
+# now the mapped «فتا فتای» — the honest-Latin fallback «Feta Fetai» this
+# gate originally pinned lives only in the gate's own history.
+CLICKED=$($B eval '(function(){const links=[...document.querySelectorAll("a[href=\"/player/1516458\"]")];const hit=links.find(l=>(l.innerText||"").includes("Feta")||(l.innerText||"").includes("فتا"));if(hit){hit.click();return "clicked"}return "no-row"})()' 2>/dev/null | tr -d '"\\')
 $B wait --fn 'location.pathname === "/player/1516458"' >/dev/null 2>&1
 sleep 2
 H1=$($B eval 'JSON.stringify((document.querySelector("h1")||{}).innerText||"")' 2>/dev/null | tr -d '"\\')
@@ -311,7 +314,7 @@ URL2=$($B eval 'location.pathname' 2>/dev/null | tr -d '"\\')
 B2=0
 [ "$CLICKED" = "clicked" ] || B2=1
 [ "$URL2" = "/player/1516458" ] || B2=1
-echo "$H1" | grep -q "Feta" || B2=1
+echo "$H1" | grep -q "فتا" || B2=1
 [ "$B2" -eq 0 ] || BAD=$((BAD+1))
 gate "B2 click Fetai → player page" "clicked=$CLICKED url=$URL2 h1=$H1"
 clean_ls
