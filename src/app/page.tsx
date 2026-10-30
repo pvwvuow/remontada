@@ -215,7 +215,10 @@ export default function Home() {
                 </span>
               )}
               {tab === t.key && (
-                <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />
+                /* cycle-212: the codex flourish as the active-tab marker —
+                   a hairline that fades at its ends, broken by a small gold
+                   diamond (visual only, no text/testid change) */
+                <span className="codex-tab-underline absolute inset-x-3 bottom-0 h-px" aria-hidden />
               )}
             </button>
           ))}
