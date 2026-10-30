@@ -4,7 +4,7 @@
 // so the markup is present in the initial HTML (SEO + no-JS friendly).
 // ------------------------------------------------------------------
 import Link from "next/link";
-import type { PlayerData, PlayerPitch, PlayerShot } from "@/lib/fotmob";
+import type { PlayerData, PlayerPitch, PlayerShot, PlayerLinkRow } from "@/lib/fotmob";
 import { faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
 import { countryFa, teamFa } from "@/lib/leagues";
 import { cn } from "@/lib/utils";
@@ -108,6 +108,82 @@ function PitchSection({ pitch }: { pitch: PlayerPitch }) {
         {pitch.heat.length > 0 && (
           <span className="tabular-persian">· {faDigits(pitch.heat.length)} لمس</span>
         )}
+      </div>
+    </section>
+  );
+}
+
+// ---------- update cycle-197: squad navigation («هم‌تیمی‌ها») ----------
+// Two chip groups off the SAME cached playerData payload (zero extra
+// upstream fetch): the current club squad and the national-team squad-mates.
+// Every chip = a real /player/[id] link (the 172 family — every id serves a
+// full profile, probed 167-style). Honest absence: the card only renders
+// when at least one group is non-empty; a group with no rows is omitted
+// (the womensNationalTeam rows are empty on every probe — the merged
+// national list stays empty for them and only the club group shows).
+// nameFa rides the 104 map; unmapped rows render the honest Latin name
+// (the 92/107 contract) with the original name in the title attr.
+function TeammatesCard({ club, national, teamFa }: { club: PlayerLinkRow[]; national: PlayerLinkRow[]; teamFa?: string }) {
+  return (
+    <section className="glass-card overflow-hidden" aria-label="هم‌تیمی‌ها" data-testid="player-teammates">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-400" aria-hidden>
+          <circle cx="9" cy="8" r="3.2" />
+          <path d="M3.5 19c.6-3 2.8-4.8 5.5-4.8s4.9 1.8 5.5 4.8" />
+          <circle cx="17" cy="9.5" r="2.6" />
+          <path d="M15.5 14.6c2.4.2 4.3 1.7 4.9 4.4" />
+        </svg>
+        هم‌تیمی‌ها
+        <span className="ms-auto text-[9.5px] font-bold text-muted-foreground tabular-persian">
+          {faDigits(club.length + national.length)} بازیکن
+        </span>
+      </header>
+      <div className="px-4 py-3.5">
+        {club.length > 0 && (
+          <div data-testid="player-teammates-club">
+            <p className="text-[9.5px] text-muted-foreground mb-1.5">
+              باشگاه{teamFa ? ` · ${teamFa}` : ""}
+              <span className="tabular-persian"> · {faDigits(club.length)} بازیکن</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {club.map((t) => (
+                <Link
+                  key={`c${t.id}`}
+                  href={`/player/${t.id}`}
+                  title={t.name}
+                  data-testid="player-teammate-chip"
+                  className="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold bg-white/[0.03] border border-glass-border-soft text-[#c8dcf2]/85 transition-colors hover:bg-sky-500/10 hover:border-sky-400/25"
+                >
+                  {t.nameFa}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        {national.length > 0 && (
+          <div className={club.length > 0 ? "mt-3.5" : undefined} data-testid="player-teammates-national">
+            <p className="text-[9.5px] text-muted-foreground mb-1.5">
+              تیم ملی
+              <span className="tabular-persian"> · {faDigits(national.length)} بازیکن</span>
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {national.map((t) => (
+                <Link
+                  key={`n${t.id}`}
+                  href={`/player/${t.id}`}
+                  title={t.name}
+                  data-testid="player-teammate-chip"
+                  className="inline-flex items-center rounded-lg px-2.5 py-1.5 text-[10.5px] font-bold bg-white/[0.03] border border-glass-border-soft text-[#c8dcf2]/85 transition-colors hover:bg-sky-500/10 hover:border-sky-400/25"
+                >
+                  {t.nameFa}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+        <p className="text-[9px] text-muted-foreground leading-4 mt-2.5">
+          ترکیب فعلی باشگاه و تیم ملی طبق آرشیو فوت‌ماب؛ هر چیپ لینک مستقیم پروفایل است.
+        </p>
       </div>
     </section>
   );
@@ -580,6 +656,11 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
             ))}
           </ul>
         </section>
+      )}
+
+      {/* ---------- squad navigation (update cycle-197) ---------- */}
+      {(p.teammates.length > 0 || p.nationalTeammates.length > 0) && (
+        <TeammatesCard club={p.teammates} national={p.nationalTeammates} teamFa={p.team?.fa} />
       )}
 
       {/* ---------- recent matches (cycle-86: full archive island —

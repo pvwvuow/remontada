@@ -2204,6 +2204,20 @@ interface FMPlayerDetails {
     } | null;
     lastUpdated?: { utcTime?: string } | null;
   } | null;
+  // cycle-197 probed (UA Chrome/124, 4 anchors: star Raphinha / non-star Lulli
+  // / fold-king Fetai / pool-star Gyokeres): EVERY playerData payload carries
+  // `relatedLinksData` — the current club squad (`teammates`) and the
+  // national-team squads (`mensNationalTeam` + empty-on-all-probes
+  // `womensNationalTeam`) as flat {id, name} rows. 23-30 club / 27-35 NT rows
+  // per player, ZERO malformed rows, the player himself never in his own
+  // lists, zero duplicate ids, zero upstream-Persian names. The block had
+  // ZERO usage in src/ before this cycle (grep-verified) — the profile had no
+  // squad-navigation surface at all.
+  relatedLinksData?: {
+    teammates?: { id?: number; name?: string }[] | null;
+    mensNationalTeam?: { id?: number; name?: string }[] | null;
+    womensNationalTeam?: { id?: number; name?: string }[] | null;
+  } | null;
 }
 
 interface FMCareerEntry {
@@ -2333,7 +2347,22 @@ export interface PlayerData {
   // cycle-96: current availability status from injuryInformation (null → the
   // whole section is hidden; most players carry null)
   injury: PlayerInjury | null;
+  // cycle-197: squad-navigation rows off the SAME cached playerData payload
+  // (zero extra upstream fetch). ALWAYS present after the v8 bump — empty
+  // arrays when upstream lacks the block (the section hides, honest absence).
+  // nameFa derives via playerFa (the 104 map); unmapped rows stay honest
+  // Latin (the 92/107 contract). Row guards: id>0 (the 167 lesson), non-empty
+  // name, per-list seen-set dedupe; nationalTeammates = mens + womens merged
+  // (a player belongs to one NT context; mens first).
+  teammates: PlayerLinkRow[];
+  nationalTeammates: PlayerLinkRow[];
   fetchedAt: string;
+}
+
+export interface PlayerLinkRow {
+  id: number;      // FotMob player id → /player/[id] (the 172 family)
+  name: string;    // raw upstream name (Latin)
+  nameFa: string;  // curated Persian when the 104 map hits, else the raw name
 }
 
 export interface PlayerInjury {
@@ -2788,6 +2817,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     deepStats: buildDeepStats(raw),
     traits: buildTraits(raw),
     market: buildMarket(raw),
+    ...buildRelatedLinks(raw, id),
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -2868,6 +2898,37 @@ const MONTH_FA: Record<string, string> = {
   may: "مه", june: "ژوئن", july: "ژوئیه", august: "اوت",
   september: "سپتامبر", october: "اکتبر", november: "نوامبر", december: "دسامبر",
 };
+
+// ---------------- cycle-197: squad navigation (teammates + NT squad-mates) ----------------
+// Flat {id, name} rows → guarded PlayerLinkRow[]: id>0 (the 167 lesson —
+// every rendered id must serve a real profile), non-empty trimmed name,
+// per-list seen-set dedupe. The player himself never appears (probed), but
+// the guard is cheap so it rides here too. nameFa resolves through playerFa
+// at normalize time (the 104/189 map — the same normalize-time convention
+// as career/recentTeams rows; a curated-map addition reaches these rows on
+// the row's own 10-min TTL, the root-h1 read-time freshening stays 189-only).
+function buildLinkRows(rows: { id?: number; name?: string }[] | null | undefined, selfId: string): PlayerLinkRow[] {
+  const seen = new Set<number>();
+  const out: PlayerLinkRow[] = [];
+  for (const r of Array.isArray(rows) ? rows : []) {
+    const id = typeof r?.id === "number" ? r.id : 0;
+    const name = (r?.name || "").trim();
+    if (id <= 0 || !name || String(id) === selfId || seen.has(id)) continue;
+    seen.add(id);
+    out.push({ id, name, nameFa: playerFa(name) });
+  }
+  return out;
+}
+
+function buildRelatedLinks(raw: FMPlayerDetails, selfId: string): { teammates: PlayerLinkRow[]; nationalTeammates: PlayerLinkRow[] } {
+  const rl = raw.relatedLinksData || {};
+  const mens = buildLinkRows(rl.mensNationalTeam, selfId);
+  const womens = buildLinkRows(rl.womensNationalTeam, selfId);
+  return {
+    teammates: buildLinkRows(rl.teammates, selfId),
+    nationalTeammates: [...mens, ...womens],
+  };
+}
 
 function buildInjury(raw: FMPlayerDetails): PlayerInjury | null {
   const inj = raw.injuryInformation;
@@ -3065,7 +3126,12 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // fallback rides COUNTRY_FA + the 159 mapping sweep), so a v6-cached shape
   // would serve Latin career rows («Iran U23», «Shahr Khodrou FC») from the
   // persistent L2 for up to the TTL (same convention as cycle-52/86/87/96/135)
-  const payload = await cached(`player:v7:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-197: key bumped to v8 — normalized output gained the required
+  // teammates/nationalTeammates navigation rows; a v7-cached shape would
+  // serve profiles WITHOUT the block from the persistent SQLite L2 across
+  // restarts (the 196 standings:v10 lesson re-proven) for up to the TTL
+  // (same convention as cycle-52/86/87/96/135/159)
+  const payload = await cached(`player:v8:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

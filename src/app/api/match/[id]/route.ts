@@ -1381,7 +1381,8 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   // playerRatingRounded; cap 5 per side (upstream's own curation). The
   // block is null when both sides end up empty (honest absence — the 191
   // reviews family). nameFa rides playerFa at normalize time (match TTL
-  // 25s — always fresh, no player:v7 L2 staleness surface here).
+  // 25s — always fresh, no player:v8 L2 staleness surface here — the 197
+  // namespace bump renamed the player cache).
   const tpUp = raw.content?.matchFacts?.topPlayers;
   let topPlayers: MatchDetailNormalized["topPlayers"] = null;
   if (tpUp && typeof tpUp === "object") {
