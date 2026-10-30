@@ -23,8 +23,9 @@
 #    aria-pressed handover swaps dots to the runtime API away count;
 #    the players tab deep toggle opens/closes/reopens idempotently
 #    with the حمله section alive.
-# D5 205×206 universality on a SECOND finished competition (EFL Cup
-#    6275369): touchmap + deep stats alive on the same page.
+# D5 205×206 universality on a SECOND finished competition (EFL Cup —
+#    anchor 6275371 since the cycle-213 maintenance): touchmap + deep
+#    stats alive on the same page.
 # D6 honest absence on the uncovered 5868115: BOTH preview and review
 #    cards absent while the page stays healthy.
 # D7 204 keyboard scroll on a runtime-derived fat needle: after a full
@@ -43,7 +44,7 @@ BAD=0
 # warm the match payloads once (the hunt must not depend on leftover warmth)
 curl -s "$BASE/api/match/5868105" -o /tmp/c208_clasico.json
 curl -s "$BASE/api/match/5881208" -o /tmp/c208_future.json
-curl -s "$BASE/api/match/6275369" -o /tmp/c208_efl.json
+curl -s "$BASE/api/match/6275371" -o /tmp/c208_efl.json
 python3 -c "
 import json,sys
 for f in ('/tmp/c208_clasico.json','/tmp/c208_future.json','/tmp/c208_efl.json'):
@@ -136,8 +137,11 @@ except Exception as e:
     report("D4-api deep universality (Clásico home): ≥10 rows, sections titled, fa labels", False, repr(e))
 
 # D5(API): 205×206 universality on a SECOND finished competition (EFL Cup)
+# (cycle-213 gate maintenance: the anchor moved 6275369 → 6275371 — the
+# 211-era pin's touchmap placated upstream; the R4 Liverpool–Chelsea
+# 2026-10-28 tie is the fresh, live-probed stable anchor)
 try:
-    d = get(f"{BASE}/api/match/6275369")
+    d = get(f"{BASE}/api/match/6275371")
     tm = d.get("touchMap") or {}
     ps = d.get("playerStats") or {}
     all_rows = (ps.get("home") or []) + (ps.get("away") or [])
@@ -414,8 +418,9 @@ echo "$B6" | rg -q "score:false" || B6R=1
 gate "B6 uncovered match: no previews+no reviews+no touchmap, tabs alive" "$B6"
 
 # B7 (D5): 205×206 universality on the SECOND finished competition —
-# touchmap + deep toggle both alive on the EFL Cup page
-open_page "/match/6275369"
+# touchmap + deep toggle both alive on the EFL Cup page (anchor 6275371
+# per the cycle-213 gate maintenance — the fresh Liverpool–Chelsea R4)
+open_page "/match/6275371"
 clean_ls
 B7=$(snap "tm:!!document.querySelector('[data-testid=match-touchmap]'),dots:document.querySelectorAll('[data-testid=match-touchmap] span[class*=rounded-full]').length")
 click_tab "بازیکن‌ها"
