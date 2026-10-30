@@ -3508,12 +3508,52 @@ export interface PlayerIndexEntry {
   leagueFa: string;
   goals?: number;
   rank: number; // scorer rank inside the league block (ordering hint)
+  season?: string; // cycle-194 additive: historical fold rows carry their
+  // finished season (the UI renders «۲۰۲۴/۲۰۲۵» after the league name);
+  // current-season rows omit it — the field only exists on the folds
 }
 
 export interface PlayerSearchResult extends PlayerIndexEntry {
   matchedOn: string;
   hl?: { fa?: [number, number] | null; name?: [number, number] | null };
 }
+
+// cycle-194: the five historical-only card kings join the search pool as
+// ZERO-fetch static fold rows — the open half of the cycle-188 honest
+// observation (cycle-189 closed the nameFa half; the searchability half
+// lands here). Their rows never ride a CURRENT standings payload (probe
+// 2026-10-30: all five absent from every current sweep, P4), and finished
+// seasons are immutable, so the bytes below are pinned from the live
+// historical payloads (scripts/cycle194-probe.py, per-league کارت‌ها
+// blocks): Alejo laliga 2023/2024 yellow 17 «کادیز»؛ Downes pl 2024/2025
+// yellow 12 «ساوتهمپتون»؛ Fetai hnl 2024/2025 yellow 14 «لوکوموتیوا»؛
+// Van der Bruggen belgium 2023/2024 yellow 12 «سرکل بروژ»؛ Radakovic
+// superlig 2024/2025 red 4 «سیواس‌اسپور» (the standings row spells him
+// ASCII — the profile's diacritic spelling has its own map key, the 189
+// lesson). fa rides playerFa (the 104 map contract — the 189 keys), so a
+// future map edit reaches the folds too; rank 0 = the no-hint convention;
+// goals stays UNDEFINED — these are CARD counts, carrying them as goals
+// would be a lie. The UI season hint (search-box) is the honest tell that
+// a fold row is a finished-season king, not a current-race row.
+const HISTORICAL_KING_FOLDS: PlayerIndexEntry[] = (
+  [
+    [640089, "Iván Alejo", "کادیز", 8385, "laliga", "2023/2024"],
+    [844943, "Flynn Downes", "ساوتهمپتون", 8466, "pl", "2024/2025"],
+    [1516458, "Feta Fetai", "لوکوموتیوا", 175388, "hnl", "2024/2025"],
+    [232299, "Hannes van der Bruggen", "سرکل بروژ", 9984, "belgium", "2023/2024"],
+    [364855, "Uros Radakovic", "سیواس‌اسپور", 6265, "superlig", "2024/2025"],
+  ] as const
+).map(([playerId, name, teamFa, teamId, leagueKey, season]) => ({
+  playerId,
+  name,
+  fa: playerFa(name),
+  teamFa,
+  teamId,
+  leagueKey,
+  leagueFa: LEAGUES.find((l) => l.key === leagueKey)?.faName || leagueKey,
+  rank: 0,
+  season,
+}));
 
 let playerIndexCache: { at: number; data: PlayerIndexEntry[]; full: boolean } | null = null;
 let playerIndexLastGood: PlayerIndexEntry[] | null = null;
@@ -3602,6 +3642,16 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
       }
     }
   });
+  // cycle-194: fold the historical-only kings AFTER the sweep — the seen-set
+  // (live rows first) means a king who ever re-enters a current payload
+  // stays single-listed as that live row; the static folds only backfill the
+  // gaps. ZERO extra upstream fetches — pinned immutable bytes of finished
+  // seasons (see HISTORICAL_KING_FOLDS above).
+  for (const k of HISTORICAL_KING_FOLDS) {
+    if (seen.has(k.playerId)) continue;
+    seen.add(k.playerId);
+    out.push(k);
+  }
   const failed = settled.filter((r) => r.status !== "fulfilled").length;
   const full = failed === 0;
   if (full) playerIndexLastGood = out;

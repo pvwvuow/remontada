@@ -297,7 +297,10 @@ export function SearchBox() {
                                 </span>
                               ) : null}
                               <span className="text-[9px] text-muted-foreground truncate max-w-[110px]">
-                                {p.leagueFa}
+                                {/* cycle-194: a historical fold row tells its finished season
+                                    («لیگ برتر کرواسی · ۲۰۲۴/۲۰۲۵») — current rows have no
+                                    season field and render exactly as before */}
+                                {p.season ? `${p.leagueFa} · ${faDigits(p.season)}` : p.leagueFa}
                               </span>
                             </span>
                           </button>
