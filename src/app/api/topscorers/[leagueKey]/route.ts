@@ -118,6 +118,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // sibling besides minutes to reach the home league); old consumers
       // never read this field (the 108 rule).
       goalsPer90: st.goalsPer90,
+      // cycle-230 additive: «پاس مورد انتظار» rides the SAME cached payload —
+      // the deep-file family's FOURTEENTH sibling and the assist-side
+      // ANALYTICS twin of the xG surface (decimal xA values verbatim,
+      // exactly one decimal — the 210/217/226 convention; season-aware
+      // like goals/assists/xG/gp90; honest [] on persiangulf AND mas,
+      // probed); old consumers never read this field (the 108 rule).
+      xa: st.xa,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

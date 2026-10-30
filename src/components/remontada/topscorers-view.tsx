@@ -41,6 +41,12 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   if (s.xg != null && s.xg > 0) {
     badges.push({ label: `xG ${faDigits(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
   }
+  // cycle-230 additive: the xA badge — the assist-side twin of the xG badge
+  // (season-total from the "Expected assist (xA)" category, matched by
+  // player id; one decimal, the 226 display convention)
+  if (s.xa != null && s.xa > 0) {
+    badges.push({ label: `xA ${faDigits(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
+  }
   if (badges.length === 0) return null;
   return (
     <span className="flex items-center gap-1 flex-wrap">
