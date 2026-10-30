@@ -4708,16 +4708,19 @@ export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResul
 
 export { LEAGUES };
 
-// ---------------- FotMob: player search index (cycle-166, +assists cycle-171) ----------------
+// ---------------- FotMob: player search index (cycle-166, +assists cycle-171, +family cycle-224) ----------------
 // The header search covered TEAMS only (the team index from standings rows)
 // while every league's standings payload ALSO carries a 20-scorer block that
 // getTeamIndex discarded — so the searchable player pool (460 «آقای گل» rows
 // incl. the Iranian hooks صیادمنش/زاهدی) rides the SAME getStandings calls,
 // ZERO extra upstream fetches. cycle-171 folds the SAME payload's assists
 // block («بهترین پاس‌دهندگان», the cycle-170 surface) into the pool — the
-// Dybala/Rice/Zaccagni class of creators is searchable now. Keys/aliases ride
-// PLAYER_NAME_FA through the standings mapper, so Persian queries («صیادمنش»)
-// match by design.
+// Dybala/Rice/Zaccagni class of creators is searchable now. cycle-177 folds
+// the cards, cycle-194 the historical kings, and cycle-224 folds the WHOLE
+// deep-file family (ratings/cleanSheets/gPlusA/goalsPrevented/minutes/
+// savePercentage/savesPer90) — keepers and presence kings searchable too.
+// Keys/aliases ride PLAYER_NAME_FA through the standings mapper, so Persian
+// queries («صیادمنش») match by design.
 export interface PlayerIndexEntry {
   playerId: number;
   name: string; // honest upstream English name
@@ -4858,6 +4861,58 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
           leagueKey: lg.key,
           leagueFa: lg.faName,
           rank: 0,
+        });
+      }
+    }
+    // cycle-224: the deep-file family joins the pool — the 223 hunt's ONE
+    // registered finding. SEVEN more blocks (ratings 210 / cleanSheets 215 /
+    // gPlusA 216 / goalsPrevented 217 / minutes 220 / savePercentage 221 /
+    // savesPer90 222) ride the VERY SAME cached getStandings payload the
+    // scorers/assists/cards folds read — yet the pool never folded them, so
+    // keeper and rating/presence kings who appear on no goals/assists/card
+    // list were unsearchable while their profile pages were live (probe
+    // 2026-10-30: «والس» = the laliga saves-per-90 rank-1 with the profile at
+    // /player/999171, «رادو» = the save-percentage rank-1 and «موریچ» = the
+    // seriea sp90 rank-1 all returned players=0 from /api/search while the
+    // controls صیادمنش/امباپه hit — exactly the cycle-177 Janelt class, ×7
+    // blocks ≈ hundreds of unsearchable rows). ZERO extra upstream fetches:
+    // fold all seven blocks after the cards (the 171/177 pattern); the
+    // seen-set keeps a dual-listed player once, as the highest-priority row
+    // above (a scorer row with its goals hint wins over the same player's
+    // rating row). The playerId null/<=0 guard is MANDATORY — playerId is
+    // OPTIONAL on every family entry (the 167 dead-id lesson). Goals stay
+    // UNDEFINED: these are ratings/counts/minutes/percentages — carrying
+    // them as goals would be a lie (the 194 convention). rank rides the
+    // block's positional top-10 rank (the ordering hint).
+    const deepFamilyBlocks: {
+      rank: number;
+      name: string;
+      nameFa?: string;
+      team: string;
+      teamId: number;
+      playerId?: number;
+    }[][] = [
+      r.value.ratings || [],
+      r.value.cleanSheets || [],
+      r.value.gPlusA || [],
+      r.value.goalsPrevented || [],
+      r.value.minutes || [],
+      r.value.savePercentage || [],
+      r.value.savesPer90 || [],
+    ];
+    for (const block of deepFamilyBlocks) {
+      for (const row of block) {
+        if (row.playerId == null || row.playerId <= 0 || seen.has(row.playerId)) continue;
+        seen.add(row.playerId);
+        out.push({
+          playerId: row.playerId,
+          name: row.name,
+          fa: row.nameFa || row.name,
+          teamFa: row.team || undefined,
+          teamId: row.teamId,
+          leagueKey: lg.key,
+          leagueFa: lg.faName,
+          rank: row.rank ?? 0,
         });
       }
     }
