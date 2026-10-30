@@ -3828,6 +3828,57 @@ export async function searchPlayers(q: string, limit = 6): Promise<PlayerSearchR
   });
 }
 
+// ---------------- FotMob: competition search (cycle-200) ----------------
+/** cycle-200 additive: the 24-league catalog joins the header search —
+ *  probed live (2026-10-30, UA Chrome/124): «لالیگا»/«پریمیرلیگ»/LaLiga/
+ *  Bundesliga all answered ZERO rows while every catalog league has a live
+ *  /league/{key} page and the bilingual catalog (faName/enName) already
+ *  sits in src/lib/leagues.ts. ZERO upstream fetches — the index IS the
+ *  catalog. Same matching mechanics as searchPlayers (normalizeQuery on
+ *  both sides, exact > prefix > includes > all-words, rangeOf highlight
+ *  spans), ties broken by the catalog's own priority. The answer rides a
+ *  NEW `leagues` field on /api/search (the cycle-166 additive-field
+ *  precedent — existing clients reading results/players stay untouched). */
+export interface LeagueSearchResult {
+  key: string;
+  fa: string;
+  en: string;
+  leagueId: number;
+  matchedOn: string;
+  hl?: { fa: [number, number] | null; en: [number, number] | null };
+}
+
+export function searchLeagues(q: string, limit = 3): LeagueSearchResult[] {
+  const nq = normalizeQuery(q);
+  if (nq.length < 2) return [];
+  const scored: { lg: (typeof LEAGUES)[number]; score: number }[] = [];
+  for (const lg of LEAGUES) {
+    const hay = normalizeQuery(`${lg.faName} ${lg.enName}`);
+    let score = -1;
+    if (hay === nq) score = 100;
+    else if (hay.startsWith(nq)) score = 80;
+    else if (hay.includes(nq)) score = 50;
+    else {
+      const words = nq.split(" ");
+      if (words.length > 1 && words.every((w) => hay.includes(w))) score = 40;
+    }
+    if (score > 0) scored.push({ lg, score });
+  }
+  scored.sort((a, b) => b.score - a.score || a.lg.priority - b.lg.priority);
+  return scored.slice(0, limit).map(({ lg }) => {
+    const faRange = rangeOf(lg.faName, nq);
+    const enRange = rangeOf(lg.enName, nq);
+    return {
+      key: lg.key,
+      fa: lg.faName,
+      en: lg.enName,
+      leagueId: lg.fotmobId,
+      matchedOn: faRange ? lg.faName : lg.enName,
+      hl: faRange || enRange ? { fa: faRange, en: enRange } : undefined,
+    };
+  });
+}
+
 // ---------------- helpers ----------------
 export function todayInTehran(): string {
   // Tehran = UTC+3:30 (no DST since 2022)

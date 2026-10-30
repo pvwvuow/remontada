@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import type { TeamSearchResult, PlayerSearchResult } from "@/lib/fotmob";
+import type { TeamSearchResult, PlayerSearchResult, LeagueSearchResult } from "@/lib/fotmob";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { useFavorites } from "@/lib/favorites";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -43,6 +43,9 @@ export function SearchBox() {
   // cycle-166: the «آقای گل» player pool joins the search — teams stay first
   // (results), players render as their own section below with /player links
   const [players, setPlayers] = useState<PlayerSearchResult[]>([]);
+  // cycle-200: competitions join the same additive way — a «رقابت‌ها»
+  // section between teams and players, every row a real /league/{key} link
+  const [leagues, setLeagues] = useState<LeagueSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0); // keyboard-highlighted result
   const favorites = useFavorites();
@@ -56,6 +59,7 @@ export function SearchBox() {
     } else {
       setQ("");
       setResults([]);
+      setLeagues([]);
       setActive(0);
     }
   }, [open]);
@@ -76,6 +80,7 @@ export function SearchBox() {
     if (query.length < 2) {
       setResults([]);
       setPlayers([]);
+      setLeagues([]);
       setLoading(false);
       return;
     }
@@ -87,6 +92,7 @@ export function SearchBox() {
         if (json.ok) {
           setResults(json.results as TeamSearchResult[]);
           setPlayers((json.players ?? []) as PlayerSearchResult[]);
+          setLeagues((json.leagues ?? []) as LeagueSearchResult[]);
           setActive(0);
         }
       } catch {
@@ -107,11 +113,22 @@ export function SearchBox() {
   );
 
   // cycle-166: keyboard selection spans teams first, then the players section
-  const totalRows = results.length + players.length;
+  // cycle-200: the span is teams → leagues → players (matches the render order)
+  const totalRows = results.length + leagues.length + players.length;
   const goPlayer = useCallback(
     (playerId: number) => {
       setOpen(false);
       router.push(`/player/${playerId}`);
+    },
+    [router]
+  );
+
+  // cycle-200: league rows are real /league/{key} navigation — teams first,
+  // then the «رقابت‌ها» section, then players (keyboard order matches)
+  const goLeague = useCallback(
+    (key: string) => {
+      setOpen(false);
+      router.push(`/league/${key}`);
     },
     [router]
   );
@@ -138,7 +155,8 @@ export function SearchBox() {
     if (e.key === "Enter") {
       e.preventDefault();
       if (active < results.length) { if (results[active]) go(results[active].teamId); }
-      else { const p = players[active - results.length]; if (p) goPlayer(p.playerId); }
+      else if (active < results.length + leagues.length) { const l = leagues[active - results.length]; if (l) goLeague(l.key); }
+      else { const p = players[active - results.length - leagues.length]; if (p) goPlayer(p.playerId); }
     }
   };
 
@@ -191,7 +209,7 @@ export function SearchBox() {
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
                   حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های {faDigits(24)} لیگ و جام
                 </p>
-              ) : !loading && results.length === 0 && players.length === 0 ? (
+              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">
                   <p className="text-[11.5px] text-muted-foreground">تیمی یا بازیکنی با این نام پیدا نشد.</p>
                   <div className="w-full">
@@ -256,12 +274,57 @@ export function SearchBox() {
                 </ul>
               )}
 
+              {leagues.length > 0 && (
+                <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5">
+                  <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">رقابت‌ها</p>
+                  <ul className="px-1.5 flex flex-col">
+                    {leagues.map((l, i) => {
+                      const idx = results.length + i;
+                      return (
+                        <li key={l.key}>
+                          <button
+                            type="button"
+                            onClick={() => goLeague(l.key)}
+                            onMouseEnter={() => setActive(idx)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
+                              idx === active ? "cmd-active" : "hover:bg-white/[0.05]"
+                            )}
+                          >
+                            <img
+                              src={`https://images.fotmob.com/image_resources/logo/leaguelogo/${l.leagueId}.png`}
+                              alt=""
+                              width={22}
+                              height={22}
+                              loading="lazy"
+                              className="w-[22px] h-[22px] object-contain shrink-0"
+                              onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-bold text-[13px] truncate">
+                                <Hl text={l.fa} range={l.hl?.fa ?? null} />
+                              </span>
+                              <span className="block text-[10px] text-muted-foreground truncate">
+                                <Hl text={l.en} range={l.hl?.en ?? null} />
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
+                              رقابت
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
               {players.length > 0 && (
                 <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5">
                   <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">بازیکنان</p>
                   <ul className="px-1.5 flex flex-col">
                     {players.map((p, i) => {
-                      const idx = results.length + i;
+                      const idx = results.length + leagues.length + i;
                       return (
                         <li key={p.playerId}>
                           <button
