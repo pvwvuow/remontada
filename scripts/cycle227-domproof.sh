@@ -18,6 +18,18 @@
 #  re-probed and self-healed to 10 (the 222/226 story replaying under the
 #  guard built for it). The 224 search-fold chain grows to TEN blocks
 #  («Flemming»/873559 searchable with no goals key, zero fetch).)
+# 239 REFRESH (Fix (cycle 239), 2026-10-30 ~23:0x +08:00): the gate's TWO
+#  LIVE Gulf anchors drifted with the feed - gate-internal live drift, NOT
+#  app bugs (registered by the 237 card, re-observed 12/14 by the 238
+#  hunt). As-found: the 227-era rank-1 (Shahriari 1.06, Malavan) is TODAY
+#  rank-2 (same player, same 1.06 value, same Malavan team); the live
+#  rank-1 is Kasra Taheri 1.32, Sepahan (playerId 1580548, teamId 101611)
+#  - probed live on the app API AND the DOM this cycle. A2 + B5a refreshed
+#  to the current rank-1 identity (A2 additionally pins the playerId, the
+#  A1 style); EVERYTHING else untouched. A4c 'Shahriari' stays green by
+#  design (he is still in the feed and searchable, now rank-2). The laliga
+#  live anchors (Raphinha 1.77 class) still held at refresh time - same
+#  volatile class, future fix rounds refresh them the same way if drift.
 # Part A (API, live-observed 2026-10-30):
 #   A1 laliga: 10 rows positional 1..10, two-decimal floats verbatim
 #      monotonic, rank-1 = (696679, «رافینیا», 1.77) — the live anchor
@@ -87,7 +99,10 @@ import sys,json
 d=json.load(sys.stdin)
 gp=d.get('goalsPer90') or []
 r1=gp[0] if gp else {}
-ok=(len(gp)==10 and len(d.get('minutes') or [])==10 and len(d.get('scorers') or [])==20 and r1.get('name')=='Erfan Shahriari' and abs(r1.get('goalsPer90',0)-1.06)<1e-9)
+# 239 REFRESH: was name=='Erfan Shahriari' and gp90==1.06 (the 227 anchor);
+# the live feed moved him to rank-2 and Kasra Taheri (1580548, 1.32,
+# Sepahan) to rank-1 - re-probed live 2026-10-30, the registered 239 fix.
+ok=(len(gp)==10 and len(d.get('minutes') or [])==10 and len(d.get('scorers') or [])==20 and r1.get('name')=='Kasra Taheri' and r1.get('playerId')==1580548 and abs(r1.get('goalsPer90',0)-1.32)<1e-9)
 print(1 if ok else 0)
 ")
 MAS=$(curl -s "$BASE/api/topscorers/mas" | py "
@@ -95,7 +110,7 @@ import sys,json
 d=json.load(sys.stdin)
 print(1 if len(d.get('goalsPer90') or [])==0 and len(d.get('scorers') or [])==20 else 0)
 ")
-[ "$SW" = "1" ] && [ "$PG" = "1" ] && [ "$MAS" = "1" ] && ok "A2 six domestics carry gp90=10 + the full sibling contract; PERSIANGULF SERVES (10 rows, Shahriari 1.06 rank-1, beside minutes=10/scorers=20 — the first deep sibling besides minutes to reach the Gulf); mas mirror-honest (gp90=0, scorers=20)" || bad "A2: SW=$SW PG=$PG MAS=$MAS"
+[ "$SW" = "1" ] && [ "$PG" = "1" ] && [ "$MAS" = "1" ] && ok "A2 six domestics carry gp90=10 + the full sibling contract; PERSIANGULF SERVES (10 rows, Taheri 1.32 rank-1 [239 refresh - the 227-era Shahriari 1.06 anchor drifted to rank-2], beside minutes=10/scorers=20 — the first deep sibling besides minutes to reach the Gulf); mas mirror-honest (gp90=0, scorers=20)" || bad "A2: SW=$SW PG=$PG MAS=$MAS"
 
 # A3 SEASON-AWARE frozen anchor (Messi 0.89)
 H=$(curl -s "$BASE/api/topscorers/laliga?season=2020%2F2021" | py "
@@ -123,7 +138,7 @@ ps=json.load(sys.stdin).get('players') or []
 h=[p for p in ps if p['playerId']==1793813]
 print('SB', bool(h))
 ")
-echo "$S" | grep -q "SB True" && ok "A4c the Gulf's own: 'Shahriari' (Erfan Shahriari 1793813, the persiangulf gp90 rank-1) searchable — the home-league deep rows reach the header search" || bad "A4c: $S"
+echo "$S" | grep -q "SB True" && ok "A4c the Gulf's own: 'Shahriari' (Erfan Shahriari 1793813, the 227-era Gulf gp90 king - now rank-2 after the 239-documented live drift, still in the feed) searchable — the home-league deep rows reach the header search" || bad "A4c: $S"
 
 echo "== Part B: DOM proof @390x844 =="
 agent-browser set viewport 390 844 >/dev/null
@@ -146,8 +161,11 @@ else
 fi
 agent-browser open "$BASE/topscorers/persiangulf" >/dev/null
 agent-browser wait --load networkidle >/dev/null; sleep 2.5
-B5A=$(agent-browser eval "(() => { const rows=[...document.querySelectorAll('[data-testid=gp90-row]')]; const h2=[...document.querySelectorAll('main h2')].some(h=>h.textContent==='گل در هر ۹۰'); const first=rows[0]?.textContent||''; return JSON.stringify({rows:rows.length, h2, malavan:first.includes('ملوان')}); })()")
-echo "$B5A" | tr -d '\\' | grep -q '"rows":10' && echo "$B5A" | tr -d '\\' | grep -q '"h2":true' && echo "$B5A" | tr -d '\\' | grep -q '"malavan":true' && ok "B5a DOM: PERSIANGULF SERVES the section in the browser too — h2 + 10 gp90-rows with «ملوان» (Shahriari) first" || bad "B5a: $B5A"
+# 239 REFRESH: was malavan:first.includes(ملوان) (the 227 rank-1 Shahriari team) -
+# the live rank-1 is now Taheri/Sepahan; the drift itself re-observed in DOM this
+# cycle (row 2 renders 02 Shahriari Malavan 1.06) and kept as a drift witness.
+B5A=$(agent-browser eval "(() => { const rows=[...document.querySelectorAll('[data-testid=gp90-row]')]; const h2=[...document.querySelectorAll('main h2')].some(h=>h.textContent==='گل در هر ۹۰'); const first=rows[0]?.textContent||''; const second=rows[1]?.textContent||''; return JSON.stringify({rows:rows.length, h2, taheri:first.includes('کسری طاهری'), sepahan:first.includes('سپاهان'), driftWitness:second.includes('ملوان')}); })()")
+echo "$B5A" | tr -d '\\' | grep -q '"rows":10' && echo "$B5A" | tr -d '\\' | grep -q '"h2":true' && echo "$B5A" | tr -d '\\' | grep -q '"taheri":true' && echo "$B5A" | tr -d '\\' | grep -q '"sepahan":true' && echo "$B5A" | tr -d '\\' | grep -q '"driftWitness":true' && ok "B5a DOM: PERSIANGULF SERVES the section in the browser too — h2 + 10 gp90-rows with «سپاهان» (Kasra Taheri 1.32) first [239 refresh], the 227-era «ملوان» (Shahriari) row still witnessed at rank-2" || bad "B5a: $B5A"
 agent-browser open "$BASE/topscorers/mas" >/dev/null
 agent-browser wait --load networkidle >/dev/null; sleep 2.5
 B5B=$(agent-browser eval "(() => { const h2s=[...document.querySelectorAll('main h2')].map(h=>h.textContent); return JSON.stringify({gp90:h2s.includes('گل در هر ۹۰'), cards:h2s.includes('کارت‌ها')}); })()")
