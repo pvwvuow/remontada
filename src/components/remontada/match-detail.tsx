@@ -2031,6 +2031,17 @@ function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews
               {r.description ? (
                 <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
               ) : null}
+              {/* update cycle-209 (fix, no-findings polish): the per-row
+                  source chip — the header attribution stays the generic
+                  «منبع: Opta · FotMob» while single-source feeds were
+                  ambiguous; r.source renders verbatim (the honest raw-label
+                  family — injury names 96 / deep labels 206). Additive-only:
+                  no pinned text moves, absent source → no chip. */}
+              {r.source ? (
+                <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/70" dir="ltr">
+                  {r.source}
+                </span>
+              ) : null}
             </span>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
               <path d="M7 17L17 7M9 7h8v8" />
