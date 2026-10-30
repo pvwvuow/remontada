@@ -488,6 +488,7 @@ const TEAM_FA: Record<string, string> = {
   "athletic bilbao": "اتلتیک‌بیلبائو", "atlético madrid": "اتلتیکومادرید",
   "atletico madrid": "اتلتیکومادرید", "barcelona": "بارسلونا", "real betis": "رئال‌بتیس",
   "celta vigo": "سلتاویگو", "elche": "الچه", "espanyol": "اسپانیول",
+  "eibar": "ایبار",  // cycle-247: the frozen 2020/21 corner file's rank-3 — the family's first uncovered frozen-row name
   "getafe": "ختافه", "girona": "خیرونا", "levante": "لوانته", "mallorca": "مایورکا",
   "osasuna": "اوساسونا", "rayo vallecano": "رایووایکانو", "real madrid": "رئال‌مادرید",
   "real oviedo": "رئال اویدو", "real sociedad": "رئال‌سوسیداد", "sevilla": "سویا",

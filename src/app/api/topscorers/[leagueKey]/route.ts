@@ -204,6 +204,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // FIRST-EVER team surface + mas's third); old consumers never read
       // this field (the 108 rule).
       teamGoalsPerMatch: st.teamGoalsPerMatch,
+      // cycle-247 additive: «کرنرهای تیم‌ها» rides the SAME cached payload —
+      // the deep-file family's TWENTY-FIFTH sibling and its SEVENTH
+      // TEAM-PARTICIPANT member: the team-side corner volume (INTEGER
+      // values verbatim — the 215/…/245 convention, String() pill;
+      // season-aware like the sisters; honest [] on persiangulf AND mas —
+      // not in feed AND bare direct files absent, the 241 honesty; EIGHT
+      // leagues serve incl. uel — the STANDARD guard class); old consumers
+      // never read this field (the 108 rule).
+      teamCorners: st.teamCorners,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

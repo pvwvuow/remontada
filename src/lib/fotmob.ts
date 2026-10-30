@@ -761,6 +761,52 @@ export interface TeamGoalsPerMatchEntry {
   teamGoalsPerMatch: number;  // StatValue VERBATIM — 1-decimal float (4.0), the 241 toFixed(1) convention, never rounded
 }
 
+/** cycle-247 additive: one «کرنرهای تیم‌ها» row — the deep-file family's
+ *  TWENTY-FIFTH sibling and its SEVENTH TEAM-PARTICIPANT member: the
+ *  team-side corner volume (the raw set-piece attack surface). Straight
+ *  from the live corner_taken_team.json probe (UA Chrome/124,
+ *  2026-10-31, scripts/cycle247-probe.sh + probe2.sh): EIGHT leagues
+ *  serve it (the seven feed leagues + uel 73 — files WIDE 18-36 rows
+ *  everywhere: laliga 20 Villarreal 73 / pl 20 Tottenham 52 / seriea 20
+ *  Juventus 69 / bundesliga 18 Bayern 64 / ligue1 18 Lens 52 / ucl 36
+ *  Dortmund 27 / uel 36 Olympiacos 28 / portugal 18 Benfica 65), so the
+ *  STANDARD <10 guard needs no league-aware floor; persiangulf AND mas
+ *  honestly absent TWICE OVER (not in feed AND the bare direct files
+ *  data.fotmob.com/stats/{523,8985}/corner_taken_team.json both
+ *  ABSENT — the 241 honesty, stronger than the 245 bare-serves class).
+ *  Integer-valued floats → the 215/220/231/235/236/242/245 integer
+ *  convention: storage never rounds, the pill renders String(value)
+ *  dir=ltr (73 renders «۷۳»; the frozen 2020/21 file's 224 renders
+ *  «۲۲۴»). Upstream Rank keeps COMPETITION ties verbatim (laliga
+ *  (8,8)/(13,13)/(17,17), ucl's dense (7,6)+(8,6)+(20,19)+(21,19)
+ *  ladder probed); the merge re-ranks POSITIONALLY with the name
+ *  tiebreak. ParticiantId is ALWAYS 0 (teams carry TeamId, probed
+ *  Villarreal 10205 / Olympiacos 8638) → dedup by TeamId. NO badge
+ *  twin and NO global-merge participation BY DESIGN (the 237
+ *  team-surface rule); the block rides the league page only, rows link
+ *  /team/{teamId} (the standings-view contract), data-testid=tcor-row,
+ *  the corner-flag glyph, sublabel «حجم حملات — سطح تیم».
+ *  SEASON-AWARE (the 124/…/246 class): the 2020/21 laliga raw serves
+ *  its OWN file — season/15585, 20 rows, Real Madrid 224 rank-1 with
+ *  the 196 Atletico+Real Sociedad tie — frozen, DISTINCT from the
+ *  current 73 (probed via the NAME-form season feed, the exact call
+ *  getLeagueRaw makes; the numeric-form season=15585 feed provably
+ *  leaks the CURRENT fetchAllUrls — documented in the probe). The
+ *  honest-name contract rides the EXISTING teamFa map for every
+ *  CURRENT top-10 (70/70 probed, zero new entries) — ONE new entry
+ *  for the frozen file's rank-3 «Eibar» → «ایبار» (the first
+ *  uncovered name in the family's frozen rows; the current-season
+ *  surfaces stay zero-new-entry). Feeds without the "Corners" team
+ *  category degrade honestly to []. */
+export interface TeamCornerEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamCorners: number;  // StatValue VERBATIM — integer-valued float, the 215/…/245 convention, never rounded
+}
+
 
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
@@ -1160,6 +1206,10 @@ export interface StandingsData {
    *  REQUIRED since the v31 bump — old v30 rows lack it and would keep
    *  the section hidden for a full TTL generation. */
   teamGoalsPerMatch: TeamGoalsPerMatchEntry[];
+  /** cycle-247 additive: «کرنرهای تیم‌ها» — the SEVENTH team-side block.
+   *  REQUIRED on the mapped payload (honest [] when the feed lacks the
+   *  category), the 242/245/246 additive-shape convention. */
+  teamCorners: TeamCornerEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -3059,6 +3109,59 @@ export async function getFullTeamGoalsPerMatch(leagueKey: string, season?: strin
   }
 }
 
+/** cycle-247: the full-file fetch for the team corners block — the exact
+ *  246 mirror one category over, back on the STANDARD guard:
+ *  corner_taken_team.json is WIDE on every serving league (probed
+ *  2026-10-31, UA Chrome/124: 18-36 rows on all EIGHT — the seven feed
+ *  leagues plus uel 73), so thin means "the fetch was dropped" and
+ *  re-probes in 90s. NO league-aware floor needed. Honest-empty feeds
+ *  (no "Corners" TEAM category — persiangulf AND mas, probed; their
+ *  bare direct files are absent too) degrade to [] upstream of the
+ *  guard and keep the normal TTL. Integer values → the 215/…/245
+ *  convention: StatValue stored VERBATIM (never rounded), the pill
+ *  renders String(value). Season-aware like every sibling (the 2020/21
+ *  laliga raw serves season/15585 — 20 rows, Real Madrid 224, frozen,
+ *  DISTINCT from the current 73). */
+export async function getFullTeamCorners(leagueKey: string, season?: string): Promise<TeamCornerEntry[]> {
+  try {
+    return await cached(
+      `fullTeamCorners:v1:${leagueKey}:${season || "cur"}`,
+      // Standard guard (the 210/…/246 class): corner files are WIDE
+      // (18-36 rows probed on all eight serving leagues) — thin means
+      // "the fetch was dropped" and re-probes in 90s.
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^corners$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamCornerEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamCorners: r.StatValue ?? 0,  // VERBATIM — the 215/…/245 integer convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -4421,6 +4524,69 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-247: «کرنرهای تیم‌ها» — the deep-file family's TWENTY-FIFTH
+    // sibling and its SEVENTH TEAM-PARTICIPANT member, the team-side corner
+    // volume (the raw set-piece attack surface). Straight from the live
+    // corner_taken_team.json probe (UA Chrome/124, 2026-10-31,
+    // scripts/cycle247-probe.sh + probe2.sh): EIGHT leagues serve — the
+    // seven feed leagues plus uel 73 — files WIDE 18-36 rows on all of
+    // them (laliga 20 Villarreal 73 / pl 20 Tottenham 52 / seriea 20
+    // Juventus 69 / bundesliga 18 Bayern 64 / ligue1 18 Lens 52 / ucl 36
+    // Dortmund 27 / uel 36 Olympiacos 28 / portugal 18 Benfica 65), so
+    // back on the STANDARD guard (no league-aware floor — the 246 class).
+    // persiangulf AND mas honestly absent TWICE OVER (no "Corners" team
+    // category in their feeds AND the bare direct files absent — the 241
+    // honesty, stronger than the 245 bare-serves class). Integer-valued
+    // floats → the 215/220/231/235/236/242/245 integer convention:
+    // storage never rounds, the pill renders String(value) dir=ltr (73
+    // renders «۷۳»; the frozen 2020/21 file's 224 renders «۲۲۴"). Upstream
+    // Rank keeps COMPETITION ties verbatim (laliga (8,8)/(13,13)/(17,17),
+    // ucl's dense (7,6)+(8,6)+(20,19)+(21,19) ladder probed); the merge
+    // re-ranks POSITIONALLY with the name tiebreak. ParticiantId is
+    // ALWAYS 0 (teams carry TeamId, probed Villarreal 10205 / Olympiacos
+    // 8638) → dedup by TEAM id. NO badge twin and NO global-merge
+    // participation BY DESIGN (the 237 team-surface rule); the block
+    // rides the league page only, rows link /team/{teamId} (the
+    // standings-view contract), data-testid=tcor-row, the corner-flag
+    // glyph, sublabel «حجم حملات — سطح تیم». SEASON-AWARE (the
+    // 124/…/246 class): the 2020/21 laliga raw serves its OWN file —
+    // season/15585, 20 rows, Real Madrid 224 rank-1 with the 196
+    // Atletico+Real Sociedad tie — frozen, DISTINCT from the current 73
+    // (probed via the NAME-form season feed, the exact call getLeagueRaw
+    // makes; the numeric-form season=15585 feed provably leaks the
+    // CURRENT fetchAllUrls — documented in the probe). The honest-name
+    // contract rides the EXISTING teamFa map for every CURRENT top-10
+    // (70/70 probed, zero new entries) — ONE new entry for the frozen
+    // file's rank-3 «Eibar» → «ایبار». Feeds without the team category
+    // degrade honestly to []. Additive mirror of 246 end-to-end:
+    // TeamCornerEntry + the REQUIRED teamCorners field on the mapped
+    // payload + getFullTeamCorners (fullTeamCorners:v1, the STANDARD
+    // guard — all eight files wide, NO floor needed) + the team
+    // top-3-first merge (dedup by TEAM id, teamCorners DESC, top-10,
+    // POSITIONAL re-rank) + standings:v31→v32 (the 52/…/246
+    // additive-shape convention) + the /api/topscorers/[leagueKey] route
+    // field + the LeagueScorersData view field + the league-page block
+    // «کرنرهای تیم‌ها» placed right after گل به از مسابقهٔ تیم‌ها (the raw
+    // attack-volume pair reads together: scoring rate, then corners) so
+    // the SEVEN team-side blocks read as a family while the player→team
+    // pair and the keeper QUINTET stay untouched — the older gates'
+    // relative-order asserts are index-inequality-based (all pairwise,
+    // zero adjacency) so the insertion provably keeps them green — with
+    // data-testid=tcor-row.
+    const cornerTeamEntries: TeamCornerEntry[] = statTeamCategory(raw, /^corners$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamCorners: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamCorners - a.teamCorners || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamCorners = await getFullTeamCorners(leagueKey, requestedSeason);
+    const enrichedCornerIds = new Set(cornerTeamEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamCorners = [...cornerTeamEntries, ...fullTeamCorners.filter((r) => r.teamId <= 0 || !enrichedCornerIds.has(r.teamId))]
+      .sort((a, b) => b.teamCorners - a.teamCorners || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -4518,6 +4684,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       teamYellowCards: mergedTeamYellowCards,
       teamRedCards: mergedTeamRedCards,
       teamGoalsPerMatch: mergedTeamGoalsPerMatch,
+      teamCorners: mergedTeamCorners,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -4669,7 +4836,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // rows lack it and would keep the new section hidden for up to a
     // full TTL generation. Whole key bumps (the 52/…/245 additive-shape
     // convention).
-    await cached(`standings:v31:${leagueKey}:${season || "cur"}`, (mapped) =>
+    await cached(`standings:v32:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -4905,6 +5072,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // guard and keep the normal TTL — NO league-aware floor needed
       // (the family's first nine-league surface at the standard guard).
       !(Array.isArray(mapped.teamGoalsPerMatch) && mapped.teamGoalsPerMatch.length > 0 && mapped.teamGoalsPerMatch.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-247: the team corners block joins the guard family back at
+      // the STANDARD <10 threshold — corner_taken_team.json is WIDE on
+      // every serving league (probed 18-36 rows on all eight, including
+      // uel 36), so a thin merged list means the fetch was dropped;
+      // re-probes in 90s. Honest-empty feeds (no "Corners" TEAM category
+      // — persiangulf AND mas, both bare-direct-file absent too) degrade
+      // to [] upstream of the guard and keep the normal TTL — NO
+      // league-aware floor needed.
+      !(Array.isArray(mapped.teamCorners) && mapped.teamCorners.length > 0 && mapped.teamCorners.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

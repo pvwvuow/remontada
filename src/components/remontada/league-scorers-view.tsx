@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -224,6 +224,10 @@ interface LeagueScorersData {
    *  block (the team scoring-rate level). The view carries its own type
    *  (the 242 tsc lesson — both interfaces updated in the same cycle). */
   teamGoalsPerMatch?: TeamGoalsPerMatchEntry[];
+  /** cycle-247 additive: «کرنرهای تیم‌ها» — the SEVENTH team-side block
+   *  (the team corner volume). The view carries its own type (the 242
+   *  tsc lesson — both interfaces updated in the same cycle). */
+  teamCorners?: TeamCornerEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -871,6 +875,85 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="tgm-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-247: کرنرهای تیم‌ها — the deep-file family's TWENTY-FIFTH
+          sibling and its SEVENTH TEAM-PARTICIPANT member: the team-side
+          corner volume (the raw set-piece attack surface), right after
+          گل به از مسابقهٔ تیم‌ها so the raw attack-volume pair reads
+          together (scoring rate, then corners).
+          stats/{id}/season/{sid}/corner_taken_team.json — live-probed
+          2026-10-31 (UA Chrome/124, scripts/cycle247-probe.sh +
+          probe2.sh): EIGHT leagues serve it — the seven feed leagues
+          plus uel 73 — files WIDE everywhere 18-36 rows: laliga 20
+          Villarreal 73 / pl 20 Tottenham 52 / seriea 20 Juventus 69 /
+          bundesliga 18 Bayern 64 / ligue1 18 Lens 52 / ucl 36 Dortmund
+          27 / uel 36 Olympiacos 28 / portugal 18 Benfica 65 — so the
+          STANDARD <10 guard needs no league-aware floor (the 246
+          class). persiangulf AND mas honestly absent TWICE OVER (no
+          "Corners" team category in their feeds AND the bare direct
+          files data.fotmob.com/stats/{523,8985}/corner_taken_team.json
+          both ABSENT — the 241 honesty, stronger than the 245
+          bare-serves class). Integer values → the
+          215/220/231/235/236/242/245 integer convention: storage never
+          rounds, the pill renders String(value) dir=ltr (73 renders
+          «۷۳»). Upstream Rank keeps COMPETITION ties verbatim — the
+          merge re-ranks POSITIONALLY. SEASON-AWARE: the 2020/21 laliga
+          raw serves its OWN file (Real Madrid 224 / the 196
+          Atletico+Real Sociedad tie — frozen, distinct from the
+          current 73). The honest-name contract rides the EXISTING
+          teamFa map for every CURRENT top-10 (70/70 probed — zero new
+          entries); ONE new entry for the frozen file's rank-3
+          «Eibar» → «ایبار». Rows link /team/{teamId} (the
+          standings-view contract). Placed inside the team group so the
+          SEVEN team-side blocks read as a family while the
+          player→team pair and the keeper QUINTET stay untouched — the
+          older gates' relative-order asserts are index-inequality-based
+          (all pairwise, zero adjacency) so the insertion provably keeps
+          them green. Honest absence when the feed has no "Corners"
+          team category → the section simply hides. */}
+      {data && !loading && (data.teamCorners || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <path d="M6 21 L6 4" />
+              <path d="M6 4 L17 7 L6 10" />
+              <path d="M3 21 L9 21" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">کرنرهای تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم حملات — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamCorners || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(String(r.teamCorners))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="tcor-row">
                   {r.teamId > 0 ? (
                     <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
