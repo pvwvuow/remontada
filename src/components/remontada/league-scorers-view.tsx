@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -59,6 +59,13 @@ interface LeagueScorersData {
   // without the "Save percentage" category — persiangulf, probed — hide
   // the section).
   savePercentage?: SavePercentageEntry[];
+  // cycle-222 additive: «سیو در هر ۹۰» rides the same payload — the deep-
+  // file family's TENTH sibling and the FOURTH keeper surface, rendered
+  // right after درصد سیو so the FOUR keeper surfaces stay adjacent (the
+  // 217 contract extended again); per-90 decimal pill WITH dir=ltr (the
+  // 210/217/221 decimal convention), honest absence = [] (feeds without
+  // the "Saves per 90" category — persiangulf, probed — hide the section).
+  savesPer90?: SavesPer90Entry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -668,6 +675,71 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="sv-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-222: سیو در هر ۹۰ — sister-page consistency (the
+          210/215/216/217/220/221 pattern one surface over): the SAME cached
+          getStandings payload now carries the saves-per-90 block (the
+          deep-file family's TENTH sibling and the FOURTH keeper surface —
+          stats/{id}/season/{sid}/saves.json — live-probed 2026-10-30: SIX
+          of the seven leagues serve it (ucl 43 / pl 21 / laliga 21 / seriea
+          21 / bundesliga 20 / ligue1 18 rows), persiangulf honestly absent
+          (no keeper category at all); 2025/26 frozen anchor Aarón Escandell
+          4.1 / Dmitrović 3.6 / Ryan 3.5). Per-90 decimal values with one
+          decimal kept VERBATIM (the 210/217/221 decimal convention — 4.3
+          renders «۴.۳»), so the value pill is Persian digits WITH dir=ltr
+          (the decimal contract, same as امتیازها / گل‌های پیشگیری‌شده /
+          درصد سیو). The file's ucl competition tie-ranks (1,1,3,4,5,5,7,
+          8,8,10) are honest upstream data but the served top-10 re-ranks
+          POSITIONALLY like every sibling. Placed right after درصد سیو so
+          the FOUR keeper surfaces stay adjacent (the 217 contract extended
+          again). Same 170/176 link contract (playerId → /player with
+          prefetch=false, title = English original when Persian shown),
+          honest absence when the feed has no "Saves per 90" category → the
+          section simply hides. */}
+      {data && !loading && (data.savesPer90 || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v6" />
+              <circle cx="12" cy="15.6" r="1" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">سیو در هر ۹۰</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">مهار شوت‌ها</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.savesPer90 || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.savesPer90.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="sp90-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

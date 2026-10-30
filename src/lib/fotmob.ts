@@ -255,6 +255,29 @@ export interface SavePercentageEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-222: «سیو در هر ۹۰» — the deep-file family's TENTH sibling and the
+ *  FOURTH keeper surface (clean sheets 215 / goals prevented 217 / save
+ *  percentage 221 → saves per 90 222). Shape = the 221 sibling verbatim:
+ *  the FMStatFullRow family with the participant carried FLAT
+ *  (ParticipantName + ParticiantId) and StatValue a PER-90 DECIMAL with one
+ *  decimal (4.3) kept VERBATIM — the 210/217/221 convention, never rounded.
+ *  The file's SubStatValue is the TOTAL saves (43.0) and rides along, but
+ *  the surface serves the per-90 rate only (one stat per row, the family
+ *  contract — the file's own Title is "Saves per 90"). Upstream Rank:
+ *  SEQUENTIAL on the domestics but COMPETITION tie-ranked on ucl (1,1,3,4,
+ *  5,5,7,8,8,10 live-probed — the _save_percentage.json class); the merge
+ *  re-ranks POSITIONALLY like every sibling either way. */
+export interface SavesPer90Entry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  savesPer90: number;  // StatValue VERBATIM — per-90 decimal (4.3), the 210/217/221 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -371,6 +394,30 @@ export interface StandingsData {
    *  (live-probed: persiangulf carries no keeper category at all — the
    *  section simply hides there). */
   savePercentage: SavePercentageEntry[];
+  /** cycle-222 additive: «سیو در هر ۹۰» — the league's own saves-per-90
+   *  kings, the deep-file family's TENTH sibling (goals 23 / assists 175 /
+   *  cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
+   *  prevented 217 / minutes 220 / save percentage 221 → saves per 90 222)
+   *  and the FOURTH keeper surface. The "Saves per 90" category carries its
+   *  own fetchAllUrl → data.fotmob.com stats/{id}/season/{sid}/saves.json
+   *  (live-probed 2026-10-30, UA Chrome/124: serving on SIX of the seven
+   *  leagues — ucl 43 / pl 21 / laliga 21 / seriea 21 / bundesliga 20 /
+   *  ligue1 18 rows; persiangulf honestly absent — no keeper category at
+   *  all; the 2025/26 finished raw serves its OWN file, 20 rows, Aarón
+   *  Escandell 4.1 / Marko Dmitrović 3.6 / Mathew Ryan 3.5 — the frozen
+   *  202 anchor pattern). Per-90 decimal values with one decimal kept
+   *  VERBATIM (the fourth non-integer member after ratings 210, goals
+   *  prevented 217 and save percentage 221; the file's SubStatValue carries
+   *  the TOTAL saves but one stat per row serves — the family contract);
+   *  rank POSITIONAL (the merge's own i+1 — ucl's file carries competition
+   *  tie-ranks 1,1,3,4,5,5,7,8,8,10, the domestics sequential; the served
+   *  top-10 re-ranks like every sibling). Always present (possibly []) like
+   *  the siblings; feeds without the category degrade honestly to [] (the
+   *  section simply hides there). NOTE: the family's other live candidate
+   *  penalty_save.json came alive the same day but its files are THIN
+   *  (2-5 rows — a new class below the healthy threshold) — logged as the
+   *  next update's candidate, needs its own guard decision. */
+  savesPer90: SavesPer90Entry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1436,6 +1483,68 @@ export async function getFullSavePercentage(leagueKey: string, season?: string):
 }
 
 /**
+ * Full «سیو در هر ۹۰» leaderboard for one league (cycle-222) — the deep-file
+ * family's TENTH sibling, the FOURTH keeper surface. The "Saves per 90"
+ * category carries its own fetchAllUrl →
+ * stats/{id}/season/{sid}/saves.json (live-probed 2026-10-30, UA Chrome/124:
+ * serving on SIX of the seven leagues — ucl 43 / pl 21 / laliga 21 / seriea
+ * 21 / bundesliga 20 / ligue1 18 rows; persiangulf has no keeper category
+ * at all → honest []; the finished 2025/26 laliga raw serves its OWN file,
+ * 20 rows, Aarón Escandell 4.1 / Marko Dmitrović 3.6 / Mathew Ryan 3.5 —
+ * frozen, the 202 anchor pattern). The row shape is the FMStatFullRow
+ * family with the participant carried FLAT (ParticipantName + ParticiantId
+ * — upstream's own typo the type already handles) and StatValue a PER-90
+ * DECIMAL with one decimal (4.3) kept VERBATIM — the 210/217/221
+ * convention, never rounded; the file's SubStatValue is the TOTAL saves
+ * (43.0) and rides along but the surface serves the per-90 rate only (one
+ * stat per row, the family contract). Upstream Rank is sequential on the
+ * domestics but COMPETITION tie-ranked on ucl (1,1,3,4,5,5,7,8,8,10
+ * live-probed); this loader keeps the file's own order and rank verbatim —
+ * the merge re-ranks POSITIONALLY like every sibling. Same cache +
+ * cycle-127 thin-TTL guard as the siblings (healthy = ≥10 rows); season-
+ * aware like every sibling (a historical raw carries its OWN fetchAllUrl —
+ * the 2020/21 raw serves Edgar Badía 3.2 / Jaume Domènech 3.2 / Jordi
+ * Masip 3.0). Feeds without the category degrade to [] and the honest
+ * category fallback still feeds the merge.
+ */
+export async function getFullSavesPer90(leagueKey: string, season?: string): Promise<SavesPer90Entry[]> {
+  try {
+    return await cached(
+      `fullSavesPer90:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^saves per 90$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: SavesPer90Entry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            savesPer90: r.StatValue ?? 0,  // per-90 decimal VERBATIM — the 210/217/221 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1574,6 +1683,14 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // page and the raw English name alone would dead-end the profile
     // network (the 167 lesson). Percent value untouched (verbatim).
     savePercentage: (st.savePercentage || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-222 additive: the saves-per-90 rows get the same read-time
+    // honest names — the category top-3 rows enter the merge WITHOUT a
+    // nameFa (statCategory carries raw names only), so this mapped-payload
+    // re-application is what makes them Persian (the live-proven 2020/21
+    // case: the first gate run rendered Badía/Domènech/Masip honest-English
+    // until this line rejoined the 219/221 curation). Per-90 value
+    // untouched (verbatim).
+    savesPer90: (st.savesPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1976,6 +2093,36 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-222: «سیو در هر ۹۰» — the TENTH sibling joins the SAME cached
+    // payload (the 175→221 merge pattern one surface over):
+    // stats/{id}/season/{sid}/saves.json (live-probed 2026-10-30 UA
+    // Chrome/124: SIX of the seven leagues — ucl 43 / pl 21 / laliga 21 /
+    // seriea 21 / bundesliga 20 / ligue1 18 rows; persiangulf honestly
+    // absent — no keeper category at all; the 2025/26 frozen anchor Aarón
+    // Escandell 4.1 / Dmitrović 3.6 / Ryan 3.5). Category top-3 first (the
+    // 175 merge order), then the full file merged on top, deduped by player
+    // id, sorted by per-90 DESC (stable), top-10, POSITIONAL rank
+    // re-assignment (the family contract — ucl's competition tie-ranks
+    // 1,1,3,4,5,5,7,8,8,10 are honest upstream data but the served top-10
+    // re-ranks like every sibling). SEQUENTIAL after the save-percentage
+    // merge (the 176 discipline: one L2 write at a time).
+    const savesPer90Entries: SavesPer90Entry[] = statCategory(raw, /^saves per 90$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, savesPer90: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.savesPer90 - a.savesPer90 || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullSavesPer90 = await getFullSavesPer90(leagueKey, requestedSeason);
+    const enrichedSP90Ids = new Set(
+      savesPer90Entries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedSavesPer90 = [...savesPer90Entries, ...fullSavesPer90.filter((r) => r.playerId == null || !enrichedSP90Ids.has(r.playerId))]
+      .sort((a, b) => b.savesPer90 - a.savesPer90 || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -2058,6 +2205,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       goalsPrevented: mergedGoalsPrevented,
       minutes: mergedMinutes,
       savePercentage: mergedSavePercentage,
+      savesPer90: mergedSavesPer90,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -2137,7 +2285,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215/216/217/220 convention).
-    await cached(`standings:v16:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-222: v17 — the saves-per-90 block («سیو در هر ۹۰») joins the
+    // mapped payload as a REQUIRED field; old v16 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215/216/217/220/221 convention).
+    await cached(`standings:v17:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -2234,6 +2387,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // honest-empty feeds (no "Save percentage" category — persiangulf,
       // probed) keep the normal TTL.
       !(Array.isArray(mapped.savePercentage) && mapped.savePercentage.length > 0 && mapped.savePercentage.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-222: the same thin-kept-for-a-generation class closes for the
+      // saves-per-90 block (the 175/210/215/216/217/220/221 guard family
+      // grows by one) — a thin merged saves-per-90 list re-probes in 90s;
+      // honest-empty feeds (no "Saves per 90" category — persiangulf,
+      // probed) keep the normal TTL.
+      !(Array.isArray(mapped.savesPer90) && mapped.savesPer90.length > 0 && mapped.savesPer90.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

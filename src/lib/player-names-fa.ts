@@ -911,6 +911,20 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   // the served pl top-10. The corrected live-spelling key joins (the 219
   // variant-class lesson: both spellings stay, exact hits always win).
   "caoimhín kelleher": "کاویمین کلهر",
+  // cycle-222: the fallbacks on the SERVED «سیو در هر ۹۰» top-10s (the 167
+  // lesson — a raw English name dead-ends the profile network; the 104
+  // rule holds: all confident sports-media transliterations). Nicolas
+  // Kocik stays deliberately absent (the 219 verdict — genuinely
+  // doubtful), so ligue1 keeps one honest-English tail row.
+  "tjark ernst": "تیارک ارنست",
+  "arild østbø": "آریلد اوستبو",
+  "kjell scherpen": "کجل شرپن",
+  "noel törnqvist": "نوئل تورنکویست",
+  "filip jörgensen": "فیلیپ یورگنسن",
+  "mamadou diop": "مامادو دیوپ",
+  "sam johnstone": "سم جانستون",
+  "karl darlow": "کارل دارلو",
+  "alex mccarthy": "الکس مک‌کارتی",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
