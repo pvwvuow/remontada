@@ -689,6 +689,40 @@ export interface TeamYellowCardEntry {
   teamYellowCards: number;  // StatValue VERBATIM — integer-valued float (33.0), the 215/220/231/235/236 convention, never rounded
 }
 
+/** cycle-245 additive: one «کارت‌های قرمز تیم‌ها» row — the deep-file
+ *  family's TWENTY-THIRD sibling and its FIFTH TEAM-PARTICIPANT member
+ *  (the team-side red-card surface, the yellow 242 sibling's red brother).
+ *  stats/{id}/season/{sid}/total_red_card_team.json (live-probed
+ *  2026-10-31, UA Chrome/124 — "Red cards" TEAM category, INTEGER-valued
+ *  floats, naturally SHORT files: red cards are rare — laliga 16 / pl 12 /
+ *  portugal 13 / mas 11 rows vs seriea 6 / bundesliga 7 / ucl 7 / ligue1 9
+ *  / ucl-breadth uel EXACTLY 4 — four of the nine serving files sit under
+ *  10 as-found and early-season reds legitimately sit low). NINE serving
+ *  leagues — the family's FIRST NINE-league team surface: the six
+ *  domestics + uel + portugal AND MAS (its feed carries the "Red cards"
+ *  TEAM category — the SECOND mas team-surface after the 240 clean-sheets,
+ *  probed: season/47747 file = 11 rows, Kuching City 3.0); persiangulf
+ *  honestly absent (its feed carries ONE team category, Goals per match,
+ *  probed — the bare direct file serves 15 rows but the app is
+ *  feed-driven: no category → honest [] upstream of any fetch). Same
+ *  cache as the siblings; the guard is the 240 floor-4 class GENERALIZED
+ *  league-wide (the podium can never exceed 3 rows, so ≥4 PROVES the full
+ *  file arrived while ≤3 always re-probes — the standard <10 guard would
+ *  re-probe forever on the naturally-short files, the exact trap the
+ *  cycle-176 PLAYER-red comment documented). Season-aware like every
+ *  sibling (the 2020/21 laliga raw serves season/15585 — 19 rows,
+ *  Deportivo Alaves 8.0 rank-1 with the 8,8 Betis tie, frozen, DISTINCT
+ *  from the current Getafe 5.0). Feeds without the team category degrade
+ *  honestly to []. */
+export interface TeamRedCardEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamRedCards: number;  // StatValue VERBATIM — integer-valued float (5.0), the 215/220/231/235/236/242 convention, never rounded
+}
+
 
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
@@ -1066,6 +1100,18 @@ export interface StandingsData {
    *  REQUIRED since the v29 bump — old v28 rows lack it and would keep
    *  the section hidden for a full TTL generation. */
   teamYellowCards: TeamYellowCardEntry[];
+  /** cycle-245 additive: «کارت‌های قرمز تیم‌ها» rides the mapped payload —
+   *  the deep-file family's TWENTY-THIRD sibling and its FIFTH
+   *  TEAM-PARTICIPANT member (the team-side red-card surface, the yellow
+   *  sibling's red brother). Integer-valued floats verbatim (the
+   *  215/…/242 convention — String() pill); the block rides the league
+   *  page only, rows link /team/[id]; persiangulf honestly degrades to []
+   *  (feed-driven: ONE team category, probed) while MAS SERVES (its feed
+   *  carries the "Red cards" TEAM category — the SECOND mas team-surface
+   *  after 240, probed); always present (possibly []).
+   *  REQUIRED since the v30 bump — old v29 rows lack it and would keep
+   *  the section hidden for a full TTL generation. */
+  teamRedCards: TeamRedCardEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2854,6 +2900,67 @@ export async function getFullTeamYellowCards(leagueKey: string, season?: string)
   }
 }
 
+/** cycle-245: the full-file fetch for the team red-cards block — the exact
+ *  242 getFullTeamYellowCards mirror one category over, with ONE
+ *  deliberate guard difference: red TEAM files are NATURALLY SHORT (probed
+ *  2026-10-31, UA Chrome/124: laliga 16 / pl 12 / portugal 13 / mas 11 /
+ *  ligue1 9 / bundesliga 7 / ucl 7 / seriea 6 / uel EXACTLY 4 rows) — red
+ *  cards are rare and early-season reds legitimately sit under 10, so the
+ *  standard <10 guard would re-probe FOREVER on four of the nine serving
+ *  files (the exact trap the cycle-176 PLAYER-red comment documented).
+ *  Guard = the 240 mas floor-4 class GENERALIZED league-wide: STRUCTURAL,
+ *  not a file-size pin — the podium (participant + topThree) can never
+ *  exceed 3 rows, so ≥4 PROVES the full file arrived while ≤3 always
+ *  re-probes. Honest-empty feed (no "Red cards" TEAM category —
+ *  persiangulf only, probed: its feed carries ONE team category; the bare
+ *  direct file serves 15 rows but the app is feed-driven — no category →
+ *  honest [] upstream of any fetch) degrades to [] and keeps the normal
+ *  TTL. MAS SERVES (its feed carries the "Red cards" TEAM category — the
+ *  SECOND mas team-surface after the 240 clean-sheets). Season-aware like
+ *  every sibling (the 2020/21 laliga raw serves season/15585 — 19 rows,
+ *  Deportivo Alaves 8.0, frozen). Feeds without the team category degrade
+ *  honestly to []. */
+export async function getFullTeamRedCards(leagueKey: string, season?: string): Promise<TeamRedCardEntry[]> {
+  try {
+    return await cached(
+      `fullTeamRedCards:v1:${leagueKey}:${season || "cur"}`,
+      // The 240 floor-4 class, league-wide for red: files are naturally
+      // short (4-16 rows probed), thin-below-4 means "the fetch was
+      // dropped" (or the season literally has ≤3 reds) and re-probes in
+      // 90s; healthy files keep the normal TTL.
+      (rows) => (rows.length >= 4 ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^red cards$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamRedCardEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamRedCards: r.StatValue ?? 0,  // VERBATIM — the 215/…/242 integer convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -4098,6 +4205,65 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-245: «کارت‌های قرمز تیم‌ها» — the deep-file family's
+    // TWENTY-THIRD sibling and its FIFTH TEAM-PARTICIPANT member (the
+    // team-side red-card surface, the yellow 242 sibling's red brother),
+    // straight from the live total_red_card_team.json probe (UA
+    // Chrome/124, 2026-10-31, scripts/cycle245-probe.sh): NATURALLY SHORT
+    // files on the NINE serving leagues (laliga 16 Getafe 5.0 / pl 12
+    // Brentford 2.0 / seriea 6 Atalanta 2.0 / bundesliga 7 Hoffenheim 2.0
+    // / ligue1 9 Le Havre 2.0 / ucl 7 Inter 1.0 / uel 4 Milan 2.0 /
+    // portugal 13 Alverca 3.0 with the top-3 2,2 tie probed for breadth /
+    // mas 11 Kuching City 3.0 — the SECOND mas team-surface after the 240
+    // clean-sheets); persiangulf honestly absent (its feed carries ONE
+    // team category, Goals per match, probed — the bare direct file
+    // serves 15 rows but the app is feed-driven: no category → honest []
+    // upstream of any fetch). INTEGER-VALUED floats (probed int on every
+    // serving file) → the 215/220/231/235/236/242 integer convention:
+    // storage never rounds, the pill renders String(value) dir=ltr (5.0
+    // renders «۵»). Upstream Rank keeps COMPETITION ties verbatim (laliga
+    // rank 2,3,4 on 3.0 / 5,6,7 on 2.0 / the duplicated 14,14,16 probed);
+    // the merge re-ranks POSITIONALLY like every sibling. ParticiantId is
+    // ALWAYS 0 (teams carry TeamId) → dedup by TeamId. NO badge twin and
+    // NO global-merge participation BY DESIGN (the 237 team-surface
+    // rule); the block rides the league page only, rows link
+    // /team/{teamId} (the standings-view contract), data-testid=trc-row,
+    // the red-card rect icon, sublabel «انضباط — سطح تیم». SEASON-AWARE
+    // (the 124/…/242 class): the 2020/21 laliga raw serves its OWN file —
+    // season/15585, 19 rows, Deportivo Alaves 8.0 rank-1 with the 8,8
+    // Betis tie — frozen, the 202 anchor pattern, DISTINCT from the
+    // current 5.0 (Getafe tops the CURRENT file, Alaves the 2020/21
+    // one — probed). The honest-name contract rides the EXISTING teamFa
+    // map (zero new PLAYER_NAME_FA entries, probed: all nine rank-1
+    // sides covered). Additive mirror of 242 end-to-end:
+    // TeamRedCardEntry + the REQUIRED teamRedCards field on the mapped
+    // payload + getFullTeamRedCards (fullTeamRedCards:v1, the 240
+    // floor-4 class GENERALIZED league-wide — red files are naturally
+    // short, the standard <10 guard would re-probe forever) + the team
+    // top-3-first merge (dedup by TEAM id, teamRedCards DESC, top-10,
+    // POSITIONAL re-rank) + standings:v29→v30 (the 52/…/242
+    // additive-shape convention) + the /api/topscorers/[leagueKey]
+    // route field + the LeagueScorersData view field (tsc catches the
+    // second interface — the view carries its own type) + the
+    // league-page block «کارت‌های قرمز تیم‌ها» placed right after
+    // کارت‌های زرد تیم‌ها so the FIVE team-side blocks read together
+    // while the player→team pair and the keeper QUINTET stay untouched
+    // (the older gates' relative-order asserts are index-inequality-based
+    // — all re-ran green) — with data-testid=trc-row.
+    const rcardTeamEntries: TeamRedCardEntry[] = statTeamCategory(raw, /^red cards$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamRedCards: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamRedCards - a.teamRedCards || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamRedCards = await getFullTeamRedCards(leagueKey, requestedSeason);
+    const enrichedRcIds = new Set(rcardTeamEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamRedCards = [...rcardTeamEntries, ...fullTeamRedCards.filter((r) => r.teamId <= 0 || !enrichedRcIds.has(r.teamId))]
+      .sort((a, b) => b.teamRedCards - a.teamRedCards || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -4193,6 +4359,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       teamCleanSheets: mergedTeamCleanSheets,
       teamPossession: mergedTeamPossession,
       teamYellowCards: mergedTeamYellowCards,
+      teamRedCards: mergedTeamRedCards,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -4334,7 +4501,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // and would keep the new section hidden for up to a full TTL
     // generation. Whole key bumps (the 52/…/241 additive-shape
     // convention).
-    await cached(`standings:v29:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-245: v30 — the team red-cards block («کارت‌های قرمز تیم‌ها»)
+    // joins the mapped payload as a REQUIRED field; old v29 rows lack it
+    // and would keep the new section hidden for up to a full TTL
+    // generation. Whole key bumps (the 52/…/242 additive-shape
+    // convention).
+    await cached(`standings:v30:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -4549,6 +4721,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // normal TTL — NO league-aware floor needed (unlike the 240
       // clean-sheet sibling, mas does not serve this category at all).
       !(Array.isArray(mapped.teamYellowCards) && mapped.teamYellowCards.length > 0 && mapped.teamYellowCards.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-245: the team red-cards block joins the guard family — with
+      // ONE deliberate difference: total_red_card_team.json is NATURALLY
+      // SHORT (probed 4-16 rows on the nine serving leagues — red cards
+      // are rare; uel's file is EXACTLY 4 as-found), so the standard <10
+      // guard would re-probe forever on four of the nine files (the exact
+      // trap the cycle-176 PLAYER-red comment documented). Guard = the
+      // 240 mas floor-4 class GENERALIZED league-wide: STRUCTURAL, not a
+      // file-size pin — the podium can never exceed 3 rows, so ≥4 PROVES
+      // the full file arrived while ≤3 always re-probes. Honest-empty
+      // feed (no "Red cards" TEAM category — persiangulf only, probed)
+      // degrades to [] upstream of the guard and keeps the normal TTL.
+      !(Array.isArray(mapped.teamRedCards) && mapped.teamRedCards.length > 0 && mapped.teamRedCards.length < 4) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

@@ -187,6 +187,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // persiangulf AND mas — the 237/241 absence pair, probed); old
       // consumers never read this field (the 108 rule).
       teamYellowCards: st.teamYellowCards,
+      // cycle-245 additive: «کارت‌های قرمز تیم‌ها» rides the SAME cached
+      // payload — the deep-file family's TWENTY-THIRD sibling and its
+      // FIFTH TEAM-PARTICIPANT member: the team-side red-card surface
+      // (INTEGER values verbatim — the 215/…/242 convention, String()
+      // pill; season-aware like the sisters; honest [] on persiangulf
+      // only — feed-driven, probed; mas SERVES — the SECOND mas
+      // team-surface after 240); old consumers never read this field
+      // (the 108 rule).
+      teamRedCards: st.teamRedCards,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -215,6 +215,11 @@ interface LeagueScorersData {
   // historical views serve their own files (2020/21 laliga = Getafe
   // 114.0, frozen).
   teamYellowCards?: TeamYellowCardEntry[];
+  /** cycle-245 additive: «کارت‌های قرمز تیم‌ها» — the FIFTH team-side
+   *  block (the yellow sibling's red brother). The view carries its own
+   *  type (the 242 tsc lesson — both interfaces updated in the same
+   *  cycle). */
+  teamRedCards?: TeamRedCardEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -1065,6 +1070,74 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="tyc-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-245: کارت‌های قرمز تیم‌ها — the deep-file family's
+          TWENTY-THIRD sibling and its FIFTH TEAM-PARTICIPANT member: the
+          team-side red-card surface (the yellow sibling's red brother).
+          stats/{id}/season/{sid}/total_red_card_team.json — live-probed
+          2026-10-31 (UA Chrome/124): NINE serving leagues — the family's
+          FIRST NINE-league team surface (laliga 16 Getafe 5.0 / pl 12
+          Brentford 2.0 / seriea 6 Atalanta 2.0 / bundesliga 7 Hoffenheim
+          2.0 / ligue1 9 Le Havre 2.0 / ucl 7 Inter 1.0 / uel 4 Milan 2.0 /
+          portugal 13 Alverca 3.0 with the top-3 2,2 tie / mas 11 Kuching
+          City 3.0 — the SECOND mas team-surface after 240); persiangulf
+          honestly absent (feed-driven: ONE team category, probed).
+          NATURALLY SHORT files (red cards are rare) → the pill renders
+          String(value) dir=ltr (5.0 renders «۵», the 215/…/242 integer
+          convention). Upstream Rank keeps COMPETITION ties verbatim
+          (laliga 2,3,4 on 3.0) — the merge re-ranks POSITIONALLY.
+          SEASON-AWARE: the 2020/21 laliga raw serves its OWN file
+          (Deportivo Alaves 8.0 / Real Betis 8.0 — frozen, distinct from
+          the current Getafe 5.0). The honest-name contract rides the
+          EXISTING teamFa map — zero new entries. Rows link /team/{teamId}
+          (the standings-view contract). Placed right after کارت‌های زرد
+          تیم‌ها so the FIVE team-side blocks read together while the
+          player→team pair and the keeper QUINTET stay untouched — the
+          older gates' relative-order asserts are index-inequality-based
+          so the insertion provably keeps them green. Honest absence when
+          the feed has no "Red cards" team category → the section simply
+          hides. */}
+      {data && !loading && (data.teamRedCards || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-[#eb5757]" aria-hidden>
+              <rect x="7" y="3.5" width="10" height="15" rx="1.6" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">کارت‌های قرمز تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">انضباط — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamRedCards || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(String(r.teamRedCards))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="trc-row">
                   {r.teamId > 0 ? (
                     <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
