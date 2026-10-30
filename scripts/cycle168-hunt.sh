@@ -26,10 +26,10 @@
 #          the «بازیکنان» section header is a <p> (search-box.tsx:261)
 #          rendered when players.length>0 (probe-side D5: it is NOT a
 #          div/h2 — select p with exact text);
-#   race  = default copy «۱۹ لیگ و جام برتر» (old ۱۸ gone) + leader
-#          رافینیا ۱۳ + poland IN; season 2023/2024 → «۱۸ لیگ
+#   race  = default copy «۲۰ لیگ و جام برتر» (old ۱۹ gone) + leader
+#          رافینیا ۱۳ + poland IN; season 2023/2024 → «۱۹ لیگ
 #          مشارکت‌کننده» + hnl in + mas honestly out; players hub =
-#          «ستاره‌های نوزده لیگ و جام برتر ...» — MUST be read BEFORE
+#          «ستاره‌های بیست لیگ و جام برتر ...» — MUST be read BEFORE
 #          any mode click (probe-side D5: the copy line was read after
 #          a mode click once and false-failed);
 #   guard = laliga transfers: Milud Nordin (playerId=0, the 167 zero
@@ -43,7 +43,7 @@
 # V4  search Sayyadmanesh → real row click → /player/887680 h1
 # V5  /topscorers default → copy ۱۹ + رافینیا + old ۱۸ gone
 # V6  /topscorers/poland → خوردی سانچز ۹ پوگون
-# V7  /players → copy نوزده read FIRST + two-step poland chip →
+# V7  /players → copy بیست read FIRST + two-step poland chip →
 #     URL sync + لخ پوزنان grid
 # V8  /league/laliga transfers → Milud Nordin plain (zero-pid guard)
 # V9  race 2023/2024 → dynamic ۱۸ + hnl in + mas out
@@ -132,7 +132,7 @@ collect "$ROW4 $FEAT4" "V4 search Sayyadmanesh row→click→player h1"
 # V5: race default — copy ۱۹ + رافینیا + old ۱۸ gone (read BEFORE any click)
 hunt "V5 race default copy 19" "$BASE/topscorers" \
 "(document.body.innerText||\"\").includes(\"رافینیا\")" "" \
-"({copy19:(document.body.innerText||'').includes('۱۹ لیگ و جام برتر'),old18gone:!(document.body.innerText||'').includes('۱۸ لیگ و جام برتر'),leader:(document.body.innerText||'').includes('رافینیا')})"
+"({copy20:(document.body.innerText||'').includes('۲۰ لیگ و جام برتر'),old19gone:!(document.body.innerText||'').includes('۱۹ لیگ و جام برتر'),leader:(document.body.innerText||'').includes('رافینیا')})"
 
 # V6: /topscorers/poland dedicated path
 hunt "V6 poland scorers path" "$BASE/topscorers/poland" \
@@ -144,7 +144,7 @@ $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 sleep 3
-COPY7=$($B eval "JSON.stringify((()=>{const b=document.body.innerText||'';return {copy19p:b.includes('نوزده لیگ و جام برتر')}})())" 2>/dev/null | tr -d '"\\')
+COPY7=$($B eval "JSON.stringify((()=>{const b=document.body.innerText||'';return {copy20p:b.includes('بیست لیگ و جام برتر')}})())" 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const b=[...document.querySelectorAll("button")].find(x=>(x.textContent||"").includes("تیم‌ها")||(x.textContent||"").includes("اسکواد"));if(b)b.click();return b?"teams":"no-mode"})()' >/dev/null 2>&1
 sleep 2
 $B eval '(function(){const c=document.querySelector("[data-testid=\"league-poland\"]");if(c)c.click();return c?"clicked":"no-chip"})()' >/dev/null 2>&1
@@ -161,7 +161,7 @@ hunt "V8 laliga zero-pid guard" "$BASE/league/laliga" \
 # V9: race season 2023/2024 — dynamic ۱۸ + hnl in + mas out
 hunt "V9 race season dyn-18" "$BASE/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"۲۰۲۳\")" "" \
-"({dyn18:(document.body.innerText||'').includes('۱۸ لیگ مشارکت‌کننده'),hnlRow:(document.body.innerText||'').includes('هایدوک')||(document.body.innerText||'').includes('دیناموزاگرب'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
+"({dyn19:(document.body.innerText||'').includes('۱۹ لیگ مشارکت‌کننده'),hnlRow:(document.body.innerText||'').includes('هایدوک')||(document.body.innerText||'').includes('دیناموزاگرب'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
 
 echo "== PART C: API truth =="
 API_OUT=$(python3 - <<'PY'
@@ -193,18 +193,18 @@ try:
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = (len(ts) == 380 and len(pl) == 19 and "poland" in pl and lead.get("nameFa") == "رافینیا"
+    good = (len(ts) == 400 and len(pl) == 20 and "poland" in pl and lead.get("nameFa") == "رافینیا"
             and lead.get("goals") == 13 and not ascii_leak(lead.get("team")))
     report("race cur 380/19 poland-in", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 except Exception as e:
     report("race cur", False, str(e))
-# A3: race 2023/2024 — 360/18, poland+hnl in, mas out
+# A3: race 2023/2024 — 380/19, poland+hnl in, mas out
 try:
     d = get("http://localhost:3000/api/topscorers?season=2023/2024")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-    good = len(ts) == 360 and len(pl) == 18 and "poland" in pl and "hnl" in pl and "mas" not in pl
-    report("race 2023/2024 360/18 poland+hnl mas-out", good, f"n={len(ts)} perLeague={len(pl)}")
+    good = len(ts) == 380 and len(pl) == 19 and "poland" in pl and "hnl" in pl and "mas" not in pl
+    report("race 2023/2024 380/19 poland+hnl mas-out", good, f"n={len(ts)} perLeague={len(pl)}")
 except Exception as e:
     report("race 2023/2024", False, str(e))
 # A4: player search — fa query + en query (the 166 contract) + teams backward-compat

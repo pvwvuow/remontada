@@ -350,6 +350,29 @@ export const LEAGUES: LeagueConfig[] = [
   // (ESPN 400 for pol.1/poland.1 — Gulf pattern). Table is a NORMAL flat
   // payload (data.table.all — no composite parser needed).
   { key: "poland",     fotmobId: 196,         ccode3: "POL",  faName: "اکستراکلاسا لهستان", enName: "Ekstraklasa",                                   priority: 23 },
+  // cycle-181: Belgian Pro League — 24th competition, 20th race participant.
+  // ONE live Iranian hook (standard لیژ 9985): دنیس اکرت (Dennis Eckert,
+  // 892709) — squad ccode=IRN / nationalTeamId=6711 AND the goals.json row
+  // itself carries ParticipantCountryCode="IRN" (rank 11, 4 goals + 1 assist,
+  // rating 6.91, #10 Standard Liège). Live-probed 2026-10-30 (UA Chrome/124,
+  // page id 40 — the day-feed primaryId IS the page id): flat 18-row
+  // 2026/2027 table (خنت 25 / کلوب بروژ 24 / یونیون سنت‌ژیلوآز 23), 17
+  // slash-format seasons 2026/2027→2010/2011 covering the cycle-132 window
+  // exactly → no globalMerge flag → merges into the race (380→400 scorers /
+  // 19→20 perLeague); the ARCHIVED 2023/2024 payload carries its own Goals
+  // fetchAllUrl (season/20957, 233 rows) → historical race 18→19 participants
+  // (historical tables are COMPOSITE — Championship/ECL/Relegation groups,
+  // the cycle-141 parser). 123 title seasons — the OLDEST of any portal
+  // (1895/1896 اف‌سی لیژ over رویال آنتورپ; newest 2025/2026 کلوب بروژ over
+  // یونیون سن‌ژیلواز). transfers.data=100 (105 distinct sides). Card files
+  // live (yellow_card.json / red_card.json with fetchAllUrl — the 176
+  // contract). playoff=null → bracket tab honestly absent (cycle-56
+  // contract). espnSlug bel.1 answers live (ESPN «Belgian Pro League» — the
+  // big-league pattern, not the Gulf one). Day feed serves «Belgian Pro
+  // League» ccode=BEL (unique name — the 140/152 pattern); the second-tier
+  // «First Division B» has live matches the same day and joins
+  // COMPETITION_FA. Table is a NORMAL flat payload (data.table.all).
+  { key: "belgium",    fotmobId: 40,          ccode3: "BEL",  faName: "لیگ بلژیک",          enName: "Belgian Pro League", espnSlug: "bel.1",          priority: 24 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -376,6 +399,16 @@ const COMPETITION_FA: Record<string, string> = {
   // name (Slovakia rides «Super liga»), no AMBIGUOUS_NAMES entry needed
   // (the hnl/mas pattern)
   "ekstraklasa": "اکستراکلاسا لهستان",
+  // cycle-181: the day feed serves «Belgian Pro League» for Belgium
+  // (probed 2026-10-30 ccode=BEL, primaryId 40) — unique upstream name,
+  // no AMBIGUOUS_NAMES entry needed. The Persian REUSES the established
+  // «pro league|BEL» translation from COMPETITION_FA_CC so the same
+  // competition keeps ONE name across day-feed cards and the portal
+  // (the faName consistency rule — mas/liga super convention).
+  "belgian pro league": "لیگ بلژیک",
+  // cycle-181: the second tier has live matches the same day
+  // («First Division B» ccode=BEL — Challenger Pro League upstream)
+  "first division b": "دستهٔ اول بی بلژیک",
   "premier league": "پریمیرلیگ انگلیس",
   "laliga": "لالیگا",
   "la liga": "لالیگا",
@@ -1242,6 +1275,70 @@ const TEAM_FA: Record<string, string> = {
   // /api/league-transfers?league=poland panel (the 92nd distinct club —
   // a transfer target outside the 91-id sweep because upstream omits its id)
   "busko-zdroj": "بوسکو زدروی",
+  // ---- cycle-181: Belgian Pro League — the 1 unmapped TABLE club (RAAL
+  // La Louvière; the other 17 ride earlier sweeps: خنت/کلوب بروژ/یونیون
+  // سنت‌ژیلوآز/شارلروا/آندرلشت/خنک/وسترلو/لومل/استاندارد لیژ/زولته وارخم/
+  // رویال آنتورپ/بورن/سنت‌ترویدن/مشلن/لوون/کورتریک/سرکل بروژ) + the
+  // goals/card-file team spellings (TeamName differs from the table: KAA
+  // Gent, KVC Westerlo, KRC Genk, Sint-Truidense VV, Sporting de Charleroi,
+  // SV Zulte Waregem, Waasland-Beveren — same-club variants take the SAME
+  // Persian as their table twin, the goals.json spelling sweep of 165) +
+  // the 123-season title sweep (12 unmapped, incl. the OLDEST champion of
+  // any portal: FC Liège 1895/1896) + the 105-side transfer sweep (24
+  // unmapped). Diacritics preserved in keys per the teamFa norm
+  // (lowercase only). Zero duplicate-key collisions (build-time guard).
+  // table club (18th of 18)
+  "raal la louvière": "رآل لا لوویر",
+  // goals/card-file spellings (same clubs as table rows)
+  "kaa gent": "خنت",
+  "kvc westerlo": "وسترلو",
+  "krc genk": "خنک",
+  "sint-truidense vv": "سنت‌ترویدن",
+  "sporting de charleroi": "شارلروا",
+  "sv zulte waregem": "زولته وارخم",
+  // Waasland-Beveren is the pre-2022 name of SK Beveren — one club, one
+  // Persian (the collision-class comment of 165, probed spelling pair)
+  "waasland-beveren": "بورن",
+  // title-only clubs (123-season history; FC Liège is the 1895/1896
+  // champion — the oldest title row of any portal)
+  "fc liège": "اف‌سی لیژ",
+  "ksk beveren": "بورن",
+  "lierse": "لییرس",
+  "k. lierse sk": "لییرس",
+  "lokeren": "لوکرن",
+  "berchem sport 2004": "برخم اسپورت",
+  "koninklijke beerschot vac": "بیرشوت",
+  "koninklijke beringen fc": "برینخن",
+  "olympic de charleroi": "المپیک شارلروا",
+  "r. léopold fc": "لئوپولد",
+  "rwdm brussels": "آر‌دبلیو‌دی‌ام بروکسل",
+  "racing white daring molenbeek": "راسینگ وایت دارینگ مولن‌بیک",
+  "royal racing white": "رویال راسینگ وایت",
+  // transfer-sweep clubs (unmapped of the 105 distinct from/to sides
+  // across transfers.data=100)
+  "ac oulu": "آ‌سی اولو",
+  "aarau": "آراو",
+  "annecy fc": "آنسی",
+  "avellino": "آولینو",
+  "debrecen": "دبرتسن",
+  "dunkerque": "دانکرک",
+  "francs borains": "فران بورن",
+  "helmond sport": "هلموند اسپورت",
+  "hoek": "هوک",
+  "karviná": "کاروینا",
+  "lanús": "لانوس",
+  "londrina": "لوندرینا",
+  "patro eisden": "پاترو آیدن",
+  "puebla": "پوئبلا",
+  "pumas": "پوماس",
+  "reggiana": "رجیانا",
+  "royal knokke fc": "رویال کنوکه",
+  "sk austria klagenfurt": "آستریا کلاگن‌فورت",
+  "skn st. pölten": "سانکت پولتن",
+  "sirius": "سیریوس",
+  "sporting hasselt": "اسپورتینگ هاسلت",
+  "ut arad": "یوت آراد",
+  "umm salal": "ام صلال",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

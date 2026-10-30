@@ -112,8 +112,8 @@ d = api("/api/topscorers?league=all")
 ts = d.get("scorers") or []
 pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
 lead = ts[0] if ts else {}
-report("A2 race 18 participants",
-       len(ts) == 360 and len(pl) == 18 and "hnl" in pl and "acl2" not in pl
+report("A2 race 20 participants",
+       len(ts) == 400 and len(pl) == 20 and "hnl" in pl and "acl2" not in pl and "belgium" in pl
        and lead.get("nameFa") == "رافینیا" and lead.get("goals") == 13,
        f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 
@@ -133,8 +133,8 @@ report("A3 hnl dedicated scorers",
 d = api("/api/topscorers?league=all&season=2023%2F2024")
 ts = d.get("scorers") or []
 pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-report("A4 historical 2023/2024 17 participants",
-       len(ts) == 340 and len(pl) == 17 and "hnl" in pl and "qatar" not in pl
+report("A4 historical 2023/2024 19 participants",
+       len(ts) == 380 and len(pl) == 19 and "hnl" in pl and "qatar" not in pl and "belgium" in pl
        and ts[0].get("nameFa") == "هری کین",
        f"n={len(ts)} perLeague={len(pl)} leader={ts[0].get('nameFa') if ts else None}")
 
@@ -173,7 +173,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A7 duplicate-key guard", len(tk) == 1009 and len(pk) == 486 and not td and not pd,
+report("A7 duplicate-key guard", len(tk) == 1121 and len(pk) == 557 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 # A8: day-feed disambiguation — the plain «hnl» key present in the lib
@@ -209,7 +209,7 @@ probe "$BASE/league/hnl" "B1 hnl league page" \
 
 # B2: the global race — copy ۱۸, leader رافینیا, hnl team names Persian
 probe "$BASE/topscorers" "B2 race copy 18" \
-"(function(){const b=document.body.innerText||'';return {copy18:b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),leader:b.includes('رافینیا'),hnlTeam:b.includes('هایدوک')||b.includes('دیناموزاگرب')}})()"
+"(function(){const b=document.body.innerText||'';return {copy20:b.includes('۲۰ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),leader:b.includes('رافینیا'),hnlTeam:b.includes('هایدوک')||b.includes('دیناموزاگرب')}})()"
 
 # B3: dedicated /topscorers/hnl — بلیو + Persian digits
 probe "$BASE/topscorers/hnl" "B3 dedicated hnl scorers" \
@@ -226,8 +226,8 @@ $B wait --load networkidle >/dev/null 2>&1
 sleep 2
 $B eval '(function(){const b=document.querySelector("button[aria-label=\"جستجوی تیم\"]");if(b)b.click();return b?"opened":"no-trigger"})()' >/dev/null 2>&1
 sleep 1.5
-FEAT5=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide21:b.includes('۲۱ لیگ و جام'),old20gone:!b.includes('۲۰ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
-collect "$FEAT5" "B5 search guide 21"
+FEAT5=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide24:b.includes('۲۴ لیگ و جام'),old23gone:!b.includes('۲۳ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
+collect "$FEAT5" "B5 search guide 24"
 
 # B6: REAL search flow — Rijeka → رییکا (the hook club; the typed query
 # echoes inside the dialog BY DESIGN — the assert checks the RESULT row,
@@ -237,14 +237,14 @@ sleep 4
 FEAT6=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {fa:b.includes('رییکا'),league:b.includes('لیگ برتر کرواسی')}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT6" "B6 search Rijeka → رییکا"
 
-# B7: players hub — «ستاره‌های هجده» copy read BEFORE the teams-mode click,
+# B7: players hub — «ستاره‌های بیست» copy read BEFORE the teams-mode click,
 # then the hnl chip click with URL sync (the two-step fan path)
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
-$B wait --fn "document.body.innerText.includes('ستاره‌های هجده')" >/dev/null 2>&1
+$B wait --fn "document.body.innerText.includes('ستاره‌های بیست')" >/dev/null 2>&1
 sleep 2
-COPY7=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های هجده لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
+COPY7=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های بیست لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const b=document.querySelector("[data-testid=\"mode-teams\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const b=document.querySelector("[data-testid=\"league-hnl\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1

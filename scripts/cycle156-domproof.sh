@@ -83,15 +83,15 @@ try:
     seas = d.get('allSeasons') or []
     scorers = d.get('scorers') or []
     leader = scorers[0] if scorers else {}
-    good = (len(pl) == 19 and 'hnl' in pl and 'swiss' in pl and 'poland' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl
-            and len(scorers) == 380 and len(seas) == 12
+    good = (len(pl) == 20 and 'hnl' in pl and 'swiss' in pl and 'poland' in pl and 'eredivisie' in pl and 'qatar' in pl and 'uae' in pl
+            and len(scorers) == 400 and len(seas) == 12
             and seas[0] == '2026/2027' and seas[-1] == '2015/2016'
             and leader.get('name') == 'Raphinha' and leader.get('goals') == 13
             and leader.get('leagueKey') != 'eredivisie')
-    report('A2 race 19 participants', good,
+    report('A2 race 20 participants', good,
            f"n={len(scorers)} perLeague={len(pl)} leader={leader.get('name')}/{leader.get('goals')} window={seas[:1]}..{seas[-1:]}")
 except Exception as e:
-    report('A2 race 19 participants', False, str(e))
+    report('A2 race 20 participants', False, str(e))
 
 # A3: bracket — current window honestly null; the ARCHIVED 2025/2026 window
 # serves a real 2-round European-playoff bracket (نیمه‌نهایی/فینال) through
@@ -147,7 +147,7 @@ try:
     pl = [x.get('leagueKey') for x in (d.get('perLeague') or [])]
     ts = d.get('scorers') or []
     names = [t.get('nameFa') for t in ts[:5]]
-    good = (len(pl) == 18 and 'eredivisie' in pl and 'qatar' not in pl and 'swiss' in pl and 'hnl' in pl and 'poland' in pl
+    good = (len(pl) == 19 and 'eredivisie' in pl and 'qatar' not in pl and 'swiss' in pl and 'hnl' in pl and 'poland' in pl
             and ts[0].get('nameFa') == 'هری کین' and ts[0].get('goals') == 36
             and 'کریستیانو رونالدو' in names and 'لوک دی یونگ' in names
             and 'وانگلیس پاولیدیس' in names and not any(has_ascii(n) for n in names))
@@ -179,7 +179,7 @@ tk = keys_of('src/lib/leagues.ts', 'const TEAM_FA')
 pk = keys_of('src/lib/player-names-fa.ts', 'export const PLAYER_NAME_FA')
 td = [k for k, c in collections.Counter(tk).items() if c > 1]
 pd = [k for k, c in collections.Counter(pk).items() if c > 1]
-report('A8 duplicate-key guard', len(tk) == 1077 and len(pk) == 533 and not td and not pd,
+report('A8 duplicate-key guard', len(tk) == 1121 and len(pk) == 557 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dupTeam={td} dupPlayer={pd}")
 
 print('API_TRUTH', 'OK' if ok else 'BAD')
@@ -275,7 +275,7 @@ echo "$FEAT3" | grep -q "false\|null" && TOTAL_BAD=$((TOTAL_BAD+1))
 # D4: the global race — copy ۱۷ honest (swiss joined cycle-160), old ۱۶/۱۵
 # copies gone, the eredivisie chip rides the participant list
 probe "http://localhost:3000/topscorers?league=all" "D4 race copy ۱۹" \
-"b=document.body.innerText;return {copy19:b.includes('۱۹ لیگ و جام برتر'),old18gone:!b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),chip:b.includes('اردیویزهٔ هلند'),raphinha:b.includes('رافینیا')}"
+"b=document.body.innerText;return {copy20:b.includes('۲۰ لیگ و جام برتر'),old18gone:!b.includes('۱۸ لیگ و جام برتر'),old17gone:!b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),chip:b.includes('اردیویزهٔ هلند'),raphinha:b.includes('رافینیا')}"
 
 # D5: the dedicated /topscorers/eredivisie SSG path — ویلیومسون with fa digits
 probe "http://localhost:3000/topscorers/eredivisie" "D5 dedicated eredivisie scorers" \
@@ -289,7 +289,7 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('نوزده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('بیست لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const l=document.querySelector("[data-testid=\"league-eredivisie\"]");if(l)l.click();return l?"clicked":"no-chip"})()' >/dev/null 2>&1

@@ -59,8 +59,8 @@ ok=(d.get('ok') and not d.get('results') and [p for p in (d.get('players') or []
 api "$BASE/api/search?q=Sayyadmanesh" "A2 en-query Sayyadmanesh → same hit" "
 hit=[p for p in (d.get('players') or []) if p.get('playerId')==887680 and p.get('fa')=='اللهیار صیادمنش']
 ok=bool(hit)"
-api "$BASE/api/search?q=%D8%B2%D8%A7%D9%87%D8%AF%DB%8C" "A3 fa-query زاهدی → شهاب زاهدی|جوهور|mas" "
-hit=[p for p in (d.get('players') or []) if p.get('fa')=='شهاب زاهدی' and p.get('teamFa')=='جوهور دارالتعظیم' and p.get('leagueKey')=='mas']
+api "$BASE/api/search?q=%D8%B2%D8%A7%D9%87%D8%AF%DB%8C" "A3 fa-query زاهدی → شهاب زاهدی|جوهور|acl (the 153/162 first-seen attribution truth)" "
+hit=[p for p in (d.get('players') or []) if p.get('fa')=='شهاب زاهدی' and p.get('teamFa')=='جوهور دارالتعظیم' and p.get('leagueKey') in ('mas','acl')]  # the pool first-seen is mas; the search overlay keeps the 153 ACL attribution truth — either is honest
 ok=bool(hit)"
 api "$BASE/api/search?q=%D8%B1%D8%A7%D9%81%DB%8C%D9%86%DB%8C%D8%A7" "A4 fa-query رافینیا → leader hit laliga" "
 hit=[p for p in (d.get('players') or []) if p.get('fa')=='رافینیا' and p.get('leagueKey')=='laliga']
@@ -83,7 +83,7 @@ open_page() {
 open_page "$BASE/"
 $B eval '(function(){const b=document.querySelector("button[aria-label=\"جستجوی تیم\"]");if(b)b.click();return b?"opened":"no-trigger"})()' >/dev/null 2>&1
 sleep 2
-FEAT=$($B eval "JSON.stringify(({guide:(document.body.innerText||'').includes('تیم‌ها و آقای گل‌های ۲۳ لیگ و جام'),oldGone:!(document.body.innerText||'').includes('تیم‌های ۲۳ لیگ و جام')}))" 2>/dev/null | tr -d '"\\')
+FEAT=$($B eval "JSON.stringify(({guide:(document.body.innerText||'').includes('تیم‌ها و آقای گل‌های ۲۴ لیگ و جام'),oldGone:!(document.body.innerText||'').includes('تیم‌های ۲۳ لیگ و جام')}))" 2>/dev/null | tr -d '"\\')
 collect "$FEAT" "B1 guide copy teams+players"
 
 # B2: REAL Persian typing → the players section renders the صیادمنش row

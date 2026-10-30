@@ -113,8 +113,8 @@ d = api("/api/topscorers?league=all")
 ts = d.get("scorers") or []
 pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
 lead = ts[0] if ts else {}
-report("A2 race 17 participants",
-       len(ts) == 340 and len(pl) == 17 and "swiss" in pl and "acl2" not in pl
+report("A2 race 20 participants",
+       len(ts) == 400 and len(pl) == 20 and "swiss" in pl and "acl2" not in pl and "belgium" in pl
        and lead.get("nameFa") == "رافینیا" and lead.get("goals") == 13
        and seas == (d.get("allSeasons") or []),
        f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
@@ -175,7 +175,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A7 duplicate-key guard", len(tk) == 960 and len(pk) == 458 and not td and not pd,
+report("A7 duplicate-key guard", len(tk) == 1121 and len(pk) == 557 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 # A8: day-feed disambiguation — the lib source must carry BOTH
@@ -215,7 +215,7 @@ $hunt_or_probe "$BASE/league/swiss" "B1 swiss league page" \
 
 # B2: the global race — copy ۱۷, leader رافینیا, swiss team names Persian
 probe "$BASE/topscorers" "B2 race copy 17" \
-"(function(){const b=document.body.innerText||'';return {copy17:b.includes('۱۷ لیگ و جام برتر'),old16gone:!b.includes('۱۶ لیگ و جام برتر'),leader:b.includes('رافینیا'),ybsc:b.includes('یانگ‌بویز')}})()"
+"(function(){const b=document.body.innerText||'';return {copy20:b.includes('۲۰ لیگ و جام برتر'),old19gone:!b.includes('۱۹ لیگ و جام برتر'),leader:b.includes('رافینیا'),ybsc:b.includes('یانگ‌بویز')}})()"
 
 # B3: dedicated /topscorers/swiss — اسنده + Persian digits
 probe "$BASE/topscorers/swiss" "B3 dedicated swiss scorers" \
@@ -232,7 +232,7 @@ $B wait --load networkidle >/dev/null 2>&1
 sleep 2
 $B eval '(function(){const b=document.querySelector("button[aria-label=\"جستجوی تیم\"]");if(b)b.click();return b?"opened":"no-trigger"})()' >/dev/null 2>&1
 sleep 1.5
-FEAT5=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide20:b.includes('۲۰ لیگ و جام'),old19gone:!b.includes('۱۹ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
+FEAT5=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {guide24:b.includes('۲۴ لیگ و جام'),old23gone:!b.includes('۲۳ لیگ و جام')}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT5" "B5 search guide 20"
 
 # B6: REAL search flow — St. Gallen → سنت‌گالن|swiss (the hook club; the
@@ -243,14 +243,14 @@ sleep 4
 FEAT6=$($B eval "JSON.stringify((function(){const b=(document.querySelector('div[role=\"dialog\"]')||document.body).innerText||'';return {fa:b.includes('سنت‌گالن'),league:b.includes('سوپرلیگ سوئیس')}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT6" "B6 search St. Gallen → سنت‌گالن"
 
-# B7: players hub — «ستاره‌های هفده» copy read BEFORE the teams-mode click,
+# B7: players hub — «ستاره‌های بیست» copy read BEFORE the teams-mode click,
 # then the swiss chip click with URL sync (the two-step fan path)
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
-$B wait --fn "document.body.innerText.includes('ستاره‌های هفده')" >/dev/null 2>&1
+$B wait --fn "document.body.innerText.includes('ستاره‌های بیست')" >/dev/null 2>&1
 sleep 2
-COPY7=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های هفده لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
+COPY7=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های بیست لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const b=document.querySelector("[data-testid=\"mode-teams\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const b=document.querySelector("[data-testid=\"league-swiss\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1
@@ -264,7 +264,7 @@ probe "$BASE/team/10190" "B8 st-gallen team page" \
 
 echo "== RESULT =="
 if [ "$A_BAD" -eq 0 ] && [ "$TOTAL_BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 9/9 + DOM 8/8 green — سوپرلیگ سوئیس honest end-to-end: the 20th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (لوگانو ۳۱/یانگ‌بویز ۲۵/سیون ۲۲) on a 12/12 all-Persian table, ساموئل اسنده ۱۲ یانگ‌بویز atop the 116-scorer PascalCase goals.json (the cycle-23 parser's native FMStatFullRow shape) with PERSIAN name AND team on the dedicated /topscorers/swiss path, 340-scorer race (17 leagues) with رافینیا still honest leader and the 2023/2024 historical window grown 15→16 participants (swiss archived payload HAS the scorer block), 32 title seasons topped by 2025/2026 تون over سنت‌گالن (oldest 1994/1995 گراس‌هاپر over لوگانو, گزانماکس runner rows ride the existing map), transfers 99 items zero-ASCII via the +49-key TEAM_FA sweep (960 team / 458 player keys, ZERO duplicates), ARCHIVED seasons COMPOSITE (دور قهرمانی/دور سقوط/جدول کلی flattened 6+6+12), bracket honestly absent (playoff null, current AND archived), espnSlug sui.1 verified 200 (the eredivisie pattern), day-feed super league|SUI country-qualified, attribution truth live-verified: سنت‌گالن→swiss while لوگانو keeps its uecl first-seen truth (same live class as سلتیک→uel), players hub هفده + search guide ۲۰ + race copy ۱۷; the LIVE Iranian hook مصطفی حیدری (سنت‌گالن, ccode IRN + nationalTeamId 6711) in the squad panel; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 9/9 + DOM 8/8 green — سوپرلیگ سوئیس honest end-to-end: the 20th competition and the EIGHTH consecutive new global-race participant, joining with NO globalMerge flag because its 17 slash-format seasons cover the cycle-132 window exactly (12 seasons 2026/2027 → 2015/2016 byte-identical), the live top three (لوگانو ۳۱/یانگ‌بویز ۲۵/سیون ۲۲) on a 12/12 all-Persian table, ساموئل اسنده ۱۲ یانگ‌بویز atop the 116-scorer PascalCase goals.json (the cycle-23 parser's native FMStatFullRow shape) with PERSIAN name AND team on the dedicated /topscorers/swiss path, 340-scorer race (17 leagues) with رافینیا still honest leader and the 2023/2024 historical window grown 15→16 participants (swiss archived payload HAS the scorer block), 32 title seasons topped by 2025/2026 تون over سنت‌گالن (oldest 1994/1995 گراس‌هاپر over لوگانو, گزانماکس runner rows ride the existing map), transfers 99 items zero-ASCII via the +49-key TEAM_FA sweep (960 team / 458 player keys, ZERO duplicates), ARCHIVED seasons COMPOSITE (دور قهرمانی/دور سقوط/جدول کلی flattened 6+6+12), bracket honestly absent (playoff null, current AND archived), espnSlug sui.1 verified 200 (the eredivisie pattern), day-feed super league|SUI country-qualified, attribution truth live-verified: سنت‌گالن→swiss while لوگانو keeps its uecl first-seen truth (same live class as سلتیک→uel), players hub بیست + search guide ۲۴ + race copy ۲۰; the LIVE Iranian hook مصطفی حیدری (سنت‌گالن, ccode IRN + nationalTeamId 6711) in the squad panel; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (A=$A_BAD B=$TOTAL_BAD)"; exit 1
 fi

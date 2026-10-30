@@ -75,7 +75,7 @@ try:
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 380 and len(pl) == 19 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl and "poland" in pl \
+    good = len(ts) == 400 and len(pl) == 20 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl and "poland" in pl \
         and {"superlig","scottish","saudi","championship","portugal","uae"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) \
         and not ascii_leak(lead.get("team"))
@@ -165,7 +165,7 @@ except Exception: ok = False
 try:
     d = get(f"{B}/api/topscorers?league=all")
     ts = d.get("scorers") or []; pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-    ok = ok and len(ts) == 380 and len(pl) == 19 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl and "poland" in pl
+    ok = ok and len(ts) == 400 and len(pl) == 20 and "qatar" in pl and "eredivisie" in pl and "swiss" in pl and "hnl" in pl and "poland" in pl
 except Exception: ok = False
 try:
     d = get(f"{B}/api/topscorers/qatar"); ts = d.get("scorers") or []
@@ -228,8 +228,8 @@ echo "$FEAT2" | grep -q "false\|null" && RC2=1
 [ "$RC2" -eq 0 ] || TOTAL_BAD=$((TOTAL_BAD+1))
 
 # D3: the race default copy — honest ۱۹, no stale ۱۸/۱۷/۱۶ (gate-synced cycle-165)
-probe "$BASE/topscorers" "D3 race copy 19" \
-"return {h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy19:(document.body.innerText||\"\").includes(\"۱۹ لیگ و جام برتر\"),noStale18:(document.body.innerText||\"\").includes(\"۱۸ لیگ و جام برتر\")===false,noStale17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\")===false,noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false}"
+probe "$BASE/topscorers" "D3 race copy 20" \
+"return {h1:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"مصاف گلزنان\"),copy20:(document.body.innerText||\"\").includes(\"۲۰ لیگ و جام برتر\"),noStale18:(document.body.innerText||\"\").includes(\"۱۸ لیگ و جام برتر\")===false,noStale17:(document.body.innerText||\"\").includes(\"۱۷ لیگ و جام برتر\")===false,noStale16:(document.body.innerText||\"\").includes(\"۱۶ لیگ و جام برتر\")===false}"
 
 # D4: the dedicated /topscorers/qatar — عفیف with Persian digits
 probe "$BASE/topscorers/qatar" "D4 dedicated qatar scorers" \

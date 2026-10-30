@@ -75,11 +75,11 @@ pl=d.get('perLeague') or []
 keys=[p.get('leagueKey') for p in pl]
 sc=d.get('scorers') or []
 lead=sc[0] if sc else {}
-print('OK' if 'mas' not in keys and 'poland' in keys and len(pl)==19 and len(sc)==380 and (lead.get('nameFa') or '')=='رافینیا' else 'BAD')"
-api "/api/topscorers?season=2023/2024" "A4 historical race 360/18 (mas out, poland in)" "
+print('OK' if 'mas' not in keys and 'poland' in keys and len(pl)==20 and len(sc)==400 and (lead.get('nameFa') or '')=='رافینیا' else 'BAD')"
+api "/api/topscorers?season=2023/2024" "A4 historical race 380/19 (mas out, poland in)" "
 pl=d.get('perLeague') or []
 sc=d.get('scorers') or []
-print('OK' if len(pl)==18 and len(sc)==360 and all(p.get('leagueKey')!='mas' for p in pl) and any(p.get('leagueKey')=='poland' for p in pl) else 'BAD')"
+print('OK' if len(pl)==19 and len(sc)==380 and all(p.get('leagueKey')!='mas' for p in pl) and any(p.get('leagueKey')=='poland' for p in pl) else 'BAD')"
 api "/api/league-titles?league=mas" "A5 titles honestly null (seasons[] empty — tab absent)" "
 print('OK' if d.get('ok') and d.get('titles') is None else 'BAD')"
 api "/api/league-transfers?league=mas" "A6 transfers flat 3-item zero-ASCII" "
@@ -113,7 +113,7 @@ rows=d.get('rows') or []
 print('OK' if d.get('ok') and d.get('selectedSeason')=='2025/2026' and len(rows)==13 and (rows[0].get('fa') or '').startswith('جوهور') and rows[0].get('pts')==70 else 'BAD')"
 api "/api/standings?league=mas&season=2023" "A11 plain-year deep-link honesty snap — 400 Invalid season (SEASON_PARAM_RE convention)" "
 print('OK' if d.get('ok') is False and 'Invalid season: 2023' in str(d.get('error') or '') else 'BAD')"
-python3 scripts/cycle162-mapcheck.py >/dev/null 2>&1 && collect "OK" "A12 duplicate-key guard 1077/533 zero-dups" || collect "BAD" "A12 duplicate-key guard 1077/533 zero-dups"
+python3 scripts/cycle162-mapcheck.py >/dev/null 2>&1 && collect "OK" "A12 duplicate-key guard 1121/557 zero-dups" || collect "BAD" "A12 duplicate-key guard 1121/557 zero-dups"
 
 echo "===== Part B — DOM @390×844 ====="
 $B set viewport 390 844 >/dev/null 2>&1
@@ -169,7 +169,7 @@ echo "$FEAT4" | grep -q "false\|null" && RC4=1
 probe "$BASE/leagues" "B5 leagues hub — 23 cards + mas + poland cards" "
 c1=document.querySelectorAll(\"a[href^='/league/']\").length>=23,masCard=!!document.querySelector(\"a[href='/league/mas']\"),hnlCard=!!document.querySelector(\"a[href='/league/hnl']\"),polandCard=!!document.querySelector(\"a[href='/league/poland']\"),h1Fa=((document.querySelector('h1')||{}).innerText||'').includes('لیگ');return {cards:c1,masCard,hnlCard,polandCard,h1Fa}"
 probe "$BASE/topscorers" "B6 race copy ۱۹ untouched + no mas section" "
-b=document.body.innerText;return {copy19:b.includes('۱۹ لیگ و جام برتر'),old18gone:!b.includes('۱۸ لیگ و جام برتر'),noMas:b.indexOf('سوپرلیگ مالزی')===-1}"
+b=document.body.innerText;return {copy20:b.includes('۲۰ لیگ و جام برتر'),old18gone:!b.includes('۱۸ لیگ و جام برتر'),noMas:b.indexOf('سوپرلیگ مالزی')===-1}"
 # B7: real search flow — Johor → جوهور hit (fa attribution on the REAL UI)
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/" >/dev/null 2>&1
@@ -226,7 +226,7 @@ b=document.body.innerText;return {zahedi:b.includes('شهاب زاهدی'),johor
 
 echo "== RESULT =="
 if [ "$BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (API 12/12 + DOM 10/10 green — سوپرلیگ مالزی honest end-to-end: the 22nd competition and the FIRST merge-exempt DOMESTIC league, joining with globalMerge:false per the cycle-160 Norwegian lesson because the plain-year archive (2023…2010) would shrink the race's cycle-132 allSeasons intersection 17→3 — the race serves 380 scorers / 19 leagues with رافینیا honest leader (poland joined cycle-165) and the historical 2023/2024 window serves 360/18 (mas honestly out — no such season); the live top جوهور دارالتعظیم ۱۸/۶بازی on a 12/12 all-Persian table; the LIVE Iranian hook شهاب زاهدی — 3rd row of the 63-scorer PascalCase file with 7 goals (upstream Rank 4, the Bérgson tie), squad ccode IRN + countryCode IRN + nationalTeamId 6711 — the 160/161 evidence triple — with PERSIAN name AND team on the dedicated /topscorers/mas path; titles honestly null (seasons[] empty → «قهرمانان» tab absent, cycle-121 contract) + bracket honestly absent (playoff null, cycle-56) + transfers flat 3-item zero-ASCII; the season selector serves the 3 SEASON_PARAM_RE slash seasons only (the uniform cycle-132 convention) with the archived 2025/2026 click URL-synced to the Johor-۷۰ champion row and the plain-year ?season=2023 deep-link honestly 400-rejected (Invalid season); day-feed «Liga Super» rides the plain COMPETITION_FA key (unique — UZB/ROU «Superliga» and SRB «Super Liga» distinct) with the 2026-10-30 grid serving «سوپرلیگ مالزی» برونئی دی‌پی‌ام‌ام vs نگری سمبیلان all-Persian; search attribution: mas-only clubs ride the new mas index (نگری سمبیلان/صباح/استار سیتی) while Johor keeps its ACL first-seen truth (the Al-Sadd class, by design — verified on the REAL search UI with the «لیگ قهرمانان آسیا (الیت)» line); mapping sweep 1077 team / 533 player keys ZERO duplicates (the A7 guard); search guide ۲۳ + /leagues 23 cards + race copy ۱۹ untouched; every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
+  echo "DOM_PROOF OK (API 12/12 + DOM 10/10 green — سوپرلیگ مالزی honest end-to-end: the 22nd competition and the FIRST merge-exempt DOMESTIC league, joining with globalMerge:false per the cycle-160 Norwegian lesson because the plain-year archive (2023…2010) would shrink the race's cycle-132 allSeasons intersection 17→3 — the race serves 380 scorers / 19 leagues with رافینیا honest leader (poland joined cycle-165) and the historical 2023/2024 window serves 360/18 (mas honestly out — no such season); the live top جوهور دارالتعظیم ۱۸/۶بازی on a 12/12 all-Persian table; the LIVE Iranian hook شهاب زاهدی — 3rd row of the 63-scorer PascalCase file with 7 goals (upstream Rank 4, the Bérgson tie), squad ccode IRN + countryCode IRN + nationalTeamId 6711 — the 160/161 evidence triple — with PERSIAN name AND team on the dedicated /topscorers/mas path; titles honestly null (seasons[] empty → «قهرمانان» tab absent, cycle-121 contract) + bracket honestly absent (playoff null, cycle-56) + transfers flat 3-item zero-ASCII; the season selector serves the 3 SEASON_PARAM_RE slash seasons only (the uniform cycle-132 convention) with the archived 2025/2026 click URL-synced to the Johor-۷۰ champion row and the plain-year ?season=2023 deep-link honestly 400-rejected (Invalid season); day-feed «Liga Super» rides the plain COMPETITION_FA key (unique — UZB/ROU «Superliga» and SRB «Super Liga» distinct) with the 2026-10-30 grid serving «سوپرلیگ مالزی» برونئی دی‌پی‌ام‌ام vs نگری سمبیلان all-Persian; search attribution: mas-only clubs ride the new mas index (نگری سمبیلان/صباح/استار سیتی) while Johor keeps its ACL first-seen truth (the Al-Sadd class, by design — verified on the REAL search UI with the «لیگ قهرمانان آسیا (الیت)» line); mapping sweep 1121 team / 557 player keys ZERO duplicates (the A7 guard, belgium joined cycle-181); search guide ۲۴ + /leagues 24 cards + race copy ۲۰ (gate-synced cycle-181); every page sw=cw=390 / 1 h1 / 0 broken images / console=0 / appErr=0)"
 else
   echo "DOM_PROOF FLAGGED (BAD=$BAD)"; exit 1
 fi

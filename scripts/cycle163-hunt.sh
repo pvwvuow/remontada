@@ -35,7 +35,7 @@
 #   search: St. Gallen→سنت‌گالن|swiss, Rijeka→رییکا|hnl,
 #           Negeri Sembilan→نگری سمبیلان|mas, Johor→جوهور دارالتعظیم|acl
 #           (the Al-Sadd first-seen class, BY DESIGN since 155);
-#   squad 165228 (جوهور) carries Shahab Zahedi; mapping keys 1077/533.
+#   squad 165228 (جوهور) carries Shahab Zahedi; mapping keys 1121/557.
 #
 # V1  /leagues → 22 cards + swiss/hnl/mas cards really present
 # V2  /league/mas → h1 سوپرلیگ مالزی, top جوهور, tabs آقای گل+انتقال‌ها,
@@ -47,14 +47,14 @@
 # V6a /topscorers default → «۱۹ لیگ و جام برتر» + no mas section
 # V6b season-selected → dynamic «۱۸ لیگ مشارکت‌کننده» + mas honestly out
 # V7a/b/c dedicated paths /topscorers/{mas,swiss,hnl} alive
-# V8  /players → «نوزده لیگ و جام برتر» + REAL two-step click mode-teams →
+# V8  /players → «بیست لیگ و جام برتر» + REAL two-step click mode-teams →
 #     league-mas chip (URL sync + Persian team grid)
 # V9  /team/165228 جوهور → the newest league's top team page
 # V10 search_flow ×3 (149 heritage): Al-Hilal fix guard + the two new
 #     first-seen truths Rijeka→رییکا and St. Gallen→سنت‌گالن
 # Part C: API truth A1–A14 (standings ×3 new + race cur/hist + titles ×2 +
 #     transfers ×3 + search ×4 + squad + archived ×2 + honesty 400 +
-#     dynamic day-feed + mapcheck 1077/533)
+#     dynamic day-feed + mapcheck 1121/557)
 # Tail: re-run cycle158-hunt.sh + cycle162-domproof.sh (the two freshest
 #     synced gates) as the cross-regression.
 # ------------------------------------------------------------------
@@ -144,12 +144,12 @@ collect "$TOP5 $FEAT5" "V5 hnl hajduk-top + transfers click"
 # V6a: race default — copy ۱۸ honest, mas absent (merge-exempt)
 hunt "V6a race default copy 18 + no-mas" "$BASE/topscorers" \
 "(document.body.innerText||\"\").includes(\"رافینیا\")" "" \
-"({copy19:(document.body.innerText||'').includes('۱۹ لیگ و جام برتر'),old18gone:!(document.body.innerText||'').includes('۱۸ لیگ و جام برتر'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
+"({copy20:(document.body.innerText||'').includes('۲۰ لیگ و جام برتر'),old18gone:!(document.body.innerText||'').includes('۱۸ لیگ و جام برتر'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
 
 # V6b: race 2023/2024 — dynamic ۱۷ participants (hnl archived has scorers), mas out
 hunt "V6b race season dyn-17" "$BASE/topscorers?league=all&season=2023/2024" \
 "(document.body.innerText||\"\").includes(\"۲۰۲۳/۲۴\")||((document.body.innerText||\"\").includes(\"۲۰۲۳\"))" "" \
-"({dyn18:(document.body.innerText||'').includes('۱۸ لیگ مشارکت‌کننده'),hnlRow:(document.body.innerText||'').includes('هایدوک')||(document.body.innerText||'').includes('دیناموزاگرب'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
+"({dyn19:(document.body.innerText||'').includes('۱۹ لیگ مشارکت‌کننده'),hnlRow:(document.body.innerText||'').includes('هایدوک')||(document.body.innerText||'').includes('دیناموزاگرب'),noMas:(document.body.innerText||'').indexOf('سوپرلیگ مالزی')===-1})"
 
 # V7: dedicated topscorer paths — the three newest
 hunt "V7a mas scorers path زاهدی" "$BASE/topscorers/mas" \
@@ -167,7 +167,7 @@ $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 sleep 3
-COPY8=$($B eval "JSON.stringify((()=>{const b=document.body.innerText||'';return {copy18:b.includes('نوزده لیگ و جام برتر')}})())" 2>/dev/null | tr -d '"\\')
+COPY8=$($B eval "JSON.stringify((()=>{const b=document.body.innerText||'';return {copy18:b.includes('بیست لیگ و جام برتر')}})())" 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const b=[...document.querySelectorAll("button")].find(x=>(x.textContent||"").includes("تیم‌ها")||(x.textContent||"").includes("اسکواد"));if(b)b.click();return b?"teams":"no-mode"})()' >/dev/null 2>&1
 sleep 2
 $B eval '(function(){const c=document.querySelector("[data-testid=\"league-mas\"]");if(c)c.click();return c?"clicked":"no-chip"})()' >/dev/null 2>&1
@@ -246,27 +246,27 @@ for lk, n, top, pts, sname, sgoals in (
         report(f"standings {lk}", good, f"rows={len(rows)} top={rows[0].get('fa') if rows else None}({rows[0].get('pts') if rows else None}) scorer={lead.get('nameFa')}({lead.get('goals')})")
     except Exception as e:
         report(f"standings {lk}", False, str(e))
-# A2: global race — 380/19, mas absent (merge-exempt), poland IN, رافینیا honest leader
+# A2: global race — 400/20, mas absent (merge-exempt), poland IN, رافینیا honest leader
 try:
     d = get("http://localhost:3000/api/topscorers")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = (len(ts) == 380 and len(pl) == 19 and "mas" not in pl
+    good = (len(ts) == 400 and len(pl) == 20 and "mas" not in pl
             and {"swiss", "hnl", "poland"} <= set(pl) and lead.get("nameFa") == "رافینیا"
             and lead.get("goals") == 13 and not ascii_leak(lead.get("team")))
-    report("race cur 380/19 no-mas poland-in", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
+    report("race cur 400/20 no-mas poland-in", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 except Exception as e:
-    report("race cur 380/19 no-mas poland-in", False, str(e))
-# A3: historical 2023/2024 — 360/18, hnl + poland IN (archived scorer blocks), mas out
+    report("race cur 400/20 no-mas poland-in", False, str(e))
+# A3: historical 2023/2024 — 380/19, hnl + poland IN (archived scorer blocks), mas out
 try:
     d = get("http://localhost:3000/api/topscorers?season=2023/2024")
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
-    good = len(ts) == 360 and len(pl) == 18 and "hnl" in pl and "mas" not in pl and "swiss" in pl and "poland" in pl
-    report("race 2023/2024 360/18 hnl+poland-in mas-out", good, f"n={len(ts)} perLeague={len(pl)}")
+    good = len(ts) == 380 and len(pl) == 19 and "hnl" in pl and "mas" not in pl and "swiss" in pl and "poland" in pl and "belgium" in pl
+    report("race 2023/2024 380/19 hnl+poland-in mas-out", good, f"n={len(ts)} perLeague={len(pl)}")
 except Exception as e:
-    report("race 2023/2024 360/18 hnl+poland-in mas-out", False, str(e))
+    report("race 2023/2024 380/19 hnl+poland-in mas-out", False, str(e))
 # A4: titles — mas honestly None (the FIRST titles-less competition), swiss 32 newest تون
 try:
     d = get("http://localhost:3000/api/league-titles?league=mas")
@@ -352,12 +352,12 @@ try:
     report("dayfeed mas dynamic offset", good, f"offset={found[0] if found else None} fa={found[1] if found else None}")
 except Exception as e:
     report("dayfeed mas dynamic offset", False, str(e))
-# A12: mapping keys — the A7 duplicate guard at the cycle-165 totals 1077/533
+# A12: mapping keys — the A7 duplicate guard at the cycle-181 totals 1121/557
 try:
     r = subprocess.run(["python3", "scripts/cycle162-mapcheck.py"], capture_output=True, text=True, timeout=120)
-    report("mapcheck 1077/533 zero-dups", r.returncode == 0, f"rc={r.returncode}")
+    report("mapcheck 1121/557 zero-dups", r.returncode == 0, f"rc={r.returncode}")
 except Exception as e:
-    report("mapcheck 1077/533 zero-dups", False, str(e))
+    report("mapcheck 1121/557 zero-dups", False, str(e))
 
 print("API_TRUTH " + ("OK" if ok else "FLAGGED"))
 PY

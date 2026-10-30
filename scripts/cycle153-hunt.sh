@@ -21,7 +21,7 @@
 # V6a /topscorers default → honest «۱۴ لیگ و جام برتر», no stale ۱۳ copy
 # V6b season-selected → dynamic «۱۶ لیگ مشارکت‌کننده» + «۲۰۲۳/۲۴» (swiss joins, cycle-160)
 # V7 dedicated paths /topscorers/{uae,championship,portugal} alive
-# V8 /players → «هجده لیگ و جام برتر» (gate-synced cycle-161: hnl joins)
+# V8 /players → «بیست لیگ و جام برتر» (gate-synced cycle-161: hnl joins)
 # + new chips + REAL two-step
 #    click mode-teams → league-uae (URL sync + Persian team grid)
 # V9 /team/102101 الجزیره → the newest league's top team page
@@ -146,7 +146,7 @@ $B open "http://localhost:3000/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
 $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
 sleep 2
-COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('هجده لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
+COPY16=$($B eval "JSON.stringify((document.body.innerText||'').includes('بیست لیگ و جام برتر'))" 2>/dev/null | tr -d '"\\')
 # the league chips live in the TEAMS mode - real click mode-teams FIRST
 # (the cycle-134/143 two-step fan path), then the uae chip
 $B eval '(function(){const m=document.querySelector("[data-testid=\"mode-teams\"]");if(m)m.click();return m?"mode":"no-mode"})()' >/dev/null 2>&1
@@ -228,7 +228,7 @@ try:
     ts = d.get("scorers") or []
     pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
     lead = ts[0] if ts else {}
-    good = len(ts) == 360 and len(pl) == 18 and {"superlig","scottish","saudi","championship","portugal","uae","qatar","eredivisie","swiss","hnl"} <= set(pl) \
+    good = len(ts) == 380 and len(pl) == 19 and {"superlig","scottish","saudi","championship","portugal","uae","qatar","eredivisie","swiss","hnl"} <= set(pl) \
         and bool(lead.get("nameFa")) and isinstance(lead.get("goals"), int) and lead.get("goals", 0) > 0 \
         and not ascii_leak(lead.get("team"))
     report("topscorers all", good, f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")

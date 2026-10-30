@@ -603,6 +603,39 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "piotr samiec-talar": "پیوتر سامیتس-تالار",
   "rafał augustyniak": "رافائو آگوستینیاک",
   "ali gholizadeh": "علی غلی‌زاده",
+  // ---- cycle-181: Belgian Pro League — the goals.json top-20 race window
+  // (134 ranked rows; ALL 20 window names previously unmapped) + the
+  // goal_assist.json leaders (Forbs/Araújo/Zeneli) + the archived
+  // 2023/2024 leader (Denkey, season/20957). Rank 11 is THE HOOK:
+  // Dennis Eckert — ParticipantCountryCode="IRN" on the goals row itself
+  // AND squad ccode=IRN at Standard Liège (probed 2026-10-30, UA
+  // Chrome/124). Diacritics preserved in keys per the playerFa norm
+  // (lowercase only). Zero duplicate-key collisions (build-time guard).
+  "nicolò tresoldi": "نیکولو ترسولدی",
+  "norman bassette": "نورمن باست",
+  "rafiu durosinmi": "رافیو دوروسینمی",
+  "mustapha isah": "مصطفی عیسی",
+  "raul florucz": "رائول فلوروتس",
+  "samed baždar": "سامد بازدار",
+  "chris lokesa": "کریس لوکسا",
+  "shunsuke saito": "شونسوکه سائیتو",
+  "ibrahima cisse": "ابراهیم سیسه",
+  "relebohile mofokeng": "رله‌بوخیل موفوکنگ",
+  "dennis eckert": "دنیس اکرت",
+  "hugo vetlesen": "هوگو وتلسن",
+  "michael frey": "میشائل فرای",
+  "aaron bibout": "آرون بیبوت",
+  "adnane abid": "عدنان عابد",
+  "anthony valencia": "آنتونی والنسیا",
+  "don-angelo konadu": "دان‌آنجلو کونادو",
+  "freddy mbemba": "فردی مبمبا",
+  "istván átrok": "ایشتوان آتراک",
+  "josué vergara": "خوسوئه ورگارا",
+  // goal_assist.json leaders + archived champion
+  "carlos forbs": "کارلوس فوربس",
+  "tiago araújo": "تیاگو آرائوخو",
+  "besfort zeneli": "بسفورت زنلی",
+  "kévin denkey": "کوین دنکی",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

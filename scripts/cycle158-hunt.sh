@@ -23,7 +23,7 @@
 #   الهلال→acl convention), «Al-Hilal»→الهلال|acl (FINDING-1 guard,
 #   149), «Feyenoord»→فاینورد|eredivisie; real UI search flow: 2 hits,
 #   گل‌گهر hit carries «خلیج فارس»;
-#   players hub: «ستاره‌های نوزده لیگ و جام برتر» stays, chips appear
+#   players hub: «ستاره‌های بیست لیگ و جام برتر» stays, chips appear
 #   in TEAMS mode (mode-teams click first — the 153 two-step pattern),
 #   league-acl2 chip + URL sync ?league=acl2 + گل‌گهر/الجزیره grid;
 #   /team/389880 squad 31/32 Iran; /api/match/6054514 → ایست بنگال vs
@@ -126,16 +126,19 @@ sleep 3
 FEAT5=$($B eval "JSON.stringify((function(){const b=document.body.innerText||'';return {topWas:$TOP5,panel:b.includes('انتقال')||b.includes('ورود')||b.includes('خروج')}})())" 2>/dev/null | tr -d '"\\')
 collect "$FEAT5" "V5 qatar transfers click"
 
-# V6a: race page — honest ۱۹ copy (poland cycle-165), no stale copies, NO acl2 section
-hunt "V6a race copy 19 honest" "$BASE/topscorers" \
-"document.body.innerText.includes('۱۹ لیگ و جام برتر')" "" \
-"({copy19:document.body.innerText.includes(\"۱۹ لیگ و جام برتر\"),old18gone:!document.body.innerText.includes(\"۱۸ لیگ و جام برتر\"),leader:document.body.innerText.includes(\"رافینیا\"),noAcl2Section:document.body.innerText.indexOf(\"لیگ قهرمانان آسیا ۲\")===-1})"
+# V6a: race page — honest ۲۰ copy (poland cycle-165), no stale copies, NO acl2 section
+# V6a isolation (cycle-181): clear the persisted league filter (cycle-10
+# by-design localStorage) so the DEFAULT race view is guaranteed
+$B eval "try{localStorage.removeItem('remontada:topscorers-filter')}catch(e){}" >/dev/null 2>&1
+hunt "V6a race copy 20 honest" "$BASE/topscorers" \
+"document.body.innerText.includes('۲۰ لیگ و جام برتر')" "" \
+"({copy20:document.body.innerText.includes(\"۲۰ لیگ و جام برتر\"),old19gone:!document.body.innerText.includes(\"۱۹ لیگ و جام برتر\"),leader:document.body.innerText.includes(\"رافینیا\"),noAcl2Section:document.body.innerText.indexOf(\"لیگ قهرمانان آسیا ۲\")===-1})"
 
-# V6b: season-selected 2023/2024 — dynamic «۱۸ لیگ مشارکت‌کننده» (acl2
+# V6b: season-selected 2023/2024 — dynamic «۱۹ لیگ مشارکت‌کننده» (acl2
 # merge-exempt even in the historical window; hnl 161 + poland 165)
-hunt "V6b historical race 18" "$BASE/topscorers?season=2023%2F2024" \
+hunt "V6b historical race 19" "$BASE/topscorers?season=2023%2F2024" \
 "document.body.innerText.includes('۲۰۲۳/۲۴')" "" \
-"({dyn18:document.body.innerText.includes(\"۱۸ لیگ مشارکت‌کننده\"),season:document.body.innerText.includes(\"۲۰۲۳/۲۴\")})"
+"({dyn19:document.body.innerText.includes(\"۱۹ لیگ مشارکت‌کننده\"),season:document.body.innerText.includes(\"۲۰۲۳/۲۴\")})"
 
 # V7a/b/c: dedicated topscorers paths alive and Persian
 hunt "V7a /topscorers/acl2" "$BASE/topscorers/acl2" \
@@ -148,18 +151,18 @@ hunt "V7c /topscorers/eredivisie" "$BASE/topscorers/eredivisie" \
 "document.body.innerText.length > 60" "" \
 "({h1Fa:((document.querySelector(\"h1\")||{}).innerText||\"\").includes(\"اردیویزه\"),persian:(document.body.innerText||\"\").includes(\"فاینورد\")})"
 
-# V8: players hub — «ستاره‌های نوزده» copy + REAL two-step click
+# V8: players hub — «ستاره‌های بیست» copy + REAL two-step click
 # mode-teams → league-acl2 (URL sync + the ACL Two team grid)
 $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
 $B open "$BASE/players" >/dev/null 2>&1
 $B wait --load networkidle >/dev/null 2>&1
-$B wait --fn "document.body.innerText.includes('ستاره‌های نوزده')" >/dev/null 2>&1
+$B wait --fn "document.body.innerText.includes('ستاره‌های بیست')" >/dev/null 2>&1
 sleep 2
 # read-first (the cycle-148/153 lesson + this cycle's own V8 find): the
-# «ستاره‌های نوزده» copy belongs to STARS mode — clicking mode-teams
+# «ستاره‌های بیست» copy belongs to STARS mode — clicking mode-teams
 # replaces it BY DESIGN, so the copy must be read before the click and the
 # teams-mode assert checks the TEAMS copy instead
-COPY8=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های نوزده لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
+COPY8=$($B eval 'JSON.stringify({c:document.body.innerText.includes("ستاره‌های بیست لیگ و جام برتر")})' 2>/dev/null | tr -d '"\\')
 $B eval '(function(){const b=document.querySelector("[data-testid=\"mode-teams\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1
 sleep 3
 $B eval '(function(){const b=document.querySelector("[data-testid=\"league-acl2\"]");if(b)b.click();return b?"clicked":"missing"})()' >/dev/null 2>&1
@@ -241,7 +244,7 @@ ts = d.get("scorers") or []
 pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
 lead = ts[0] if ts else {}
 report("race current",
-       len(ts) == 380 and len(pl) == 19 and "acl2" not in pl and "swiss" in pl and "hnl" in pl and "poland" in pl
+       len(ts) == 400 and len(pl) == 20 and "acl2" not in pl and "swiss" in pl and "hnl" in pl and "poland" in pl
        and lead.get("nameFa") == "رافینیا" and lead.get("goals") == 13,
        f"n={len(ts)} perLeague={len(pl)} leader={lead.get('nameFa')}({lead.get('goals')})")
 
@@ -251,7 +254,7 @@ d = get(f"{BASE}/api/topscorers?league=all&season={Q('2023/2024')}")
 ts = d.get("scorers") or []
 pl = [p.get("leagueKey") for p in (d.get("perLeague") or [])]
 report("race 2023/2024",
-       len(ts) == 360 and len(pl) == 18 and "acl2" not in pl and "swiss" in pl and "hnl" in pl and "poland" in pl,
+       len(ts) == 380 and len(pl) == 19 and "acl2" not in pl and "swiss" in pl and "hnl" in pl and "poland" in pl,
        f"n={len(ts)} perLeague={len(pl)}")
 
 # A4: titles — acl2 21 (newest گامبا اوساکا/النصر) + eredivisie 127 spot,
@@ -322,7 +325,7 @@ report("match acl2 persian sides",
        and (m.get("away") or {}).get("fa") == "السیب",
        f"home={(m.get('home') or {}).get('fa')} away={(m.get('away') or {}).get('fa')}")
 
-# A9: duplicate-key guard — 1077 team / 533 player keys, zero duplicates (gate-synced cycle-165)
+# A9: duplicate-key guard — 1121 team / 557 player keys, zero duplicates (gate-synced cycle-165, belgium 181)
 def keys_of(path, anchor):
     s = open(path).read()
     i = s.index(anchor)
@@ -332,7 +335,7 @@ tk = keys_of("src/lib/leagues.ts", "const TEAM_FA")
 pk = keys_of("src/lib/player-names-fa.ts", "export const PLAYER_NAME_FA")
 td = [k for k in set(tk) if tk.count(k) > 1]
 pd = [k for k in set(pk) if pk.count(k) > 1]
-report("A9 duplicate-key guard", len(tk) == 1077 and len(pk) == 533 and not td and not pd,
+report("A9 duplicate-key guard", len(tk) == 1121 and len(pk) == 557 and not td and not pd,
        f"team={len(tk)} player={len(pk)} dups={len(td)+len(pd)}")
 
 print("API_TRUTH", "OK" if not fails else f"BAD {fails}")

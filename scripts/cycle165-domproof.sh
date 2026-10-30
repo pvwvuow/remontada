@@ -65,14 +65,14 @@ ok=(d.get('ok') and len(rows)==18 and rows[0].get('fa')=='لخ پوزنان' and
     and lead.get('team')=='پوگون شچچین'
     and say and say[0].get('goals')==5 and say[0].get('ccode')=='IRN' and say[0].get('team')=='لخ پوزنان'
     and not any(any('a'<=c.lower()<='z' for c in (r.get('fa') or '')) for r in rows[:5]))"
-api "$BASE/api/topscorers" "A2 race 380/19 poland-in mas-out رافینیا 13" "
+api "$BASE/api/topscorers" "A2 race 400/20 poland-in mas-out رافینیا 13" "
 ts=d.get('scorers') or []; pl=[p.get('leagueKey') for p in (d.get('perLeague') or [])]
 lead=ts[0] if ts else {}
-ok=(len(ts)==380 and len(pl)==19 and 'poland' in pl and 'mas' not in pl
+ok=(len(ts)==400 and len(pl)==20 and 'poland' in pl and 'mas' not in pl
     and lead.get('nameFa')=='رافینیا' and lead.get('goals')==13)"
-api "$BASE/api/topscorers?season=2023/2024" "A3 historical 360/18 poland-in" "
+api "$BASE/api/topscorers?season=2023/2024" "A3 historical 380/19 poland-in" "
 ts=d.get('scorers') or []; pl=[p.get('leagueKey') for p in (d.get('perLeague') or [])]
-ok=(len(ts)==360 and len(pl)==18 and 'poland' in pl and 'mas' not in pl)"
+ok=(len(ts)==380 and len(pl)==19 and 'poland' in pl and 'mas' not in pl)"
 api "$BASE/api/league-titles?league=poland" "A4 titles 99 — newest لخ پوزنان/گورنیک زابژه, oldest 1912/1913" "
 t=d.get('titles') or {}; items=t.get('items') or []
 newest=items[0] if items else {}; oldest=items[-1] if items else {}
@@ -146,11 +146,15 @@ collect "$FEAT" "B3 real transfers click"
 
 # B4: race — copy ۱۹ + poland chip + real chip click reveals the dedicated link
 open_page "$BASE/topscorers"
-FEAT1=$($B eval "JSON.stringify(({copy19:(document.body.innerText||'').includes('۱۹ لیگ و جام برتر'),old18gone:!(document.body.innerText||'').includes('۱۸ لیگ و جام برتر'),chipPoland:[...document.querySelectorAll('button')].some(function(b){return (b.textContent||'').indexOf('اکستراکلاسا')>-1})}))" 2>/dev/null | tr -d '"\\')
+FEAT1=$($B eval "JSON.stringify(({copy20:(document.body.innerText||'').includes('۲۰ لیگ و جام برتر'),old19gone:!(document.body.innerText||'').includes('۱۹ لیگ و جام برتر'),chipPoland:[...document.querySelectorAll('button')].some(function(b){return (b.textContent||'').indexOf('اکستراکلاسا')>-1})}))" 2>/dev/null | tr -d '"\\')
 $B eval "(function(){const t=[...document.querySelectorAll('button')].find(function(b){return (b.textContent||'').indexOf('اکستراکلاسا')>-1});if(t)t.click();return t?'clicked':'no-chip'})()" >/dev/null 2>&1
 sleep 3
 FEAT2=$($B eval "JSON.stringify(({direct:!!document.querySelector(\"a[href='/topscorers/poland']\"),linkFa:(document.body.innerText||'').indexOf('صفحه اختصاصی گلزنان')>-1}))" 2>/dev/null | tr -d '"\\')
 collect "pre:$FEAT1 post:$FEAT2" "B4 race copy + chip click"
+# B4 cleanup (test hygiene, cycle-181): the chip click persists the league
+# filter in localStorage (cycle-10 by-design) — clear it so later gates
+# reading the DEFAULT race view are order-independent
+$B eval "try{localStorage.removeItem('remontada:topscorers-filter')}catch(e){}" >/dev/null 2>&1
 
 # B5: dedicated /topscorers/poland — سانچز + صیادمنش Persian
 open_page "$BASE/topscorers/poland"
@@ -171,7 +175,7 @@ collect "$FEAT" "B7 /team/2182 hook club"
 open_page "$BASE/"
 $B eval '(function(){const b=document.querySelector("button[aria-label=\"جستجوی تیم\"]");if(b)b.click();return b?"opened":"no-trigger"})()' >/dev/null 2>&1
 sleep 2
-FEAT=$($B eval "JSON.stringify(({guide23:(document.body.innerText||'').includes('۲۳ لیگ و جام'),old22gone:!(document.body.innerText||'').includes('۲۲ لیگ و جام')}))" 2>/dev/null | tr -d '"\\')
+FEAT=$($B eval "JSON.stringify(({guide24:(document.body.innerText||'').includes('۲۴ لیگ و جام'),old23gone:!(document.body.innerText||'').includes('۲۳ لیگ و جام')}))" 2>/dev/null | tr -d '"\\')
 collect "$FEAT" "B8 search guide 23"
 
 echo "== RESULT =="
