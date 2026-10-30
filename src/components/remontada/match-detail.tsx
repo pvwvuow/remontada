@@ -60,6 +60,14 @@ interface DetailData {
   scorers: DetailScorer[];
   events: DetailEvent[];
   statGroups: DetailStatGroup[];
+  // update cycle-190: per-period stats («آمار نیمه‌به‌نیمه») — mirrors
+  // /api/match/[id]; a half key exists only when its upstream block yields
+  // ≥1 non-empty group (honest per-period omission); absent/null → the
+  // switcher never renders and the tab stays byte-identical
+  statPeriods?: {
+    firstHalf: DetailStatGroup[];
+    secondHalf: DetailStatGroup[];
+  } | null;
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
@@ -1741,6 +1749,9 @@ export function MatchDetail({ matchId }: { matchId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("events");
+  // cycle-190: per-period stats switcher — «کل بازی» default; the pills only
+  // render when the payload carries at least one half (statPeriods)
+  const [statPeriod, setStatPeriod] = useState<"all" | "firstHalf" | "secondHalf">("all");
 
   // --- head-to-head (lazy per tab) ---
   const [h2h, setH2h] = useState<H2HData | null>(null);
@@ -1901,7 +1912,44 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         )}
         {tab === "stats" && (
           <>
-            <StatBars groups={data.statGroups} started={m.started && !m.cancelled} />
+            {/* cycle-190: per-period switcher — rendered only when the
+                payload carries at least one half; «کل بازی» default keeps
+                the pre-190 view byte-identical */}
+            {data.statPeriods && (data.statPeriods.firstHalf.length > 0 || data.statPeriods.secondHalf.length > 0) && (
+              <div className="flex items-center gap-1.5" role="group" aria-label="دورهٔ آمار">
+                {([
+                  ["all", "کل بازی"],
+                  ...(data.statPeriods.firstHalf.length > 0 ? [["firstHalf", "نیمهٔ اول"] as const] : []),
+                  ...(data.statPeriods.secondHalf.length > 0 ? [["secondHalf", "نیمهٔ دوم"] as const] : []),
+                ] as [typeof statPeriod, string][]).map(([k, label]) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setStatPeriod(k)}
+                    aria-pressed={statPeriod === k}
+                    data-testid={`stat-period-${k}`}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-[11px] font-black transition-colors border",
+                      statPeriod === k
+                        ? "bg-[color:var(--glass-bg-strong)] border-[color:var(--glass-border)] text-primary"
+                        : "bg-white/[0.02] border-glass-border-soft text-steel hover:text-primary"
+                    )}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            <StatBars
+              groups={
+                statPeriod === "firstHalf" && data.statPeriods
+                  ? data.statPeriods.firstHalf
+                  : statPeriod === "secondHalf" && data.statPeriods
+                    ? data.statPeriods.secondHalf
+                    : data.statGroups
+              }
+              started={m.started && !m.cancelled}
+            />
             {data.zones && <ZoneCard zones={data.zones} match={m} />}
           </>
         )}

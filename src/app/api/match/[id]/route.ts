@@ -528,6 +528,19 @@ export interface MatchDetailNormalized {
     assistFa?: string;
   }[];
   statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
+  // update cycle-190: per-period stats («آمار نیمه‌به‌نیمه») — the SAME
+  // stat-table normalization applied to the upstream Periods.FirstHalf /
+  // Periods.SecondHalf blocks (probed UA Chrome/124 2026-10-30 on
+  // 5749721/5749727: Periods = All/FirstHalf/SecondHalf, each carrying the
+  // same 7 group titles). statGroups stays the All period byte-identical
+  // (pre-190 consumers untouched); a period key is emitted ONLY when that
+  // period's upstream block yields ≥1 non-empty group (honest per-period
+  // omission — the 187 zones contract family). null when neither half has
+  // data (e.g. matches whose feed only fills All).
+  statPeriods?: {
+    firstHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
+    secondHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
+  } | null;
   lineups: { home: LineupSide | null; away: LineupSide | null } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
@@ -942,10 +955,13 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
 
   // ---------------- stats ----------------
   // Shape: Periods.All.stats = [ { title: groupName, stats: [ {row}, {titleRow}, ... ] }, ... ]
-  const statGroups: MatchDetailNormalized["statGroups"] = [];
-  const allPeriod = raw.content?.stats?.Periods?.All;
-  if (allPeriod?.stats) {
-    for (const grp of allPeriod.stats) {
+  // cycle-190: the SAME mapping extracted into a helper and reused for the
+  // upstream Periods.FirstHalf / Periods.SecondHalf blocks (statPeriods) —
+  // the All output stays byte-identical (same helper, same order).
+  const mapStatGroups = (groups?: FMStatGroup[]): MatchDetailNormalized["statGroups"] => {
+    const out: MatchDetailNormalized["statGroups"] = [];
+    if (!groups) return out;
+    for (const grp of groups) {
       const groupName = grp.title || "";
       const bucket: MatchDetailNormalized["statGroups"][number] = {
         title: STAT_GROUP_FA[groupName.toLowerCase()] || groupName,
@@ -969,9 +985,18 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
           awayVal: v1,
         });
       }
-      if (bucket.rows.length > 0) statGroups.push(bucket);
+      if (bucket.rows.length > 0) out.push(bucket);
     }
-  }
+    return out;
+  };
+  const statGroups = mapStatGroups(raw.content?.stats?.Periods?.All?.stats);
+  // cycle-190: per-period stats — honest per-period omission (the 187
+  // zones family): a half key exists only when its upstream block yields
+  // ≥1 non-empty group; neither half → statPeriods stays null.
+  const fhGroups = mapStatGroups(raw.content?.stats?.Periods?.FirstHalf?.stats);
+  const shGroups = mapStatGroups(raw.content?.stats?.Periods?.SecondHalf?.stats);
+  const statPeriods: MatchDetailNormalized["statPeriods"] =
+    fhGroups.length > 0 || shGroups.length > 0 ? { firstHalf: fhGroups, secondHalf: shGroups } : null;
 
   // ---------------- lineups ----------------
   let lineups: MatchDetailNormalized["lineups"] = null;
@@ -1352,6 +1377,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     scorers,
     events,
     statGroups,
+    statPeriods,
     lineups,
     info,
     form,
