@@ -104,25 +104,35 @@ try:
 except Exception as e:
     report("A2 179 cards-card parity+Janelt", False, repr(e))
 
-# A3: the 132 honesty on the 180/181 surfaces — historical seasons OMIT
-# the cards block entirely (no fake zeros), while scorers stay rich
+# A3: the 132 honesty — ADVANCED by cycle-185 (the in-gate-comment
+# convention): BOTH parts of this gate sit on per-league topscorers routes,
+# and the 185 season-aware getLeagueCardLeaders gives historical seasons
+# their OWN card blocks (pl 2024/2025 yellow Flynn Downes 12 / pid 844943;
+# belgium 2023/2024 yellow Hannes van der Bruggen 12 / pid 232299). The
+# GLOBAL historical merge still omits cards — Layer 2 untouched, the 132
+# rule survives there and cycle185-domproof A7 pins that boundary.
 try:
     q = urllib.parse.quote("2024/2025", safe="")
     h = get(f"{BASE}/api/topscorers/pl?season={q}")
     s0 = (h.get("scorers") or [{}])[0]
+    hy0 = ((h.get("cards") or {}).get("yellow") or [{}])[0]
     q2 = urllib.parse.quote("2023/2024", safe="")
     bh = get(f"{BASE}/api/topscorers/belgium?season={q2}")
     b0 = (bh.get("scorers") or [{}])[0]
-    good = "cards" not in h and s0.get("playerId") == 292462 \
+    by0 = ((bh.get("cards") or {}).get("yellow") or [{}])[0]
+    good = "cards" in h and s0.get("playerId") == 292462 \
         and s0.get("goals") == 29 and s0.get("nameFa") == "محمد صلاح" \
-        and "cards" not in bh and b0.get("name") == "Kévin Denkey" \
+        and hy0.get("playerId") == 844943 and hy0.get("value") == 12 \
+        and "cards" in bh and by0.get("playerId") == 232299 and by0.get("value") == 12 \
+        and b0.get("name") == "Kévin Denkey" \
         and len(h.get("scorers") or []) >= 10 \
         and len(bh.get("scorers") or []) >= 10
-    report("A3 132 hist-cards honestly absent", good,
-           f"pl_hist_cards={'cards' in h} bel_hist_cards={'cards' in bh} "
+    report("A3 hist-cards joined per-league after 185", good,
+           f"pl_hist_cards={'cards' in h} y0={hy0.get('playerId')}/{hy0.get('value')} "
+           f"bel_hist_cards={'cards' in bh} by0={by0.get('playerId')}/{by0.get('value')} "
            f"pl0={s0.get('name')}/{s0.get('goals')}g bel0={b0.get('name')}")
 except Exception as e:
-    report("A3 132 hist-cards honestly absent", False, repr(e))
+    report("A3 hist-cards joined per-league after 185", False, repr(e))
 
 # A4: the 180 guard pair — offered-but-dataless season is an honest 200
 # empty, an invalid season shape is a 400 (the cycle-55 guard)

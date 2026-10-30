@@ -102,15 +102,26 @@ try:
 except Exception as e:
     report("A3 top-level key parity", False, repr(e))
 
-# A4: historical seasons omit cards entirely (the cycle-132 rule)
+# A4: ADVANCED by cycle-185 (the in-gate-comment convention — the 179 A2
+# precedent): this gate pinned the cycle-132 current-only rule, but the 185
+# live probe disproved the upstream half of it — each season's own raw
+# carries its own card fetchAllUrls (2023/2024 pl → season/20720 files).
+# Historical standings now CARRY the season's card kings: yellow João
+# Palhinha 13 (pid 524434), red Yves Bissouma 2 (pid 724306).
 try:
     d = get(BASE + "/api/standings?league=pl&season=2023/2024")
+    c = d.get("cards") or {}
+    y0 = (c.get("yellow") or [{}])[0]
+    r0 = (c.get("red") or [{}])[0]
     good = (d.get("ok") is True and len(d.get("rows") or []) >= 10
-            and "cards" not in d)
-    report("A4 historical season omits cards", good,
-           f"rows={len(d.get('rows') or [])} cards={'cards' in d}")
+            and y0.get("name") == "João Palhinha" and y0.get("value") == 13
+            and y0.get("playerId") == 524434
+            and r0.get("name") == "Yves Bissouma" and r0.get("value") == 2
+            and r0.get("playerId") == 724306)
+    report("A4 historical season carries its own cards (185)", good,
+           f"rows={len(d.get('rows') or [])} y0={y0.get('name')}/{y0.get('value')} r0={r0.get('name')}/{r0.get('value')}")
 except Exception as e:
-    report("A4 historical season omits cards", False, repr(e))
+    report("A4 historical season carries its own cards (185)", False, repr(e))
 
 # A5: mas per-kind honesty — no Yellow category → yellow [] + red rows
 try:
@@ -267,7 +278,7 @@ echo "B4 /league/mas red-only → $FEAT | $OUT | console=$C appErrors=$E rc=$B4"
 
 echo "== RESULT =="
 if [ "$BAD" -eq 0 ]; then
-  echo "DOM_PROOF OK (cycle-176: the league page joins its own cards — getStandings plucks the cycle-50 pipeline's yellow/red leaders into the mapped payload (current-season only, file rank order, limit 15), league-view renders the compact «کارت‌ها» card with two زرد/قرمز columns and the 170/174 link contract; the Janelt anchor on /league/pl is provably the new block (absent from every other payload surface) and really clicks through to /player/688273; the Persian hook Alizadeh (گل‌گهر) anchors /league/persiangulf and clicks through to /player/900771; mas shows the honest red-only column (no Yellow category); historical seasons omit the block; legacy rows/scorers/assists byte-stable incl. the 175 Rice pin)"
+  echo "DOM_PROOF OK (cycle-176: the league page joins its own cards — getStandings plucks the cycle-50 pipeline's yellow/red leaders into the mapped payload (file rank order, limit 15; season-aware since cycle-185), league-view renders the compact «کارت‌ها» card with two زرد/قرمز columns and the 170/174 link contract; the Janelt anchor on /league/pl is provably the new block (absent from every other payload surface) and really clicks through to /player/688273; the Persian hook Alizadeh (گل‌گهر) anchors /league/persiangulf and clicks through to /player/900771; mas shows the honest red-only column (no Yellow category); historical seasons carry their OWN cards since 185 (A4 advanced); legacy rows/scorers/assists byte-stable incl. the 175 Rice pin)"
 else
   echo "DOM_PROOF FLAGGED (BAD=$BAD)"; exit 1
 fi

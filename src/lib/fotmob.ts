@@ -851,23 +851,38 @@ export async function getFullAssists(leagueKey: string, season?: string): Promis
  * is reachable, participant + topThree fallback otherwise. Fully graceful:
  * any failure (e.g. the persiangulf null feed) returns [] and the merged
  * section simply omits that league.
+ *
+ * cycle-185: season-aware — the last season-blind deep fetch. The scorers
+ * file followed the requested season since cycle-124 (the raw carries each
+ * season's OWN fetchAllUrl) and the assists file since cycle-175, but the
+ * card files kept serving the CURRENT season for every request, so the
+ * standings build had to gate the whole block off for historical views
+ * (the cycle-132 rule). Live-probed 2026-10-30 (UA Chrome/124) that the
+ * gate was hiding reachable data: the 2023/2024 pl raw carries
+ * stats/47/season/20720/yellow_card.json (438 rows, Palhinha 13) and
+ * red_card.json (55 rows, Bissouma 2). Optional `season` now threads into
+ * getLeagueRaw exactly like getFullGoalScorers/getFullAssists; cache key
+ * gains the season segment (v2 namespace — the old key baked season-blind
+ * rows, a historical request must never read it); current-season behavior
+ * byte-identical (`cur` key, same files).
  */
 export async function getLeagueCardLeaders(
   leagueKey: string,
   kind: CardKind,
   limit = 15,
+  season?: string,
 ): Promise<Omit<GlobalCard, "rank" | "leagueKey" | "leagueFa">[]> {
   try {
     return freshCardNames(
       await cached(
-        `cards:${leagueKey}:${kind}`,
+        `cards:v2:${leagueKey}:${kind}:${season || "cur"}`,
         // cycle-127 thin-TTL guard (same class as getFullGoalScorers):
         // full card files are always wide (live-probed 438/204 yellow rows),
         // the topThree fallback is ~3-4 — thin rows re-probe after 90s
         // instead of baking for an hour.
         (rows) => (rows.length >= CARD_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
         async () => {
-      const { raw } = await getLeagueRaw(leagueKey);
+      const { raw } = await getLeagueRaw(leagueKey, season);
       const re = kind === "yellow" ? /^yellow cards$/i : /^red cards$/i;
       const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
       if (!cat) return [];
@@ -1178,26 +1193,30 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // surfaced them. Live-probed 2026-10-30 UA Chrome/124: pl yellow_card.json
     // = 204 rows / red_card.json = 14 rows; persiangulf = 178/19 with the
     // Persian hook (Alireza Alizadeh, Gol Gohar, 5 yellows); mas carries ONLY
-    // the "Red cards" category (yellow legitimately absent). Same season rule
-    // as the global merge (cycle-132): the deep files are current-season, so
-    // historical payloads omit the block entirely. Rows keep the FILE's rank
-    // order (no re-sort — same contract the global page renders); limit 15
-    // matches the global merge (the UI slices 5 per kind, the API keeps the
-    // depth). Both-empty → block omitted (not {yellow:[],red:[]}).
+    // the "Red cards" category (yellow legitimately absent). Rows keep the
+    // FILE's rank order (no re-sort — same contract the global page renders);
+    // limit 15 matches the global merge (the UI slices 5 per kind, the API
+    // keeps the depth). Both-empty → block omitted (not {yellow:[],red:[]}).
+    // cycle-185: the block follows the requested season — the cycle-132
+    // current-season gate is GONE: live-probing the historical raws proved
+    // the card files are season-scoped on upstream exactly like the goals
+    // (cycle-124) and assists (cycle-175) files (2023/2024 pl raw carries
+    // season/20720/yellow_card.json = 438 rows, Palhinha 13 — reachable
+    // data the old gate dropped). getLeagueCardLeaders now takes the
+    // optional season and getLeagueRaw serves each season's own fetchAllUrl.
+    // SEQUENTIAL on purpose (cycle-176 live incident): the first draft
+    // Promise.all'd the two kinds and the mas cold build raced the two L2
+    // writes — yellow's [] row landed, red's write lost and its rows were
+    // silently dropped by the catch-all (cards:mas:red had NO row while
+    // the payload shipped without the block). Same discipline as the 175
+    // merge: one write at a time. Per-kind catch keeps the documented
+    // honesty: one transient failure degrades THAT kind to [] instead of
+    // killing the whole block (a season file that upstream truly lacks —
+    // if one ever appears — degrades to the both-empty omission).
+    const yellow = await getLeagueCardLeaders(leagueKey, "yellow", 15, requestedSeason).catch(() => [] as LeagueCardEntry[]);
+    const red = await getLeagueCardLeaders(leagueKey, "red", 15, requestedSeason).catch(() => [] as LeagueCardEntry[]);
     let cards: StandingsData["cards"];
-    if (!requestedSeason) {
-      // SEQUENTIAL on purpose (cycle-176 live incident): the first draft
-      // Promise.all'd the two kinds and the mas cold build raced the two L2
-      // writes — yellow's [] row landed, red's write lost and its rows were
-      // silently dropped by the catch-all (cards:mas:red had NO row while
-      // the payload shipped without the block). Same discipline as the 175
-      // merge: one write at a time. Per-kind catch keeps the documented
-      // honesty: one transient failure degrades THAT kind to [] instead of
-      // killing the whole block.
-      const yellow = await getLeagueCardLeaders(leagueKey, "yellow", 15).catch(() => [] as LeagueCardEntry[]);
-      const red = await getLeagueCardLeaders(leagueKey, "red", 15).catch(() => [] as LeagueCardEntry[]);
-      if (yellow.length > 0 || red.length > 0) cards = { yellow, red };
-    }
+    if (yellow.length > 0 || red.length > 0) cards = { yellow, red };
 
     // ⚠️ cycle-94 probe (UA Chrome/124): `details.seasons` is EMPTY in every
     // data/leagues payload — current AND historical (e.g. ?season=2020/2021) —
@@ -1284,7 +1303,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // clean rebuild (old v7 rows lack the block and would keep the section
     // hidden for up to a full TTL generation; the 52/55/90/92/107/175
     // additive-shape convention).
-    await cached(`standings:v8:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-185: v9 — the cards block is now season-aware (the cycle-132
+    // historical omission lifted); old v8 HISTORICAL rows lack the block and
+    // would keep it hidden for up to a full TTL generation (the current-
+    // season rows are byte-identical but share the namespace, so the whole
+    // key bumps; the 176 convention repeated verbatim).
+    await cached(`standings:v9:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1311,7 +1335,20 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // persiangulf=19, mas=8 rows) and early-season reds legitimately sit
       // under 10 — a red guard would re-probe forever. Honest-empty yellow
       // (mas: no category) keeps the normal TTL.
-      !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN)
+      //
+      // cycle-185: the guard now also covers a MISSING cards block — the
+      // cycle-185 build-time incident: the SSG cold build raced the card
+      // files and baked a card-less CURRENT payload for a full ttlMinutes
+      // generation (the v9 purge-retest proved the same build healthy once
+      // warm: y15/r14 Janelt). A missing block re-probes in 90s
+      // (upstream-free: leagueRaw + card rows are cached with their own
+      // guards; a feed with genuinely no card categories just re-scans the
+      // cached raw). mas red-only payloads carry the block and keep the
+      // normal TTL.
+      (Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN) &&
+      !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN) &&
+      !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
+      !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
         : 90_000,
       build),

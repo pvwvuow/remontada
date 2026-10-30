@@ -126,12 +126,18 @@ try:
 except Exception as e:
     report("A4 invalid season 400", False, repr(e))
 
-# A5: the 180 surface — league topscorers OLD season: Salah pin + the 132
-# old-season cards omission on the league route too
+# A5: the 180 surface — league topscorers OLD season: Salah pin. ADVANCED
+# by cycle-185 (the in-gate-comment convention): the 132 old-season cards
+# omission on the league route is LIFTED — the season-aware
+# getLeagueCardLeaders serves each season's own card files (pl 2024/2025
+# yellow Flynn Downes 844943/12, red Bruno Fernandes 422685/2); the
+# global-merge boundary stays pinned by cycle185-domproof A7.
 try:
     q = urllib.parse.quote("2024/2025", safe="")
     d = get(f"{BASE}/api/topscorers/pl?season={q}")
     s0 = (d.get("scorers") or [{}])[0]
+    cy0 = ((d.get("cards") or {}).get("yellow") or [{}])[0]
+    cr0 = ((d.get("cards") or {}).get("red") or [{}])[0]
     good = d.get("leagueKey") == "pl" \
         and d.get("selectedSeason") == "2024/2025" \
         and len(d.get("scorers") or []) == 20 \
@@ -139,12 +145,13 @@ try:
         and s0.get("nameFa") == "محمد صلاح" and s0.get("team") == "لیورپول" \
         and s0.get("goals") == 29 \
         and len(d.get("assists") or []) == 10 \
-        and "cards" not in d
-    report("A5 pl old season Salah pin", good,
+        and cy0.get("playerId") == 844943 and cy0.get("value") == 12 \
+        and cr0.get("playerId") == 422685 and cr0.get("value") == 2
+    report("A5 pl old season Salah + own cards (185)", good,
            f"sel={d.get('selectedSeason')} s0={s0.get('name')}/{s0.get('goals')}g "
-           f"cardsAbsent={'cards' not in d}")
+           f"y0={cy0.get('playerId')}/{cy0.get('value')} r0={cr0.get('playerId')}/{cr0.get('value')}")
 except Exception as e:
-    report("A5 pl old season Salah pin", False, repr(e))
+    report("A5 pl old season Salah + own cards (185)", False, repr(e))
 
 # A6: the 181 surface — belgium league-scoped: Eckert IRN hook + both kinds
 try:
@@ -358,19 +365,23 @@ echo "$FEAT" | rg -q 'players:(1[5-9]|[2-9][0-9])' || B7=1
 [ "$B7" -eq 0 ] || BAD=$((BAD+1))
 gate "B7 /league/belgium" "$FEAT"
 
-# B8: the 180 deep-link on the 179 surface — old-season pl: Salah renders,
-# selector pre-set, and the cards card is honestly ABSENT (the 132
-# omission, live-pinned cards:false cr:false) while assists stay
+# B8: the 180 deep-link on the 179 surface — ADVANCED by cycle-185 (the
+# in-gate-comment convention): old-season pl now CARRIES the season's own
+# cards (yellow Flynn Downes 844943 / red Bruno Fernandes — the 132
+# per-league omission lifted; the global-merge boundary stays pinned by
+# cycle185-domproof A7). Salah + the pre-set selector still pin the 180
+# surface, assists stay.
 open_page "/topscorers/pl?season=2024%2F2025"
-FEAT=$(snap 'salah:!!document.querySelector("a[href=\"/player/292462\"]"),selval:(document.querySelector("select#season-select")||{}).value||"",cards:document.body.innerText.includes("کارت\u200Cها"),cr:document.body.innerText.includes("کارت قرمز"),ass:document.body.innerText.includes("دهندگان")')
+FEAT=$(snap 'salah:!!document.querySelector("a[href=\"/player/292462\"]"),selval:(document.querySelector("select#season-select")||{}).value||"",cards:document.body.innerText.includes("کارت\u200Cها"),cr:document.body.innerText.includes("کارت قرمز"),downes:!!document.querySelector("a[href=\"/player/844943\"]"),ass:document.body.innerText.includes("دهندگان")')
 B8=0
 echo "$FEAT" | rg -q 'salah:true' || B8=1
 echo "$FEAT" | rg -q 'selval:2024/2025' || B8=1
-echo "$FEAT" | rg -q 'cards:false' || B8=1
-echo "$FEAT" | rg -q 'cr:false' || B8=1
+echo "$FEAT" | rg -q 'cards:true' || B8=1
+echo "$FEAT" | rg -q 'cr:true' || B8=1
+echo "$FEAT" | rg -q 'downes:true' || B8=1
 echo "$FEAT" | rg -q 'ass:true' || B8=1
 [ "$B8" -eq 0 ] || BAD=$((BAD+1))
-gate "B8 pl old-season honesty" "$FEAT"
+gate "B8 pl old-season cards joined (185)" "$FEAT"
 
 # B9: mas structural honesty on the 179 block — red-only («کارت قرمز» in,
 # «کارت زرد» out) with rows rendering
