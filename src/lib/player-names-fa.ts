@@ -679,11 +679,250 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "iván alejo": "ایوان آلخو",
   "hannes van der bruggen": "هانس فان در بروخن",
   "flynn downes": "فلیین داونز",
+
+  // — cycle-219: the keeper surfaces (goalsPrevented + cleanSheets, the 215/217
+  // family) — the 218 bug-hunt observed honest English fallbacks on exactly
+  // these two sections across historical seasons (Sergio Asenjo / Yassine
+  // Bounou / Jeremías Ledesma / Edgar Badía on laliga 2020/21 and peers).
+  // Entries follow the 104 rule (confident, sports-media transliterations
+  // only): bare collision-prone names are deliberately absent ("Gabriel",
+  // "Neto", "Léo" — each collides with non-keeper stars), and so is every
+  // name whose transliteration is genuinely doubtful (Nicolas Kocik).
+  // ONE entry per variant class — the 219 diacritic fold in playerFa covers
+  // FotMob's alternate spellings (Wojciech Szczęsny/Szczesny, Djordje
+  // Petrović/Petrovic, Matěj Kovář/Matej Kovár, Yéhvann/Yehvann Diouf, Lukáš
+  // Hrádecký/Lukás Hrádecky) — the radakovic lesson generalized.
+  // — Premier League —
+  "bart verbruggen": "بارت وربروخن",
+  "jordan pickford": "جوردان پیکفورد",
+  "emiliano martínez": "امیلیانو مارتینز",
+  "david raya": "داوید رایا",
+  "bernd leno": "برند لنو",
+  "alisson becker": "آلیسون بکر",
+  "senne lammens": "سنه لامنس",
+  "matz sels": "ماتز سلس",
+  "martin dúbravka": "مارتین دوبراوکا",
+  "djordje petrović": "دجوردیه پتروویچ",
+  "lukasz fabianski": "ووکاش فابیانسکی",
+  "dean henderson": "دین هندرسون",
+  "aaron ramsdale": "آرون رمزدیل",
+  "nick pope": "نیک پاپ",
+  "kepa arrizabalaga": "کپا آریسابالاگا",
+  "ederson": "ادرسون",
+  "mads hermansen": "مادس هرمانسن",
+  "robin roefs": "رابین روفس",
+  "antonín kinský": "آنتونین کینسکی",
+  "caomhín kelleher": "کاویمین کلهر",
+  "hugo lloris": "اوگو لوریس",
+  "fraser forster": "فریزر فورستر",
+  "illan meslier": "ایلان مسلیه",
+  "kasper schmeichel": "کاسپر اشمایکل",
+  "alphonse areola": "آلفونس آرئولا",
+  "josé sá": "خوزه سا",
+  "david de gea": "داوید د خیا",
+  "rui patrício": "روی پاتریسیو",
+  "tim krul": "تیم کرول",
+  "mark flekken": "مارک فلیکن",
+  "édouard mendy": "ادوارد مندی",
+  "andré onana": "آندره اونانا",
+  // — LaLiga —
+  "edgar badía": "ادگار بادیا",
+  "yassine bounou": "یاسین بونو",
+  "jeremías ledesma": "جرمیاس لدسما",
+  "claudio bravo": "کلاودیو براوو",
+  "jordi masip": "خوردی ماسیپ",
+  "álvaro fernández": "آلوارو فرناندز",
+  "iván villar": "ایوان ویار",
+  "sergio asenjo": "سرخیو آسنخو",
+  "andriy lunin": "آندری لونین",
+  "jasper cillessen": "یاسپر سیلسن",
+  "gerónimo rulli": "خیرونیمو رولی",
+  "luís maximiano": "لوئیس ماکسیمیانو",
+  "manolo reina": "مانولو رینا",
+  "diego lopez": "دیگو لوپس",
+  "fernando martinez": "فرناندو مارتینز",
+  "paulo gazzaniga": "پائولو گاسانیگا",
+  "marko dmitrović": "مارکو دیمیتریویچ",
+  "predrag rajkovic": "پردراگ رایکوویچ",
+  "pepe reina": "پپه رینا",
+  "vicente guaita": "ویسنته گوایتا",
+  "rui silva": "روی سیلوا",
+  "rubén blanco": "روبن بلانکو",
+  "tomás vaclík": "توماش واتسلیک",
+  "luíz júnior": "لوئیس جونیور",
+  "mathew ryan": "متیو رایان",
+  "augusto batalla": "آگوستو باتایا",
+  "giorgi mamardashvili": "جورجی مامارداشویلی",
+  // — Serie A —
+  "lorenzo palmisani": "لورنزو پالمیانی",
+  "michele di gregorio": "میکله دی گرگوریو",
+  "marco carnesecchi": "مارکو کارنشکی",
+  "mile svilar": "میله سویلار",
+  "maduka okoye": "مادوکا اکویه",
+  "arijanet murić": "آریانیت موریچ",
+  "pierluigi gollini": "پیرلوییدی گولینی",
+  "jean butez": "ژان بوتز",
+  "juan musso": "خوان موسو",
+  "mattia perin": "ماتیا پرین",
+  "alessio cragno": "آلسسیو کرانیو",
+  "bartlomiej dragowski": "بارتلمی دراگوفسکی",
+  "david ospina": "داوید اوسپینا",
+  "samir handanovic": "سمیر هاندانوویچ",
+  "thomas strakosha": "توماس استراکوشا",
+  "salvatore sirigu": "سالواتوره سیریگو",
+  "andrea consigli": "آندره‌آ کنسیلی",
+  "guillermo ochoa": "گیرمو اوچوا",
+  "marco silvestri": "مارکو سیلوستری",
+  "wladimiro falcone": "ولادیمیر فالکونه",
+  "wojciech szczęsny": "وویچیخ شچسنی",
+  "lukasz skorupski": "ووکاش اسکوروپسکی",
+  "nicola leali": "نیکولا لئالی",
+  "pietro terracciano": "پیترو تراچیانو",
+  "vanja milinkovic-savic": "وانیا میلینکوویچ-ساویچ",
+  "filip stanković": "فیلیپ استانکوویچ",
+  "josep martínez": "ژوزپ مارتینز",
+  "justin bijlow": "یوستین بیلو",
+  "yann sommer": "یان زومر",
+  "ivo grbic": "ایوو گربیچ",
+  // — Bundesliga —
+  "manuel neuer": "مانوئل نویر",
+  "gregor kobel": "گرگور کوبل",
+  "finn dahmen": "فین دامن",
+  "oliver baumann": "الیور باومان",
+  "frederik rønnow": "فردریک رونو",
+  "alexander schwolow": "الکساندر شولوو",
+  "mio backhaus": "میو بکهاوس",
+  "noah atubolu": "نوا آتوبولو",
+  "dennis seimen": "دنیس زایمن",
+  "fabian bredlow": "فابیان بردلو",
+  "maarten vandevoordt": "مارتن فاندفوردت",
+  "jonas urbig": "یوناس اوربیگ",
+  "nikola vasilj": "نیکولا واسیلی",
+  "loris karius": "لوریس کاریوس",
+  "janis blaswich": "یانیس بلاسویچ",
+  "manuel riemann": "مانوئل ریمان",
+  "robin zentner": "روبین زنتنر",
+  "koen casteels": "کون کاستیلز",
+  "lukáš hrádecký": "لوکاش هرادتسکی",
+  "rafal gikiewicz": "رافاو گیکیویچ",
+  "roman bürki": "رومان بورکی",
+  "kevin trapp": "کوین تراپ",
+  "kevin müller": "کوین مولر",
+  "marwin hitz": "ماروین هیتس",
+  "florian müller": "فلوریان مولر",
+  "stefan ortega": "اشتفان اورتگا",
+  "timo horn": "تیمو هورن",
+  "zack steffen": "زک اشتفن",
+  "kamil grabara": "کامیل گرابارا",
+  "alexander nübel": "الکساندر نوبل",
+  "marvin schwäbe": "ماروین شوابه",
+  "alexander schlager": "الکساندر اشلاگر",
+  // — Ligue 1 —
+  "anthony lopes": "آنتونی لوپش",
+  "jeffrey de lange": "جفری د لانگه",
+  "brice samba": "بریس سامبا",
+  "guillaume restes": "گیوم رست",
+  "berke özer": "برکه اوزر",
+  "mory diaw": "موری دیاو",
+  "robin risser": "روبن ریسر",
+  "yvon mvogo": "ایوون اموگو",
+  "dominik greif": "دومینیک گریف",
+  "marcin bulka": "مارچین بولکا",
+  "lucas perri": "لوکاس پری",
+  "benjamin lecomte": "بنجامین لکومت",
+  "steve mandanda": "استیو مانداندا",
+  "keylor navas": "کیلور ناواس",
+  "jonas omlin": "یوناس اوملین",
+  "walter benítez": "والتر بنیتز",
+  "alban lafont": "آلبان لافون",
+  "alfred gomis": "آلفرد گومیس",
+  "pau lópez": "پائو لوپس",
+  "philipp köhn": "فیلیپ کون",
+  "radoslaw majecki": "رادوسلاو مایه‌تسکی",
+  "paul bernardoni": "پل برناردونی",
+  "jessy moulin": "جسی مولان",
+  "jean-louis leca": "ژان-لویی لکا",
+  "eiji kawashima": "ایجی کاواشیما",
+  "alexandre oukidja": "الکساندر اوکیدجا",
+  "régis gurtner": "رژی گورتنر",
+  "benoit costil": "بنوا کوستی",
+  "ludovic butelle": "لودوویک بوتل",
+  "maxime dupé": "ماکسیم دوپه",
+  "gauthier gallon": "گوتیه گالون",
+  "yahia fofana": "یاهیا فوفانا",
+  "arthur desmas": "آرتور دماس",
+  "grégoire coudert": "گریگوار کودر",
+  "donovan léon": "دونوان لئون",
+  "hervé koffi": "هروه کوفی",
+  "yehvann diouf": "یوان دیوف",
+  "anthony racioppi": "آنتونی راچیوپی",
+  // — UCL-era keepers + the 218-probed ligue1 2018/19 quartet tail —
+  "dmytro riznyk": "دمیترو ریزنیک",
+  "stas pokatilov": "استاس پوکاتیلف",
+  "nikita haikin": "نیکیتا هایکین",
+  "kaique pereira": "کایکه پریرا",
+  "neophytos michael": "نئوفیتوس میخائیل",
+  "uğurcan çakir": "اوغورجان چاکیر",
+  "remko pasveer": "رمکو پاسفیر",
+  "simon mignolet": "سیمون مینیوله",
+  "ciprian tatarusanu": "چیپریان تاتاروشانو",
+  "diogo costa": "دیوگو کوشتا",
+  "matěj kovář": "ماتیه کووار",
+  "anatoliy trubin": "آناتولی تروبین",
+  "agustín marchesín": "آگوستین مارسسین",
+  "dominik livakovic": "دومینیک لیواکوویچ",
+  "dominik takác": "دومینیک تاکاچ",
+  "sergio rico": "سرخیو ریکو",
+  "omri glazer": "اومری گلازر",
+  "mike penders": "مایک پندرس",
+  "daniel batz": "دانیل باتس",
+  "daniel heuer fernandes": "دانیل هویر فرناندس",
+  "michael zetterer": "میشائل زتلر",
+  "moritz nicolas": "موریتس نیکلاس",
+  "nahuel noll": "ناهوئل نول",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
-// hit, otherwise the raw input (honest fallback, cycle-96 convention).
+// hit, then a diacritic-folded index hit, otherwise the raw input (honest
+// fallback, cycle-96 convention).
+// cycle-219: FotMob spells the same keeper differently per season — Wojciech
+// Szczęsny/Szczesny, Djordje Petrović/Petrovic, Matěj Kovář/Matej Kovár,
+// Yéhvann/Yehvann Diouf, Lukáš Hrádecký/Lukás Hrádecky (all five pairs
+// live-probed across the keeper surfaces) — so one curated entry must cover
+// the whole variant class: a lazily built index over the map keyed by
+// NFD-stripped names, with explicit stroke replacements for the Latin
+// letters that do NOT decompose (ł/ø/đ/ð/ß/æ/œ). Exact hits always win, the
+// folded index is a pure fallback, and unknown names still fall back to the
+// raw input — the honest convention is untouched.
+const FOLD_MAP: Record<string, string> = {
+  "ł": "l",
+  "ø": "o",
+  "đ": "d",
+  "ð": "d",
+  "ß": "ss",
+  "æ": "ae",
+  "œ": "oe",
+};
+
+function foldName(s: string): string {
+  let out = "";
+  for (const ch of s.toLowerCase()) out += FOLD_MAP[ch] ?? ch;
+  return out.normalize("NFD").replace(/\p{M}/gu, "");
+}
+
+let FOLDED_INDEX: Map<string, string> | null = null;
+function foldedIndex(): Map<string, string> {
+  if (!FOLDED_INDEX) {
+    FOLDED_INDEX = new Map();
+    for (const [k, v] of Object.entries(PLAYER_NAME_FA)) {
+      const f = foldName(k);
+      if (!FOLDED_INDEX.has(f)) FOLDED_INDEX.set(f, v); // first-wins: deterministic, map order
+    }
+  }
+  return FOLDED_INDEX;
+}
+
 export function playerFa(name: string): string {
   const key = name.trim().toLowerCase();
-  return PLAYER_NAME_FA[key] || name;
+  return PLAYER_NAME_FA[key] || foldedIndex().get(foldName(key)) || name;
 }
