@@ -6,7 +6,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
-import { faDigits, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
+import { faDigits, faMinute, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
 import { TeamLogo } from "@/components/remontada/team-logo";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -24,11 +24,13 @@ function StatusBadge({ m }: { m: NormMatch }) {
   }
   if (m.live) {
     const min = m.minute || "";
-    const numMatch = /^\d+/.exec(min);
     return (
       <span className="inline-flex items-center gap-1.5 text-[11px] font-black text-red-300 bg-red-500/[0.08] border border-red-400/25 px-2 py-1 rounded-lg whitespace-nowrap tabular-persian">
         <span className="live-dot live-dot-glow w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-        <span className="live-glow">{min ? (numMatch ? `${faDigits(min)}` : min) : "زنده"}</span>
+        {/* ui-cycle-5: faMinute — one prime glyph (U+2032), deterministic mark-right
+            order in both RTL/LTR ambient (the upstream ASCII apostrophe flipped
+            to the left of the digits in RTL) */}
+        <span className="live-glow">{min ? faMinute(min) : "زنده"}</span>
       </span>
     );
   }
@@ -140,7 +142,6 @@ function FeaturedMatch({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
   const homeWin = showScore && m.home.score !== null && m.away.score !== null && m.home.score > m.away.score;
   const awayWin = showScore && m.home.score !== null && m.away.score !== null && m.away.score > m.home.score;
   const min = m.minute || "";
-  const numMatch = /^\d+/.exec(min);
 
   return (
     <Link
@@ -193,7 +194,8 @@ function FeaturedMatch({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
                 {faDigits(m.home.score ?? "—")} : {faDigits(m.away.score ?? "—")}
               </span>
               <span className={cn("text-[10.5px] font-bold tabular-persian whitespace-nowrap", m.live ? "text-red-300 live-glow" : "text-muted-foreground")}>
-                {m.cancelled ? "لغو شده" : m.live ? (min ? (numMatch ? `${faDigits(min)}` : min) : "زنده") : "پایان"}
+                {/* ui-cycle-5: faMinute — same deterministic minute badge as StatusBadge */}
+                {m.cancelled ? "لغو شده" : m.live ? (min ? faMinute(min) : "زنده") : "پایان"}
               </span>
             </>
           ) : (

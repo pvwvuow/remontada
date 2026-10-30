@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { faDigits, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
+import { faDigits, faMinute, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
 // NOTE: no VALUE imports from @/lib/fotmob here — the client bundle must not
 // pull the fetch/db graph (cycle-116: the market string is pre-formatted
@@ -453,7 +453,9 @@ function KickoffCountdown({ utcTime }: { utcTime: string }) {
 
 // ---------- scoreboard ----------
 function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: DetailScorer[]; potm?: DetailData["playerOfTheMatch"]; shootout?: DetailData["shootout"] }) {
-  const status = m.cancelled ? "لغو شده" : m.live ? m.minute || "در جریان" : m.finished ? "پایان بازی" : "پیش از شروع";
+  // ui-cycle-5: faMinute — the scoreboard status pill normalizes the upstream
+  // ASCII-apostrophe minute ("27'") to the deterministic U+2032 badge
+  const status = m.cancelled ? "لغو شده" : m.live ? (m.minute ? faMinute(m.minute) : "در جریان") : m.finished ? "پایان بازی" : "پیش از شروع";
   return (
     <section className="glass-card glass-hero overflow-hidden">
       {/* fix cycle-59: match page had no h1/h2 — sr-only h1 for a11y/crawlers,
@@ -548,7 +550,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
               scorers.filter((s) => s.side === "home").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
                   <GoalIcon className="text-primary/80" />
-                  <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink> {faDigits(s.minute)}
+                  <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink> {faMinute(s.minute)}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
                   {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
@@ -563,7 +565,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
                   {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {faDigits(s.minute)} <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink>
+                  {faMinute(s.minute)} <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink>
                   <GoalIcon className="text-primary/80" />
                 </span>
               ))}
@@ -745,7 +747,7 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
           return (
             <span
               key={i}
-              title={`${s.playerFa || s.player || ""} ${s.minute} — xG ${s.xg ?? "؟"}`}
+              title={`${s.playerFa || s.player || ""} ${faMinute(s.minute)} — xG ${s.xg ?? "؟"}`}
               className={cn("absolute w-[9px] h-[9px] -translate-x-1/2 -translate-y-1/2 rounded-full border", color)}
               style={{ left: `${left}%`, top: `${top}%` }}
             />
@@ -1047,7 +1049,7 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
             </div>
             {/* minute + score */}
             <div className="flex flex-col items-center min-w-[54px]">
-              <span className="text-[11px] font-black text-muted-foreground tabular-persian">{faDigits(e.minute)}</span>
+              <span className="text-[11px] font-black text-muted-foreground tabular-persian">{faMinute(e.minute)}</span>
               {e.homeScore !== null && e.awayScore !== null && e.type === "Goal" && (
                 <span className="text-[10px] text-muted-foreground/70 tabular-persian">
                   {faDigits(e.homeScore)}:{faDigits(e.awayScore)}

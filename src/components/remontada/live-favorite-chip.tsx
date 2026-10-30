@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
-import { faDigits } from "@/lib/format";
+import { faDigits, faMinute } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
 
 interface LiveFavMatch {
@@ -105,7 +105,9 @@ export function LiveFavoriteChip() {
           </span>
           {match.minute && /^\d+/.test(match.minute) && (
             <span className="text-red-300/90 tabular-persian shrink-0">
-              {faDigits(match.minute)}{/[′’']/.test(match.minute) ? "" : "′"}
+              {/* ui-cycle-5: faMinute replaces the manual prime-append — one
+                  U+2032 glyph, mark-right order in RTL and LTR alike */}
+              {faMinute(match.minute)}
             </span>
           )}
           {extraCount > 0 && (

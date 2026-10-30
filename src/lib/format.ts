@@ -14,6 +14,25 @@ export function enDigits(input: string): string {
     .replace(/[٠-٩]/g, (d) => String("٠١٢٣٤٥٦٧٨٩".indexOf(d)));
 }
 
+/** Persian minute badge: «۴۵+۲′» — faDigits plus exactly one U+2032 PRIME.
+ *
+ *  ui-cycle-5 bidi audit (measured 2026-10-31 in Chromium against the live
+ *  RTL root, per-character Range rects): the upstream ASCII apostrophe of
+ *  FotMob liveTime.short ("27'") is bidi-ON and FLIPS to the LEFT of the
+ *  digits in RTL ambient («'۲۷», primeX 369 < digitX 372), while U+2032
+ *  keeps the mark RIGHT of the digits in BOTH rtl and ltr ambient (rects
+ *  strictly increasing, «۲۷′» = «۴۵+۲′» order identical). The same live
+ *  match used to show «'۲۷» on the matches list (upstream glyph) and
+ *  «۲۷′» on the timeline (fmtMinute glyph) — two glyphs, two visual
+ *  orders. This helper is the single presentation-layer normalizer:
+ *  digit-led input ("27", "27'", "27’", "45+2", "45+2′") → «۲۷′» /
+ *  «۴۵+۲′»; anything else (پنالتی / بین دو نیمه / در جریان / ET) passes
+ *  through byte-untouched. */
+export function faMinute(minute: string): string {
+  if (!minute || !/^\d+/.test(minute)) return minute || "";
+  return `${faDigits(minute.replace(/[′’']/g, ""))}′`;
+}
+
 // Tehran is UTC+3:30 (no DST since 2022)
 export function tehranNow(): Date {
   return new Date(Date.now() + 3.5 * 3600_000);

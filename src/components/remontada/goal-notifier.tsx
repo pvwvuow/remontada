@@ -16,7 +16,7 @@
 // opt-in. Clicking a notification jumps to the match page.
 import { useEffect, useRef, useState } from "react";
 import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
-import { faDigits } from "@/lib/format";
+import { faDigits, faMinute } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
 
 interface SnapEntry {
@@ -136,7 +136,9 @@ export function GoalNotifier() {
           // ---- goals ----
           const homeGoal = cur.h !== null && (p.h === null || cur.h > p.h);
           const awayGoal = cur.a !== null && (p.a === null || cur.a > p.a);
-          const minute = m.minute && /^\d+/.test(m.minute) ? ` در دقیقه ${faDigits(m.minute)}` : "";
+          // ui-cycle-5: faMinute — the notification minute uses the same
+          // deterministic U+2032 badge as every on-screen surface
+          const minute = m.minute && /^\d+/.test(m.minute) ? ` در دقیقه ${faMinute(m.minute)}` : "";
           if (homeGoal) {
             fireNotification({
               title: `گل! ${m.home.fa || m.home.name}`,
