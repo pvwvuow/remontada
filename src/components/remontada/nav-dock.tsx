@@ -68,7 +68,18 @@ export function NavDock() {
       aria-label="منوی بازی"
       className="sm:hidden fixed z-40 inset-x-3 [bottom:calc(0.75rem+env(safe-area-inset-bottom))]"
     >
-      <div className="glass-popover rounded-2xl flex items-stretch justify-between px-1.5 py-1.5">
+      {/* ui-cycle-3: glass-chrome hardens the backdrop (near-opaque ink) so
+          scrolled content stops bleeding through the thumb-zone dock. The
+          blur rides on an inline style because the CSS pipeline compiles
+          backdrop-filter to the -webkit- prefix only, which modern
+          Chromium ignores (see .glass-chrome comment in globals.css). */}
+      <div
+        className="glass-popover glass-chrome rounded-2xl flex items-stretch justify-between px-1.5 py-1.5"
+        style={{
+          backdropFilter: "blur(20px) saturate(1.35)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.35)",
+        }}
+      >
         {DOCK_ITEMS.map((item) => {
           const active =
             item.href === "/"

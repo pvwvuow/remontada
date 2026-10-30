@@ -88,7 +88,18 @@ export function SiteHeader({ children }: { children?: ReactNode }) {
        below the top edge instead of a full-width bar (game-menu feel).
        The dock moved to the root layout, so no fixed descendants remain. */
     <header className="sticky top-0 z-40 px-2.5 sm:px-4 pt-2.5">
-      <div className="glass-popover rounded-2xl max-w-5xl mx-auto">
+      {/* ui-cycle-3: glass-chrome hardens the backdrop (near-opaque ink) so
+          scrolled content stops bleeding through the sticky slab. The blur
+          rides on an inline style because the CSS pipeline compiles
+          backdrop-filter to the -webkit- prefix only, which modern
+          Chromium ignores (see .glass-chrome comment in globals.css). */}
+      <div
+        className="glass-popover glass-chrome rounded-2xl max-w-5xl mx-auto"
+        style={{
+          backdropFilter: "blur(20px) saturate(1.35)",
+          WebkitBackdropFilter: "blur(20px) saturate(1.35)",
+        }}
+      >
         <div className="px-2.5 sm:px-4 py-2.5 flex items-center justify-between gap-3">
           <SiteLogo small />
           <div className="flex items-center gap-1.5 min-w-0">

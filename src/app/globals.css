@@ -284,6 +284,27 @@
   -webkit-backdrop-filter: blur(18px);
 }
 
+/* ui-cycle-3 — chrome glass (sticky header slab + bottom nav dock):
+   backdrop hardened. At 74% alpha the page content scrolling behind the
+   header/dock stayed legible and competed with the chrome itself. The
+   chrome variant keeps the same glass language but the ink base is
+   near-opaque, so bleed-through rows collapse into unreadable depth
+   instead of competing text.
+   NOTE: the blur itself is applied via React inline style on the two
+   slabs, NOT here — the CSS pipeline (lightningcss) compiles
+   `backdrop-filter` down to only the -webkit- prefixed form, which
+   modern Chromium ignores (computed value stayed "none"; that prefix
+   stripping is the real root cause of the BL-3 bleed-through). Inline
+   styles reach the DOM untouched: standard property + -webkit- fallback.
+   Display layer only — borders/shadows still come from .glass-popover. */
+.glass-chrome {
+  background: linear-gradient(
+    180deg,
+    oklch(0.24 0.028 255 / 93%),
+    oklch(0.2 0.026 255 / 96%)
+  );
+}
+
 /* red live glow — pulsing minute text / dot (studio rose-red accent) */
 .live-glow {
   text-shadow:
