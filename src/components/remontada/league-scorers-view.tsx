@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -220,6 +220,10 @@ interface LeagueScorersData {
    *  type (the 242 tsc lesson — both interfaces updated in the same
    *  cycle). */
   teamRedCards?: TeamRedCardEntry[];
+  /** cycle-246 additive: «گل به از مسابقهٔ تیم‌ها» — the SIXTH team-side
+   *  block (the team scoring-rate level). The view carries its own type
+   *  (the 242 tsc lesson — both interfaces updated in the same cycle). */
+  teamGoalsPerMatch?: TeamGoalsPerMatchEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -794,6 +798,81 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                 <li key={`${r.name}-${i}`} data-testid="xg-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-246: گل به از مسابقهٔ تیم‌ها — the deep-file family's
+          TWENTY-FOURTH sibling and its SIXTH TEAM-PARTICIPANT member: the
+          team-side scoring-rate level, at the HEAD of the team group.
+          stats/{id}/season/{sid}/goals_team_match.json — live-probed
+          2026-10-31 (UA Chrome/124, scripts/cycle246-sweep.sh): NINE of
+          NINE leagues serve it — the family's FIRST NINE-league team
+          surface at the STANDARD guard (files WIDE everywhere 12-36
+          rows: laliga 20 Barcelona 4.0 / pl 20 Brighton 2.9 / seriea 20
+          Inter 2.8 / bundesliga 18 Bayern 3.6 / ligue1 18 Marseille 2.3
+          / ucl 36 PSG 4.7 / portugal 18 Benfica 2.9 / persiangulf 18
+          Persepolis 1.8 / mas 12 Johor 4.7). THE PERSIAN GULF IS
+          REACHED: pg's ONE team category IS "Goals per match" (the
+          237/240/241/242/245 cards documented pg as honestly-absent
+          BECAUSE of that) → pg renders its FIRST-EVER team block;
+          mas's first feed category serves too (its THIRD team-surface
+          after 240/245). 1-decimal values → the 241 toFixed(1) dir=ltr
+          convention verbatim (4.0 renders «۴.۰», no appended sign).
+          Upstream Rank keeps COMPETITION ties verbatim — the merge
+          re-ranks POSITIONALLY. SEASON-AWARE: the 2020/21 laliga raw
+          serves its OWN file (Barcelona 2.2 / the 1.8 Atletico+Real
+          Madrid tie — frozen, distinct from the current 4.0). The
+          honest-name contract rides the EXISTING teamFa map — zero new
+          entries. Rows link /team/{teamId} (the standings-view
+          contract). Placed at the HEAD of the team group (right before
+          گل مورد انتظار تیم‌ها — the raw scoring rate leads, the
+          analytics follow) so the SIX team-side blocks read together
+          while the player→team pair and the keeper QUINTET stay
+          untouched — the older gates' relative-order asserts are
+          index-inequality-based so the insertion provably keeps them
+          green. Honest absence when the feed has no "Goals per match"
+          team category → the section simply hides. */}
+      {data && !loading && (data.teamGoalsPerMatch || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <path d="M4 8 Q12 2 20 8 L20 19 Q12 23 4 19 Z" />
+              <path d="M4 8 L12 13 L20 8" />
+              <path d="M12 13 L12 22.5" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">گل به از مسابقهٔ تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">قدرت حمله — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamGoalsPerMatch || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.teamGoalsPerMatch.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="tgm-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
                     </Link>
                   ) : (

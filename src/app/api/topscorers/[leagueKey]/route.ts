@@ -196,6 +196,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // team-surface after 240); old consumers never read this field
       // (the 108 rule).
       teamRedCards: st.teamRedCards,
+      // cycle-246 additive: «گل به از مسابقهٔ تیم‌ها» rides the SAME cached
+      // payload — the deep-file family's TWENTY-FOURTH sibling and its
+      // SIXTH TEAM-PARTICIPANT member: the team-side scoring-rate level
+      // (1-decimal values verbatim — the 241 toFixed(1) convention;
+      // season-aware like the sisters; NINE of NINE leagues serve — pg's
+      // FIRST-EVER team surface + mas's third); old consumers never read
+      // this field (the 108 rule).
+      teamGoalsPerMatch: st.teamGoalsPerMatch,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

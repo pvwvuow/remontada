@@ -86,9 +86,10 @@ for lg in leagues:
     for field,key in OLD:
         rows=d.get(field) or []
         if lg=="mas":
-            # mas's honest four-block face: tcs=8 (the 240 floor
+            # mas's honest five-block face: tcs=8 (the 240 floor
             # exemption), txg/tposs/tyc honestly empty (the 237/241
-            # pair) — the red block is the only OTHER surface
+            # pair) — the red (245) and goals-per-match (246) blocks
+            # are the OTHER surfaces
             want=8 if field=="teamCleanSheets" else 0
             if len(rows)!=want: bad.append({"lg":lg,"field":field,"n":len(rows),"why":"mas honest face","want":want})
             continue
@@ -106,6 +107,13 @@ for lg in leagues:
     ints=all(float(v)==int(float(v)) for v in vals if v is not None)
     if not (4<=len(rows)<=10) or not mono or not ranks or latin or not ints:
         bad.append({"lg":lg,"field":"teamRedCards","n":len(rows),"mono":mono,"ranks":ranks,"latin":latin,"ints":ints})
+    rows=d.get("teamGoalsPerMatch") or []
+    vals=[r.get("teamGoalsPerMatch") for r in rows]
+    mono=all(vals[i]>=vals[i+1] for i in range(len(vals)-1)) if vals else False
+    ranks=[r.get("rank") for r in rows]==list(range(1,len(rows)+1))
+    latin=[r["name"] for r in rows if not fa.search(r.get("nameFa") or "")]
+    if len(rows)!=10 or not mono or not ranks or latin:
+        bad.append({"lg":lg,"field":"teamGoalsPerMatch","n":len(rows),"mono":mono,"ranks":ranks,"latin":latin})
 print(json.dumps({"bad":bad},separators=(',',':')))
 PY
 )
@@ -186,8 +194,8 @@ agent-browser set viewport 390 844 >/dev/null
 agent-browser open "$BASE/topscorers/laliga" >/dev/null
 agent-browser wait --load networkidle >/dev/null; sleep 1.5
 B1=$(agent-browser eval "(() => { const h2s=[...document.querySelectorAll('main h2')].map(h=>h.textContent); const iPOS=h2s.indexOf('مالکیت توپ تیم‌ها'), iYC=h2s.indexOf('کارت‌های زرد تیم‌ها'), iTRC=h2s.indexOf('کارت‌های قرمز تیم‌ها'), iXG=h2s.indexOf('گل مورد انتظار روی دروازه'); const order=iPOS>-1&&iYC>iPOS&&iTRC>iYC&&iXG>iTRC; const trc=document.querySelectorAll('[data-testid=trc-row]').length; const vbroken=[...document.querySelectorAll('*')].filter(e=>e.scrollWidth>document.documentElement.clientWidth+1&&getComputedStyle(e).overflow!=='hidden'&&!e.closest('.fx-backdrop,[class*=overflow-hidden],[class*=overflow-x-auto]')).length; return JSON.stringify({order,trc,vbroken,h2n:h2s.length}); })()")
-echo "$B1" | tr -d '\\' | grep -q '"order":true' && echo "$B1" | tr -d '\\' | grep -q '"trc":10' && echo "$B1" | tr -d '\\' | grep -q '"vbroken":0' && echo "$B1" | tr -d '\\' | grep -q '"h2n":22' \
-  && ok "B1 DOM laliga: h2n=22 [census 21→22 BY DESIGN] + the FIVE team-side blocks adjacent (tyc then trc then xgot) + 10 trc-rows + zero real overflow @390x844" || bad "B1: $B1"
+echo "$B1" | tr -d '\\' | grep -q '"order":true' && echo "$B1" | tr -d '\\' | grep -q '"trc":10' && echo "$B1" | tr -d '\\' | grep -q '"vbroken":0' && echo "$B1" | tr -d '\\' | grep -q '"h2n":23' \
+  && ok "B1 DOM laliga: h2n=23 [census refreshed BY DESIGN 22→23 — the 246 team goals-per-match block] + the SIX team-side blocks adjacent + 10 trc-rows + zero real overflow @390x844" || bad "B1: $B1"
 
 B2=$(agent-browser eval "(() => { const rows=[...document.querySelectorAll('[data-testid=trc-row]')]; const a=rows[0]&&rows[0].querySelector('a'); const pill=a&&a.lastElementChild; const latin=rows.filter(r=>/[0-9]/.test(r.textContent)).length; const sub=[...document.querySelectorAll('main h2')].find(h=>h.textContent==='کارت‌های قرمز تیم‌ها'); const subTxt=sub&&sub.parentElement&&sub.parentElement.querySelector('.ms-auto'); return JSON.stringify({pill:(pill&&pill.textContent.trim())||'', dir:(pill&&pill.getAttribute('dir'))||null, latin, sub:(subTxt&&subTxt.textContent.trim())||''}); })()")
 echo "$B2" | tr -d '\\' | grep -q '"pill":"۵"' && echo "$B2" | tr -d '\\' | grep -q '"dir":"ltr"' && echo "$B2" | tr -d '\\' | grep -q '"latin":0' && echo "$B2" | tr -d '\\' | grep -q '"sub":"انضباط — سطح تیم"' \
@@ -202,13 +210,13 @@ echo "$B3" | tr -d '\\' | grep -q '/team/8305' && echo "$B3" | tr -d '\\' | grep
 agent-browser open "$BASE/topscorers/mas" >/dev/null
 agent-browser wait --load networkidle >/dev/null; sleep 1.5
 B4a=$(agent-browser eval "(() => { const h2s=[...document.querySelectorAll('main h2')].map(h=>h.textContent); const rows=[...document.querySelectorAll('[data-testid=trc-row]')]; const first=rows[0]&&rows[0].querySelector('a'); return JSON.stringify({h2s, n:rows.length, first:(first&&first.textContent.includes('کوچینگ سیتی'))||false}); })()")
-echo "$B4a" | tr -d '\\' | grep -q '"h2s":\["گل نخرده‌های تیم‌ها","کارت‌های قرمز تیم‌ها","کارت‌ها"\]' && echo "$B4a" | tr -d '\\' | grep -q '"n":6' && echo "$B4a" | tr -d '\\' | grep -q '"first":true' \
-  && ok "B4a mas exact face: h2s == [گل نخرده‌های تیم‌ها، کارت‌های قرمز تیم‌ها، کارت‌ها] + 6 trc-rows rank-1 «کوچینگ سیتی» (the file's real current size) — the SECOND mas team-surface renders live" || bad "B4a: $B4a"
+echo "$B4a" | tr -d '\\' | grep -q '"h2s":\["گل به از مسابقهٔ تیم‌ها","گل نخرده‌های تیم‌ها","کارت‌های قرمز تیم‌ها","کارت‌ها"\]' && echo "$B4a" | tr -d '\\' | grep -q '"n":6' && echo "$B4a" | tr -d '\\' | grep -q '"first":true' \
+  && ok "B4a mas exact face: h2s == [گل به از مسابقهٔ تیم‌ها، گل نخرده‌های تیم‌ها، کارت‌های قرمز تیم‌ها، کارت‌ها] + 6 trc-rows rank-1 «کوچینگ سیتی» (the file's real current size) — mas's team surfaces render live" || bad "B4a: $B4a"
 agent-browser open "$BASE/topscorers/persiangulf" >/dev/null
 agent-browser wait --load networkidle >/dev/null; sleep 1.5
 B4b=$(agent-browser eval "(() => { const h2s=[...document.querySelectorAll('main h2')].map(h=>h.textContent); return JSON.stringify({teamH2s:h2s.filter(x=>x.includes('تیم‌ها')).length, gp90:h2s.includes('گل در هر ۹۰')}); })()")
-echo "$B4b" | tr -d '\\' | grep -q '"teamH2s":0' && echo "$B4b" | tr -d '\\' | grep -q '"gp90":true' \
-  && ok "B4b pg zero-team face: zero team h2s (red honestly absent in DOM — the feed-driven honest []) with gp90 still active (the 227 contract)" || bad "B4b: $B4b"
+echo "$B4b" | tr -d '\\' | grep -q '"teamH2s":1' && echo "$B4b" | tr -d '\\' | grep -q '"gp90":true' \
+  && ok "B4b pg face [refreshed BY DESIGN — the 246 goals-per-match is pg's FIRST-EVER team surface]: exactly ONE team h2 with gp90 still active (the 227 contract)" || bad "B4b: $B4b"
 
 CN=$(agent-browser console | wc -l); CE=$(agent-browser errors | wc -l)
 [ "$CN" = "0" ] && [ "$CE" = "0" ] && ok "B5 console=0 errors=0 across the whole session" || bad "B5: console=$CN errors=$CE"

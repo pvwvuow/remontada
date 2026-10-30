@@ -723,6 +723,44 @@ export interface TeamRedCardEntry {
   teamRedCards: number;  // StatValue VERBATIM — integer-valued float (5.0), the 215/220/231/235/236/242 convention, never rounded
 }
 
+/** cycle-246 additive: one «گل به از مسابقهٔ تیم‌ها» row — the deep-file
+ *  family's TWENTY-FOURTH sibling and its SIXTH TEAM-PARTICIPANT member
+ *  (the team-side scoring-rate LEVEL). stats/{id}/season/{sid}/
+ *  goals_team_match.json (live-probed 2026-10-31, UA Chrome/124,
+ *  scripts/cycle246-sweep.sh): NINE of NINE leagues serve it — the
+ *  family's FIRST NINE-league team surface at the STANDARD guard (the
+ *  245 red surface reached nine too but needed the floor-4; these files
+ *  are WIDE everywhere: 12-36 rows) — AND THE PERSIAN GULF IS REACHED:
+ *  pg's ONE team category IS "Goals per match" (the 237/240/241/242
+ *  cards documented it as the reason pg had no team surface) → pg renders
+ *  its FIRST-EVER team block (18 rows, Persepolis 1.8 / Sepahan 1.7 /
+ *  Tractor 1.3, teamId 101610/101611/176352); mas's first feed category
+ *  serves too (12 rows, Johor Darul Ta'zim 4.7 — mas's THIRD
+ *  team-surface after 240/245). Decimal 1-fraction values (4.0 / 2.9 /
+ *  1.8 probed) → the 241 toFixed(1) dir=ltr convention verbatim (no
+ *  appended sign; 4.0 renders «۴.۰») — storage never rounds. Upstream
+ *  Rank keeps COMPETITION ties verbatim (the 2020/21 2,2 Atletico+Real
+ *  Madrid tie probed); the merge re-ranks POSITIONALLY. ParticiantId is
+ *  ALWAYS 0 (teams carry TeamId) → dedup by TeamId. NO badge twin and NO
+ *  global-merge participation BY DESIGN (the 237 team-surface rule); the
+ *  block rides the league page only, rows link /team/{teamId} (the
+ *  standings-view contract), data-testid=tgm-row, the scoring-rate glyph,
+ *  sublabel «قدرت حمله — سطح تیم». SEASON-AWARE (the 124/…/245 class):
+ *  the 2020/21 laliga raw serves its OWN file — season/15585, 20 rows,
+ *  Barcelona 2.2 rank-1 with the 1.8 Atletico+Real Madrid tie — frozen,
+ *  the 202 anchor pattern, DISTINCT from the current 4.0. The honest-name
+ *  contract rides the EXISTING teamFa map (probed: Persepolis/Sepahan/
+ *  Tractor/Johor all covered). Feeds without the team category degrade
+ *  honestly to []. */
+export interface TeamGoalsPerMatchEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamGoalsPerMatch: number;  // StatValue VERBATIM — 1-decimal float (4.0), the 241 toFixed(1) convention, never rounded
+}
+
 
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
@@ -1112,6 +1150,16 @@ export interface StandingsData {
    *  REQUIRED since the v30 bump — old v29 rows lack it and would keep
    *  the section hidden for a full TTL generation. */
   teamRedCards: TeamRedCardEntry[];
+  /** cycle-246 additive: «گل به از مسابقهٔ تیم‌ها» rides the mapped
+   *  payload — the deep-file family's TWENTY-FOURTH sibling and its
+   *  SIXTH TEAM-PARTICIPANT member (the team-side scoring-rate level).
+   *  1-decimal values verbatim (the 241 toFixed(1) convention); the
+   *  block rides the league page only, rows link /team/[id]; NINE of
+   *  NINE leagues serve — pg's FIRST-EVER team surface + mas's third;
+   *  always present (possibly []).
+   *  REQUIRED since the v31 bump — old v30 rows lack it and would keep
+   *  the section hidden for a full TTL generation. */
+  teamGoalsPerMatch: TeamGoalsPerMatchEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2961,6 +3009,56 @@ export async function getFullTeamRedCards(leagueKey: string, season?: string): P
   }
 }
 
+/** cycle-246: the full-file fetch for the team goals-per-match block —
+ *  the exact 245 mirror one category over, back to the STANDARD guard:
+ *  goals_team_match.json is WIDE on every serving league (probed
+ *  2026-10-31, UA Chrome/124: 12-36 rows on all nine — including pg's
+ *  18 and mas's 12), so thin means "the fetch was dropped" and re-probes
+ *  in 90s. NO league-aware floor needed — the family's first nine-league
+ *  surface at the standard <10 guard. Honest-empty feeds (no "Goals per
+ *  match" TEAM category) degrade to [] upstream of the guard and keep
+ *  the normal TTL. Season-aware like every sibling (the 2020/21 laliga
+ *  raw serves season/15585 — 20 rows, Barcelona 2.2, frozen). */
+export async function getFullTeamGoalsPerMatch(leagueKey: string, season?: string): Promise<TeamGoalsPerMatchEntry[]> {
+  try {
+    return await cached(
+      `fullTeamGoalsPerMatch:v1:${leagueKey}:${season || "cur"}`,
+      // Standard guard (the 210/…/242 class): goals_team_match files are
+      // WIDE (12-36 rows probed on all nine serving leagues) — thin
+      // means "the fetch was dropped" and re-probes in 90s.
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^goals per match$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamGoalsPerMatchEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamGoalsPerMatch: r.StatValue ?? 0,  // VERBATIM — the 241 1-decimal convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -4264,6 +4362,65 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-246: «گل به از مسابقهٔ تیم‌ها» — the deep-file family's
+    // TWENTY-FOURTH sibling and its SIXTH TEAM-PARTICIPANT member (the
+    // team-side scoring-rate level), straight from the live
+    // goals_team_match.json probe (UA Chrome/124, 2026-10-31,
+    // scripts/cycle246-sweep.sh): NINE of NINE leagues serve — the
+    // family's FIRST NINE-league surface at the STANDARD guard (files
+    // WIDE everywhere: laliga 20 Barcelona 4.0 / pl 20 Brighton 2.9 /
+    // seriea 20 Inter 2.8 / bundesliga 18 Bayern 3.6 / ligue1 18
+    // Marseille 2.3 / ucl 36 PSG 4.7 / portugal 18 Benfica 2.9 /
+    // persiangulf 18 Persepolis 1.8 / mas 12 Johor 4.7) — AND THE
+    // PERSIAN GULF IS REACHED: pg's ONE team category IS "Goals per
+    // match" (the 237/240/241/242/245 cards documented pg as
+    // honestly-absent BECAUSE of that) → pg renders its FIRST-EVER team
+    // block; mas's first feed category serves too (its THIRD
+    // team-surface after 240/245). Decimal 1-fraction values → the 241
+    // toFixed(1) dir=ltr convention verbatim (4.0 renders «۴.۰», no
+    // appended sign) — storage never rounds. Upstream Rank keeps
+    // COMPETITION ties verbatim (the 2020/21 2,2 Atletico+Real Madrid
+    // tie probed); the merge re-ranks POSITIONALLY. ParticiantId is
+    // ALWAYS 0 (teams carry TeamId) → dedup by TeamId. NO badge twin
+    // and NO global-merge participation BY DESIGN (the 237
+    // team-surface rule); the block rides the league page only, rows
+    // link /team/{teamId} (the standings-view contract),
+    // data-testid=tgm-row, the scoring-rate glyph, sublabel «قدرت حمله
+    // — سطح تیم». SEASON-AWARE (the 124/…/245 class): the 2020/21
+    // laliga raw serves its OWN file — season/15585, 20 rows,
+    // Barcelona 2.2 rank-1 with the 1.8 Atletico+Real Madrid tie —
+    // frozen, the 202 anchor pattern, DISTINCT from the current 4.0.
+    // The honest-name contract rides the EXISTING teamFa map (probed:
+    // Persepolis/Sepahan/Tractor/Johor all covered — zero new
+    // entries). Additive mirror of 245 end-to-end:
+    // TeamGoalsPerMatchEntry + the REQUIRED teamGoalsPerMatch field on
+    // the mapped payload + getFullTeamGoalsPerMatch
+    // (fullTeamGoalsPerMatch:v1, the STANDARD guard — all nine files
+    // wide 12-36 rows, NO floor needed) + the team top-3-first merge
+    // (dedup by TEAM id, teamGoalsPerMatch DESC, top-10, POSITIONAL
+    // re-rank) + standings:v30→v31 (the 52/…/245 additive-shape
+    // convention) + the /api/topscorers/[leagueKey] route field + the
+    // LeagueScorersData view field + the league-page block «گل به از
+    // مسابقهٔ تیم‌ها» placed at the HEAD of the team group (right
+    // before گل مورد انتظار تیم‌ها — the raw scoring rate leads, the
+    // analytics follow) so the SIX team-side blocks read together while
+    // the player→team pair and the keeper QUINTET stay untouched (the
+    // older gates' relative-order asserts are index-inequality-based —
+    // all re-ran green) — with data-testid=tgm-row.
+    const gpmTeamEntries: TeamGoalsPerMatchEntry[] = statTeamCategory(raw, /^goals per match$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamGoalsPerMatch: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamGoalsPerMatch - a.teamGoalsPerMatch || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamGoalsPerMatch = await getFullTeamGoalsPerMatch(leagueKey, requestedSeason);
+    const enrichedGpmIds = new Set(gpmTeamEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamGoalsPerMatch = [...gpmTeamEntries, ...fullTeamGoalsPerMatch.filter((r) => r.teamId <= 0 || !enrichedGpmIds.has(r.teamId))]
+      .sort((a, b) => b.teamGoalsPerMatch - a.teamGoalsPerMatch || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -4360,6 +4517,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       teamPossession: mergedTeamPossession,
       teamYellowCards: mergedTeamYellowCards,
       teamRedCards: mergedTeamRedCards,
+      teamGoalsPerMatch: mergedTeamGoalsPerMatch,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -4506,7 +4664,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // and would keep the new section hidden for up to a full TTL
     // generation. Whole key bumps (the 52/…/242 additive-shape
     // convention).
-    await cached(`standings:v30:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-246: v31 — the team goals-per-match block («گل به از مسابقهٔ
+    // تیم‌ها») joins the mapped payload as a REQUIRED field; old v30
+    // rows lack it and would keep the new section hidden for up to a
+    // full TTL generation. Whole key bumps (the 52/…/245 additive-shape
+    // convention).
+    await cached(`standings:v31:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -4733,6 +4896,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // feed (no "Red cards" TEAM category — persiangulf only, probed)
       // degrades to [] upstream of the guard and keeps the normal TTL.
       !(Array.isArray(mapped.teamRedCards) && mapped.teamRedCards.length > 0 && mapped.teamRedCards.length < 4) &&
+      // cycle-246: the team goals-per-match block joins the guard family
+      // back at the STANDARD <10 threshold — goals_team_match.json is
+      // WIDE on every serving league (probed 12-36 rows on all nine,
+      // including pg 18 and mas 12), so a thin merged list means the
+      // fetch was dropped; re-probes in 90s. Honest-empty feeds (no
+      // "Goals per match" TEAM category) degrade to [] upstream of the
+      // guard and keep the normal TTL — NO league-aware floor needed
+      // (the family's first nine-league surface at the standard guard).
+      !(Array.isArray(mapped.teamGoalsPerMatch) && mapped.teamGoalsPerMatch.length > 0 && mapped.teamGoalsPerMatch.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
