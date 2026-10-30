@@ -605,6 +605,47 @@ export interface TeamCleanSheetEntry {
   teamCleanSheets: number;  // StatValue VERBATIM — integer-valued float (6.0), the 215/220/231/235/236 convention, never rounded
 }
 
+/** cycle-241 additive: one «مالکیت توپ تیم‌ها» row — the deep-file
+ *  family's TWENTY-FIRST sibling, its THIRD TEAM-PARTICIPANT member and
+ *  the team-side possession surface (the 92 boards showed this category
+ *  as a ≤3-row podium — the full top-10 file level is new). The "Average
+ *  possession" TEAM category carries its own fetchAllUrl →
+ *  data.fotmob.com stats/{id}/season/{sid}/possession_percentage_team.json
+ *  (live-probed 2026-10-30, UA Chrome/124: WIDE files on all six domestic
+ *  globalMerge leagues — laliga 20 Barcelona 69.4 / pl 20 Manchester City
+ *  64.2 / seriea 20 Inter 63.0 / bundesliga 18 Bayern München 66.9 /
+ *  ligue1 18 Paris Saint-Germain 68.0 / ucl 36 Barcelona 65.2 rows;
+ *  portugal 18 Benfica 63.1 probed for breadth; persiangulf AND mas
+ *  honestly absent — the 237 absence pair exactly: mas's feed carries
+ *  only FOUR team categories and possession is not one of them, probed).
+ *  PERCENT 1-fraction (probed maxdec=1 on every serving file, StatFormat
+ *  percent) → the 221 percent convention VERBATIM: storage never rounds,
+ *  the pill renders toFixed(1) dir=ltr (69.4 renders «۶۹.۴») with NO
+ *  appended percent sign (the 221 rendering rule). Upstream Rank kept
+ *  verbatim; the merge re-ranks POSITIONALLY like every sibling.
+ *  ParticiantId is ALWAYS 0 (teams carry TeamId) → dedup by TeamId, the
+ *  id /team/[id] keys on. The honest-name contract rides the EXISTING
+ *  teamFa map — zero new PLAYER_NAME_FA entries. NO badge twin and NO
+ *  global-merge participation BY DESIGN (the 237 team-surface rule);
+ *  the block rides the league page only, rows link /team/[id].
+ *  SEASON-AWARE (the 124/…/236 class): the 2020/21 laliga raw serves its
+ *  OWN file — 20 rows, Barcelona 65.8 / Sevilla 61.2 / Real Madrid 59.6
+ *  — frozen, the 202 anchor pattern. Wide files (18-36 rows, above the
+ *  FULL_LIST_HEALTHY_MIN floor) → the STANDARD guard, NO exemption (the
+ *  honest-empty pair pg+mas degrades to [] upstream of the guard, the
+ *  237 pattern — mas needed NO league-aware floor here, unlike the 240
+ *  clean-sheet sibling it does not serve this category at all); always
+ *  present (possibly []); feeds without the team category degrade
+ *  honestly to []. */
+export interface TeamPossessionEntry {
+  rank: number;
+  name: string;  // the participant IS the team (raw English, the honesty base)
+  /** honest Persian team name (teamFa) — raw English fallback, the standings convention. */
+  nameFa?: string;
+  teamId: number;  // FotMob team id → links to /team/[id]
+  teamPossession: number;  // StatValue VERBATIM — percent one decimal (69.4), the 221 percent convention, never rounded
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -961,6 +1002,16 @@ export interface StandingsData {
    *  v27 bump — old v26 rows lack it and would keep the section hidden
    *  for a full TTL generation. */
   teamCleanSheets: TeamCleanSheetEntry[];
+  /** cycle-241 additive: «مالکیت توپ تیم‌ها» rides the mapped payload —
+   *  the deep-file family's TWENTY-FIRST sibling and its THIRD
+   *  TEAM-PARTICIPANT member (the team-side possession surface). Percent
+   *  one-decimal values verbatim (the 221 percent convention — toFixed(1)
+   *  dir=ltr, no appended sign); the block rides the league page only,
+   *  rows link /team/[id]; persiangulf AND mas honestly degrade to []
+   *  (the 237 absence pair, probed); always present (possibly []).
+   *  REQUIRED since the v28 bump — old v27 rows lack it and would keep
+   *  the section hidden for a full TTL generation. */
+  teamPossession: TeamPossessionEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2640,6 +2691,61 @@ export async function getFullTeamCleanSheets(leagueKey: string, season?: string)
   }
 }
 
+/** cycle-241: the full-file fetch for the team possession block — the
+ *  exact 240 getFullTeamCleanSheets mirror one category over:
+ *  stats/{id}/season/{sid}/possession_percentage_team.json (live-probed
+ *  2026-10-30, UA Chrome/124 — "Average possession" TEAM category,
+ *  PERCENT 1-fraction values, wide files on the six domestics 18-36
+ *  rows, portugal 18; persiangulf AND mas honestly absent — the 237
+ *  absence pair, probed: mas's feed carries FOUR team categories and
+ *  possession is not one). Same cache + standard guard as the siblings;
+ *  the honest-empty pair degrades to [] upstream of the guard — NO
+ *  league-aware floor needed this time (unlike the 240 clean-sheet
+ *  sibling, mas does not serve this category at all). Season-aware like
+ *  every sibling (the 2020/21 laliga raw serves 20 rows, Barcelona 65.8,
+ *  frozen). Feeds without the team category degrade to []. */
+export async function getFullTeamPossession(leagueKey: string, season?: string): Promise<TeamPossessionEntry[]> {
+  try {
+    return await cached(
+      `fullTeamPossession:v1:${leagueKey}:${season || "cur"}`,
+      // Standard guard (the 210/…/240 class): possession files are WIDE
+      // (18-36 rows probed) — above the family floor, so thin means "the
+      // fetch was dropped" and re-probes in 90s. Honest-empty feeds (no
+      // "Average possession" TEAM category — persiangulf AND mas, probed)
+      // degrade to [] upstream of the guard and keep the normal TTL.
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const teams = (raw.stats as { teams?: FMStatBlockTeam[] } | undefined)?.teams;
+        const cat = teams?.find?.((t) => /^average possession$/i.test(t.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: TeamPossessionEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const tid = r.TeamId;
+          // teams carry TeamId; ParticiantId is ALWAYS 0 on team files
+          if (!r.ParticipantName || tid == null || seen.has(tid)) continue;
+          seen.add(tid);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: teamFa(r.ParticipantName) || undefined,  // the honest-team contract, teamFa edition
+            teamId: tid,
+            teamPossession: r.StatValue ?? 0,  // VERBATIM — the 221 percent convention, never rounded
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the payload
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -3775,6 +3881,58 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-241: the team possession block («مالکیت توپ تیم‌ها») — the
+    // deep-file family's TWENTY-FIRST sibling and its THIRD
+    // TEAM-PARTICIPANT member: the team-side possession surface — straight
+    // from the live possession_percentage_team.json probe (UA Chrome/124,
+    // 2026-10-30, scripts/cycle240-probe.sh family): WIDE files on all six
+    // domestic globalMerge leagues (laliga 20 Barcelona 69.4 / pl 20
+    // Manchester City 64.2 / seriea 20 Inter 63.0 / bundesliga 18 Bayern
+    // München 66.9 / ligue1 18 Paris Saint-Germain 68.0 / ucl 36 Barcelona
+    // 65.2 rows; portugal 18 Benfica 63.1 probed for breadth);
+    // persiangulf AND mas honestly absent (the 237 absence pair exactly —
+    // mas's feed carries FOUR team categories and possession is not one,
+    // probed). PERCENT 1-fraction (probed maxdec=1, StatFormat percent) →
+    // the 221 percent convention VERBATIM: storage never rounds, the pill
+    // renders toFixed(1) dir=ltr (69.4 renders «۶۹.۴») with NO appended
+    // percent sign (the 221 rendering rule). Upstream Rank kept verbatim;
+    // the merge re-ranks POSITIONALLY like every sibling. ParticiantId is
+    // ALWAYS 0 (teams carry TeamId) → dedup by TeamId. NO badge twin and
+    // NO global-merge participation BY DESIGN (the 237 team-surface rule);
+    // the block rides the league page only, rows link /team/{teamId} (the
+    // standings-view contract). SEASON-AWARE (the 124/…/236 class): the
+    // 2020/21 laliga raw serves its OWN file — 20 rows, Barcelona 65.8 /
+    // Sevilla 61.2 / Real Madrid 59.6 — frozen, the 202 anchor pattern.
+    // The honest-name contract rides the EXISTING teamFa map (zero new
+    // PLAYER_NAME_FA entries) + the teamFa edition of the 170 read-time
+    // freshener line. Additive mirror of 240 end-to-end:
+    // TeamPossessionEntry + the REQUIRED teamPossession field on the
+    // mapped payload + getFullTeamPossession (fullTeamPossession:v1, the
+    // STANDARD guard — NO league-aware floor needed: the honest-empty pair
+    // pg+mas degrades to [] upstream of the guard, the 237 pattern) + the
+    // team top-3-first merge (dedup by TEAM id, teamPossession DESC,
+    // top-10, POSITIONAL re-rank) + standings:v27→v28 (the 52/…/237
+    // additive-shape convention) + the /api/topscorers/[leagueKey] route
+    // field + the league-page block «مالکیت توپ تیم‌ها» placed right after
+    // گل نخرده‌های تیم‌ها so the three team-side blocks read together
+    // while the player→team pair and the keeper QUINTET stay untouched —
+    // the older gates' relative-order asserts are index-inequality-based
+    // so the insertion provably keeps them green (all re-ran green) —
+    // with data-testid=tposs-row.
+    const posTeamEntries: TeamPossessionEntry[] = statTeamCategory(raw, /^average possession$/i)
+      .map((p, i) => ({
+        rank: i + 1, name: String(p.name || ""), nameFa: teamFa(p.name) || undefined,
+        teamId: p.teamId ?? 0, teamPossession: Number(p.stat?.value ?? 0),
+      }))
+      .sort((a, b) => b.teamPossession - a.teamPossession || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullTeamPossession = await getFullTeamPossession(leagueKey, requestedSeason);
+    const enrichedPosIds = new Set(posTeamEntries.map((r) => r.teamId).filter((id) => id > 0));
+    const mergedTeamPossession = [...posTeamEntries, ...fullTeamPossession.filter((r) => r.teamId <= 0 || !enrichedPosIds.has(r.teamId))]
+      .sort((a, b) => b.teamPossession - a.teamPossession || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -3868,6 +4026,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       bigChancesMissed: mergedBigChancesMissed,
       teamXg: mergedTeamXg,
       teamCleanSheets: mergedTeamCleanSheets,
+      teamPossession: mergedTeamPossession,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3999,7 +4158,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // lack it and would keep the new section hidden for up to a full TTL
     // generation. Whole key bumps (the 52/…/237 additive-shape
     // convention).
-    await cached(`standings:v27:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-241: v28 — the team possession block («مالکیت توپ تیم‌ها»)
+    // joins the mapped payload as a REQUIRED field; old v27 rows lack it
+    // and would keep the new section hidden for up to a full TTL
+    // generation. Whole key bumps (the 52/…/240 additive-shape
+    // convention).
+    await cached(`standings:v28:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -4195,6 +4359,15 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // globalMerge:false with its own panel; the exemption is
       // league-scoped and documented here.
       !(Array.isArray(mapped.teamCleanSheets) && mapped.teamCleanSheets.length > 0 && mapped.teamCleanSheets.length < (leagueKey === "mas" ? 4 : FULL_LIST_HEALTHY_MIN)) &&
+      // cycle-241: the team possession block joins the guard family —
+      // possession_percentage_team.json is WIDE (probed 18-36 rows on the
+      // six serving domestic leagues), so a thin merged list means the
+      // fetch was dropped; re-probes in 90s. Honest-empty feeds (no
+      // "Average possession" TEAM category — persiangulf AND mas, the 237
+      // absence pair, probed) degrade to [] upstream of the guard and
+      // keep the normal TTL — NO league-aware floor needed (unlike the
+      // 240 clean-sheet sibling, mas does not serve this category).
+      !(Array.isArray(mapped.teamPossession) && mapped.teamPossession.length > 0 && mapped.teamPossession.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

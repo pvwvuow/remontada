@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -187,6 +187,20 @@ interface LeagueScorersData {
   // SEASON-AWARE (the 124/…/236 class): historical views serve their own
   // files (2020/21 laliga = Atletico Madrid 18.0, frozen).
   teamCleanSheets?: TeamCleanSheetEntry[];
+  // cycle-241 additive: «مالکیت توپ تیم‌ها» rides the same payload — the
+  // deep-file family's TWENTY-FIRST sibling and its THIRD TEAM-PARTICIPANT
+  // member: the team-side possession surface, rendered right after
+  // گل نخرده‌های تیم‌ها so the THREE team-side blocks read together while
+  // the player→team pair and the keeper QUINTET stay untouched; percent
+  // pill WITH dir=ltr rendered toFixed(1) with NO appended sign (upstream
+  // 1-fraction percent values, probed — the 221 percent convention),
+  // honest absence = [] (feeds without the "Average possession" TEAM
+  // category — persiangulf AND mas, the 237 absence pair, probed — hide
+  // the section). NO badge twin BY DESIGN (badges key on PLAYER ids).
+  // Rows link /team/[id] (the standings-view contract). SEASON-AWARE (the
+  // 124/…/236 class): historical views serve their own files (2020/21
+  // laliga = Barcelona 65.8, frozen).
+  teamPossession?: TeamPossessionEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -899,6 +913,75 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="tcs-row">
+                  {r.teamId > 0 ? (
+                    <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-241: مالکیت توپ تیم‌ها — the deep-file family's TWENTY-FIRST
+          sibling and its THIRD TEAM-PARTICIPANT member: the team-side
+          possession surface. stats/{id}/season/{sid}/
+          possession_percentage_team.json — live-probed 2026-10-30 (UA
+          Chrome/124): ALL SIX domestic globalMerge leagues serve it
+          (laliga 20 Barcelona 69.4 / pl 20 Manchester City 64.2 / seriea
+          20 Inter 63.0 / bundesliga 18 Bayern München 66.9 / ligue1 18
+          Paris Saint-Germain 68.0 / ucl 36 Barcelona 65.2 rows; portugal
+          18 Benfica 63.1 probed for breadth); persiangulf AND mas
+          honestly absent (the 237 absence pair exactly — mas's feed
+          carries FOUR team categories and possession is not one).
+          PERCENT 1-fraction (probed maxdec=1, StatFormat percent) → the
+          221 percent convention VERBATIM: the pill renders toFixed(1)
+          dir=ltr (69.4 renders «۶۹.۴») with NO appended percent sign.
+          SEASON-AWARE: the 2020/21 laliga raw serves its OWN file
+          (Barcelona 65.8 / Sevilla 61.2 — frozen, the 202 anchor
+          pattern). The honest-name contract rides the EXISTING teamFa
+          map — zero new PLAYER_NAME_FA entries. Rows link /team/{teamId}
+          (the standings-view contract). Placed right after گل نخرده‌های
+          تیم‌ها so the THREE team-side blocks read together while the
+          player→team pair and the keeper QUINTET stay untouched — the
+          older gates' relative-order asserts are index-inequality-based
+          so the insertion provably keeps them green. Honest absence when
+          the feed has no "Average possession" team category → the section
+          simply hides. */}
+      {data && !loading && (data.teamPossession || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 12V3.5" />
+              <path d="M12 12l6.5 5.8" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">مالکیت توپ تیم‌ها</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کنترل توپ — سطح تیم</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.teamPossession || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.teamPossession.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="tposs-row">
                   {r.teamId > 0 ? (
                     <Link href={`/team/${r.teamId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

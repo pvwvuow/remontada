@@ -171,6 +171,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // mas serves a naturally-thin 8-row file, probed); old consumers
       // never read this field (the 108 rule).
       teamCleanSheets: st.teamCleanSheets,
+      // cycle-241 additive: «مالکیت توپ تیم‌ها» rides the SAME cached
+      // payload — the deep-file family's TWENTY-FIRST sibling and its
+      // THIRD TEAM-PARTICIPANT member: the team-side possession surface
+      // (percent one-decimal values verbatim — the 221 percent convention,
+      // toFixed(1) dir=ltr with no appended sign; season-aware like the
+      // sisters; honest [] on persiangulf AND mas — the 237 absence pair,
+      // probed); old consumers never read this field (the 108 rule).
+      teamPossession: st.teamPossession,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
