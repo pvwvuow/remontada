@@ -69,6 +69,11 @@ interface FMStatGroup {
 interface FMPlayerEntry {
   name?: string;
   id?: number;
+  // update cycle-205: the Opta crosswalk id — the heatmap feed keys players
+  // "p{optaId}", NOT by the FotMob id (live-verified: Raphinha id=696679 →
+  // optaId="219961", heatmap keys p121145/p165809/p219961… all Opta space;
+  // playerData?id=219961 → null). Present on every content.playerStats entry.
+  optaId?: string;
   teamId?: number;
   teamName?: string;
   isGoalkeeper?: boolean;
@@ -517,6 +522,83 @@ interface LineupSide {
   subs: { id: number; name: string; nameFa: string; shirt?: string }[];
 }
 
+// ---------------- touch map (update cycle-205) ----------------
+// Probed live (UA Chrome/124, 2026-10-30): /api/data/heatmap/match/{id}/
+// heatmaps?heatmapUrl=https%3A%2F%2Fpub.fotmob.com%2Fprod%2Fdb%2Fapi%2Fheatmap
+// %2Fmatch%2F{id} answers HTTP 200 for STARTED/FINISHED matches of the big
+// leagues (5868105 Clásico → 30 players, 6275369 EFL Cup → 32, 5749723
+// Serie A → 32) and 404s for small leagues (6487504 Botola Pro) and for
+// everything else it cannot cover. Shape: {lastModified, players, template}
+// where players is a DICT keyed "p{playerId}" → a string of SVG shapes whose
+// touch dots are `<circle cx="…" cy="…" r="…"/>` in the 105 × 68 pitch space
+// (the same space the `template` SVG's viewBox declares). The block was ZERO
+// usage in src/ before this cycle (grep-verified) — the portal had no
+// per-match touch surface at all. Side attribution rides the ALREADY
+// normalized lineups (rows[].players[].id + subs[].id): a player key that
+// matches neither side is dropped honestly; a side with no points yields a
+// null side (the UI hides the card when BOTH are null).
+export interface TouchMapSide {
+  points: { x: number; y: number }[]; // raw pitch coords, 0..105 × 0..68
+  players: number;                    // distinct players contributing dots
+  touches: number;                    // = points.length
+}
+export interface TouchMap {
+  home: TouchMapSide | null;
+  away: TouchMapSide | null;
+}
+interface FMHeatmapRaw {
+  players?: Record<string, string>;
+}
+
+const TOUCH_PITCH_W = 105;
+const TOUCH_PITCH_H = 68;
+const TOUCH_RE = /cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g;
+
+async function buildTouchMap(
+  id: string,
+  touchSides: Record<string, "home" | "away">
+): Promise<TouchMap | null> {
+  if (Object.keys(touchSides).length === 0) return null;
+  const hmUrl =
+    `https://www.fotmob.com/api/data/heatmap/match/${id}/heatmaps` +
+    `?heatmapUrl=${encodeURIComponent(`https://pub.fotmob.com/prod/db/api/heatmap/match/${id}`)}`;
+  const raw = await fetchJson<FMHeatmapRaw>(hmUrl, 9000);
+  const players = raw?.players || {};
+  const homePts: { x: number; y: number }[] = [];
+  const awayPts: { x: number; y: number }[] = [];
+  let homePlayers = 0;
+  let awayPlayers = 0;
+  for (const [key, svg] of Object.entries(players)) {
+    const opta = key.replace(/^p/, "");
+    if (!opta) continue;
+    const side = touchSides[opta];
+    if (!side) continue;                               // honest drop — side unknown
+    const pts: { x: number; y: number }[] = [];
+    TOUCH_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = TOUCH_RE.exec(svg))) {
+      const cx = Number(m[1]);
+      const cy = Number(m[2]);
+      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+      if (cx < -2 || cx > TOUCH_PITCH_W + 2 || cy < -2 || cy > TOUCH_PITCH_H + 2) continue;
+      pts.push({ x: Math.round(cx * 10) / 10, y: Math.round(cy * 10) / 10 });
+    }
+    if (pts.length === 0) continue;
+    if (side === "home") {
+      homePts.push(...pts);
+      homePlayers++;
+    } else {
+      awayPts.push(...pts);
+      awayPlayers++;
+    }
+  }
+  if (homePts.length === 0 && awayPts.length === 0) return null;
+  return {
+    home: homePts.length > 0 ? { points: homePts, players: homePlayers, touches: homePts.length } : null,
+    away: awayPts.length > 0 ? { points: awayPts, players: awayPlayers, touches: awayPts.length } : null,
+  };
+}
+
 // ---------------- normalizer ----------------
 export interface MatchDetailNormalized {
   match: {
@@ -595,6 +677,20 @@ export interface MatchDetailNormalized {
   };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // update cycle-205: the per-side touch map («نقشهٔ گرمای لمس») — assembled
+  // OUTSIDE this normalized object (its own cached producer, see GET) and
+  // spliced into the JSON response only; the field here documents the shape.
+  // null when the match never started, the side join failed, the league has
+  // no heatmap feed (404), or both sides came out empty — honest absence.
+  touchMap?: TouchMap | null;
+  // update cycle-205: optaId → side crosswalk for the touch-map join — the
+  // heatmap feed keys players by their Opta id («p{optaId}»), NOT the FotMob
+  // id; the crosswalk lives in content.playerStats (every entry carries
+  // optaId + teamId). Third-team/unknown teamIds are dropped (exact match
+  // only — stricter than the playerStats default-to-home grouping).
+  // INTERNAL ONLY — stripped from the JSON response in GET after the touch
+  // map is assembled.
+  touchSides?: Record<string, "home" | "away">;
   // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
   // team's attacking output across the three pitch lanes; null when upstream
   // lacks the block (upcoming matches) or both sides are all-zero.
@@ -1020,6 +1116,23 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     const awayRows = rows.filter((r) => r.side === "away").sort(order);
     if (homeRows.length > 0 || awayRows.length > 0) {
       playerStats = { home: homeRows, away: awayRows };
+    }
+  }
+
+  // ---------------- touch-map crosswalk (update cycle-205) ----------------
+  // optaId → side from EVERY content.playerStats entry (even stats-empty
+  // ones — they still carry optaId + teamId). Exact teamId match only: an
+  // entry whose teamId matches neither side is dropped (honest), unlike the
+  // playerStats grouping above which defaults to home.
+  const touchSides: Record<string, "home" | "away"> = {};
+  {
+    const hId = g.homeTeam?.id;
+    const aId = g.awayTeam?.id;
+    for (const e of Object.values(rawPS || {})) {
+      const oa = e?.optaId;
+      if (!oa || typeof oa !== "string" || !oa) continue;
+      if (hId != null && e.teamId === hId) touchSides[oa] = "home";
+      else if (aId != null && e.teamId === aId) touchSides[oa] = "away";
     }
   }
 
@@ -1552,6 +1665,9 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     highlights,
     reviews,
     topPlayers,
+    // update cycle-205: the optaId → side crosswalk (internal — GET strips it
+    // from the response once the touch map is assembled on top of it)
+    touchSides,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -1578,7 +1694,33 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       if (!raw?.general?.homeTeam) throw new Error("Empty match payload");
       return normalize(raw, id);
     });
-    return NextResponse.json({ ok: true, ...norm });
+    // update cycle-205: the touch map rides its OWN cache entry — the
+    // matchDetails producer runs at a 25 s cadence and must never trigger the
+    // heavier heatmap fetch on every generation. TTL by match state: a
+    // finished match never changes (1 h), a live one does (30 s), an
+    // upcoming one is never fetched at all (zero upstream hits). A 404 from
+    // the feed (small leagues — structural, probed on Botola Pro) resolves
+    // to null INSIDE the producer so the negative answer is cached too — one
+    // 404 per TTL window at most; transient (non-404) failures throw past
+    // the cache and degrade to a null card without polluting it. The key is
+    // versioned (touchMap:v2) so the pre-crosswalk null entries never
+    // shadow the fixed join.
+    let touchMap: TouchMap | null = null;
+    if (norm.match.started && !norm.match.cancelled) {
+      const ttl = norm.match.finished ? 3_600_000 : 30_000;
+      touchMap = await cached(`touchMap:v2:${id}`, ttl, async () => {
+        try {
+          return await buildTouchMap(id, norm.touchSides || {});
+        } catch (err) {
+          if (/\bHTTP 404\b/.test(err instanceof Error ? err.message : "")) return null;
+          throw err;
+        }
+      }).catch(() => null);
+    }
+    // touchSides is internal-only — never in the public response
+    const rest = { ...norm } as Record<string, unknown>;
+    delete rest.touchSides;
+    return NextResponse.json({ ok: true, ...rest, touchMap });
   } catch (err) {
     console.error("[api/match]", err);
     const msg = err instanceof Error ? err.message : "";

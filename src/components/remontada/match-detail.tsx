@@ -34,6 +34,7 @@ interface DetailMatch {
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
   away: { id: number; name: string; fa: string; logo: string; score: number | null };
 }
+interface TouchMapSide { points: { x: number; y: number }[]; players: number; touches: number }
 interface DetailScorer { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string; playerId?: number; assistId?: number }
 interface DetailEvent {
   type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
@@ -81,6 +82,10 @@ interface DetailData {
   };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
+  // update cycle-205: the per-side touch map («نقشهٔ گرمای لمس») — mirrors
+  // /api/match/[id]; points sit in the raw 105 × 68 pitch space. null → the
+  // card never renders (upcoming matches, small-league 404s, failed join).
+  touchMap?: { home: TouchMapSide | null; away: TouchMapSide | null } | null;
   // fix cycle-45: penalty shootout (was dropped entirely before)
   shootout?: {
     home: number;
@@ -729,6 +734,71 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
         <Legend color="bg-slate-400/80" label="بیرون" />
       </div>
     </div>
+  );
+}
+
+// ---------- per-side touch map (update cycle-205) ----------
+// «نقشهٔ گرمای لمس»: one dot per touch, per side, on a plain pitch — the
+// same 105 × 68 space the upstream heatmap feed uses. Side switcher rides
+// the stat-period pill pattern (cycle-190); colors follow the zones family
+// (home = primary, away = chart-4). Hidden entirely when the payload has no
+// side at all (upcoming / small-league 404 / failed join — honest absence).
+function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; match: DetailMatch }) {
+  const sides = (["home", "away"] as const).filter((s) => tm[s]);
+  const [side, setSide] = useState<"home" | "away">(sides[0] ?? "home");
+  const cur = tm[side] ?? tm[sides[0]] ?? null;
+  if (!cur) return null;
+  const isHome = side === "home";
+  const sideName = (s: "home" | "away") =>
+    (s === "home" ? match.home.fa || match.home.name : match.away.fa || match.away.name);
+  return (
+    <section className="glass-card overflow-hidden" data-testid="match-touchmap">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa]">نقشهٔ گرمای لمس</span>
+        <span className="font-bold text-steel/80 tabular-persian">
+          {faDigits(cur.touches)} لمس · {faDigits(cur.players)} بازیکن
+        </span>
+      </header>
+      <div className="px-3 pt-3 flex items-center gap-1.5" role="group" aria-label="انتخاب تیم در نقشهٔ لمس">
+        {sides.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => setSide(s)}
+            aria-pressed={side === s}
+            data-testid={`touchmap-side-${s}`}
+            className={cn(
+              "px-3 py-1.5 rounded-full text-[11px] font-black transition-colors border",
+              side === s
+                ? "bg-[color:var(--glass-bg-strong)] border-[color:var(--glass-border)] text-primary"
+                : "bg-white/[0.02] border-glass-border-soft text-steel hover:text-primary"
+            )}
+          >
+            {sideName(s)}
+          </button>
+        ))}
+      </div>
+      <div className="p-3">
+        <div dir="ltr" className="relative w-full aspect-[105/68] rounded-lg border border-glass-border-soft bg-[oklch(0.24_0.04_150/30%)] overflow-hidden">
+          {/* markings — same minimal pitch the shotmap uses */}
+          <div className="absolute inset-y-0 left-1/2 w-px bg-white/15" />
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[14%] aspect-square rounded-full border border-white/15" />
+          <div className="absolute inset-y-[24%] left-0 w-[10%] border border-white/15 border-l-0" />
+          <div className="absolute inset-y-[24%] right-0 w-[10%] border border-white/15 border-r-0" />
+          {/* touch dots — raw upstream coords, no attack-direction claim */}
+          {cur.points.map((p, i) => (
+            <span
+              key={i}
+              className={cn(
+                "absolute w-[5px] h-[5px] -translate-x-1/2 -translate-y-1/2 rounded-full",
+                isHome ? "bg-primary/60" : "bg-chart-4/60"
+              )}
+              style={{ left: `${(p.x / 105) * 100}%`, top: `${(p.y / 68) * 100}%` }}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -2042,6 +2112,14 @@ export function MatchDetail({ matchId }: { matchId: string }) {
             ))}
           </div>
         </section>
+      )}
+
+      {/* update cycle-205: the per-side touch map («نقشهٔ گرمای لمس») —
+          header-level like the momentum strip: it belongs to the MATCH, not
+          to any tab. Hidden when the payload carries no side at all
+          (upcoming / small-league 404 / failed lineup join — honest absence). */}
+      {data.touchMap && (data.touchMap.home || data.touchMap.away) && (
+        <TouchmapCard tm={data.touchMap} match={m} />
       )}
 
       {/* tabs */}
