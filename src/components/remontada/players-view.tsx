@@ -15,10 +15,23 @@
 // Deep links: ?league=<key>&team=<id> seed the teams mode once on mount
 // (strict validation, silent strip — the cycle-132 selector contract);
 // every interaction mirrors the state back into the URL.
+// Cycle 182: the stars mode joins the season contract — the LAST
+// /api/topscorers consumer still stuck on the current season. The merge
+// payload already carries selectedSeason + allSeasons (cycle-132 fields,
+// live-probed: the 2023/2024 race serves 380 scorers with Kane 36g top +
+// 10 assists, and 2013/2014 is an honest 200-with-zero), so the proven
+// cycle-55/99/132/180 selector rides the hub byte-style: deep-link
+// ?season= seeding (ONE fetch per deep link, strict SEASON_PARAM_RE —
+// anything else loads the current race), honesty snap (the payload's
+// selectedSeason marker is the truth anchor — on disagreement snap back
+// to the current race and strip the stale param), URL replaceState sync,
+// options from the payload itself and the season-aware honest empty
+// state. Squads («همهٔ تیم‌ها») stay current by nature — no season there.
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalAssist, GlobalScorersData } from "@/lib/fotmob";
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { LEAGUES } from "@/lib/leagues";
 import { PLAYER_NAME_FA } from "@/lib/player-names-fa";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -32,6 +45,15 @@ const METRIC_FA: Record<Metric, string> = { goals: "گل", assists: "پاس گل
 
 type Mode = "stars" | "teams";
 const MODE_FA: Record<Mode, string> = { stars: "ستاره‌ها", teams: "همهٔ تیم‌ها" };
+
+// cycle-182: "2024/2025" → «۲۰۲۴/۲۵» — the same label the league page and
+// the گلزنان selectors use. Local mirror on purpose (the cycle-132 lesson:
+// the canonical helper lives in a client component, importing across views
+// would couple two client bundles for a 3-line formatter).
+function faSeasonShort(s: string): string {
+  const m = /^(\d{4})\/(\d{4})$/.exec(s);
+  return m ? faDigits(`${m[1]}/${m[2].slice(2)}`) : faDigits(s);
+}
 
 // unified card row — scorers and assists flatten into the same shape
 interface Row {
@@ -228,10 +250,17 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
 }
 
 export function PlayersView() {
-  // ---- stars mode state (unchanged cycle-104.. contract) ----
+  // ---- stars mode state (cycle-104.. contract; season joins cycle-182) ----
   const [data, setData] = useState<GlobalScorersData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [metric, setMetric] = useState<Metric>("goals");
+  // cycle-182: selected historical season — null = current race
+  const [season, setSeason] = useState<string | null>(null);
+  // cycle-182: deep-link seeding gate (the cycle-99/132 pattern) — the URL
+  // is read exactly once so a shared /players?season=2023/2024 link performs
+  // ONE fetch with the right season
+  const [seasonSeeded, setSeasonSeeded] = useState(false);
+  const [starsLoading, setStarsLoading] = useState(true);
 
   // ---- mode + navigation state ----
   // cycle-134: ONE atom carries the hub navigation (seeded + mode + league +
@@ -262,22 +291,60 @@ export function PlayersView() {
   const squad = teamId != null && squadState?.for === teamId ? squadState.squad : null;
   const squadErr = teamId != null && squadErrState?.for === teamId ? squadErrState.message : null;
 
-  // stars feed — the live topscorers merge on mount (the cycle-104.. contract;
-  // runs once, mode-independent: the stars tab is always warm when opened)
+  // cycle-182: read the deep-linked season once on mount — strict
+  // SEASON_PARAM_RE shape; anything else is ignored and the current race loads
   useEffect(() => {
+    if (seasonSeeded) return;
+    setSeasonSeeded(true);
+    try {
+      const raw = new URLSearchParams(window.location.search).get("season");
+      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
+    } catch { /* no window — ignore */ }
+  }, [seasonSeeded]);
+
+  // stars feed — the live topscorers merge (the cycle-104.. contract;
+  // mode-independent: the stars tab is always warm when opened).
+  // cycle-182: waits for the URL seed pass (one fetch per deep link) and
+  // threads the selected season into the merge; the payload's selectedSeason
+  // marker is the honesty anchor — upstream serving the CURRENT race for a
+  // well-formed season it does not offer snaps the selector back and strips
+  // the stale param (the cycle-99/132 snap, byte-style).
+  useEffect(() => {
+    if (!seasonSeeded) return;
     let alive = true;
-    fetch("/api/topscorers", { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`))))
-      .then((j) => {
+    (async () => {
+      try {
+        const sp = season ? `?season=${encodeURIComponent(season)}` : "";
+        const res = await fetch(`/api/topscorers${sp}`, { cache: "no-store" });
+        const j = await res.json();
         if (!alive) return;
-        if (j?.ok && Array.isArray(j.scorers) && j.scorers.length > 0) setData(j as GlobalScorersData);
-        else setError("داده‌ای برای نمایش نیست.");
-      })
-      .catch((e) => alive && setError(e?.message ? `خطا در دریافت بازیکنان (${e.message})` : "خطا در دریافت بازیکنان"));
+        if (j?.ok && Array.isArray(j.scorers)) {
+          setData(j as GlobalScorersData);
+          setError(null);
+          const sel = (j as GlobalScorersData).selectedSeason;
+          if (season && sel && sel !== season) {
+            setSeason(null);
+            try {
+              const usp = new URLSearchParams(window.location.search);
+              usp.delete("season");
+              const qs = usp.toString();
+              window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+            } catch { /* ignore */ }
+          }
+        } else setError("داده‌ای برای نمایش نیست.");
+      } catch (err) {
+        if (alive) {
+          const msg = err instanceof Error ? err.message : "";
+          setError(msg ? `خطا در دریافت بازیکنان (${msg})` : "خطا در دریافت بازیکنان");
+        }
+      } finally {
+        if (alive) setStarsLoading(false);
+      }
+    })();
     return () => {
       alive = false;
     };
-  }, []);
+  }, [season, seasonSeeded]);
 
   useEffect(() => {
     // one-shot ?league=<key>&team=<id> seeding (cycle-132 contract: the URL
@@ -302,15 +369,18 @@ export function PlayersView() {
     } catch {
       // no window — defaults already in seededHub
     }
-    // one-shot converging URL seed (see comment above)
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    // one-shot converging URL seed (see comment above) — the cycle-182
+    // season-seed effect above proved this shape passes the
+    // set-state-in-effect rule as-is, so the old disable directive is gone
     setHub(seededHub);
   }, [hub]);
 
   const syncUrl = (m: Mode, l: string, t: number | null) => {
     if (typeof window === "undefined") return;
     if (m !== "teams") {
-      history.replaceState(null, "", "/players");
+      // cycle-182: the stars mode keeps its season in a shareable URL
+      const qs = season ? `?season=${encodeURIComponent(season)}` : "";
+      history.replaceState(null, "", `/players${qs}`);
       return;
     }
     const p = new URLSearchParams();
@@ -393,6 +463,30 @@ export function PlayersView() {
   const totalPlayers = squad ? squad.groups.reduce((a, g) => a + g.players.length, 0) : 0;
   const squadLabel = selectedTeam?.fa || selectedTeam?.name || squad?.teamName || null;
 
+  // cycle-182: season selector contract — options come from the merge's own
+  // allSeasons (the cycle-132 fields), so a merge without season metadata
+  // simply hides the control. shownSeason follows the payload's selectedSeason
+  // marker, exactly like the گلزنان page. A deep-linked season upstream really
+  // serves can sit outside the payload's allSeasons window — it is APPENDED so
+  // the selector never contradicts the data on screen (the cycle-99 invariant);
+  // truly unoffered seasons were already snapped back in the fetch effect.
+  const allSeasons = data?.allSeasons || [];
+  const shownSeason = data?.selectedSeason || "";
+  const seasonOptions =
+    season && data?.selectedSeason === season && !allSeasons.includes(season)
+      ? [...allSeasons, season]
+      : allSeasons;
+  const applySeason = (s: string | null) => {
+    setSeason(s);
+    try {
+      const usp = new URLSearchParams(window.location.search);
+      if (s) usp.set("season", s);
+      else usp.delete("season");
+      const qs = usp.toString();
+      window.history.replaceState(null, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    } catch { /* ignore */ }
+  };
+
   const tabCls = (active: boolean) =>
     cn(
       "rounded-xl border px-3 py-1.5 text-[11.5px] font-black transition-all duration-200 active:scale-95",
@@ -407,7 +501,11 @@ export function PlayersView() {
         <div>
           <h1 className="text-lg font-black">بازیکنان</h1>
           <p className="text-[10.5px] text-steel mt-0.5">
-            {mode === "stars" ? "ستاره‌های بیست لیگ و جام برتر با عکس و پروفایل کامل" : "اسکواد کامل همهٔ تیم‌ها — انتخاب لیگ و تیم"}
+            {mode === "stars"
+              ? season && shownSeason
+                ? `ستاره‌های فصل ${faSeasonShort(shownSeason)} — بیست لیگ و جام برتر`
+                : "ستاره‌های بیست لیگ و جام برتر با عکس و پروفایل کامل"
+              : "اسکواد کامل همهٔ تیم‌ها — انتخاب لیگ و تیم"}
           </p>
         </div>
         {mode === "stars" && data?.updatedAt && (
@@ -432,16 +530,57 @@ export function PlayersView() {
         ))}
       </div>
 
+      {/* cycle-182: season selector — same look/contract as the گلزنان page
+          (cycle-132) and the league page (cycle-55/99): options from the
+          payload itself, deep-link via ?season=, honesty snap back when
+          upstream serves the current race */}
+      {mode === "stars" && seasonOptions.length > 1 && (
+        <div className="flex items-center gap-2 px-1">
+          <label htmlFor="season-select" className="text-[11px] font-bold text-muted-foreground flex items-center gap-1.5 shrink-0">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+              <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+              <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            </svg>
+            فصل
+          </label>
+          <select
+            id="season-select"
+            value={season ?? seasonOptions[0]}
+            onChange={(e) => {
+              const s = e.target.value === seasonOptions[0] ? null : e.target.value;
+              applySeason(s);
+            }}
+            className="text-[12px] font-bold text-foreground bg-white/[0.04] border border-[color:var(--glass-border-soft)] rounded-lg px-2 py-1.5 outline-none focus:border-sky-soft/50 cursor-pointer"
+          >
+            {seasonOptions.map((s) => (
+              <option key={s} value={s} className="bg-[#10161f] text-foreground">
+                {faSeasonShort(s)}{s === seasonOptions[0] ? " (فعلی)" : ""}
+              </option>
+            ))}
+          </select>
+          {starsLoading && season != null && (
+            <span className="text-[10px] text-muted-foreground animate-pulse">در حال بارگذاری…</span>
+          )}
+        </div>
+      )}
+
       {mode === "stars" ? (
         <>
           {error ? (
             <EmptyState title="بازیکنان" sub={error} />
-          ) : !data ? (
+          ) : starsLoading && !data ? (
             <div className="glass-popover rounded-2xl p-6 text-center text-[12px] text-steel" role="status">
               در حال دریافت بازیکنان…
             </div>
           ) : list.length === 0 ? (
-            <EmptyState title="بازیکنان" sub="هنوز آماری برای این سنجه ثبت نشده است." />
+            <EmptyState
+              title="بازیکنان"
+              sub={
+                season
+                  ? `ستاره‌ای برای فصل ${faSeasonShort(shownSeason || season)} ثبت نشده است.`
+                  : "هنوز آماری برای این سنجه ثبت نشده است."
+              }
+            />
           ) : (
             <>
               {/* metric tabs */}
