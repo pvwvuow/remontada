@@ -267,7 +267,7 @@ function BoardRow({ row, kind }: { row: LeagueBoard["rows"][number] & { _v: stri
   );
 }
 
-function SeasonBoards({ boards }: { boards: LeagueBoard[] }) {
+function SeasonBoards({ boards, season }: { boards: LeagueBoard[]; season?: string }) {
   const kinds: ("team" | "player")[] = [];
   if (boards.some((b) => b.kind === "team")) kinds.push("team");
   if (boards.some((b) => b.kind === "player")) kinds.push("player");
@@ -279,7 +279,18 @@ function SeasonBoards({ boards }: { boards: LeagueBoard[] }) {
   return (
     <section className="glass-card p-4" data-testid="league-boards" aria-label="برترین‌های رسمی فصل">
       <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
-        <h3 className="text-[11px] font-black text-[#b6cce3]">برترین‌های رسمی فصل</h3>
+        {/* cycle-199 additive: the honest season marker (the 55 convention)
+            reaches the boards header — on a deep-linked historical season the
+            podiums switch while the title stayed ambiguous; same chip style
+            as the sibling GlassLeagueHeader sections (آقای گل et al). */}
+        <div className="flex items-center gap-2 min-w-0">
+          <h3 className="text-[11px] font-black text-[#b6cce3]">برترین‌های رسمی فصل</h3>
+          {season && (
+            <span className="text-[9.5px] font-bold text-steel/90 border border-glass-border-soft bg-white/[0.03] rounded-md px-2 py-1 tabular-persian whitespace-nowrap">
+              {season}
+            </span>
+          )}
+        </div>
         {kinds.length > 1 && (
           <div className="flex gap-1" role="tablist" aria-label="نوع برترین‌ها">
             {kinds.map((k) => (
@@ -1290,7 +1301,12 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
           ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
           {tab === "stats" && (
             <div className="flex flex-col gap-4">
-              {standings?.boards && standings.boards.length > 0 && <SeasonBoards boards={standings.boards} />}
+              {standings?.boards && standings.boards.length > 0 && (
+                <SeasonBoards
+                  boards={standings.boards}
+                  season={(standings.selectedSeason || standings.season) ? `فصل ${faDigits(standings.selectedSeason || standings.season)}` : undefined}
+                />
+              )}
               {fixtures?.stats ? (
                 <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} />
               ) : (
