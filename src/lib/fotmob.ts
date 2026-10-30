@@ -197,6 +197,35 @@ export interface GoalsPreventedEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-220 additive: one «بیشترین دقایق» row — the deep-file family's
+ *  EIGHTH sibling and the first NON-scoring, NON-keeper surface: pure
+ *  presence (minutes on the pitch). Live-probed 2026-10-30 UA Chrome/124:
+ *  the "Minutes played" category carries its own fetchAllUrl →
+ *  data.fotmob.com stats/{id}/season/{sid}/mins_played.json (no underscore
+ *  prefix — the family's first member whose file name lacks it), laliga
+ *  current season/38843 = 482 ranked rows, the 2025/26 raw serves its OWN
+ *  file (season/27233, 600 rows, Antonio Sivera / David Soria / Ionuț Radu
+ *  3420 = 38×90 — every second of the finished season, frozen — the 202
+ *  anchor pattern). Two upstream quirks this sibling must respect:
+ *  (1) the file carries COMPETITION tie-ranks (1,1,1,4,4,4,4,8,9,10 at
+ *  25/26) unlike clean_sheet.json's sequential ones — the merge re-ranks
+ *  POSITIONALLY like every sibling (rank = position in the served top-10),
+ *  the upstream's own tie ORDER (alphabetical within equal minutes) is
+ *  kept as the sort-stable base order;
+ *  (2) values are DECIMAL floats (900.0) rounded ONCE at build — the
+ *  integer convention (clean sheets 215 / G+A 216), never the verbatim
+ *  float one. */
+export interface MinutesEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  minutes: number;  // Math.round(StatValue) ONCE — the integer convention (215/216), not the float one
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -275,6 +304,23 @@ export interface StandingsData {
    *  (live-probed: persiangulf has no "Goals prevented" category — the
    *  section simply hides there). */
   goalsPrevented: GoalsPreventedEntry[];
+  /** cycle-220 additive: «بیشترین دقایق» — the league's own minutes-played
+   *  kings, the deep-file family's EIGHTH sibling (goals 23 / assists 175 /
+   *  cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
+   *  prevented 217 → minutes played 220) and the first surface about pure
+   *  PRESENCE rather than production or keeping. The "Minutes played"
+   *  category carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/mins_played.json (live-probed 2026-10-30, UA
+   *  Chrome/124: laliga current season/38843 = 482 rows — the family's
+   *  widest file; the 2025/26 raw serves its OWN file, season/27233, 600
+   *  rows, Antonio Sivera / David Soria / Ionuț Radu 3420 = 38×90 — the
+   *  frozen full-season anchor, the 202 pattern). Integer values (rounded
+   *  once at build — the 215/216 convention); rank POSITIONAL (the merge's
+   *  own i+1, the family contract — the file's competition tie-ranks 1,1,1,
+   *  4,4,4… are honest upstream data but the served top-10 re-ranks like
+   *  every sibling). Always present (possibly []) like the siblings; feeds
+   *  without the category degrade honestly to []. */
+  minutes: MinutesEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1223,6 +1269,63 @@ export async function getFullGoalsPrevented(leagueKey: string, season?: string):
 }
 
 /**
+ * Full «بیشترین دقایق» leaderboard for one league (cycle-220) — the deep-file
+ * family's EIGHTH sibling, first PRESENCE surface. The "Minutes played"
+ * category carries its own fetchAllUrl →
+ * stats/{id}/season/{sid}/mins_played.json (live-probed 2026-10-30, UA
+ * Chrome/124: laliga season/38843 = 482 ranked rows — the family's widest
+ * file, every registered player; the finished 2025/26 raw serves its OWN
+ * file, season/27233 = 600 rows, Antonio Sivera / David Soria / Ionuț Radu
+ * 3420 = 38×90 — frozen, the 202 anchor pattern; note the file name has NO
+ * underscore prefix unlike _goals_prevented.json). StatValue is a DECIMAL
+ * float (900.0) rounded ONCE — the integer convention (215/216), never the
+ * verbatim float one. Upstream Rank is COMPETITION tie-rank here (1,1,1,
+ * 4,4,4… — unlike clean_sheet.json's sequential ranks); the merge re-ranks
+ * POSITIONALLY like every sibling, so this loader keeps the file's own
+ * order and rank verbatim. Same cache + cycle-127 thin-TTL guard as the
+ * siblings (healthy = ≥10 rows — the category fallback is ~3); season-aware
+ * like every sibling (a historical raw carries its OWN fetchAllUrl).
+ * Feeds without the category degrade to [] and the honest category
+ * fallback still feeds the merge.
+ */
+export async function getFullMinutes(leagueKey: string, season?: string): Promise<MinutesEntry[]> {
+  try {
+    return await cached(
+      `fullMinutes:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^minutes played$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: MinutesEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream competition tie-rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            minutes: Math.round(r.StatValue ?? 0),  // integer convention (215/216): 900.0 → 900, rounded once at build
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -1350,6 +1453,12 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // dead-end the profile network (the 167 lesson). SIGNED DECIMAL value
     // untouched (storage never rounds).
     goalsPrevented: (st.goalsPrevented || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-220 additive: minutes-played rows gain the honest Persian names
+    // like the siblings — «بیشترین دقایق» renders on the per-league
+    // topscorers page and the raw English name alone would dead-end the
+    // profile network (the 167 lesson). Integer value untouched (rounded
+    // once at build).
+    minutes: (st.minutes || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1688,6 +1797,38 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-220: «بیشترین دقایق» — the deep-file family's EIGHTH sibling
+    // rides the SAME cached payload (zero extra upstream cost beyond the
+    // one gzip file on cold build, exactly like the siblings). The first
+    // PRESENCE surface (minutes on the pitch — not production, not
+    // keeping): stats/{id}/season/{sid}/mins_played.json (live-probed
+    // 2026-10-30 UA Chrome/124: laliga 38843 = 482 rows, the family's
+    // widest file; 2025/26 = season/27233, 600 rows, Sivera/Soria/Radu
+    // 3420 = 38×90 frozen). Category top-3 first (the 175 merge order),
+    // then the full file merged on top, deduped by player id, sorted by
+    // minutes DESC (stable — the file's own alphabetical tie order inside
+    // equal minutes is kept as the base order, the 216 lesson), top-10,
+    // POSITIONAL rank re-assignment (the family contract — the file's
+    // competition tie-ranks 1,1,1,4,4,4… are honest upstream data but the
+    // served top-10 re-ranks like every sibling). SEQUENTIAL after the
+    // goals-prevented merge (the 176 discipline: one L2 write at a time).
+    const minutesEntries: MinutesEntry[] = statCategory(raw, /^minutes played$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, minutes: Math.round(p.value ?? 0),
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullMinutes = await getFullMinutes(leagueKey, requestedSeason);
+    const enrichedMinutesIds = new Set(
+      minutesEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedMinutes = [...minutesEntries, ...fullMinutes.filter((r) => r.playerId == null || !enrichedMinutesIds.has(r.playerId))]
+      .sort((a, b) => b.minutes - a.minutes || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1768,6 +1909,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       cleanSheets: mergedCleanSheets,
       gPlusA: mergedGPlusA,
       goalsPrevented: mergedGoalsPrevented,
+      minutes: mergedMinutes,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1837,7 +1979,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // and would keep the new section hidden for up to a full TTL
     // generation. Whole key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215/216 convention).
-    await cached(`standings:v14:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-220: v15 — the minutes-played block («بیشترین دقایق») joins the
+    // mapped payload as a REQUIRED field; old v14 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the
+    // 52/55/90/92/107/175/176/185/196/210/215/216/217 convention).
+    await cached(`standings:v15:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1923,6 +2070,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // normal TTL — the same convention as the assists/ratings/
       // clean-sheets/G+A guards.
       !(Array.isArray(mapped.goalsPrevented) && mapped.goalsPrevented.length > 0 && mapped.goalsPrevented.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-220: the same thin-kept-for-a-generation class closes for the
+      // minutes block (the 175/210/215/216/217 guard family grows by one) —
+      // a thin merged minutes list re-probes in 90s; honest-empty feeds
+      // (no "Minutes played" category) keep the normal TTL.
+      !(Array.isArray(mapped.minutes) && mapped.minutes.length > 0 && mapped.minutes.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

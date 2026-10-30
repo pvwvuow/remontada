@@ -880,6 +880,25 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "michael zetterer": "میشائل زتلر",
   "moritz nicolas": "موریتس نیکلاس",
   "nahuel noll": "ناهوئل نول",
+  // cycle-220: the two identity fallbacks on the SERVED minutes top-10
+  // (the 167 lesson — a raw English name dead-ends the profile network;
+  // the 104 rule holds: both are confident sports-media transliterations).
+  "ángel recio": "آنخل رسیو",
+  "gabriel suazo": "گابریل سوآسو",
+  // cycle-220: the persiangulf minutes top-10 — the HOME league's presence
+  // surface must not render Iranian names in Latin script on a Persian
+  // portal; these are the players' own names in Persian script (fully
+  // confident, the 104 rule trivially satisfied).
+  "meysam teymouri": "میثم تیموری",
+  "meysam tohidast": "میثم توحیدست",
+  "mohammad aghajanpour": "محمد آقاجان‌پور",
+  "abolfazl razzaghpour": "ابوالفضل رزاق‌پور",
+  "ahmad gohari": "احمد گوهری",
+  "ali gholamzadeh": "علی غلام‌زاده",
+  "alireza jafarpour": "علیرضا جعفرپور",
+  "amirali madadizadeh": "امیرعلی مددی‌زاده",
+  "aref haji eydi": "عارف حاجی عیدی",
+  "aria yousefi": "آریا یوسفی",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

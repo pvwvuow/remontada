@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -44,6 +44,13 @@ interface LeagueScorersData {
   // DECIMAL pill (dir=ltr, the rating convention), honest absence = []
   // (persiangulf has no such category — probed).
   goalsPrevented?: GoalsPreventedEntry[];
+  // cycle-220 additive: «بیشترین دقایق» rides the same payload — the
+  // deep-file family's EIGHTH sibling and the first PRESENCE surface,
+  // rendered between امتیازها and گل نخرده‌ها (the two keeper surfaces stay
+  // adjacent — the 217 contract); integer Persian pill WITHOUT dir=ltr
+  // (the 170/215/216 integer convention), honest absence = [] (feeds
+  // without the "Minutes played" category hide the section).
+  minutes?: MinutesEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -526,6 +533,67 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="rating-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-220: بیشترین دقایق — sister-page consistency (the
+          210/215/216/217 pattern one surface over): the SAME cached
+          getStandings payload now carries the minutes-played block (the
+          deep-file family's EIGHTH sibling and the first PRESENCE surface —
+          not production, not keeping, just minutes on the pitch;
+          stats/{id}/season/{sid}/mins_played.json — live-probed 2026-10-30:
+          laliga 38843 = 482 rows, 2025/26 frozen anchor Sivera/Soria/Radu
+          3420 = 38×90). Integer values rounded once at build (the 215/216
+          convention, NOT the float one), so the value pill is Persian digits
+          WITHOUT dir=ltr (the integer contract; 900 renders «۹۰۰»). The
+          file's competition tie-ranks (1,1,1,4,4,4…) are honest upstream
+          data but the served top-10 re-ranks POSITIONALLY like every
+          sibling. Placed between امتیازها and گل نخرده‌ها so the two keeper
+          surfaces stay adjacent (the 217 contract). Same 170/176 link
+          contract (playerId → /player with prefetch=false, title = English
+          original when Persian shown), honest absence when the feed has no
+          "Minutes played" category → the section simply hides. */}
+      {data && !loading && (data.minutes || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <path d="M12 7v5l3.5 2" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">بیشترین دقایق</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حضور در میدان</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.minutes || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(String(r.minutes))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="mp-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

@@ -80,6 +80,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // SIGNED one (SIGNED DECIMAL values verbatim — the rating
       // convention); old consumers never read this field (the 108 rule).
       goalsPrevented: st.goalsPrevented,
+      // cycle-220 additive: «بیشترین دقایق» rides the SAME cached payload —
+      // the deep-file family's EIGHTH sibling and the first PRESENCE
+      // surface (integer minutes — the 215/216 convention); old consumers
+      // never read this field (the 108 rule).
+      minutes: st.minutes,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
