@@ -335,6 +335,42 @@ export interface XgEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
+ *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
+ *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
+ *  prevented 217 / minutes 220 / save percentage 221 / saves per 90 222 /
+ *  penalty saves 225 / expected goals 226 → goals per 90 227). The "Goals
+ *  per 90" category carries its own fetchAllUrl → data.fotmob.com
+ *  stats/{id}/season/{sid}/goals_per_90.json (live-probed 2026-10-30, UA
+ *  Chrome/124: serving on 23 of the 24 leagues.ts entries — EVERY league
+ *  but mas, whose feed carries only two player categories — with WIDE
+ *  files: laliga 139 rows Raphinha 1.77 / Gabriel Jesus 1.36, ucl 128
+ *  Haaland 2.0, championship 196; PERSIANGULF SERVES — 93 rows, the first
+ *  deep sibling besides minutes to reach the Persian Gulf). Decimal values
+ *  kept VERBATIM — the family's SIXTH non-integer member (the
+ *  210/217/221/222/226 convention); upstream precision is UP TO two
+ *  decimals (probed max 2 on every serving league; the 2.6/2.0 JS-number
+ *  corners exist beside 1.77) so the pill renders toFixed(2) — the 217
+ *  display rule, storage never rounds. The file's SubStatValue is the
+ *  TOTAL goals (Raphinha 13.0; Messi 30.0 in the 2020/21 file) and rides
+ *  along unused — one stat per row, the family contract. SEASON-AWARE
+ *  (the 124/175/185/226 class, NOT the 132 one): historical raws carry
+ *  their OWN file (the 2020/21 laliga raw serves season/15585, 224 rows,
+ *  Lionel Messi 0.89 / Gerard Moreno 0.77 — frozen, the 202 anchor
+ *  pattern). Upstream Rank COMPETITION tie-ranked on some files
+ *  (persiangulf 1,1,3 / pl 1,2,3,4,4 — probed) — the merge re-ranks
+ *  POSITIONALLY like every sibling. */
+export interface GoalsPer90Entry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  goalsPer90: number;  // StatValue VERBATIM — per-90 decimal (1.77), the 210/217/226 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -518,6 +554,21 @@ export interface StandingsData {
    *  (the 210 class) applies; always present (possibly []) like the
    *  siblings; feeds without the category degrade honestly to []. */
   xg: XgEntry[];
+  /** cycle-227 additive: «گل در هر ۹۰» — the deep-file family's THIRTEENTH
+   *  sibling and the production-RATE surface (→ goals per 90 227). The
+   *  "Goals per 90" category carries its own fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/goals_per_90.json (live-probed 2026-10-30, UA
+   *  Chrome/124: serving on 23 of the 24 leagues.ts entries — every league
+   *  but mas — with WIDE files; PERSIANGULF SERVES, 93 rows — the first
+   *  deep sibling besides minutes to reach the Persian Gulf). Decimal
+   *  values kept VERBATIM (the sixth non-integer member — the
+   *  210/217/221/222/226 convention; upstream precision UP TO two decimals,
+   *  probed). SEASON-AWARE (the 124/175/185/226 class): historical raws
+   *  serve their OWN files (2020/21 laliga = 224 rows, Messi 0.89 —
+   *  frozen, the 202 anchor pattern). Wide healthy files → the STANDARD
+   *  thin guard (the 210 class) applies; always present (possibly []) like
+   *  the siblings; feeds without the category degrade honestly to []. */
+  goalsPer90: GoalsPer90Entry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1650,6 +1701,74 @@ export async function getFullXg(leagueKey: string, season?: string): Promise<XgE
   }
 }
 
+/** cycle-227 additive: «گل در هر ۹۰» loader — the THIRTEENTH sibling, the
+ *  production-rate twin of getFullXg. goals_per_90.json (live-probed
+ *  2026-10-30 UA Chrome/124: serving on 23 of the 24 leagues.ts entries —
+ *  EVERY league but mas — with WIDE files, laliga 139 rows Raphinha 1.77 /
+ *  Gabriel Jesus 1.36, ucl 128 Haaland 2.0, championship 196;
+ *  PERSIANGULF SERVES — 93 rows, the first deep sibling besides minutes to
+ *  reach the Persian Gulf, with the honest competition tie-rank 1,1,3 at
+ *  the top, Erfan Shahriari / Kasra Taheri 1.06). StatValue is a PER-90
+ *  DECIMAL kept VERBATIM — the family's SIXTH non-integer member (the
+ *  210/217/221/222/226 convention, never rounded); upstream precision is
+ *  UP TO two decimals (probed max 2 on every serving league) so the pill
+ *  renders toFixed(2). The file's SubStatValue is the TOTAL goals and
+ *  rides along but the surface serves the per-90 rate only (one stat per
+ *  row, the family contract). Upstream Rank is COMPETITION tie-ranked on
+ *  some files (persiangulf 1,1,3 / pl 1,2,3,4,4 — probed); this loader
+ *  keeps the file's own order and rank verbatim — the merge re-ranks
+ *  POSITIONALLY like every sibling. Same cache + cycle-127 thin-TTL guard
+ *  as the siblings (healthy = ≥10 rows — every serving league probed ≥59,
+ *  the natural-thinness conflict the 225 penalty-saves class has does not
+ *  exist here); season-aware like every sibling (a historical raw carries
+ *  its OWN fetchAllUrl — the 2020/21 laliga raw serves season/15585, 224
+ *  rows, Messi 0.89 / Moreno 0.77 / Suárez 0.75). Feeds without the
+ *  category degrade to [] and the honest category fallback still feeds
+ *  the merge.
+ */
+export async function getFullGoalsPer90(leagueKey: string, season?: string): Promise<GoalsPer90Entry[]> {
+  try {
+    return await cached(
+      `fullGoalsPer90:v1:${leagueKey}:${season || "cur"}`,
+      // Standard wide-file guard (the 210/222/226 class): goals_per_90.json
+      // is a WIDE file (live-probed 2026-10-30: 59-240 rows across the 23
+      // serving leagues — every outfield player with minutes), so thin
+      // means "the fetch was dropped" and re-probes in 90s. Season-aware
+      // like every production sibling — a historical raw carries its OWN
+      // fetchAllUrl (the 2020/21 laliga raw serves season/15585, 224 rows).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^goals per 90$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: GoalsPer90Entry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            goalsPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -1904,6 +2023,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // 222 lesson — the category top-3 rows enter the merge WITHOUT a
     // nameFa). Decimal value untouched (verbatim, storage never rounds).
     xg: (st.xg || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-227 additive: goals-per-90 rows gain the same read-time honest
+    // names (the 222 lesson — the category top-3 rows enter the merge
+    // WITHOUT a nameFa; statCategory carries raw names only). Decimal
+    // value untouched (verbatim, storage never rounds).
+    goalsPer90: (st.goalsPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2418,6 +2542,41 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-227: «گل در هر ۹۰» — the THIRTEENTH sibling joins the SAME
+    // merge on the SAME cached payload. goals_per_90.json (live-probed
+    // 2026-10-30 UA Chrome/124: 23 of the 24 leagues — everything but mas —
+    // with WIDE files, laliga 139 rows Raphinha 1.77 / Gabriel Jesus 1.36,
+    // championship 196; PERSIANGULF SERVES — 93 rows, the first deep
+    // sibling besides minutes to reach the Persian Gulf; competition
+    // tie-ranks 1,1,3 re-ranked POSITIONALLY like every sibling). Decimal
+    // values kept VERBATIM — the sixth non-integer member (the
+    // 210/217/221/222/226 convention); upstream precision UP TO two
+    // decimals (probed) so the pill renders toFixed(2), the 217 display
+    // rule. SEASON-AWARE (the 124/175/185/226 class): historical raws
+    // serve their OWN files — the 2020/21 laliga raw = season/15585, 224
+    // rows, Messi 0.89 / Moreno 0.77 / Suárez 0.75 — frozen, the 202
+    // anchor pattern. Category top-3 first (the 175 merge order), then the
+    // full file merged on top, deduped by player id, sorted value-DESC
+    // then name, top-10, POSITIONAL rank re-assignment. Standard thin
+    // guard applies (wide files — the 210 class). SEQUENTIAL after the xG
+    // merge (the 176 discipline: one L2 write at a time).
+    const gp90Entries: GoalsPer90Entry[] = statCategory(raw, /^goals per 90$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, goalsPer90: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.goalsPer90 - a.goalsPer90 || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullGp90 = await getFullGoalsPer90(leagueKey, requestedSeason);
+    const enrichedGp90Ids = new Set(
+      gp90Entries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedGoalsPer90 = [...gp90Entries, ...fullGp90.filter((r) => r.playerId == null || !enrichedGp90Ids.has(r.playerId))]
+      .sort((a, b) => b.goalsPer90 - a.goalsPer90 || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -2503,6 +2662,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       savesPer90: mergedSavesPer90,
       penaltySaves: mergedPenaltySaves,
       xg: mergedXg,
+      goalsPer90: mergedGoalsPer90,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -2598,7 +2758,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // payload as a REQUIRED field; old v18 rows lack it and would keep the
     // new section hidden for up to a full TTL generation. Whole key bumps
     // (the 52/…/225 additive-shape convention).
-    await cached(`standings:v19:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-227: v20 — the goals-per-90 block («گل در هر ۹۰») joins the
+    // mapped payload as a REQUIRED field; old v19 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the 52/…/226 additive-shape convention).
+    await cached(`standings:v20:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -2717,6 +2881,14 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // 90s. Honest-empty feeds (no "Expected goals (xG)" category —
       // persiangulf, probed) keep the normal TTL.
       !(Array.isArray(mapped.xg) && mapped.xg.length > 0 && mapped.xg.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-227: the standard thin-kept-for-a-generation guard closes for
+      // the goals-per-90 block (the 175/210/215/216/217/220/221/222/226
+      // guard family grows by one) — goals_per_90.json is a WIDE file
+      // (probed 59-240 rows on the 23 serving leagues), so a thin merged
+      // list means the fetch was dropped; re-probes in 90s. Honest-empty
+      // feeds (no "Goals per 90" category — mas, probed) keep the normal
+      // TTL.
+      !(Array.isArray(mapped.goalsPer90) && mapped.goalsPer90.length > 0 && mapped.goalsPer90.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -5229,6 +5401,11 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
       // cycle-226: the TWELFTH sibling joins the fold chain — the xG kings
       // (the analytics surface) searchable too, zero fetch.
       r.value.xg || [],
+      // cycle-227: the THIRTEENTH sibling joins the fold chain — the
+      // goals-per-90 rate kings searchable too, zero fetch (the Persian
+      // Gulf's own Shahriari/Taheri included — the first deep sibling
+      // besides minutes whose block feeds the home-league search).
+      r.value.goalsPer90 || [],
     ];
     for (const block of deepFamilyBlocks) {
       for (const row of block) {

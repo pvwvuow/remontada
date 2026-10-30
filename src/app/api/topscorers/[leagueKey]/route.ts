@@ -110,6 +110,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // season-aware like goals/assists; honest [] on persiangulf, probed);
       // old consumers never read this field (the 108 rule).
       xg: st.xg,
+      // cycle-227 additive: «گل در هر ۹۰» rides the SAME cached payload —
+      // the deep-file family's THIRTEENTH sibling and the production-RATE
+      // surface (decimal values verbatim, up to two decimals — the
+      // 210/217/226 convention; season-aware like goals/assists/xG; honest
+      // [] on mas, probed; PERSIANGULF SERVES — 93 rows, the first deep
+      // sibling besides minutes to reach the home league); old consumers
+      // never read this field (the 108 rule).
+      goalsPer90: st.goalsPer90,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
