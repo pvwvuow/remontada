@@ -893,15 +893,20 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
         <span className="text-[9px] text-muted-foreground">کل فصل · ترتیب مطابق جدول اصلی</span>
       </header>
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px] sm:text-[13px] min-w-[420px]">
+        {/* ui-cycle-2: same mobile-fit contract as the standings tables — the
+            hard min-w-[420px] overflowed a 390px phone by ~56px, clipping the
+            اختلاف (delta) pill; min-w-0 + tightened paddings + a capped team
+            cell keep all SIX columns inside the card on phones, sm+ restores
+            the roomy layout. Same DOM, testid league-xg untouched. */}
+        <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[420px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start">تیم</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="گل مورد انتظار زده">xG</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="گل مورد انتظار خورده">xGA</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="امتیاز مورد انتظار بر پایهٔ کیفیت موقعیت‌ها">امتیاز x</th>
-              <th className="py-2 px-2.5 font-black text-center" title="امتیاز واقعی منهای امتیاز x — مثبت: بیش از عملکرد، منفی: کمتر از عملکرد">اختلاف</th>
+              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start max-w-[128px] sm:max-w-none">تیم</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار زده">xG</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار خورده">xGA</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="امتیاز مورد انتظار بر پایهٔ کیفیت موقعیت‌ها">امتیاز x</th>
+              <th className="py-2 px-2 sm:px-2.5 font-black text-center" title="امتیاز واقعی منهای امتیاز x — مثبت: بیش از عملکرد، منفی: کمتر از عملکرد">اختلاف</th>
             </tr>
           </thead>
           <tbody>
@@ -915,27 +920,27 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
                     r.idx === 1 && "glass-leader"
                   )}
                 >
-                  <td className="py-2.5 pe-1 ps-3">
+                  <td className="py-2.5 pe-1 ps-2.5 sm:ps-3">
                     <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
                       {faDigits(pad2(r.idx))}
                     </span>
                   </td>
-                  <td className="py-2.5 px-1">
+                  <td className="py-2.5 px-1 max-w-[128px] sm:max-w-none">
                     <span className="flex items-center gap-2 min-w-0">
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" />
                       <span className="font-bold text-[#e4eefb] truncate">{r.fa}</span>
                     </span>
                   </td>
-                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xg != null ? fmt1(r.xg) : "—"}</td>
-                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xga != null ? fmt1(r.xga) : "—"}</td>
-                  <td className="py-2.5 px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xPts != null ? fmt1(r.xPts) : "—"}</td>
-                  <td className="py-2.5 px-2.5 text-center">
+                  <td className="py-2.5 px-1 sm:px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xg != null ? fmt1(r.xg) : "—"}</td>
+                  <td className="py-2.5 px-1 sm:px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xga != null ? fmt1(r.xga) : "—"}</td>
+                  <td className="py-2.5 px-1 sm:px-1.5 text-center tabular-persian text-[#c9dcf1]">{r.xPts != null ? fmt1(r.xPts) : "—"}</td>
+                  <td className="py-2.5 px-2 sm:px-2.5 text-center">
                     {delta == null ? (
                       <span className="text-muted-foreground">—</span>
                     ) : (
                       <span
                         className={cn(
-                          "inline-block min-w-[46px] px-1.5 py-0.5 rounded-md border text-[11px] font-black tabular-persian",
+                          "inline-block min-w-[40px] sm:min-w-[46px] px-1.5 py-0.5 rounded-md border text-[11px] font-black tabular-persian",
                           delta >= 0
                             ? "text-gold border-gold/30 bg-gold/10"
                             : "text-[#8da7c3] border-[#8da7c3]/25 bg-[#8da7c3]/10"
