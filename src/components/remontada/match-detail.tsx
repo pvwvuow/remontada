@@ -169,6 +169,17 @@ interface DetailData {
     image: string;
     source: string;
   } | null;
+  // update cycle-191: the post-match review feed («گزارش‌های بازی») —
+  // mirrors /api/match/[id]; entries are deduped + language-collapsed
+  // server-side (en preferred, ≤3); null/empty → the block never renders
+  reviews?: {
+    title: string;
+    description: string;
+    image: string; // "" → text-only row (onError-hide pattern)
+    source: string;
+    url: string; // fotmob news article, opens in a new tab
+    date?: string;
+  }[] | null;
   error?: string;
 }
 
@@ -1743,6 +1754,66 @@ function HighlightsCard({ hl }: { hl: NonNullable<DetailData["highlights"]> }) {
   );
 }
 
+// ---------- update cycle-191: the post-match review feed («گزارش‌های بازی») ----------
+// A header-level card like HighlightsCard: it belongs to the MATCH, not to a
+// tab. Each row = the Opta article's image + title + description, linking to
+// the FotMob news page in a new tab. The image rides the site-wide
+// onError-hide pattern (blocked CDN → hidden img, text row stays); a row
+// without an image renders text-only (cycle-108 vbroken=0 invariant stays
+// true everywhere). The feed is language-collapsed server-side (en
+// preferred); honest absence — the block only renders when the normalized
+// array is non-empty (some finished matches carry no postReview; upcoming
+// matches never do).
+function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> }) {
+  return (
+    <section className="glass-card overflow-hidden" aria-label="گزارش‌های بازی" data-testid="match-reviews">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <span className="text-[11px] font-black text-steel">گزارش‌های بازی</span>
+        <span className="text-[9px] text-muted-foreground/60 shrink-0">منبع: Opta · در تب جدید باز می‌شود</span>
+      </header>
+      <div>
+        {reviews.map((r, i) => (
+          <a
+            key={i}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 px-3 py-2.5 group transition-colors hover:bg-[#ffffff06] border-b border-glass-border-soft last:border-b-0"
+          >
+            {r.image ? (
+              <img
+                src={r.image}
+                alt=""
+                width={72}
+                height={48}
+                loading="lazy"
+                className="shrink-0 w-[72px] h-[48px] rounded-lg object-cover border border-[color:var(--glass-border-soft)]"
+                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+              />
+            ) : (
+              <span className="shrink-0 w-9 h-9 rounded-lg bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] flex items-center justify-center" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <path d="M4 5.5h16v13H4z" />
+                  <path d="M7 9.5h10M7 13h10M7 16.5h6" />
+                </svg>
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12px] font-black leading-snug text-[#ecf3fa] group-hover:text-primary transition-colors">{r.title}</span>
+              {r.description ? (
+                <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
+              ) : null}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
+              <path d="M7 17L17 7M9 7h8v8" />
+            </svg>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ---------- main ----------
 export function MatchDetail({ matchId }: { matchId: string }) {
   const [data, setData] = useState<DetailData | null>(null);
@@ -1861,6 +1932,14 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           invariant stays true everywhere). Hidden when the block is absent
           (legend-111) — probed: featured finished matches only. */}
       {data.highlights && <HighlightsCard hl={data.highlights} />}
+
+      {/* update cycle-191: the post-match review feed («گزارش‌های بازی») —
+          header-level like the highlights card: it belongs to the MATCH.
+          Each row links to the FotMob news article in a new tab; the image
+          rides the onError-hide pattern (vbroken=0 invariant). Hidden when
+          the feed is absent (honest absence — some finished matches have no
+          postReview; upcoming matches never do). */}
+      {data.reviews && data.reviews.length > 0 && <ReviewsCard reviews={data.reviews} />}
 
       {/* momentum (live) */}
       {data.momentum && data.momentum.length > 4 && (

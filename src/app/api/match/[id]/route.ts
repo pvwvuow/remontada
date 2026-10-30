@@ -229,6 +229,21 @@ interface FMMatchDetails {
         url?: string;
         source?: string;
       } | null;
+      // update cycle-191: the post-match review feed («گزارش‌های بازی") —
+      // live-probed UA Chrome/124, 2026-10-30: Opta articles on SOME finished
+      // matches (5749721 → 1 entry, 5749727 → 8 entries = ONE article in 8
+      // languages via "_lang"-suffixed ids); absent on other finished matches
+      // (5765944) and on upcoming ones (5868120) → honest absence.
+      postReview?: {
+        id?: string;
+        title?: string;
+        description?: string;
+        image?: string;
+        source?: string;
+        shareUrl?: string;
+        lang?: string;
+        dateUpdated?: string;
+      }[] | null;
       // update cycle-117: the two sides' season top scorers («گلزنان فصل
       // دو تیم») — unconsumed since the beginning (the per-match playerStats
       // block consumed by cycle-47 is a DIFFERENT payload section)
@@ -676,7 +691,22 @@ export interface MatchDetailNormalized {
     image: string;
     source: string;
   } | null;
+  // update cycle-191: the post-match review feed («گزارش‌های بازی") —
+  // matchFacts.postReview deduped: the upstream array repeats ONE article in
+  // several languages (ids get a "_lang" suffix); entries group by the base
+  // id and the "en" entry wins each group, capped at 3 articles. The image
+  // is optional (row degrades to text); url is the fotmob news shareUrl.
+  reviews?: MatchReview[] | null;
   fetchedAt: string;
+}
+
+export interface MatchReview {
+  title: string;
+  description: string;
+  image: string; // "" → the row renders text-only (onError-hide pattern)
+  source: string;
+  url: string; // https://www.fotmob.com/news/... (opens in a new tab)
+  date?: string; // upstream dateUpdated ISO
 }
 
 // update cycle-117: one side's season top scorer for the h2h tab card.
@@ -1263,6 +1293,46 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         }
       : null;
 
+  // ---------------- post-match review feed (update cycle-191) ----------------
+  // matchFacts.postReview = Opta's post-match articles («گزارش‌های بازی»).
+  // Live-probed UA Chrome/124, 2026-10-30: the array repeats ONE article in
+  // several languages — ids carry a "_lang" suffix (5749727: one article,
+  // 8 entries en/es/pt-BR/fr/it/de/ar/pt). Dedupe: group by the base id
+  // (suffix stripped), the "en" entry wins its group (else the first seen),
+  // capped at 3 articles. Strict guards per the 125 protocol: BOTH a
+  // non-empty title AND a https www.fotmob.com/news/ shareUrl are required;
+  // the image is guarded separately (foreign/absent → "", the row degrades
+  // to a text row — no broken-image risk, the onError-hide pattern). The
+  // block is null when nothing survives (honest absence — 5765944 is
+  // finished yet carries no postReview; upcoming matches never do).
+  const prList = raw.content?.matchFacts?.postReview;
+  let reviews: MatchDetailNormalized["reviews"] = null;
+  if (Array.isArray(prList) && prList.length > 0) {
+    const SUFFIX_RE = /_[a-z]{2}(?:-[A-Za-z]{2})?$/;
+    const groups = new Map<string, (typeof prList)[number]>();
+    for (const a of prList) {
+      if (!a || typeof a !== "object") continue;
+      if (typeof a.title !== "string" || !a.title.trim()) continue;
+      if (typeof a.shareUrl !== "string" || !/^https:\/\/www\.fotmob\.com\/news\//.test(a.shareUrl)) continue;
+      const base = typeof a.id === "string" && a.id ? a.id.replace(SUFFIX_RE, "") : a.title;
+      const prev = groups.get(base);
+      if (!prev || (a.lang === "en" && prev.lang !== "en")) groups.set(base, a);
+      if (groups.size >= 3) break;
+    }
+    const rows: MatchReview[] = [];
+    for (const a of groups.values()) {
+      rows.push({
+        title: a.title!,
+        description: typeof a.description === "string" ? a.description : "",
+        image: typeof a.image === "string" && /^https:\/\//.test(a.image) ? a.image : "",
+        source: typeof a.source === "string" && a.source ? a.source : "FotMob",
+        url: a.shareUrl!,
+        date: typeof a.dateUpdated === "string" && a.dateUpdated ? a.dateUpdated : undefined,
+      });
+    }
+    if (rows.length > 0) reviews = rows;
+  }
+
   // ---------------- match insights (update cycle-110) ----------------
   // Pre-match story lines (matchFacts.insights): only curated localizedTextId
   // templates render; numbers → Persian digits, team/player refs ride the
@@ -1392,6 +1462,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     playerStats,
     playerOfTheMatch,
     highlights,
+    reviews,
     fetchedAt: new Date().toISOString(),
   };
 }
