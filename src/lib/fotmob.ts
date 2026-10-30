@@ -2184,6 +2184,18 @@ interface FMPlayerDetails {
       teamId?: number; teamName?: string;
     }[] | null;
   } | null;
+  // cycle-201 probed (UA Chrome/124, 2026-10-30): EVERY playerData payload
+  // carries `statSeasons` — the player's stat-tracked seasons, newest first,
+  // each with the tournaments the player was registered in that season
+  // (Yamal n=5, Balde n=6, Fetai n=4, Ćurković n=2). Each tournament row is
+  // registration metadata only: name + tournamentId (catalog-mappable) +
+  // entryId/hasDeepStats (per-season stat-table pointers — deliberately
+  // unmapped: display is registration-only). The portal drops the whole
+  // block today; the mapping rides the ONE already-cached raw fetch.
+  statSeasons?: {
+    seasonName?: string;
+    tournaments?: { name?: string; tournamentId?: number; entryId?: string; hasDeepStats?: boolean }[] | null;
+  }[] | null;
   // cycle-96 probed (UA Chrome/124, 23 live samples over 6 squads, 2026-10-29):
   // present ONLY for currently-unavailable players — a single object (never an
   // array), null for every available player. Shape: {name ("Thigh injury",
@@ -2356,6 +2368,13 @@ export interface PlayerData {
   // (a player belongs to one NT context; mens first).
   teammates: PlayerLinkRow[];
   nationalTeammates: PlayerLinkRow[];
+  // cycle-201: per-season competition registrations off the SAME cached
+  // playerData payload (zero extra upstream fetch — the statSeasons block
+  // rides the one raw fetch). OPTIONAL by contract — v8-cached snapshots
+  // legitimately lack it → the section hides (the cards/market honesty
+  // pattern). Always present after the v9 bump — empty array when upstream
+  // lacks the block (honest absence, the section hides).
+  statSeasons: PlayerStatSeason[];
   fetchedAt: string;
 }
 
@@ -2379,6 +2398,19 @@ export interface PlayerMarket {
   current: string; currentTeamFa: string | null;
   sinceValue: string; sinceTeamFa: string | null; sinceYear: string;
   points: number[];  // chronological EUR values for the sparkline
+}
+
+// cycle-201: one stat-tracked season of the player («رقابت‌های هر فصل» on the
+// profile). tournaments = the competitions the player was REGISTERED in that
+// season — the honest statSeasons block, zero extra upstream fetch.
+export interface PlayerStatSeasonTournament {
+  name: string;       // raw upstream tournament name (Latin, honest fallback)
+  nameFa: string;     // leagueFaById resolution — catalog faName → competitionFa map → raw name
+  leagueKey?: string; // catalog league key → real /league/{key} link; absent = honest text chip
+}
+export interface PlayerStatSeason {
+  season: string; // raw upstream season name ("2024/2025")
+  tournaments: PlayerStatSeasonTournament[];
 }
 
 function faPosition(label?: string): string | null {
@@ -2765,6 +2797,36 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     };
   }
 
+  // cycle-201: per-season competition registrations («رقابت‌های هر فصل») from
+  // the SAME raw payload — newest first, season label + tournament chips.
+  // nameFa/leagueKey resolve through leagueFaById / the LEAGUES catalog
+  // (fotmobId hit → real /league/{key} link, else competitionFa, else the
+  // honest raw name). Guards: non-empty seasonName, non-empty tournament
+  // name, per-season seen-set dedupe (the 197 lesson), caps 8 seasons × 10
+  // tournaments (upstream serves ≤6/≤5 on all live probes — defensive only).
+  const statSeasons: PlayerStatSeason[] = [];
+  for (const ss of (raw.statSeasons || []).slice(0, 8)) {
+    const seasonName = (ss?.seasonName || "").trim();
+    if (!seasonName) continue;
+    const seenT = new Set<string>();
+    const tournaments: PlayerStatSeasonTournament[] = [];
+    for (const t of (ss.tournaments || []).slice(0, 10)) {
+      const name = (t?.name || "").trim();
+      if (!name) continue;
+      const tid = typeof t.tournamentId === "number" ? t.tournamentId : undefined;
+      const dk = `${name.toLowerCase()}|${tid ?? ""}`;
+      if (seenT.has(dk)) continue;
+      seenT.add(dk);
+      const cat = tid ? LEAGUES.find((l) => l.fotmobId === tid) : undefined;
+      tournaments.push({
+        name,
+        nameFa: leagueFaById(tid, name),
+        ...(cat ? { leagueKey: cat.key } : {}),
+      });
+    }
+    if (tournaments.length > 0) statSeasons.push({ season: seasonName, tournaments });
+  }
+
   const posEn = raw.positionDescription?.primaryPosition?.label || null;
   // cycle-135: full multi-position map («پست‌های بازی») — dedupe by English
   // label, sort main-first then by the payload's own occurrence tally, cap 8.
@@ -2817,6 +2879,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     deepStats: buildDeepStats(raw),
     traits: buildTraits(raw),
     market: buildMarket(raw),
+    statSeasons,
     ...buildRelatedLinks(raw, id),
     fetchedAt: new Date().toISOString(),
   };
@@ -3131,7 +3194,11 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // serve profiles WITHOUT the block from the persistent SQLite L2 across
   // restarts (the 196 standings:v10 lesson re-proven) for up to the TTL
   // (same convention as cycle-52/86/87/96/135/159)
-  const payload = await cached(`player:v8:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-201: key bumped to v9 — normalized output gained the required
+  // statSeasons rows («رقابت‌های هر فصل»); a v8-cached shape would serve
+  // profiles WITHOUT the block from the persistent SQLite L2 across restarts
+  // for up to the TTL (same convention as cycle-52/86/87/96/135/159/197)
+  const payload = await cached(`player:v9:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

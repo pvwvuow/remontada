@@ -613,6 +613,48 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         </section>
       )}
 
+      {/* ---------- per-season competition registrations (cycle-201) ---------- */}
+      {p.statSeasons && p.statSeasons.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label="رقابت‌های هر فصل" data-testid="player-statseasons">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
+              <rect x="3" y="4" width="18" height="18" rx="2" />
+              <path d="M16 2v4M8 2v4M3 10h18" />
+            </svg>
+            رقابت‌های هر فصل
+            <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.statSeasons.length)} فصل</span>
+          </header>
+          <ul className="glass-list">
+            {p.statSeasons.map((s, i) => (
+              <li key={`${s.season}-${i}`} className="flex items-start gap-3 px-3 sm:px-4 py-2.5">
+                <span className="text-[10px] font-black text-steel/70 tabular-persian w-[52px] shrink-0 pt-0.5">{faDigits(s.season)}</span>
+                <p className="flex flex-wrap gap-1.5 min-w-0">
+                  {s.tournaments.map((t, j) =>
+                    t.leagueKey ? (
+                      <Link
+                        key={`${t.name}-${j}`}
+                        href={`/league/${t.leagueKey}`}
+                        prefetch={false}
+                        className="text-[10.5px] font-bold text-sky-soft border border-glass-border-soft rounded px-1.5 py-px hover:bg-white/5"
+                      >
+                        {t.nameFa}
+                      </Link>
+                    ) : (
+                      <span
+                        key={`${t.name}-${j}`}
+                        className="text-[10.5px] font-bold text-muted-foreground border border-glass-border-soft rounded px-1.5 py-px"
+                      >
+                        {t.nameFa}
+                      </span>
+                    )
+                  )}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* ---------- trophies (cycle-20) ---------- */}
       {p.trophies.length > 0 && (
         <section className="glass-card overflow-hidden" aria-label="افتخارات">
