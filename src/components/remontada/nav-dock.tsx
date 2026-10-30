@@ -61,6 +61,28 @@ function DockIcon({ name }: { name: "live" | "trophy" | "goal" | "news" | "playe
   );
 }
 
+// ui-cycle-7 (BL-7, measured live at 390×844): the active-route indicator
+// went DARK on every detail route — /league/laliga and /team/101610 lit up
+// 0/5 links (aria-current=null everywhere) and /player/NNN wrongly lit
+// «نتایج زنده». Detail families now map to their dock section: match/team
+// → results, league → leagues, player → players.
+function isDockActive(href: string, pathname: string): boolean {
+  if (href === "/") {
+    return (
+      pathname === "/" ||
+      pathname.startsWith("/match") ||
+      pathname.startsWith("/team")
+    );
+  }
+  if (href === "/leagues") {
+    return pathname.startsWith("/leagues") || pathname.startsWith("/league/");
+  }
+  if (href === "/players") {
+    return pathname.startsWith("/players") || pathname.startsWith("/player/");
+  }
+  return pathname.startsWith(href);
+}
+
 export function NavDock() {
   const pathname = usePathname();
   return (
@@ -81,17 +103,17 @@ export function NavDock() {
         }}
       >
         {DOCK_ITEMS.map((item) => {
-          const active =
-            item.href === "/"
-              ? pathname === "/" || pathname.startsWith("/match") || pathname.startsWith("/player/")
-              : pathname.startsWith(item.href);
+          // ui-cycle-7 (BL-7): detail routes now keep the dock lit (see
+          // isDockActive above); min-h-[44px] pins the WCAG 2.5.5 touch-target
+          // floor (measured 70×49 was accidental, not guaranteed).
+          const active = isDockActive(item.href, pathname);
           return (
             <Link
               key={item.href}
               href={item.href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 min-w-0 flex-1 transition-all duration-200",
+                "flex flex-col items-center justify-center gap-1 rounded-xl px-2 py-1.5 min-h-[44px] min-w-0 flex-1 transition-all duration-200",
                 active
                   ? "text-primary bg-primary/10 border border-primary/30 shadow-[0_0_16px_oklch(0.7_0.1_300/0.28)]"
                   : "text-muted-foreground border border-transparent hover:text-foreground active:scale-95"
