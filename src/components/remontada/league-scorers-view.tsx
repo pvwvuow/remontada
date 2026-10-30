@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -75,6 +75,16 @@ interface LeagueScorersData {
   // — AND every historical season, probed, hide the section; the block is
   // CURRENT-SEASON ONLY, the 132 class).
   penaltySaves?: PenaltySavesEntry[];
+  // cycle-226 additive: «گل مورد انتظار» rides the same payload — the deep-
+  // file family's TWELFTH sibling and the first pure-ANALYTICS surface,
+  // rendered between امتیازها and بیشترین دقایق (the production/analytics
+  // run, keeper run untouched); decimal pill WITH dir=ltr rendered
+  // toFixed(1) (upstream precision EXACTLY one decimal, probed — the
+  // 210/217/221/222 decimal convention), honest absence = [] (feeds
+  // without the "Expected goals (xG)" category — persiangulf, probed —
+  // hide the section). SEASON-AWARE (the 124/175/185 class): historical
+  // views serve their own files (2020/21 laliga = Messi 23.9, frozen).
+  xg?: XgEntry[];
   // cycle-179 additive: the cycle-176 cards block rides the same payload —
   // sister-page consistency (the 174 pattern one surface over).
   cards?: { yellow: LeagueCardEntry[]; red: LeagueCardEntry[] };
@@ -557,6 +567,71 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="rating-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-226: گل مورد انتظار — sister-page consistency (the
+          210/215/216/217/220/221/222/225 pattern one surface over): the SAME
+          cached getStandings payload now carries the xG block (the deep-file
+          family's TWELFTH sibling and the first pure-ANALYTICS surface —
+          stats/{id}/season/{sid}/expected_goals.json — live-probed
+          2026-10-30: SIX of the seven leagues serve it with WIDE files
+          (laliga 389 / ucl 479 rows), persiangulf honestly absent (no xG
+          category). Decimal values kept VERBATIM — the family's FIFTH
+          non-integer member (the 210/217/221/222 decimal convention — 12.2
+          renders «۱۲.۲»); upstream precision is EXACTLY one decimal (probed:
+          all 389 laliga rows) so the pill renders toFixed(1), dir=ltr — the
+          217 display rule. SEASON-AWARE (the 124/175/185 class, NOT the 132
+          one): historical views serve their OWN files (the 2020/21 laliga
+          raw = 471 rows, Messi 23.9 — frozen, the 202 anchor pattern).
+          Placed between امتیازها and بیشترین دقایق so the production/
+          analytics run stays together and the keeper QUINTET stays adjacent
+          (the 217 contract untouched). Same 170/176 link contract (playerId
+          → /player with prefetch=false, title = English original when
+          Persian shown), honest absence when the feed has no "Expected
+          goals (xG)" category → the section simply hides. */}
+      {data && !loading && (data.xg || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <circle cx="12" cy="12" r="9" />
+              <circle cx="12" cy="12" r="4.5" />
+              <circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">گل مورد انتظار</h2>
+            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت موقعیت‌ها</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.xg || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.xg.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="xg-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

@@ -104,6 +104,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // historical season, probed); old consumers never read this field
       // (the 108 rule).
       penaltySaves: st.penaltySaves,
+      // cycle-226 additive: «گل مورد انتظار» rides the SAME cached payload —
+      // the deep-file family's TWELFTH sibling and the first pure-ANALYTICS
+      // surface (decimal xG values verbatim — the 210/217 convention;
+      // season-aware like goals/assists; honest [] on persiangulf, probed);
+      // old consumers never read this field (the 108 rule).
+      xg: st.xg,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

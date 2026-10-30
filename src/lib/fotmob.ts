@@ -304,6 +304,37 @@ export interface PenaltySavesEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-226 additive: one «گل مورد انتظار» row — the deep-file family's
+ *  TWELFTH sibling and the first pure-ANALYTICS surface (goals 23 / assists
+ *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
+ *  prevented 217 / minutes 220 / save percentage 221 / saves per 90 222 /
+ *  penalty saves 225 → expected goals 226). The "Expected goals (xG)"
+ *  category carries its own fetchAllUrl → data.fotmob.com
+ *  stats/{id}/season/{sid}/expected_goals.json (live-probed 2026-10-30, UA
+ *  Chrome/124: serving on SIX of the seven leagues — laliga 389 rows
+ *  Mbappé 12.2 / Raphinha 9.2 / Yamal 7.0, ucl 479 rows Guirassy 4.2;
+ *  persiangulf honestly absent — no xG category at all, the 215/210
+ *  pattern). Decimal values kept VERBATIM — the family's FIFTH
+ *  non-integer member (ratings 210 / goals prevented 217 / save percentage
+ *  221 / saves per 90 222 → xG 226); upstream precision is EXACTLY one
+ *  decimal (live-probed: all 389 laliga rows one-decimal) so the pill
+ *  renders toFixed(1) — the 217 display rule, storage never rounds.
+ *  SEASON-AWARE (the 124/175/185 class, NOT the 132 one): historical raws
+ *  carry their OWN file (the 2020/21 raw serves season/15585, 471 rows,
+ *  Lionel Messi 23.9 / Gerard Moreno 19.0 / Karim Benzema 18.8 — frozen,
+ *  the 202 anchor pattern). Upstream Rank sequential on the probing
+ *  files — the merge re-ranks POSITIONALLY like every sibling. */
+export interface XgEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  xg: number;  // StatValue VERBATIM — expected goals decimal (12.2), the 210/217 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -472,6 +503,21 @@ export interface StandingsData {
    *  full generation. NATURAL thinness (2-5 rows, probed) never sets it —
    *  no UI/API consumer ever reads it (the 108 rule). */
   penaltySavesDropped?: boolean;
+  /** cycle-226 additive: «گل مورد انتظار» — the deep-file family's TWELFTH
+   *  sibling and the first pure-ANALYTICS surface (→ expected goals 226).
+   *  The "Expected goals (xG)" category carries its own fetchAllUrl →
+   *  data.fotmob.com stats/{id}/season/{sid}/expected_goals.json
+   *  (live-probed 2026-10-30, UA Chrome/124: serving on SIX of the seven
+   *  leagues — laliga 389 rows Mbappé 12.2 / Raphinha 9.2 / Yamal 7.0, ucl
+   *  479 rows Guirassy 4.2; persiangulf honestly absent — no xG category).
+   *  Decimal values kept VERBATIM (the fifth non-integer member — the
+   *  210/217/221/222 convention; upstream precision EXACTLY one decimal,
+   *  probed). SEASON-AWARE (the 124/175/185 class): historical raws serve
+   *  their OWN files (2020/21 laliga = 471 rows, Messi 23.9 — frozen, the
+   *  202 anchor pattern). Wide healthy files → the STANDARD thin guard
+   *  (the 210 class) applies; always present (possibly []) like the
+   *  siblings; feeds without the category degrade honestly to []. */
+  xg: XgEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -1561,6 +1607,49 @@ export async function getFullSavePercentage(leagueKey: string, season?: string):
  * Masip 3.0). Feeds without the category degrade to [] and the honest
  * category fallback still feeds the merge.
  */
+export async function getFullXg(leagueKey: string, season?: string): Promise<XgEntry[]> {
+  try {
+    return await cached(
+      `fullXg:v1:${leagueKey}:${season || "cur"}`,
+      // Standard wide-file guard (the 210/222 class): expected_goals.json is
+      // a WIDE file (live-probed 2026-10-30: laliga 389 / ucl 479 rows —
+      // every outfield player with minutes), so thin means "the fetch was
+      // dropped" and re-probes in 90s. Season-aware like every
+      // production sibling — a historical raw carries its OWN fetchAllUrl
+      // (the 2020/21 laliga raw serves season/15585, 471 rows).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^expected goals \(xg\)$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: XgEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            xg: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -1811,6 +1900,10 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // WITHOUT a nameFa; statCategory carries raw names only). Integer value
     // untouched (rounded once at build).
     penaltySaves: (st.penaltySaves || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-226 additive: xG rows gain the same read-time honest names (the
+    // 222 lesson — the category top-3 rows enter the merge WITHOUT a
+    // nameFa). Decimal value untouched (verbatim, storage never rounds).
+    xg: (st.xg || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2292,6 +2385,39 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-226: «گل مورد انتظار» — the TWELFTH sibling joins the SAME
+    // cached payload (the 175→225 merge pattern one surface over):
+    // stats/{id}/season/{sid}/expected_goals.json (live-probed 2026-10-30
+    // UA Chrome/124: SIX of the seven leagues — laliga 389 rows Mbappé
+    // 12.2 / Raphinha 9.2 / Yamal 7.0, ucl 479 Guirassy 4.2; persiangulf
+    // honestly absent — no xG category; SEASON-AWARE (the 124/175/185
+    // class): the 2020/21 raw serves its OWN file, 471 rows, Messi 23.9 /
+    // Moreno 19.0 / Benzema 18.8 — frozen, the 202 anchor pattern). Decimal
+    // values kept VERBATIM — the fifth non-integer member (the 210/217/221/
+    // 222 convention); upstream precision EXACTLY one decimal (probed) so
+    // the pill renders toFixed(1), the 217 display rule. Category top-3
+    // first (the 175 merge order), then the full file merged on top,
+    // deduped by player id, sorted xg DESC then name, top-10, POSITIONAL
+    // rank re-assignment. Standard thin guard applies (wide files — the
+    // 210 class). SEQUENTIAL after the penalty-saves merge (the 176
+    // discipline: one L2 write at a time).
+    const xgEntries: XgEntry[] = statCategory(raw, /^expected goals \(xg\)$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, xg: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.xg - a.xg || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullXg = await getFullXg(leagueKey, requestedSeason);
+    const enrichedXgIds = new Set(
+      xgEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedXg = [...xgEntries, ...fullXg.filter((r) => r.playerId == null || !enrichedXgIds.has(r.playerId))]
+      .sort((a, b) => b.xg - a.xg || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -2376,6 +2502,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       savePercentage: mergedSavePercentage,
       savesPer90: mergedSavesPer90,
       penaltySaves: mergedPenaltySaves,
+      xg: mergedXg,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -2467,7 +2594,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // Whole key bumps (the
     // 52/55/90/92/107/175/176/185/196/210/215/216/217/220/221/222
     // convention).
-    await cached(`standings:v18:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-226: v19 — the xG block («گل مورد انتظار») joins the mapped
+    // payload as a REQUIRED field; old v18 rows lack it and would keep the
+    // new section hidden for up to a full TTL generation. Whole key bumps
+    // (the 52/…/225 additive-shape convention).
+    await cached(`standings:v19:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -2579,6 +2710,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // payload re-probes in 90s in exactly that case, never on natural
       // thinness. The v18 key bump already forces one clean rebuild.
       !mapped.penaltySavesDropped &&
+      // cycle-226: the standard thin-kept-for-a-generation guard closes for
+      // the xG block (the 175/210/215/216/217/220/221/222 guard family grows
+      // by one) — expected_goals.json is a WIDE file (probed 389/479 rows),
+      // so a thin merged xG list means the fetch was dropped; re-probes in
+      // 90s. Honest-empty feeds (no "Expected goals (xG)" category —
+      // persiangulf, probed) keep the normal TTL.
+      !(Array.isArray(mapped.xg) && mapped.xg.length > 0 && mapped.xg.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -5088,6 +5226,9 @@ export async function getPlayerIndex(): Promise<PlayerIndexEntry[]> {
       // cycle-225: the family's ELEVENTH sibling joins the 224 fold chain —
       // penalty-saves kings (Turati/Vallés/Hein…) searchable too, zero fetch.
       r.value.penaltySaves || [],
+      // cycle-226: the TWELFTH sibling joins the fold chain — the xG kings
+      // (the analytics surface) searchable too, zero fetch.
+      r.value.xg || [],
     ];
     for (const block of deepFamilyBlocks) {
       for (const row of block) {
