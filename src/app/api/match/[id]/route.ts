@@ -247,9 +247,21 @@ interface FMMatchDetails {
     // update cycle-97 probed (UA Chrome/124, 2026-10-29): present for
     // started/finished matches, null for upcoming ones; per side it carries
     // total/firstHalf/secondHalf × left/center/right integer shares
+    // cycle-187 probed (UA Chrome/124, 2026-10-30, live samples: 5749727
+    // Sassuolo–Lazio, 5749721 Roma–Cagliari): the halves are NOT always
+    // present even when total is — every period block is read independently
+    // and only surfaced when its sum > 0 (honest per-period omission).
     attackingZones?: {
-      home?: { total?: { left?: number; center?: number; right?: number } } | null;
-      away?: { total?: { left?: number; center?: number; right?: number } } | null;
+      home?: {
+        total?: { left?: number; center?: number; right?: number };
+        firstHalf?: { left?: number; center?: number; right?: number };
+        secondHalf?: { left?: number; center?: number; right?: number };
+      } | null;
+      away?: {
+        total?: { left?: number; center?: number; right?: number };
+        firstHalf?: { left?: number; center?: number; right?: number };
+        secondHalf?: { left?: number; center?: number; right?: number };
+      } | null;
     } | null;
     // update cycle-100 probed (UA Chrome/124, 2026-10-29, 28-sample live
     // sweep): content.weather is ALWAYS present — 0 nulls — for started,
@@ -535,10 +547,25 @@ export interface MatchDetailNormalized {
   momentum: { minute: number; value: number }[] | null;
   // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
   // team's attacking output across the three pitch lanes; null when upstream
-  // lacks the block (upcoming matches) or both sides are all-zero
+  // lacks the block (upcoming matches) or both sides are all-zero.
+  // cycle-187 closes the v1 boundary cycle-97 declared («TOTAL split only in
+  // v1 — firstHalf/secondHalf stay unrendered»): the per-half splits join as
+  // OPTIONAL keys appended AFTER the legacy triple — the legacy shape
+  // {left,center,right} stays byte-identical and every pre-187 consumer that
+  // reads only left/center/right is untouched. A half key is emitted only
+  // when that half's shares sum > 0 upstream (honest per-period omission —
+  // probed: live matches mid-first-half carry no secondHalf data yet).
   zones?: {
-    home: { left: number; center: number; right: number };
-    away: { left: number; center: number; right: number };
+    home: {
+      left: number; center: number; right: number;
+      firstHalf?: { left: number; center: number; right: number };
+      secondHalf?: { left: number; center: number; right: number };
+    };
+    away: {
+      left: number; center: number; right: number;
+      firstHalf?: { left: number; center: number; right: number };
+      secondHalf?: { left: number; center: number; right: number };
+    };
   } | null;
   // update cycle-100: match weather («وضعیت هوا») — ONLY the honestly
   // displayable subset: condition (localizedKey→Persian, unknown→upstream
@@ -1054,16 +1081,38 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     stadiumExtra,
   };
 
-  // ---------------- attacking zones (update cycle-97) ----------------
-  // TOTAL split only in v1 (firstHalf/secondHalf stay unrendered); every value
-  // coerced defensively, all-zero → null → the stats tab hides the block.
+  // ---------------- attacking zones (update cycle-97, halves cycle-187) ---
+  // cycle-187 closes the boundary cycle-97 declared in v1: firstHalf/
+  // secondHalf joins the normalization. Every value defensively coerced;
+  // a period key is emitted only when its shares sum > 0 (honest per-period
+  // omission); all-zero total → null → the stats tab hides the block
+  // (unchanged).
   let zones: MatchDetailNormalized["zones"] = null;
   const az = raw.content?.attackingZones;
-  const zoneOf = (s?: { total?: { left?: number; center?: number; right?: number } } | null) => ({
-    left: typeof s?.total?.left === "number" ? s.total.left : 0,
-    center: typeof s?.total?.center === "number" ? s.total.center : 0,
-    right: typeof s?.total?.right === "number" ? s.total.right : 0,
+  type ZoneSides = NonNullable<MatchDetailNormalized["zones"]>;
+  const periodOf = (p?: { left?: number; center?: number; right?: number } | null) => ({
+    left: typeof p?.left === "number" ? p.left : 0,
+    center: typeof p?.center === "number" ? p.center : 0,
+    right: typeof p?.right === "number" ? p.right : 0,
   });
+  const zoneOf = (s?: {
+    total?: { left?: number; center?: number; right?: number };
+    firstHalf?: { left?: number; center?: number; right?: number };
+    secondHalf?: { left?: number; center?: number; right?: number };
+  } | null): ZoneSides["home"] => {
+    // legacy triple first, in the legacy order — pre-187 consumers see the
+    // exact same key sequence; optional halves append after it
+    const z: ZoneSides["home"] = {
+      left: typeof s?.total?.left === "number" ? s.total.left : 0,
+      center: typeof s?.total?.center === "number" ? s.total.center : 0,
+      right: typeof s?.total?.right === "number" ? s.total.right : 0,
+    };
+    const h1 = periodOf(s?.firstHalf);
+    const h2 = periodOf(s?.secondHalf);
+    if (h1.left + h1.center + h1.right > 0) z.firstHalf = h1;
+    if (h2.left + h2.center + h2.right > 0) z.secondHalf = h2;
+    return z;
+  };
   if (az?.home && az?.away) {
     const zh = zoneOf(az.home);
     const za = zoneOf(az.away);

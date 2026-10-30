@@ -111,9 +111,19 @@ interface DetailData {
     away: PlayerStatRow[];
   } | null;
   // update cycle-97: attacking zones («جهت حملات») — mirrors /api/match/[id]
+  // cycle-187: optional per-half splits join (honest omission — a half key
+  // only exists when that half's shares sum > 0 upstream)
   zones?: {
-    home: { left: number; center: number; right: number };
-    away: { left: number; center: number; right: number };
+    home: {
+      left: number; center: number; right: number;
+      firstHalf?: { left: number; center: number; right: number };
+      secondHalf?: { left: number; center: number; right: number };
+    };
+    away: {
+      left: number; center: number; right: number;
+      firstHalf?: { left: number; center: number; right: number };
+      secondHalf?: { left: number; center: number; right: number };
+    };
   } | null;
   // update cycle-100: match weather («وضعیت هوا») — mirrors /api/match/[id];
   // only the honest subset (no wind/precip units asserted upstream-side)
@@ -927,13 +937,18 @@ function StatBars({ groups, started }: { groups: DetailStatGroup[]; started?: bo
 // Same hue convention as StatBars: home = primary, away = chart-4, with an
 // opacity ramp distinguishing the lanes; values restated under each bar so
 // the ramp alone never carries the meaning.
+// cycle-187: the halves join («نیمهٔ اول»/«نیمهٔ دوم») — compact sub-rows
+// under each team's total bar, rendered only when upstream carried that
+// half (the API omits a half whose shares sum to 0 — honest per-period
+// omission, same contract family as 176/186).
+type ZoneSplit = { left: number; center: number; right: number };
 function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; match: DetailMatch }) {
   const LANES = [
     { key: "left" as const, fa: "چپ" },
     { key: "center" as const, fa: "مرکز" },
     { key: "right" as const, fa: "راست" },
   ];
-  const row = (z: { left: number; center: number; right: number }, name: string, base: string) => (
+  const row = (z: ZoneSplit, name: string, base: string) => (
     <div className="flex flex-col gap-1.5">
       <p className="text-[11.5px] font-black text-[#e6f0fb] truncate">{name}</p>
       <div className="flex h-2 rounded-full overflow-hidden gap-px" dir="ltr">
@@ -956,6 +971,31 @@ function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; m
       </p>
     </div>
   );
+  const subRow = (z: ZoneSplit, fa: string, base: string) => (
+    <div className="flex items-center gap-2 ps-3" data-testid="zone-half">
+      <span className="text-[9px] font-bold text-steel/70 w-14 shrink-0">{fa}</span>
+      <div className="flex h-1.5 flex-1 rounded-full overflow-hidden gap-px" dir="ltr">
+        {LANES.map((l, i) => (
+          <div
+            key={l.key}
+            className={cn(i === 0 ? `${base} opacity-80` : i === 1 ? `${base} opacity-45` : `${base} opacity-25`, "h-full")}
+            style={{ width: `${(z[l.key] / (z.left + z.center + z.right || 1)) * 100}%` }}
+            title={`${l.fa}: ${z[l.key]}٪`}
+          />
+        ))}
+      </div>
+      <span className="text-[8.5px] text-muted-foreground tabular-persian shrink-0">
+        {faDigits(z.left)}٪ · {faDigits(z.center)}٪ · {faDigits(z.right)}٪
+      </span>
+    </div>
+  );
+  const side = (z: NonNullable<DetailData["zones"]>["home"], name: string, base: string) => (
+    <div className="flex flex-col gap-1.5">
+      {row(z, name, base)}
+      {z.firstHalf && subRow(z.firstHalf, "نیمهٔ اول", base)}
+      {z.secondHalf && subRow(z.secondHalf, "نیمهٔ دوم", base)}
+    </div>
+  );
   return (
     <div className="glass-card overflow-hidden" data-testid="match-zones">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
@@ -963,8 +1003,8 @@ function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; m
         <span className="font-bold text-steel/80">سهم از کل حملات</span>
       </header>
       <div className="p-3 flex flex-col gap-3.5">
-        {row(zones.home, match.home.fa || match.home.name, "bg-primary")}
-        {row(zones.away, match.away.fa || match.away.name, "bg-chart-4")}
+        {side(zones.home, match.home.fa || match.home.name, "bg-primary")}
+        {side(zones.away, match.away.fa || match.away.name, "bg-chart-4")}
       </div>
     </div>
   );
