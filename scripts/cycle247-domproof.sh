@@ -11,12 +11,12 @@
 #  persiangulf AND mas honestly absent TWICE OVER (not in feed AND the
 #  bare direct files both ABSENT — the 241 honesty, stronger than the
 #  245 bare-serves class). Integer values → the 215/…/245 integer
-#  convention (String() pill dir=ltr, 75 renders «۷۵» (live anchor refreshed 2026-10-31 twice: 73→75→77 (ui-cycle-5)); the frozen
+#  convention (String() pill dir=ltr, 75 renders «۷۵» (live anchor refreshed 2026-10-31 four times: 73→75→77→80 (ui-cycle-6)); the frozen
 #  2020/21 file's 224 renders «۲۲۴»). Upstream Rank keeps COMPETITION
 #  ties verbatim; the merge re-ranks POSITIONALLY. SEASON-AWARE: the
 #  2020/21 laliga raw serves season/15585 — 20 rows, Real Madrid 224
 #  rank-1 with the 196 Atletico+Real Sociedad tie — frozen, DISTINCT
-#  from the current 77 (probed via the NAME-form season feed, the exact
+#  from the current 80 (probed via the NAME-form season feed, the exact
 #  call getLeagueRaw makes; the numeric-form season=15585 feed provably
 #  leaks the CURRENT fetchAllUrls — documented in the probe). The
 #  honest-name contract rides the EXISTING teamFa map for every CURRENT
@@ -32,13 +32,13 @@
 #   A1 the EIGHT-league corners sweep: exactly 10 rows each, monotonic
 #      DESC, positional ranks, zero Latin nameFa, integer values;
 #      pg AND mas honest-empty teamCorners
-#   A2 the laliga live anchor: tcor rank-1 «ویارئال»/10205/77 exact +
+#   A2 the laliga live anchor: tcor rank-1 «ویارئال»/10205/80 exact +
 #      exactly 10 rows
 #   A3 the honest-absence pair: pg=0 AND mas=0 (not in feed AND bare
 #      direct files absent — asserted on the served API)
 #   A4 the frozen 2020/2021 laliga corner anchor: rank-1 «رئال‌مادرید»
 #      224 («بارسلونا» 217, «ایبار» 198 — the new teamFa entry) +
-#      season-distinctness 77≠224
+#      season-distinctness 80≠224
 #   A5 the negative season probe: 2020/21 → ok:false (SEASON_PARAM_RE)
 # Part B (DOM @390x844, agent-browser, console must stay 0):
 #   B1 /topscorers/laliga: h2n=24 + the SEVEN team-side blocks in the
@@ -97,8 +97,8 @@ rows=d.get('teamCorners') or []
 r1=rows[0] if rows else {}
 print(json.dumps({'n':len(rows),'name':r1.get('nameFa'),'tid':r1.get('teamId'),'val':r1.get('teamCorners')},ensure_ascii=False,separators=(',',':')))
 ")
-echo "$A2" | grep -q '"n":10' && echo "$A2" | grep -q '"name":"ویارئال"' && echo "$A2" | grep -q '"tid":10205' && echo "$A2" | grep -q '"val":77' \
-  && ok "A2 laliga live anchor: tcor rank-1 «ویارئال»/10205/77 exact, 10 rows (20-row file → top-10 merge)" || bad "A2: $A2"
+echo "$A2" | grep -q '"n":10' && echo "$A2" | grep -q '"name":"ویارئال"' && echo "$A2" | grep -q '"tid":10205' && echo "$A2" | grep -q '"val":80' \
+  && ok "A2 laliga live anchor: tcor rank-1 «ویارئال»/10205/80 exact, 10 rows (20-row file → top-10 merge)" || bad "A2: $A2"
 
 # A3 the honest-absence pair (served API) — pg AND mas
 A3=$(python3 - "$BASE" <<'PY'
@@ -124,7 +124,7 @@ top=[(r.get('nameFa'),r.get('teamCorners')) for r in rows[:3]]
 print(json.dumps({'n':len(rows),'top':top},ensure_ascii=False,separators=(',',':')))
 ")
 echo "$A4" | grep -q '"top":\[\["رئال‌مادرید",224\],\["بارسلونا",217\],\["ایبار",198\]\]' \
-  && ok "A4 frozen 2020/2021 laliga corner anchor: rank-1 «رئال‌مادرید» 224 («بارسلونا» 217, «ایبار» 198 — the ONE new teamFa entry) — the 202 class, DISTINCT from the current 77 (season-distinctness; the 196 Atletico+Real Sociedad tie merges positionally)" || bad "A4: $A4"
+  && ok "A4 frozen 2020/2021 laliga corner anchor: rank-1 «رئال‌مادرید» 224 («بارسلونا» 217, «ایبار» 198 — the ONE new teamFa entry) — the 202 class, DISTINCT from the current 80 (season-distinctness; the 196 Atletico+Real Sociedad tie merges positionally)" || bad "A4: $A4"
 
 # A5 the negative probe
 N=$(curl -s "$BASE/api/topscorers/laliga?season=2020%2F21" | py "import sys,json;d=json.load(sys.stdin);print(1 if (d.get('ok')==False and 'Invalid season' in str(d.get('error'))) else 0)")
@@ -139,7 +139,7 @@ echo "$B1" | tr -d '\\' | grep -q '"order":true' && echo "$B1" | tr -d '\\' | gr
   && ok "B1 DOM laliga: h2n=24 [census refreshed BY DESIGN 23→24 — the 247 team corners block] + the SEVEN team-side blocks in the family order (tcor right after tgm) + 10 tcor-rows + zero real overflow @390x844" || bad "B1: $B1"
 
 B2=$(agent-browser eval "(() => { const rows=[...document.querySelectorAll('[data-testid=tcor-row]')]; const a=rows[0]&&rows[0].querySelector('a'); const pill=a&&a.lastElementChild; const latin=rows.filter(r=>/[0-9]/.test(r.textContent)).length; const sub=[...document.querySelectorAll('main h2')].find(h=>h.textContent==='کرنرهای تیم‌ها'); const subTxt=sub&&sub.parentElement&&sub.parentElement.querySelector('.ms-auto'); return JSON.stringify({pill:(pill&&pill.textContent.trim())||'', dir:(pill&&pill.getAttribute('dir'))||null, latin, sub:(subTxt&&subTxt.textContent.trim())||''}); })()")
-echo "$B2" | tr -d '\\' | grep -q '"pill":"۷۷"' && echo "$B2" | tr -d '\\' | grep -q '"dir":"ltr"' && echo "$B2" | tr -d '\\' | grep -q '"latin":0' && echo "$B2" | tr -d '\\' | grep -q '"sub":"حجم حملات — سطح تیم"' \
+echo "$B2" | tr -d '\\' | grep -q '"pill":"۸۰"' && echo "$B2" | tr -d '\\' | grep -q '"dir":"ltr"' && echo "$B2" | tr -d '\\' | grep -q '"latin":0' && echo "$B2" | tr -d '\\' | grep -q '"sub":"حجم حملات — سطح تیم"' \
   && ok "B2 the String() integer pill: rank-1 pill renders «۷۳» dir=ltr (73 → String(), the 215/…/245 convention, storage never rounds) + zero Latin digits in the tcor rows + the sublabel «حجم حملات — سطح تیم»" || bad "B2: $B2"
 
 agent-browser eval "(() => { const r=document.querySelector('[data-testid=tcor-row] a'); if(r) r.click(); return 'clicked'; })()" >/dev/null
@@ -175,5 +175,5 @@ done
 
 echo "== VERDICT =="
 echo "PASS=$PASS FAIL=$FAIL"
-[ "$FAIL" = "0" ] && echo "CYCLE247 DOMPROOF ALL GREEN («کرنرهای تیم‌ها» — the deep-file family's TWENTY-FIFTH sibling and its SEVENTH TEAM-PARTICIPANT member: the team-side corner volume right after the scoring-rate block, EIGHT leagues served incl. uel — back on the STANDARD guard, pg+mas honestly absent twice over (feed AND bare-direct), the 215/…/245 String() integer pill («۷۳»), season-aware with the frozen Real Madrid 224 anchor distinct from the current 77 (the NAME-form season feed lesson), ONE new teamFa entry (Eibar → ایبار) for the frozen rows while all 70 current top-10 names ride the existing map — API 5/5 + DOM 5/5 + LAT @390x844)" && exit 0
+[ "$FAIL" = "0" ] && echo "CYCLE247 DOMPROOF ALL GREEN («کرنرهای تیم‌ها» — the deep-file family's TWENTY-FIFTH sibling and its SEVENTH TEAM-PARTICIPANT member: the team-side corner volume right after the scoring-rate block, EIGHT leagues served incl. uel — back on the STANDARD guard, pg+mas honestly absent twice over (feed AND bare-direct), the 215/…/245 String() integer pill («۷۳»), season-aware with the frozen Real Madrid 224 anchor distinct from the current 80 (the NAME-form season feed lesson), ONE new teamFa entry (Eibar → ایبار) for the frozen rows while all 70 current top-10 names ride the existing map — API 5/5 + DOM 5/5 + LAT @390x844)" && exit 0
 exit 1

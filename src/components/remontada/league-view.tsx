@@ -855,9 +855,19 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
           per-row qualColor strips; curated Persian titles, unknown tKeys
           never reach here (honest drop in the lib). Hidden when the feed
           lacks a legend (persiangulf) or the cached entry predates 111. */}
+      {/* ui-cycle-6 (BL-6): ≥5 zones wrapped into a ragged cramped cluster at
+          390 — two lines of floating swatches. Crowded legends (≥5) now get
+          an aligned two-column grid on mobile (every swatch on a fixed x,
+          row gap 8px), one-line flow at sm+ and for ≤4-item legends. Same
+          change as standings-view — the two legend sites stay identical. */}
       {data.legend && data.legend.length > 0 && (
         <div
-          className="px-3.5 py-2.5 border-t border-[color:var(--glass-hairline)] flex flex-wrap items-center gap-x-4 gap-y-1.5"
+          className={cn(
+            "px-3.5 py-2.5 border-t border-[color:var(--glass-hairline)]",
+            data.legend.length >= 5
+              ? "grid grid-cols-2 gap-x-3 gap-y-2 sm:flex sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-1.5"
+              : "flex flex-wrap items-center gap-x-4 gap-y-1.5"
+          )}
           data-testid="standings-legend"
           aria-label="راهنمای سهمیه‌ها"
         >
