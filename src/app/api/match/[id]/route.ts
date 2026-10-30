@@ -249,6 +249,22 @@ interface FMMatchDetails {
         lang?: string;
         dateUpdated?: string;
       }[] | null;
+      // update cycle-207: the pre-match preview feed («پیش‌نمای بازی») —
+      // live-probed UA Chrome/124, 2026-10-30: the same article shape as
+      // postReview, on editorially-covered matches BOTH upcoming (5795498,
+      // 5881208) and finished (5868105); absent on uncovered ones (5868115,
+      // 5749730) → honest absence. 8 languages per article, ids carry the
+      // "_lang" suffix; shareUrl under /news/ or /topnews/.
+      preReview?: {
+        id?: string;
+        title?: string;
+        description?: string;
+        image?: string;
+        source?: string;
+        shareUrl?: string;
+        lang?: string;
+        dateUpdated?: string;
+      }[] | null;
       // update cycle-192: the top-5 rated players per side («برترین‌های بازی»)
       // — live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries
       // (playerId, name{fullName}, playerRatingRounded, playerRating, color,
@@ -815,6 +831,13 @@ export interface MatchDetailNormalized {
   // id and the "en" entry wins each group, capped at 3 articles. The image
   // is optional (row degrades to text); url is the fotmob news shareUrl.
   reviews?: MatchReview[] | null;
+  // update cycle-207: the pre-match preview feed («پیش‌نمای بازی») — the
+  // chronological sibling of the 191 postReview; matchFacts.preReview
+  // deduped with the same _lang id-suffix mechanics. Fresh language
+  // contract: the "ar" entry wins each group (RTL, script-adjacent to the
+  // Persian UI), en fallback, else first-seen; the 191 reviews keep their
+  // frozen en-wins contract. null when nothing survives (honest absence).
+  previews?: MatchReview[] | null;
   // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
   // matchFacts.topPlayers normalized; null when both sides end up empty
   // (honest absence — upcoming matches carry empty arrays upstream).
@@ -1579,6 +1602,55 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     if (rows.length > 0) reviews = rows;
   }
 
+  // ---------------- pre-match preview feed (update cycle-207) ----------------
+  // matchFacts.preReview = editorial pre-match articles («پیش‌نمای بازی») —
+  // the chronological sibling of the 191 postReview. Live-probed UA
+  // Chrome/124, 2026-10-30: ONE article repeated in 8 languages (ids carry
+  // a "_lang" suffix; en/es/it/pt-BR/fr/de/ar/pt) on editorially-covered
+  // matches only — 5868105 (finished) + 5795498/5881208 (upcoming) carry
+  // it; 5868115/5749730 do not. Same guards as 191 with ONE probed
+  // widening: the shareUrl lives under BOTH www.fotmob.com/news/ (5795498,
+  // 5881208) AND www.fotmob.com/topnews/ (5868105) — the 191 host guard
+  // grows to (news|topnews), anything else → dropped. Language pick is a
+  // FRESH contract for a NEW block: the "ar" entry wins its group (RTL,
+  // script-adjacent to the Persian UI — the honest-raw-text family of the
+  // 96 injury names), falling back to en then first-seen; the 191 reviews
+  // keep their frozen en-wins contract (documented divergence — a future
+  // fix cycle may align them). All entries are scanned (8 langs × few
+  // articles is trivial) so the ar pick survives even with several
+  // articles; groups keep upstream order, capped at 3. The image is
+  // guarded separately (^https; hosts vary: images.performgroup.com /
+  // latest.fotmob.com — onError-hide pattern), source varies (Opta on
+  // previews, FotMob on the Clásico editorial). null when nothing
+  // survives (honest absence).
+  const preList = raw.content?.matchFacts?.preReview;
+  let previews: MatchDetailNormalized["previews"] = null;
+  if (Array.isArray(preList) && preList.length > 0) {
+    const PRE_SUFFIX_RE = /_[a-z]{2}(?:-[A-Za-z]{2})?$/;
+    const preRank = (l: unknown) => (l === "ar" ? 0 : l === "en" ? 1 : 2);
+    const preGroups = new Map<string, (typeof preList)[number]>();
+    for (const a of preList) {
+      if (!a || typeof a !== "object") continue;
+      if (typeof a.title !== "string" || !a.title.trim()) continue;
+      if (typeof a.shareUrl !== "string" || !/^https:\/\/www\.fotmob\.com\/(news|topnews)\//.test(a.shareUrl)) continue;
+      const base = typeof a.id === "string" && a.id ? a.id.replace(PRE_SUFFIX_RE, "") : a.title;
+      const prev = preGroups.get(base);
+      if (!prev || preRank(a.lang) < preRank(prev.lang)) preGroups.set(base, a);
+    }
+    const preRows: MatchReview[] = [];
+    for (const a of [...preGroups.values()].slice(0, 3)) {
+      preRows.push({
+        title: a.title!,
+        description: typeof a.description === "string" ? a.description : "",
+        image: typeof a.image === "string" && /^https:\/\//.test(a.image) ? a.image : "",
+        source: typeof a.source === "string" && a.source ? a.source : "FotMob",
+        url: a.shareUrl!,
+        date: typeof a.dateUpdated === "string" && a.dateUpdated ? a.dateUpdated : undefined,
+      });
+    }
+    if (preRows.length > 0) previews = preRows;
+  }
+
   // matchFacts.topPlayers = the top-5 rated players per side («برترین‌های
   // بازی»). Live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries;
   // the upcoming 5868120 carries EMPTY arrays. The block rides the payload
@@ -1757,6 +1829,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     playerOfTheMatch,
     highlights,
     reviews,
+    previews,
     topPlayers,
     // update cycle-205: the optaId → side crosswalk (internal — GET strips it
     // from the response once the touch map is assembled on top of it)

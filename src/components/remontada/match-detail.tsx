@@ -185,6 +185,17 @@ interface DetailData {
     url: string; // fotmob news article, opens in a new tab
     date?: string;
   }[] | null;
+  // update cycle-207: the pre-match preview feed («پیش‌نمای بازی») —
+  // mirrors /api/match/[id]; language-collapsed server-side (ar preferred —
+  // the fresh 207 contract; ≤3); null/empty → the block never renders
+  previews?: {
+    title: string;
+    description: string;
+    image: string; // "" → text-only row (onError-hide pattern)
+    source: string;
+    url: string; // fotmob news/topnews article, opens in a new tab
+    date?: string;
+  }[] | null;
   // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
   // mirrors /api/match/[id]; null/both-empty → the block never renders
   // (honest absence — upcoming matches)
@@ -1970,6 +1981,67 @@ function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> 
   );
 }
 
+// ---------- update cycle-207: the pre-match preview feed («پیش‌نمای بازی») ----------
+// The chronological sibling of the 191 ReviewsCard: matchFacts.preReview is
+// the editorial preview Opta/FotMob publish for covered matches (probed:
+// on both upcoming AND finished games — 5795498/5881208 upcoming, 5868105
+// finished; never on uncovered ones — 5868115/5749730). Same header-level
+// placement philosophy (belongs to the MATCH, not a tab), same glass family,
+// same external-row mechanics (new-tab link, onError-hide image, text-only
+// degradation). Sits BEFORE the reviews card — pre comes before post.
+// Language: server-side ar-wins (the fresh 207 contract — RTL,
+// script-adjacent to the Persian UI); honest absence when the array is
+// empty (the block never renders).
+function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews"]> }) {
+  return (
+    <section className="glass-card overflow-hidden" aria-label="پیش‌نمای بازی" data-testid="match-previews">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
+        <span className="text-[11px] font-black text-steel">پیش‌نمای بازی</span>
+        <span className="text-[9px] text-muted-foreground/60 shrink-0">منبع: Opta · FotMob · در تب جدید باز می‌شود</span>
+      </header>
+      <div>
+        {previews.map((r, i) => (
+          <a
+            key={i}
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-start gap-3 px-3 py-2.5 group transition-colors hover:bg-[#ffffff06] border-b border-glass-border-soft last:border-b-0"
+          >
+            {r.image ? (
+              <img
+                src={r.image}
+                alt=""
+                width={72}
+                height={48}
+                loading="lazy"
+                className="shrink-0 w-[72px] h-[48px] rounded-lg object-cover border border-[color:var(--glass-border-soft)]"
+                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+              />
+            ) : (
+              <span className="shrink-0 w-9 h-9 rounded-lg bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] flex items-center justify-center" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+                  <path d="M4 5.5h16v13H4z" />
+                  <path d="M7 9.5h10M7 13h10M7 16.5h6" />
+                </svg>
+              </span>
+            )}
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12px] font-black leading-snug text-[#ecf3fa] group-hover:text-primary transition-colors">{r.title}</span>
+              {r.description ? (
+                <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
+              ) : null}
+            </span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
+              <path d="M7 17L17 7M9 7h8v8" />
+            </svg>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // update cycle-192: «برترین‌های بازی» — the top-5 rated players per side
 // (matchFacts.topPlayers). Belongs to the MATCH, not a tab (the 191 reviews
 // placement philosophy): a header-level card right after the reviews card.
@@ -2149,6 +2221,15 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           invariant stays true everywhere). Hidden when the block is absent
           (legend-111) — probed: featured finished matches only. */}
       {data.highlights && <HighlightsCard hl={data.highlights} />}
+
+      {/* update cycle-207: the pre-match preview feed («پیش‌نمای بازی”) —
+          header-level like the highlights/reviews cards: it belongs to the
+          MATCH. Sits before the reviews card — pre comes before post. Each
+          row links to the FotMob news/topnews article in a new tab; the
+          image rides the onError-hide pattern (vbroken=0 invariant). Hidden
+          when the feed is absent (honest absence — only editorially-covered
+          matches carry preReview). */}
+      {data.previews && data.previews.length > 0 && <PreviewsCard previews={data.previews} />}
 
       {/* update cycle-191: the post-match review feed («گزارش‌های بازی») —
           header-level like the highlights card: it belongs to the MATCH.
