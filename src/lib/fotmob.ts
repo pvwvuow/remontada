@@ -130,6 +130,20 @@ export interface AssistEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-210 additive: one «آقای امتیاز» row — the rating twin of
+ *  AssistEntry (the 170 honest-name contract included), except the value is
+ *  a DECIMAL that must never be rounded or re-scaled. */
+export interface RatingEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as scorers/assists. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  rating: number;  // FotMob rating kept verbatim (8.6, 8.51…) — display formats, storage never rounds
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -149,6 +163,18 @@ export interface StandingsData {
   away?: StandingsRow[];
   scorers: ScorerEntry[];
   assists: AssistEntry[];
+  /** cycle-210 additive: «آقای امتیاز» — the league's own FotMob-rating
+   *  kings, the deep-file family's next sibling (goals 23 / assists 175 /
+   *  cards 50+185 → rating 210). The "FotMob rating" category carries its
+   *  own fetchAllUrl → data.fotmob.com stats/{id}/season/{sid}/rating.json
+   *  (live-probed 2026-10-30, UA Chrome/124: laliga = 331 ranked rows vs
+   *  the 3-row category fallback; 2023/2024 raw serves its OWN file,
+   *  season/21053, 311 rows, Bellingham 8.12 rank-1 — finished-season
+   *  frozen, the 202 anchor pattern). Decimal values kept VERBATIM — the
+   *  only non-integer family member (the value pill renders the decimal
+   *  dot, dir=ltr). Always present (possibly []) like assists; feeds
+   *  without the category degrade honestly to []. */
+  ratings: RatingEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -870,6 +896,61 @@ export async function getFullAssists(leagueKey: string, season?: string): Promis
 }
 
 /**
+ * cycle-210: full-season FOTMOB-RATING list for one league («آقای امتیاز»)
+ * — the deep-file family's next sibling. The "FotMob rating" category rides
+ * the SAME league payload as goals/assists/cards and carries its own
+ * fetchAllUrl → data.fotmob.com stats/{leagueId}/season/{sid}/rating.json
+ * (live-probed 2026-10-30, UA Chrome/124: laliga season/38843 = 331 ranked
+ * rows vs the 3-row category fallback, Raphinha 8.6 rank-1; gzip-served,
+ * fetch decompresses transparently — the exact mechanism every sibling file
+ * has used). The ONLY non-integer family member: StatValue arrives as a
+ * decimal (8.6, 8.51…) and is kept VERBATIM — no Math.round, the value pill
+ * renders the decimal dot (dir=ltr). Same cache + cycle-127 thin-TTL guard
+ * as the sibling files (healthy = wide file; the fallback is ~3 rows);
+ * season-aware like every sibling since 124/175/185 (a historical raw
+ * carries its own rating file — probed: 2023/2024 → season/21053, 311
+ * rows, Bellingham 8.12 rank-1, finished = frozen). Top-10 cap matches the
+ * render contract; feeds without fetchAllUrl (mas) degrade to [] and the
+ * honest category fallback still feeds the merge.
+ */
+export async function getFullRatings(leagueKey: string, season?: string): Promise<RatingEntry[]> {
+  try {
+    return await cached(
+      `fullRatings:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^fotmob rating$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: RatingEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            rating: r.StatValue ?? 0,  // decimal kept verbatim — the family's only non-integer
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/**
  * Card leaders for one league («آقای کارت», cycle-50). The league payload
  * carries "Yellow cards" / "Red cards" categories with the same fetchAllUrl
  * S3 static-file mechanism as the goals list — full ranking when the file
@@ -976,6 +1057,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // the league page surfaces the block (بهترین پاس‌دهندگان) and the raw
     // English name alone would dead-end the profile network (the 167 lesson)
     assists: st.assists.map((a) => ({ ...a, team: teamFa(a.team) || a.team, nameFa: playerFa(a.name) })),
+    // cycle-210 additive: ratings gain the honest Persian names like
+    // assists — «برترین امتیازها» renders on the per-league topscorers page
+    // and the raw English name alone would dead-end the profile network
+    // (the 167 lesson). Decimal value untouched (storage never rounds).
+    ratings: (st.ratings || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -1211,6 +1297,30 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-210: «آقای امتیاز» — the deep-file family's next sibling rides
+    // the SAME cached payload (zero extra upstream cost beyond the one gzip
+    // file on cold build, exactly like the siblings). Category top-3 first
+    // (enriched entries stay first when tied — the 175 merge order), then
+    // the full rating file merged on top, deduped by player id, ranked by
+    // the DECIMAL value (never rounded — sorting on the verbatim float),
+    // top-10. Feeds without the category degrade honestly to [].
+    const ratingEntries: RatingEntry[] = statCategory(raw, /^fotmob rating$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, rating: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullRatings = await getFullRatings(leagueKey, requestedSeason);
+    const enrichedRIds = new Set(
+      ratingEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedRatings = [...ratingEntries, ...fullRatings.filter((r) => r.playerId == null || !enrichedRIds.has(r.playerId))]
+      .sort((a, b) => b.rating - a.rating || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -1287,6 +1397,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       ttlMinutes: matchday ? 15 : 60,
       scorers: mergedScorers,
       assists: mergedAssists,
+      ratings: mergedRatings,
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
       updatedAt: new Date().toISOString(),
@@ -1339,7 +1450,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // generation (the L2 survives restarts — probed: boards=12 right after
     // a fresh build). Same shared-namespace rule: the whole key bumps
     // (the 176/185 convention repeated verbatim).
-    await cached(`standings:v10:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-210: v11 — the ratings block («آقای امتیاز») joins the mapped
+    // payload as a REQUIRED field; old v10 rows lack it and would keep the
+    // new section hidden for up to a full TTL generation. Whole key bumps
+    // (the 52/55/90/92/107/175/176/185/196 additive-shape convention).
+    await cached(`standings:v11:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -1376,8 +1491,18 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // guards; a feed with genuinely no card categories just re-scans the
       // cached raw). mas red-only payloads carry the block and keep the
       // normal TTL.
+      //
+      // cycle-210: the same end-to-end guard for a thin-but-nonempty RATINGS
+      // list — the rating.json fetch dropped at build time would bake the
+      // 3-row category fallback for a full ttlMinutes generation (probed
+      // live: the SSG cold build DID drop it once — direct fetch 331 rows
+      // 248ms while the first payload baked 3); re-probe in 90s
+      // (upstream-free: leagueRaw + the thin fullRatings row are cached with
+      // their own cycle-127 guards). Honest-empty ratings (mas: no category)
+      // keep the normal TTL — the same convention as the assists guard.
       (Array.isArray(mapped.scorers) && mapped.scorers.length >= FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.assists) && mapped.assists.length > 0 && mapped.assists.length < FULL_LIST_HEALTHY_MIN) &&
+      !(Array.isArray(mapped.ratings) && mapped.ratings.length > 0 && mapped.ratings.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

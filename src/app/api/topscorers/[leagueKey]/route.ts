@@ -17,6 +17,10 @@
 // (the cycle-55 payload fields) so the selector's options come from the
 // payload itself and the UI can honestly snap a bogus-but-well-formed
 // season back to what is actually shown (the cycle-99 marker contract).
+// cycle-210 additive: the ratings block («آقای امتیاز») rides the SAME
+// cached payload — the deep-file family's next sibling (goals/assists/
+// cards), decimal values verbatim; old consumers never read this field
+// (the 108 rule).
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
 import { getStandings, LeagueUnavailableError } from "@/lib/fotmob";
@@ -57,6 +61,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // cycle-174 additive: assists ride the SAME cached payload — consumers
       // written before this field never read it (the 108 additive contract).
       assists: st.assists,
+      // cycle-210 additive: «آقای امتیاز» rides the SAME cached payload —
+      // the deep-file family's next sibling, decimal ratings verbatim; old
+      // consumers never read this field (the 108 rule).
+      ratings: st.ratings,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
