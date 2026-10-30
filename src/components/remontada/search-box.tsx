@@ -6,10 +6,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeamSearchResult, PlayerSearchResult, LeagueSearchResult } from "@/lib/fotmob";
+import type { NewsSearchResult } from "@/lib/news";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { useFavorites } from "@/lib/favorites";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
-import { faDigits } from "@/lib/format";
+import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 /** fallback suggestions for the empty search state (ids verified from match feed) */
@@ -46,6 +47,10 @@ export function SearchBox() {
   // cycle-200: competitions join the same additive way — a «رقابت‌ها»
   // section between teams and players, every row a real /league/{key} link
   const [leagues, setLeagues] = useState<LeagueSearchResult[]>([]);
+  // cycle-202: news joins the same additive way — a «خبرها» section after
+  // players, every row the real external article (warm-only index: an
+  // unwarmed feed answers [] and the section honestly hides)
+  const [news, setNews] = useState<NewsSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0); // keyboard-highlighted result
   const favorites = useFavorites();
@@ -60,6 +65,7 @@ export function SearchBox() {
       setQ("");
       setResults([]);
       setLeagues([]);
+      setNews([]);
       setActive(0);
     }
   }, [open]);
@@ -81,6 +87,7 @@ export function SearchBox() {
       setResults([]);
       setPlayers([]);
       setLeagues([]);
+      setNews([]);
       setLoading(false);
       return;
     }
@@ -93,6 +100,7 @@ export function SearchBox() {
           setResults(json.results as TeamSearchResult[]);
           setPlayers((json.players ?? []) as PlayerSearchResult[]);
           setLeagues((json.leagues ?? []) as LeagueSearchResult[]);
+          setNews((json.news ?? []) as NewsSearchResult[]);
           setActive(0);
         }
       } catch {
@@ -114,7 +122,8 @@ export function SearchBox() {
 
   // cycle-166: keyboard selection spans teams first, then the players section
   // cycle-200: the span is teams → leagues → players (matches the render order)
-  const totalRows = results.length + leagues.length + players.length;
+  // cycle-202: the span extends to news (teams → leagues → players → خبرها)
+  const totalRows = results.length + leagues.length + players.length + news.length;
   const goPlayer = useCallback(
     (playerId: number) => {
       setOpen(false);
@@ -131,6 +140,17 @@ export function SearchBox() {
       router.push(`/league/${key}`);
     },
     [router]
+  );
+
+  // cycle-202: news rows are external articles — same semantics as the news
+  // page rows (<a target=_blank rel=noopener>); Enter mirrors the click
+  const openNews = useCallback(
+    (link?: string) => {
+      if (!link) return;
+      setOpen(false);
+      window.open(link, "_blank", "noopener,noreferrer");
+    },
+    []
   );
 
   // empty-state suggestions: user's favorites first, then popular teams (deduped)
@@ -156,7 +176,8 @@ export function SearchBox() {
       e.preventDefault();
       if (active < results.length) { if (results[active]) go(results[active].teamId); }
       else if (active < results.length + leagues.length) { const l = leagues[active - results.length]; if (l) goLeague(l.key); }
-      else { const p = players[active - results.length - leagues.length]; if (p) goPlayer(p.playerId); }
+      else if (active < results.length + leagues.length + players.length) { const p = players[active - results.length - leagues.length]; if (p) goPlayer(p.playerId); }
+      else { const n = news[active - results.length - leagues.length - players.length]; if (n) openNews(n.link); }
     }
   };
 
@@ -209,7 +230,7 @@ export function SearchBox() {
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
                   حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های {faDigits(24)} لیگ و جام
                 </p>
-              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 ? (
+              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 && news.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">
                   <p className="text-[11.5px] text-muted-foreground">تیمی یا بازیکنی با این نام پیدا نشد.</p>
                   <div className="w-full">
@@ -367,6 +388,45 @@ export function SearchBox() {
                               </span>
                             </span>
                           </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {/* ---------- cycle-202: the news feed joins the search ---------- */}
+              {news.length > 0 && (
+                <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5" data-testid="search-news">
+                  <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">خبرها</p>
+                  <ul className="px-1.5 flex flex-col">
+                    {news.map((n, i) => {
+                      const idx = results.length + leagues.length + players.length + i;
+                      return (
+                        <li key={`${n.source}-${n.publishedAt}-${i}`}>
+                          <a
+                            href={n.link || "#"}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => setOpen(false)}
+                            onMouseEnter={() => setActive(idx)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
+                              idx === active ? "cmd-active" : "hover:bg-white/[0.05]"
+                            )}
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-bold text-[12.5px] leading-snug line-clamp-2">
+                                <Hl text={n.titleFa || n.title} range={n.titleFa ? n.hl?.fa ?? null : n.hl?.en ?? null} />
+                              </span>
+                              <span className="block text-[10px] text-muted-foreground truncate tabular-persian">
+                                {n.source} · {timeAgoFa(n.publishedAt)}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
+                              خبر
+                            </span>
+                          </a>
                         </li>
                       );
                     })}

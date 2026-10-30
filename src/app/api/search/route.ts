@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchTeams, searchPlayers, searchLeagues } from "@/lib/fotmob";
+import { searchNews } from "@/lib/news";
 
 export const dynamic = "force-dynamic";
 
@@ -15,6 +16,9 @@ export async function GET(req: NextRequest) {
       players: [],
       // cycle-200 additive: the shape always carries the field (empty here)
       leagues: [],
+      // cycle-202 additive: the news index joins the same way — warm-only
+      // (never triggers the producer), empty here
+      news: [],
       message: "برای جستجو حداقل ۲ کاراکتر وارد کنید",
     });
   }
@@ -24,9 +28,11 @@ export async function GET(req: NextRequest) {
     // `players` field so existing clients reading `results` stay untouched
     // cycle-200: competitions join the same way — a NEW `leagues` field
     // folded from the in-memory catalog (zero upstream fetches)
-    const [results, players] = await Promise.all([searchTeams(q), searchPlayers(q)]);
+    // cycle-202: news joins the same way — a NEW `news` field folded from
+    // the cached news:v1 feed (warm-only read, zero fresh upstream calls)
+    const [results, players, news] = await Promise.all([searchTeams(q), searchPlayers(q), searchNews(q)]);
     const leagues = searchLeagues(q);
-    return NextResponse.json({ ok: true, results, players, leagues });
+    return NextResponse.json({ ok: true, results, players, leagues, news });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : "search failed" },

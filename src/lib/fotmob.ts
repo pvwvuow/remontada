@@ -3624,8 +3624,10 @@ export interface TeamSearchResult extends TeamIndexEntry {
 
 /** Find the query's match inside `display` tolerating normalization diffs
  *  (ZWNJ/diacritics stripped, Arabic→Persian chars, case). Returns [start, end)
- *  in the ORIGINAL string so the client can highlight without index drift. */
-function rangeOf(display: string, nq: string): [number, number] | null {
+ *  in the ORIGINAL string so the client can highlight without index drift.
+ *  cycle-202: exported — searchNews (src/lib/news.ts) reuses the exact
+ *  highlight mechanics so both alphabets highlight identically. */
+export function rangeOf(display: string, nq: string): [number, number] | null {
   if (!display || !nq) return null;
   const chars: string[] = [];
   const map: number[] = [];
