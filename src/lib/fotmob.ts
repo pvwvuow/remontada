@@ -117,6 +117,7 @@ export interface ScorerEntry {
   xg?: number;        // "Expected goals (xG)"
   xa?: number;        // cycle-230 additive: "Expected assist (xA)" — the badge twin of the xG badge
   bigChances?: number; // cycle-231 additive: "Big chances created" — the creation-volume badge (integer, the 215 convention)
+  xgot?: number;      // cycle-232 additive: "Expected goals on target (xGOT)" — the on-target accuracy badge (one decimal, the 226/230 convention)
   rating?: number;    // "FotMob rating"
   minutes?: number;   // "Minutes played" (enables minutes-per-goal)
 }
@@ -403,6 +404,46 @@ export interface BigChancesCreatedEntry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+/** cycle-232 additive: one «گل مورد انتظار روی دروازه» row — the deep-file
+ *  family's SIXTEENTH sibling and the third ANALYTICS level, the on-target
+ *  accuracy twin of the xG surface (goals 23 / assists 175 / cards 50+185 /
+ *  rating 210 / clean sheets 215 / G+A 216 / goals prevented 217 / minutes
+ *  220 / save percentage 221 / saves per 90 222 / penalty saves 225 /
+ *  expected goals 226 / goals per 90 227 / expected assist 230 / big
+ *  chances created 231 → expected goals on target 232). The "Expected
+ *  goals on target (xGOT)" category carries its own fetchAllUrl →
+ *  data.fotmob.com stats/{id}/season/{sid}/expected_goalsontarget.json
+ *  (live-probed 2026-10-30, UA Chrome/124: serving on SIX of the seven
+ *  globalMerge leagues with WIDE files — ucl 305 Tresoldi 4.5 / pl 241
+ *  Haaland 8.2 / laliga 277 Mbappé 12.8 / seriea 286 Malen 6.6 /
+ *  bundesliga 227 Füllkrug 6.2 / ligue1 227 Lepaul 6.0 rows; persiangulf
+ *  honestly absent — 5 player cats, no xGOT; mas absent, null payload; 12
+ *  of the other 16 leagues.ts entries serve it too). Decimal values kept
+ *  VERBATIM — the family's EIGHTH non-integer member (the
+ *  210/217/221/222/226/227/230 convention, never rounded); upstream
+ *  precision is EXACTLY one decimal (probed decimal-counts=[1] on every
+ *  serving file AND the historical raw) so the pill renders toFixed(1).
+ *  Upstream Rank is COMPETITION tie-ranked on several files (ucl 5,5 / pl
+ *  4,4 / seriea 4,4 / ligue1 3,3 — probed); loaders keep the file's own
+ *  order and rank verbatim — the merge re-ranks POSITIONALLY like every
+ *  sibling. SEASON-AWARE (the 124/175/185/226/227/230/231 class):
+ *  historical raws serve their OWN files (2020/21 laliga = 385 rows,
+ *  Messi 32.8 / Gerard Moreno 24.8 — frozen, the 202 anchor pattern;
+ *  2023/24 pl = 402 rows, Haaland 27.1 / Isak 22.8 / Palmer 20.0). Wide
+ *  healthy files → the STANDARD thin guard (the 210 class) applies; always
+ *  present (possibly []) like the siblings; feeds without the category
+ *  degrade honestly to []. */
+export interface XgotEntry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  xgot: number;  // StatValue VERBATIM — expected goals on target decimal (12.8), the 210/217/226/230 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 /** cycle-227 additive: one «گل در هر ۹۰» row — the deep-file family's
  *  THIRTEENTH sibling and the production-RATE surface (goals 23 / assists
  *  175 / cards 50+185 / rating 210 / clean sheets 215 / G+A 216 / goals
@@ -673,6 +714,27 @@ export interface StandingsData {
    *  (possibly []) like the siblings; feeds without the category degrade
    *  honestly to []. */
   bigChancesCreated: BigChancesCreatedEntry[];
+  /** cycle-232 additive: «گل مورد انتظار روی دروازه» — the deep-file
+   *  family's SIXTEENTH sibling and the third ANALYTICS level, the
+   *  on-target accuracy twin of the xg surface (→ expected goals on target
+   *  232). The "Expected goals on target (xGOT)" category carries its own
+   *  fetchAllUrl → data.fotmob.com
+   *  stats/{id}/season/{sid}/expected_goalsontarget.json (live-probed
+   *  2026-10-30, UA Chrome/124: serving on SIX of the seven globalMerge
+   *  leagues with WIDE files — ucl 305 Tresoldi 4.5 / pl 241 Haaland 8.2 /
+   *  laliga 277 Mbappé 12.8 / seriea 286 Malen 6.6 / bundesliga 227
+   *  Füllkrug 6.2 / ligue1 227 Lepaul 6.0 rows; persiangulf honestly
+   *  absent — 5 player cats, no xGOT; mas absent, null payload). Decimal
+   *  values kept VERBATIM (the EIGHTH non-integer member — the
+   *  210/217/221/222/226/227/230 convention; upstream precision EXACTLY
+   *  one decimal, probed) so the pill renders toFixed(1). SEASON-AWARE
+   *  (the 124/175/185/226/227/230/231 class): historical raws serve their
+   *  OWN files (2020/21 laliga = 385 rows, Messi 32.8 — frozen, the 202
+   *  anchor pattern; 2023/24 pl = 402 rows, Haaland 27.1). Wide healthy
+   *  files → the STANDARD thin guard (the 210 class) applies; always
+   *  present (possibly []) like the siblings; feeds without the category
+   *  degrade honestly to []. */
+  xgot: XgotEntry[];
   /** cycle-176 additive: the league's own yellow/red card leaders — the
    *  cycle-50 pipeline (getLeagueCardLeaders: fetchAllUrl deep files +
    *  cycle-127 thin-TTL + freshCardNames) had exactly ONE consumer (the
@@ -2008,6 +2070,74 @@ export async function getFullBigChances(leagueKey: string, season?: string): Pro
   }
 }
 
+/** cycle-232 additive: «گل مورد انتظار روی دروازه» loader — the SIXTEENTH
+ *  sibling, the third ANALYTICS level and the on-target accuracy twin of
+ *  getFullXg. expected_goalsontarget.json (live-probed 2026-10-30 UA
+ *  Chrome/124: serving on SIX of the seven globalMerge leagues with WIDE
+ *  files — ucl 305 Tresoldi 4.5 / pl 241 Haaland 8.2 / laliga 277 Mbappé
+ *  12.8 / seriea 286 Malen 6.6 / bundesliga 227 Füllkrug 6.2 / ligue1 227
+ *  Lepaul 6.0 rows; persiangulf honestly absent — 5 player cats, no xGOT;
+ *  mas absent, null payload; 12 of the other 16 leagues.ts entries serve
+ *  it too). StatValue is a DECIMAL kept VERBATIM — the family's EIGHTH
+ *  non-integer member (the 210/217/221/222/226/227/230 convention, never
+ *  rounded); upstream precision is EXACTLY one decimal (probed
+ *  decimal-counts=[1] on every serving file AND the historical raw) so the
+ *  pill renders toFixed(1). Upstream Rank is COMPETITION tie-ranked on
+ *  several files (ucl 5,5 / pl 4,4 / seriea 4,4 / ligue1 3,3 — probed);
+ *  this loader keeps the file's own order and rank verbatim — the merge
+ *  re-ranks POSITIONALLY like every sibling. Same cache + cycle-127
+ *  thin-TTL guard as the siblings (healthy = ≥10 rows — every serving
+ *  league probed ≥227, no natural-thinness class); season-aware like every
+ *  sibling (a historical raw carries its OWN fetchAllUrl — the 2020/21
+ *  laliga raw serves 385 rows, Messi 32.8 / Gerard Moreno 24.8 / Luis
+ *  Suárez 20.2, frozen; 2023/24 pl = 402 rows, Haaland 27.1 / Isak 22.8 /
+ *  Palmer 20.0). Feeds without the category degrade to [] and the honest
+ *  category fallback still feeds the merge.
+ */
+export async function getFullXgot(leagueKey: string, season?: string): Promise<XgotEntry[]> {
+  try {
+    return await cached(
+      `fullXgot:v1:${leagueKey}:${season || "cur"}`,
+      // Standard wide-file guard (the 210/222/226/227/230/231 class):
+      // expected_goalsontarget.json is a WIDE file (live-probed 2026-10-30:
+      // 227-305 rows across the six serving globalMerge leagues — every
+      // outfield player with a shot on target), so thin means "the fetch
+      // was dropped" and re-probes in 90s. Season-aware like every
+      // production sibling — a historical raw carries its OWN fetchAllUrl
+      // (the 2020/21 laliga raw serves 385 rows, Messi 32.8).
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^expected goals on target \(xgot\)$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: XgotEntry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            xgot: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226/230 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 export async function getFullPenaltySaves(leagueKey: string, season?: string): Promise<PenaltySavesEntry[]> {
   // cycle-225 shape: real absence (the raw has no "Penalty saves" category —
   // persiangulf, probed, AND every historical raw, probed) returns [] — the
@@ -2277,6 +2407,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // WITHOUT a nameFa; statCategory carries raw names only). Integer
     // value untouched (rounded once at build, the 215/220 convention).
     bigChancesCreated: (st.bigChancesCreated || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-232 additive: xGOT rows gain the same read-time honest names
+    // (the 222 lesson — the category top-3 rows enter the merge WITHOUT a
+    // nameFa; statCategory carries raw names only). Decimal value
+    // untouched (verbatim, storage never rounds).
+    xgot: (st.xgot || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -2458,6 +2593,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // cycle-231 additive: the big-chances badge map — the creation-volume
     // twin (header "Big chances created", probed)
     const bccMap = new Map(statCategory(raw, /^big chances created$/i).map((p) => [p.id, Math.round(p.value ?? 0)]));
+    // cycle-232 additive: the xGOT badge map — the on-target accuracy twin
+    // (header "Expected goals on target (xGOT)", probed verbatim off the
+    // laliga category list)
+    const xgotMap = new Map(statCategory(raw, /^expected goals on target \(xgot\)$/i).map((p) => [p.id, p.value ?? 0]));
     const ratingMap = new Map(statCategory(raw, /fotmob rating/i).map((p) => [p.id, p.value ?? 0]));
     const minutesMap = new Map(statCategory(raw, /^minutes played$/i).map((p) => [p.id, p.value ?? 0]));
 
@@ -2474,6 +2613,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         ...(xgMap.has(s.id) ? { xg: xgMap.get(s.id) } : {}),
         ...(xaMap.has(s.id) ? { xa: xaMap.get(s.id) } : {}),
         ...(bccMap.has(s.id) ? { bigChances: bccMap.get(s.id) } : {}),
+        ...(xgotMap.has(s.id) ? { xgot: xgotMap.get(s.id) } : {}),
         ...(ratingMap.has(s.id) ? { rating: ratingMap.get(s.id) } : {}),
         ...(minutesMap.has(s.id) ? { minutes: minutesMap.get(s.id) } : {}),
       });
@@ -2903,6 +3043,42 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-232: «گل مورد انتظار روی دروازه» — the SIXTEENTH sibling joins
+    // the SAME merge on the SAME cached payload, the third ANALYTICS level
+    // and the on-target accuracy twin of the xG merge one block over.
+    // expected_goalsontarget.json (live-probed 2026-10-30 UA Chrome/124:
+    // SIX of the seven globalMerge leagues — ucl 305 Tresoldi 4.5 / pl 241
+    // Haaland 8.2 / laliga 277 Mbappé 12.8 / seriea 286 Malen 6.6 /
+    // bundesliga 227 Füllkrug 6.2 / ligue1 227 Lepaul 6.0 rows;
+    // persiangulf honestly absent — 5 player cats, no xGOT; mas absent,
+    // null payload; SEASON-AWARE (the 124/175/185/226/227/230/231 class):
+    // the 2020/21 raw serves its OWN file, 385 rows, Messi 32.8 / Gerard
+    // Moreno 24.8 — frozen, the 202 anchor pattern). Decimal values kept
+    // VERBATIM — the EIGHTH non-integer member (the
+    // 210/217/221/222/226/227/230 convention); upstream precision EXACTLY
+    // one decimal (probed) so the pill renders toFixed(1), the 217 display
+    // rule. Category top-3 first (the 175 merge order), then the full file
+    // merged on top, deduped by player id, sorted xgot DESC then name,
+    // top-10, POSITIONAL rank re-assignment. Standard thin guard applies
+    // (wide files — the 210 class). SEQUENTIAL after the big-chances merge
+    // (the 176 discipline: one L2 write at a time).
+    const xgotEntries: XgotEntry[] = statCategory(raw, /^expected goals on target \(xgot\)$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, xgot: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.xgot - a.xgot || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullXgot = await getFullXgot(leagueKey, requestedSeason);
+    const enrichedXgotIds = new Set(
+      xgotEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedXgot = [...xgotEntries, ...fullXgot.filter((r) => r.playerId == null || !enrichedXgotIds.has(r.playerId))]
+      .sort((a, b) => b.xgot - a.xgot || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-176: the league's own card leaders ride the mapped payload —
     // getLeagueCardLeaders has been fully built (deep fetchAllUrl files,
     // cycle-127 thin-TTL, freshCardNames) since cycle-50, but its only
@@ -2991,6 +3167,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       goalsPer90: mergedGoalsPer90,
       xa: mergedXa,
       bigChancesCreated: mergedBigChances,
+      xgot: mergedXgot,
       ...(penaltySavesDropped && mergedPenaltySaves.length > 0 ? { penaltySavesDropped: true } : {}),
       ...(cards ? { cards } : {}),
       ...(legend.length > 0 ? { legend } : {}),
@@ -3100,7 +3277,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // rows lack it and would keep the new section hidden for up to a full
     // TTL generation. Whole key bumps (the 52/…/230 additive-shape
     // convention).
-    await cached(`standings:v22:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-232: v23 — the xGOT block («گل مورد انتظار روی دروازه») joins
+    // the mapped payload as a REQUIRED field; old v22 rows lack it and
+    // would keep the new section hidden for up to a full TTL generation.
+    // Whole key bumps (the 52/…/231 additive-shape convention).
+    await cached(`standings:v23:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -3245,6 +3426,14 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // Honest-empty feeds (no "Big chances created" category —
       // persiangulf AND mas, probed) keep the normal TTL.
       !(Array.isArray(mapped.bigChancesCreated) && mapped.bigChancesCreated.length > 0 && mapped.bigChancesCreated.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-232: the standard thin-kept-for-a-generation guard closes for
+      // the xGOT block (the 175/210/215/216/217/220/221/222/226/227/230/231
+      // guard family grows by one) — expected_goalsontarget.json is a WIDE
+      // file (probed 227-305 rows on the six serving globalMerge leagues),
+      // so a thin merged list means the fetch was dropped; re-probes in
+      // 90s. Honest-empty feeds (no "Expected goals on target (xGOT)"
+      // category — persiangulf AND mas, probed) keep the normal TTL.
+      !(Array.isArray(mapped.xgot) && mapped.xgot.length > 0 && mapped.xgot.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
@@ -5103,6 +5292,7 @@ export interface GlobalScorer {
   xg?: number;
   xa?: number;
   bigChances?: number;
+  xgot?: number;   // cycle-232 additive: the xGOT badge twin (one decimal, the 226/230 convention)
   rating?: number;
   minutes?: number;
   leagueKey: string;
@@ -5227,6 +5417,7 @@ export async function getAllTopScorers(season?: string): Promise<GlobalScorersDa
           ...(s.xg != null ? { xg: s.xg } : {}),
           ...(s.xa != null ? { xa: s.xa } : {}),
           ...(s.bigChances != null ? { bigChances: s.bigChances } : {}),
+          ...(s.xgot != null ? { xgot: s.xgot } : {}),
           ...(s.rating != null ? { rating: s.rating } : {}),
           ...(s.minutes != null ? { minutes: s.minutes } : {}),
           leagueKey: lg.key, leagueFa: lg.faName,

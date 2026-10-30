@@ -53,6 +53,13 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   if (s.bigChances != null && s.bigChances > 0) {
     badges.push({ label: `${faDigits(s.bigChances)} سانس بزرگ`, cls: "bg-muted border-border text-muted-foreground", title: "سانس بزرگ خلق‌شده" });
   }
+  // cycle-232 additive: the xGOT badge — the on-target accuracy twin of
+  // the xG badge (season-total from the "Expected goals on target (xGOT)"
+  // category, matched by player id; one decimal, the 226/230 display
+  // convention)
+  if (s.xgot != null && s.xgot > 0) {
+    badges.push({ label: `xGOT ${faDigits(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
+  }
   if (badges.length === 0) return null;
   return (
     <span className="flex items-center gap-1 flex-wrap">

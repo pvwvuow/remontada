@@ -132,6 +132,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // decimal sisters; honest [] on persiangulf AND mas, probed); old
       // consumers never read this field (the 108 rule).
       bigChancesCreated: st.bigChancesCreated,
+      // cycle-232 additive: «گل مورد انتظار روی دروازه» rides the SAME
+      // cached payload — the deep-file family's SIXTEENTH sibling and the
+      // third ANALYTICS level, the on-target accuracy twin of the xG
+      // surface (decimal xGOT values verbatim, exactly one decimal — the
+      // 210/217/226/230 convention; season-aware like the sisters; honest
+      // [] on persiangulf AND mas, probed); old consumers never read this
+      // field (the 108 rule).
+      xgot: st.xgot,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
