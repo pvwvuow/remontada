@@ -98,7 +98,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a1119",
+  // cycle-211: the Midnight Codex night ink (was #0a1119 studio navy)
+  themeColor: "#04060b",
   width: "device-width",
   initialScale: 1,
 };

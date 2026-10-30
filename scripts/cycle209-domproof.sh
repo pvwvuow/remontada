@@ -121,8 +121,23 @@ except Exception: print("ERR")'
 open_page() {
   $B errors --clear >/dev/null 2>&1; $B console --clear >/dev/null 2>&1
   $B open "$BASE$1" >/dev/null 2>&1
+  # cycle-211 lesson: the PWA service worker force-reloads the page ONCE
+  # right after a deploy (~4-6s in) and its stale navigation cache can
+  # even serve the WRONG document — every eval after that races a fresh
+  # JS context (the gates' own incident: 208 BAD=6 / 209-210 FAILURES
+  # right after the codex deploy, every pin green without the SW).
+  # The harness therefore runs SW-free + cache-free for determinism;
+  # the PRODUCT keeps its service worker untouched.
+  $B eval "(async()=>{try{const rs=await navigator.serviceWorker.getRegistrations();for(const r of rs)await r.unregister();if(window.caches){const ks=await caches.keys();for(const k of ks)await caches.delete(k);}}catch(e){}return 1})()" >/dev/null 2>&1
   $B wait --load networkidle >/dev/null 2>&1
   $B wait --fn "document.body && document.body.innerText.length > 60" >/dev/null 2>&1
+  # cycle-211 lesson: the PWA service worker force-reloads the page ONCE
+  # right after a deploy (~4-6s in) — every eval after that would hit a
+  # fresh JS context. performance.now() resets on reload, so waiting for
+  # it to pass 6.5s proves THIS context already survived the reload
+  # window (the gates' own incident: 208 BAD=6 / 209-210 FAILURES=2
+  # immediately after the codex deploy, all data pins actually green).
+  $B wait --fn "performance.now() > 6500" >/dev/null 2>&1
   sleep 2
 }
 snap() { $B eval "JSON.stringify({$1})" 2>/dev/null | tr -d '"\\'; }

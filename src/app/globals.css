@@ -817,3 +817,174 @@
 @keyframes twinkle-a { from { opacity: 0.3; } to { opacity: 0.62; } }
 @keyframes twinkle-b { from { opacity: 0.5; } to { opacity: 0.22; } }
 @keyframes rune-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ==================================================================
+   Midnight Codex — cycle-211 redesign foundation (user's direct order
+   2026-10-30: «minimal fantasy» per wowfarsi.ir, no more boxes)
+   Reference language (wowfarsi.ir "Midnight Codex" v8, probed live):
+   ~80% deep cool dark, warm gold accents, sparse deep-blue highlights;
+   every surface speaks the logo flourish — a 1px hairline that FADES
+   at its ends, broken by a small ring + dot; NO solid box borders.
+   Load-last layer: re-maps the tokens every existing class consumes,
+   so the whole portal shifts language without touching any DOM,
+   testid, aria-label or pinned text (the 166/191/202/207 contracts).
+   ================================================================== */
+:root {
+  /* the codex palette (verbatim from the reference) */
+  --codex-ink-0: #04060b;
+  --codex-ink-1: #070a12;
+  --codex-ink-2: #0b0f1a;
+  --codex-gold-1: #f6e0a3;
+  --codex-gold-2: #f0c75e;
+  --codex-gold-3: #c9a232;
+  --codex-gold-4: #8a6a2a;
+  --codex-gold-dim: rgba(240, 199, 94, 0.32);
+  --codex-blue-1: #8fb4e8;
+  --codex-blue-2: #3d5f96;
+  --codex-blue-3: #17263f;
+  --codex-parch: #e8e3d6;
+  --codex-parch-dim: #a8a294;
+  --codex-mut: #857f6f;
+  /* re-map the studio tokens the components consume (end-of-file wins) */
+  --background: var(--codex-ink-0);
+  --foreground: var(--codex-parch);
+  --card: var(--codex-ink-1);
+  --card-foreground: var(--codex-parch);
+  --popover: var(--codex-ink-1);
+  --popover-foreground: var(--codex-parch);
+  --primary: var(--codex-gold-2);
+  --primary-foreground: #241a06;
+  --secondary: var(--codex-ink-2);
+  --secondary-foreground: var(--codex-parch);
+  --muted: var(--codex-ink-2);
+  --muted-foreground: var(--codex-parch-dim);
+  --accent: var(--codex-ink-2);
+  --accent-foreground: var(--codex-parch);
+  --border: rgba(240, 199, 94, 0.14);
+  --input: rgba(240, 199, 94, 0.2);
+  --ring: rgba(240, 199, 94, 0.5);
+  --steel: var(--codex-parch-dim);
+  /* the glass family goes codex: darker glass, gold hairlines */
+  --glass-bg: linear-gradient(180deg, rgba(11, 15, 26, 0.5), rgba(4, 6, 11, 0.72));
+  --glass-bg-solid: rgba(7, 10, 18, 0.66);
+  --glass-bg-strong: rgba(11, 15, 26, 0.82);
+  --glass-border: rgba(240, 199, 94, 0.15);
+  --glass-border-soft: rgba(240, 199, 94, 0.09);
+  --glass-highlight: rgba(246, 224, 163, 0.16);
+  --glass-beam: rgba(240, 199, 94, 0.4);
+  --glass-hairline: rgba(240, 199, 94, 0.12);
+  --glass-hairline-strong: rgba(240, 199, 94, 0.2);
+  --glass-halo:
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 2px 10px rgba(0, 0, 0, 0.3);
+  /* the cycle-60 accents speak gold now (wordmark, runes, ✦ separators) */
+  --arcane: var(--codex-gold-2);
+  --arcane-deep: var(--codex-gold-4);
+  --gold: var(--codex-gold-2);
+  --teal-soft: var(--codex-blue-1);
+  --sky-soft: var(--codex-blue-1);
+  --mint: var(--codex-gold-1);
+}
+
+@layer base {
+  /* the night field: deep ink + one warm pool up top, one cold pool below */
+  body {
+    background-color: var(--codex-ink-0);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(61, 95, 150, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 38% at 86% 106%, rgba(240, 199, 94, 0.07), transparent),
+      radial-gradient(ellipse 42% 34% at 6% 88%, rgba(23, 38, 63, 0.5), transparent);
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(240, 199, 94, 0.26); color: #fff8e7; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--codex-ink-0); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2b3648, #1a2333 55%, #4a3d1e);
+    border-radius: 8px;
+    border: 2px solid var(--codex-ink-0);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #3d4c66, #24304a 55%, #6b5324); }
+}
+
+/* ---------- the tome frame: the card loses its box border and speaks
+   the flourish — top+bottom hairlines that fade at their ends, the top
+   one broken by a glowing gold diamond (the reference's tome geometry,
+   radius-safe: no side lines to fight the corners) ---------- */
+.glass-card {
+  border-color: transparent;
+  background:
+    linear-gradient(90deg, transparent, var(--glass-hairline-strong) 12%, var(--glass-hairline-strong) 88%, transparent) center top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, var(--glass-hairline) 18%, var(--glass-hairline) 82%, transparent) center bottom / 100% 1px no-repeat,
+    radial-gradient(ellipse 55% 48% at 18% 0%, rgba(240, 199, 94, 0.06), transparent 72%),
+    var(--glass-bg);
+}
+.glass-card::before {
+  /* the old light beam becomes the ornament: a glowing gold diamond
+     centered on the top hairline */
+  top: 0;
+  left: 50%;
+  right: auto;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
+  background: var(--codex-gold-2);
+  box-shadow: 0 0 9px rgba(240, 199, 94, 0.85);
+}
+.glass-hero {
+  border: none;
+  background:
+    radial-gradient(150px 110px at 92% 0%, rgba(61, 95, 150, 0.2), transparent 72%),
+    radial-gradient(140px 100px at 4% 104%, rgba(240, 199, 94, 0.09), transparent 72%),
+    linear-gradient(90deg, transparent, rgba(240, 199, 94, 0.3) 14%, rgba(240, 199, 94, 0.3) 86%, transparent) center top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(240, 199, 94, 0.16) 18%, rgba(240, 199, 94, 0.16) 82%, transparent) center bottom / 100% 1px no-repeat,
+    var(--glass-bg);
+}
+.glass-row {
+  background: rgba(11, 15, 26, 0.42);
+  border-color: rgba(240, 199, 94, 0.08);
+}
+.glass-row-hover:hover {
+  background: rgba(240, 199, 94, 0.045);
+  border-color: rgba(240, 199, 94, 0.2);
+}
+
+/* ---------- ambient fields: violet/teal aurora → cold blue + gold dust */
+.fx-aurora-a { background: radial-gradient(circle, rgba(61, 95, 150, 0.5), transparent 66%); }
+.fx-aurora-b { background: radial-gradient(circle, rgba(240, 199, 94, 0.14), transparent 66%); }
+.fx-aurora-c { background: radial-gradient(circle, rgba(23, 38, 63, 0.85), transparent 66%); }
+
+/* ---------- utilities for the page-level codex passes (212+) ---------- */
+.text-gold-grad {
+  background: linear-gradient(160deg, #f9ecc0 0%, #f0c75e 35%, #c9a232 62%, #f0c75e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+.codex-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--codex-gold-dim) 18%, var(--codex-gold-dim) 82%, transparent);
+}
+.codex-ornament {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.codex-ornament::before,
+.codex-ornament::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, var(--codex-gold-dim), transparent);
+}
+.codex-ornament > i {
+  width: 5px;
+  height: 5px;
+  transform: rotate(45deg);
+  background: var(--codex-gold-2);
+  box-shadow: 0 0 8px rgba(240, 199, 94, 0.9);
+}
