@@ -769,19 +769,25 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px] sm:text-[13px] min-w-[480px]">
+        {/* ui-cycle-1: same mobile-fit contract as standings-view — the hard
+            min-w-[480px] pushed the امتیاز column off a 390px screen (the
+            wrapper is ~364px); min-w-0 + tightened paddings + a capped team
+            cell keep every VISIBLE column inside the card on phones, sm+
+            restores the roomy layout. Same 10 columns in the DOM, no testid
+            touched. */}
+        <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[480px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start">تیم</th>
-              <th className="py-2 px-1.5 font-bold text-center">ب</th>
-              <th className="py-2 px-1.5 font-bold text-center">بر</th>
-              <th className="py-2 px-1.5 font-bold text-center">مس</th>
-              <th className="py-2 px-1.5 font-bold text-center">با</th>
-              <th className="py-2 px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
-              <th className="py-2 px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
-              <th className="py-2 px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
+              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">ب</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">بر</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">مس</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">با</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
+              <th className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
             </tr>
           </thead>
           <tbody>
@@ -803,13 +809,13 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                     leader && "glass-leader"
                   )}
                 >
-                  <td className="py-2.5 pe-1 ps-3 relative">
+                  <td className="py-2.5 pe-1 ps-2.5 sm:ps-3 relative">
                     {r.qualColor && <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: r.qualColor }} aria-hidden />}
                     <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
                       {faDigits(pad2(r.idx))}
                     </span>
                   </td>
-                  <td className="py-2 px-1">
+                  <td className="py-2 px-1 max-w-[132px] sm:max-w-none">
                     <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                       <span className={cn("font-bold truncate group-hover:text-primary transition-colors", leader && "text-[#f1f7ff]")}>
@@ -817,21 +823,21 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                       </span>
                     </Link>
                   </td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsFor)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsAgainst)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian hidden sm:table-cell">
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsFor)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden lg:table-cell">{faDigits(r.goalsAgainst)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian hidden sm:table-cell">
                     <span className={cn(r.gd > 0 ? "text-mint" : r.gd < 0 ? "text-rose-soft" : "text-[#8da7c3]/80")}>
                       {r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}
                     </span>
                   </td>
-                  <td className="py-2 px-2.5 text-center">
+                  <td className="py-2 px-2 sm:px-2.5 text-center">
                     <span
                       className={cn(
-                        "font-black tabular-persian rounded-lg px-2 py-0.5 inline-block min-w-[34px]",
+                        "font-black tabular-persian rounded-lg px-1.5 sm:px-2 py-0.5 inline-block min-w-[30px] sm:min-w-[34px]",
                         leader ? "text-[#f0f6ff] bg-[#bddcfa26]" : "text-[#e4eefb] bg-[#9ec3e50b]"
                       )}
                     >

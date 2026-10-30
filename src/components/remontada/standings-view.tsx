@@ -96,19 +96,26 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
         </div>
       )}
       <div className="overflow-x-auto">
-        <table className="w-full text-[12px] sm:text-[13px] min-w-[520px]">
+        {/* ui-cycle-1: the table previously carried a hard min-w-[520px], which
+            on a 390px phone pushed ~156px off-screen — the امتیاز column (the
+            whole point of a standings table) was invisible until the user
+            discovered a horizontal scroll. Now: mobile keeps every visible
+            column inside the glass card (min-w-0 + tightened paddings + a
+            capped team cell so truncate engages), sm+ restores the roomy
+            520px layout. Same 10 columns, same DOM, no testid touched. */}
+        <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[520px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-3 font-bold text-start w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start">تیم</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="بازی">ب</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="برد">بر</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="مساوی">مس</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="باخت">با</th>
-              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
-              <th className="py-2 px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2 px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
-              <th className="py-2 px-2.5 font-black text-center text-[#d6e8fb]" title="امتیاز">امتیاز</th>
+              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="بازی">ب</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="برد">بر</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="مساوی">مس</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="باخت">با</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
+              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
+              <th className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]" title="امتیاز">امتیاز</th>
             </tr>
           </thead>
           <tbody>
@@ -131,7 +138,7 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
                     leader && "glass-leader"
                   )}
                 >
-                  <td className="py-2.5 pe-1 ps-3 relative">
+                  <td className="py-2.5 pe-1 ps-2.5 sm:ps-3 relative">
                     <QualBar color={r.qualColor || undefined} />
                     {/* cycle-64: podium medallions — the scoreboard moment */}
                     {r.idx <= 3 ? (
@@ -149,7 +156,7 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
                       </span>
                     )}
                   </td>
-                  <td className="py-2 px-1">
+                  <td className="py-2 px-1 max-w-[132px] sm:max-w-none">
                     <div className="flex items-center gap-0.5 min-w-0">
                       <Link
                         href={`/team/${r.teamId}`}
@@ -188,21 +195,21 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
                       <FormChips form={r.form} />
                     </div>
                   </td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsFor)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsAgainst)}</td>
-                  <td className="py-2 px-1.5 text-center tabular-persian">
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.played)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#c3d4ea]">{faDigits(r.wins)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.draws)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70">{faDigits(r.losses)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsFor)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian text-[#b4c8df]/70 hidden sm:table-cell">{faDigits(r.goalsAgainst)}</td>
+                  <td className="py-2 px-1 sm:px-1.5 text-center tabular-persian">
                     <span className={cn(r.gd > 0 ? "text-mint" : r.gd < 0 ? "text-rose-soft" : "text-[#8da7c3]/80")}>
                       {r.gd > 0 ? `+${faDigits(r.gd)}` : faDigits(r.gd)}
                     </span>
                   </td>
-                  <td className="py-2 px-2.5 text-center">
+                  <td className="py-2 px-2 sm:px-2.5 text-center">
                     <span
                       className={cn(
-                        "font-black tabular-persian rounded-lg px-2 py-0.5 inline-block min-w-[34px]",
+                        "font-black tabular-persian rounded-lg px-1.5 sm:px-2 py-0.5 inline-block min-w-[30px] sm:min-w-[34px]",
                         leader
                           ? "text-[#f6efdc] bg-[#e3c7671f] shadow-[0_0_12px_oklch(0.84_0.12_85/0.22)]"
                           : "text-[#e4eefb] bg-[#9ec3e50b]"
