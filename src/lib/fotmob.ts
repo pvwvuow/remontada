@@ -3402,6 +3402,45 @@ export async function getTeamIndex(): Promise<TeamIndexEntry[]> {
       aliases: `${fb.name} ${fb.fa}`,
     });
   }
+  // cycle-195: the daily feed's teams join the index — the portal tables plus
+  // the 79 fallbacks cover ~500 sides while the ALREADY-cached matches feed
+  // (probe 2026-10-30: 94 competitions, 340 unique teams today) carries every
+  // OTHER team on FotMob — MLS, Brasileirão Série B, Thai League 2, women's
+  // cups, national sides — with id/name/fa(TEAM_FA-mapped)/logo and a Persian
+  // competition label from its group. That day's probe: 37 of 40 sampled
+  // out-of-portal teams answered ZERO to /api/search while /team/{id} and
+  // /api/team/{id} fully serve them (HTTP 200 — no dead links, the 167
+  // lesson). The seen-set keeps portal rows first (they carry rank/pts);
+  // feed teams backfill with rank 0 (the no-hint convention) and their
+  // group's leagueFa. ZERO extra upstream fetches — the today feed rides its
+  // own 45s cache and every index rebuild re-uses it. Feed teams are a
+  // DAILY BONUS by design: they stay searchable while they play (the
+  // standings index remains the stable core) — a feed failure must never
+  // take the core index down, hence the try/catch.
+  try {
+    const feed = await getMatchesByDate(todayInTehran());
+    for (const g of feed.groups || []) {
+      for (const m of g.matches || []) {
+        for (const side of [m.home, m.away]) {
+          if (!side || side.id == null || side.id <= 0 || seen.has(side.id)) continue;
+          seen.add(side.id);
+          out.push({
+            teamId: side.id,
+            name: side.name,
+            fa: side.fa || side.name,
+            logo: side.logo || fotmobTeamLogo(side.id),
+            leagueKey: `feed-${g.leagueId}`,
+            leagueFa: g.leagueFa || g.leagueName || "",
+            rank: 0,
+            pts: 0,
+            aliases: `${side.name} ${side.fa || ""}`,
+          });
+        }
+      }
+    }
+  } catch {
+    // feed fold is a bonus: a feed failure leaves the standings index intact
+  }
   const failed = settled.filter((r) => r.status !== "fulfilled").length;
   const full = failed === 0;
   if (full) teamIndexLastGood = out;
