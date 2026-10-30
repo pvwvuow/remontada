@@ -884,7 +884,67 @@ export interface PlayerStatRow {
   saves?: number;
   conceded?: number;
   goalsPrevented?: number;
+  // update cycle-206: the per-match deep sections («جزئیات بازیکن») — every
+  // content.playerStats.stats section BEYOND top_stats (probed UA Chrome/124,
+  // 2026-10-30: attack/defense/duels on 28 of 30 Clásico players; GKs carry
+  // top_stats only; the fraction rows are value/total pairs). Optional →
+  // pre-206 cached payloads self-heal at the next cache generation.
+  deep?: PlayerStatDeepSection[];
 }
+
+// update cycle-206: one expanded section of the per-match player deep stats
+export interface PlayerStatDeepRow {
+  label: string;        // honest upstream English label (title attr keeps it)
+  labelFa: string;      // curated Persian map hit, else the raw label
+  value: number | null;
+  total: number | null; // fractionWithPercentage rows only
+  pct: boolean;         // true → render «value از total» (value/total pair)
+}
+export interface PlayerStatDeepSection {
+  key: string;       // upstream section key (attack/defense/duels — generic)
+  titleFa: string;   // curated Persian section name, else the upstream title
+  rows: PlayerStatDeepRow[]; // ≥1 — valueless rows (e.g. Was fouled null) drop
+}
+
+// update cycle-206: Persian maps for the per-match deep stat sections — the
+// complete probed vocabulary (3 matches: Clásico 5868105, EFL Cup 6275369,
+// Serie A 5749723; 27 labels, 3 section keys). Unknown labels/sections fall
+// back to the honest upstream text (the injury-name contract, cycle-96).
+const PLAYER_DEEP_SECTION_FA: Record<string, string> = {
+  attack: "حمله",
+  defense: "دفاع",
+  duels: "دوئل‌ها",
+  goalkeeping: "دروازه‌بانی",
+};
+const PLAYER_DEEP_LABEL_FA: Record<string, string> = {
+  "Touches": "لمس توپ",
+  "Touches in opposition box": "لمس در محوطهٔ حریف",
+  "Successful dribbles": "دریبل موفق",
+  "Passes into final third": "پاس به ثلث پایانی",
+  "Line breaking passes": "پاس خط‌شکن",
+  "Accurate crosses": "ارسال دقیق",
+  "Accurate long balls": "پاس بلند دقیق",
+  "Corners": "کرنر",
+  "Dispossessed": "جدا شدن از توپ",
+  "Offsides": "آفساید",
+  "xG Non-penalty": "xG بدون پنالتی",
+  "Big chances missed": "فرصت طلایی از دست رفته",
+  "Defensive actions": "کار دفاعی",
+  "Tackles": "تکل",
+  "Blocks": "بلوکه",
+  "Clearances": "دفع",
+  "Headed clearance": "دفع با سر",
+  "Interceptions": "قطع توپ",
+  "Recoveries": "بازپس‌گیری",
+  "Dribbled past": "دریبل شدن",
+  "Last man tackle": "تکل آخرین مدافع",
+  "Ground duels won": "دوئل زمینی برده",
+  "Aerial duels won": "دوئل هوایی برده",
+  "Was fouled": "خطا خورده",
+  "Fouls committed": "خطا کرده",
+  "Duels won": "دوئل برده",
+  "Duels lost": "دوئل باخته",
+};
 
 function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized {
   const g = raw.general || {};
@@ -1084,6 +1144,38 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
         };
         const passes = top["Accurate passes"]?.stat;
         const gp = num("Goals prevented");
+        // update cycle-206: the deep sections — every stats section beyond
+        // top_stats, generically mapped (a future «Goalkeeping» section on
+        // some feeds would ride the same path). Valueless rows drop (Was
+        // fouled comes null when untouched); pct rows keep value/total.
+        const deepSections: PlayerStatDeepSection[] = [];
+        for (const sec of p.stats || []) {
+          const sk = (sec?.key || "").toLowerCase();
+          if (!sk || sk === "top_stats") continue;
+          const secStats = (sec.stats && typeof sec.stats === "object" ? sec.stats : {}) as Record<
+            string,
+            { stat?: { value?: number | null; total?: number | null; type?: string } } | undefined
+          >;
+          const deepRows: PlayerStatDeepRow[] = Object.entries(secStats)
+            .map(([label, row]) => {
+              const st = row?.stat || {};
+              return {
+                label,
+                labelFa: PLAYER_DEEP_LABEL_FA[label] || label,
+                value: typeof st.value === "number" ? st.value : null,
+                total: typeof st.total === "number" ? st.total : null,
+                pct: st.type === "fractionWithPercentage",
+              };
+            })
+            .filter((r) => r.value != null || r.total != null);
+          if (deepRows.length > 0) {
+            deepSections.push({
+              key: sk,
+              titleFa: PLAYER_DEEP_SECTION_FA[sk] || sec.title || sk,
+              rows: deepRows,
+            });
+          }
+        }
         return {
           id: p.id as number,
           name: p.name || "?",
@@ -1103,6 +1195,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
           saves: num("Saves"),
           conceded: num("Goals conceded"),
           goalsPrevented: gp != null ? Math.round(gp * 10) / 10 : undefined,
+          ...(deepSections.length > 0 ? { deep: deepSections } : {}),
         };
       });
     const order = (a: PlayerStatRow, b: PlayerStatRow) => {

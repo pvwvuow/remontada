@@ -239,6 +239,21 @@ interface PlayerStatRow {
   saves?: number;
   conceded?: number;
   goalsPrevented?: number;
+  // update cycle-206: per-match deep sections («جزئیات بازیکن») — mirrors
+  // /api/match/[id]; absent for GK-only feeds and pre-206 cached payloads
+  deep?: PlayerStatDeepSection[];
+}
+interface PlayerStatDeepRow {
+  label: string;
+  labelFa: string;
+  value: number | null;
+  total: number | null;
+  pct: boolean;
+}
+interface PlayerStatDeepSection {
+  key: string;
+  titleFa: string;
+  rows: PlayerStatDeepRow[];
 }
 
 type Tab = "events" | "shots" | "players" | "stats" | "lineups" | "info" | "h2h";
@@ -837,6 +852,39 @@ function PlayerChip({ label, value }: { label: string; value: string }) {
   );
 }
 
+// ---------- per-match deep player stats (update cycle-206) ----------
+// «جزئیات بازیکن»: an expandable panel under the player row — one Persian
+// section per upstream stats block beyond top_stats (حمله/دفاع/دوئل‌ها)،
+// each a label+value list. pct rows render «value از total» (the probed
+// fractionWithPercentage family: 0/1 dribbles, 1/4 ground duels…); the
+// raw English label rides the title attr so nothing is lost (honest map).
+function PlayerDeepPanel({ deep }: { deep: PlayerStatDeepSection[] }) {
+  return (
+    <div
+      className="mt-1.5 rounded-lg border border-glass-border-soft bg-white/[0.02] overflow-hidden"
+      data-testid="player-deep"
+    >
+      {deep.map((sec, si) => (
+        <div key={sec.key} className={cn(si > 0 && "border-t border-glass-border-soft/60")}>
+          <p className="px-3 pt-2 pb-1 text-[9.5px] font-black text-steel/60">{sec.titleFa}</p>
+          <div className="px-3 pb-2 flex flex-col gap-0.5">
+            {sec.rows.map((r) => (
+              <div key={r.label} className="flex items-center justify-between gap-2 text-[11px]" title={r.labelFa !== r.label ? r.label : undefined}>
+                <span className="text-steel/80 truncate">{r.labelFa}</span>
+                <span className="font-bold text-[#dcebfa] tabular-persian shrink-0" dir="ltr">
+                  {r.pct && r.total != null && r.total > 0
+                    ? `${faDigits(r.value ?? 0)}/${faDigits(r.total)}`
+                    : faDigits(typeof r.value === "number" ? (Number.isInteger(r.value) ? r.value : Math.round(r.value * 100) / 100) : 0)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PlayerRow({ p }: { p: PlayerStatRow }) {
   const chips: { label: string; value: string }[] = [];
   if (p.goals) chips.push({ label: "گل", value: faDigits(p.goals) });
@@ -856,8 +904,12 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
     if (p.defActions) chips.push({ label: "دفاع", value: faDigits(p.defActions) });
   }
   if (p.minutes != null) chips.push({ label: "دقیقه", value: faDigits(p.minutes) });
+  // update cycle-206: the deep toggle — only when the payload carries at
+  // least one mapped section (GK-only feeds and pre-206 cache rows hide it)
+  const [deepOpen, setDeepOpen] = useState(false);
   return (
-    <div className="glass-row-hover flex items-start justify-between gap-2.5 px-4 py-2.5 border-b border-glass-border-soft/60 last:border-b-0">
+    <div className="glass-row-hover px-4 py-2.5 border-b border-glass-border-soft/60 last:border-b-0">
+      <div className="flex items-start justify-between gap-2.5">
       {/* cycle-134: real headshot in the lineup row (the «آیکون ترکیب تیم») —
       the shirt number chip moves next to the name; onError hides the img so
       the initials tile shows through (cycle-130 construction, zero broken) */}
@@ -882,7 +934,25 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
           </p>
         )}
       </div>
+      <div className="flex flex-col items-end gap-1 shrink-0">
       <RatingPill rating={p.rating} />
+      {p.deep && p.deep.length > 0 && (
+        <button
+          type="button"
+          onClick={() => setDeepOpen((v) => !v)}
+          aria-expanded={deepOpen}
+          data-testid="player-deep-toggle"
+          className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-steel/70 hover:text-primary transition-colors"
+        >
+          جزئیات
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={cn("transition-transform", deepOpen && "rotate-180")}>
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+        </button>
+      )}
+      </div>
+      </div>
+      {deepOpen && p.deep && p.deep.length > 0 && <PlayerDeepPanel deep={p.deep} />}
     </div>
   );
 }
