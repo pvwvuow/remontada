@@ -879,6 +879,12 @@
     0 2px 10px rgba(0, 0, 0, 0.3);
   /* the cycle-60 accents speak gold now (wordmark, runes, ✦ separators) */
   --arcane: var(--codex-gold-2);
+  /* cycle-214 (fix, census root 1/4): the 211 layer re-mapped --arcane
+     but skipped its 32%-alpha twin — every drop-shadow/box-shadow that
+     consumes --arcane-soft (rune diamonds, fx-arcane-text separators,
+     the portal-gate glyph + its keyframes, rune-spin) kept glowing
+     violet; one token line heals the whole family */
+  --arcane-soft: var(--codex-gold-dim);
   --arcane-deep: var(--codex-gold-4);
   --gold: var(--codex-gold-2);
   --teal-soft: var(--codex-blue-1);
@@ -1082,4 +1088,37 @@
   background: var(--codex-gold-2);
   box-shadow: 0 0 8px rgba(240, 199, 94, 0.85);
   border-radius: 1px;
+}
+
+/* ==================================================================
+   cycle-214 (fix) — the 4-root violet cleanup, additive-CSS only:
+   the cycle-213 census findings restated in the codex language with
+   zero DOM/testid/pinned-text changes (the contracts stay intact)
+   ================================================================== */
+/* root 2/4 — the cycle-67 chronicle hover: violet border + violet
+   underglow → the codex hover language (gold hairline, black
+   levitation mass, gold-dust tail; same geometry) */
+.chronicle-card:hover {
+  border-color: rgba(240, 199, 94, 0.28);
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 30px rgba(0, 0, 0, 0.42),
+    0 0 18px rgba(240, 199, 94, 0.12);
+}
+/* root 3/4 — nav-dock.tsx ships a Tailwind arbitrary violet glow on
+   the active dock item (shadow-[0_0_16px_oklch(0.7_0.1_300/0.28)]);
+   the TSX stays untouched (zero DOM changes) — this unlayered rule
+   outranks the layered utility and swaps the glow to gold, and the
+   Persian aria-label keeps the header/match/league/home tab navs out */
+nav[aria-label="منوی بازی"] a[aria-current="page"] {
+  box-shadow: 0 0 16px rgba(240, 199, 94, 0.28);
+}
+/* root 4/4 — the rune-glow gradient's violet tail → the codex
+   parchment-to-gold melt, same stop shape */
+.rune-glow {
+  background: linear-gradient(100deg, #f9ecc0 30%, #f0c75e 70%, rgba(240, 199, 94, 0.9));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
