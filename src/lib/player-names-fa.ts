@@ -1130,6 +1130,51 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "lázaro": "لازارو",
   "marco asensio": "مارکو آسنسیو",
   "pierre-emerick aubameyang": "پی‌یر-اومریک اوبامیانگ",
+  // cycle-234: the 233 registered finding — the standing curation chain
+  // (215→217→221→222→229, 'the fallbacks on the SERVED top-10s', the 167
+  // lesson) did NOT ride the 230/231/232 trio, so the THREE newest
+  // surfaces' (xGOT 232 / xA 230 / BCC 231) served top-10s rendered raw
+  // English on the six domestics: 44 rows as-found (laliga 7 / ucl 7 /
+  // pl 10 / seriea 4 / bundesliga 7 / ligue1 9 — the 233 A1 evidence,
+  // re-probed fresh by scripts/cycle234-probe.sh 2026-10-30, ZERO drift).
+  // This block curates the CONFIDENT subset (25 names → 33 of the 44
+  // rows) under the in-file conventions (روژه مارتی → Roger, آنخل
+  // کوره‌آ → Ángel, یولیان برانت → Julian, جاناتان دیوید → Jonathan,
+  // امانوئله لولی → Emanuele, ویسنته گوایتا → Vicente); media-verified
+  // this cycle via fa.wikipedia (امین السباعی — the explicit Angers
+  // article) and fa-wiki search (شارل دی کتلاره). The 104 rule holds and
+  // the 219 verdict is untouched — the genuinely doubtful stay
+  // honest-English, DELIBERATELY ABSENT (10 names → the remaining 11
+  // rows: ucl 3 / ligue1 5 / bundesliga 2 / laliga 1): Alysson Edward
+  // (the new Aston Villa fullback, zero media attestation), Danijel
+  // Šturm, Yvan Dibango, Ilias Akhomach (no fa-wiki article, spelling
+  // unsettled), Adam Daghim, Derry Scherhant, Joris Chotard, Gessime
+  // Yassine, Ilan Kebbal, Lucas Calodat.
+  "martin ødegaard": "مارتین اودگارد",
+  "alex iwobi": "الکس ایووبی",
+  "morgan gibbs-white": "مورگان گیبس-وایت",
+  "brahim díaz": "براهیم دیاز",
+  "isco": "ایسکو",
+  "youri tielemans": "یوری تیله‌مانس",
+  "granit xhaka": "گرانیت ژاکا",
+  "jérémy doku": "جرمی دوکو",
+  "andrew robertson": "اندرو رابرتسون",
+  "samuel chukwueze": "ساموئل چوکوووزه",
+  "julian ryerson": "یولیان رایرسون",
+  "nadiem amiri": "نادیم امیری",
+  "vladimír coufal": "ولادیمیر کوفال",
+  "marius wolf": "ماریوس وولف",
+  "jonathan clauss": "جاناتان کلاوس",
+  "amine sbaï": "امین السباعی",
+  "charles de ketelaere": "شارل دی کتلاره",
+  "julio enciso": "خولیو انسیسو",
+  "enzo le fée": "انزو لو فه",
+  "armand laurienté": "آرمان لوریانته",
+  "emanuele valeri": "امانوئله والری",
+  "iñigo vicente": "اینیگو ویسنته",
+  "ángel pérez": "آنخل پرز",
+  "jorge salinas": "خورخه سالیناس",
+  "roger brugué": "روژه بروگه",
 };
 
 // Persian display name for an upstream player name — exact lowercased map
