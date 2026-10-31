@@ -3727,3 +3727,21 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc 0 ← build ← استارت (try=2) ← رگرسیون **۲۸/۲۸** ← domproof **۱۲/۱۲**.
 
 **نوبت گردشی بعدی: cycle-260 = آپدیت** (فرمول ((260 mod 5)+1)=۱)
+
+---
+
+### Task ID: cycle-260 — آپدیت (شایعات انتقال تیم: transfers.allRumours روی همان fetch مشترک)
+
+**تاریخ:** ۲۰۲۶-۱۰-۳۱ ~۲۲:۵۵ · **کامیت:** «Update (cycle 260)» = `954a86a` · **فایل‌ها:** `src/lib/fotmob.ts` + `src/app/api/team-rumours/[id]/route.ts` (جدید) + `team-view.tsx`
+
+**کشف شکاف (روش دیف-کلید، همان متد cycle-257):** با Node fetch (curl پشت TLS-انگشت‌نگاری است) سه کلیدِ تجزیه‌نشدهٔ data/teams یافت شد: `stats.tournamentSeasons` (44 فصل — بدون پارامتر فصلِ مؤثر روی endpoint تیم‌ها)، `overview.newsSummary` (خلاصهٔ اخبار تیم)، و برندهٔ واقعی: **`transfers.allRumours[]`** — شایعات مطبوعاتی با probability enum. (playerData هم بررسی شد: پارام seasonId نادیده گرفته می‌شود — آمار فصل‌های گذشتهٔ بازیکن از این مسیر در دسترس نیست؛ حذف صادقانه.)
+
+**پروب زنده:** ۱۲۸ ردیف شایعه روی ۱۱ باشگاه؛ enum کامل probability = «Low»/«Medium»/«High» (مجهول → حذف صادقانهٔ pill)، fee.feeText = fee/on loan/free transfer/contract extension، fee.value واقعی یورویی (۳۵٬۰۰۰٬۰۰۰ روی شایعهٔ ترسولدی)، sourceName/sourceUrl همیشه https. اعداد سیتی: ۱۷ شایعه (۵ ورودی/۱۲ خروجی).
+
+**پیاده‌سازی (افزودنی، صفر upstream اضافه):** `allRumours` روی `FMTeamDataRaw.transfers` + `FMRumourRaw` + `TeamRumourItem/TeamRumoursData` + `rumourFeeFa` (value-آگاه: «کارمزد ۳۵ میلیون یورو») + `RUMOUR_PROBABILITY_FA` + `getTeamRumours` (جهت‌گیری دقیقاً قرارداد ۷۱: in/out/internal برابر teamId) — همه سوار کش `teamDataRaw:{id}` یک‌ساعته. API `/api/team-rumours/[id]` (قرارداد team-transfers: 400 شناسهٔ بد، rumours:null = مخفی، 502 خطا). UI: کارت تنبل «شایعات انتقال» زیر «بازار انتقال‌ها» — چیپ جهت (ورودی نعنایی/خروجی رزی/تمدید آسمانی) + pill احتمال (زیاد=نعنایی/متوسط=آسمانی/کم=muted) + fee فارسی + تاریخ جلالی + «منبع: …» خارجی با rel سخت‌گیرانه (فقط وقتی نام+URL هر دو سالم باشند) + لینک بازیکن و تگ باشگاه با لوگو از قرارداد ۷۱. testid `team-rumours`.
+
+**اثبات زنده:** `/api/team-rumours/8456` → ۱۷ ردیف کامل فارسی («نیکولو ترسولدی | کلوب بروژ ← منچسترسیتی | ورودی | احتمال کم | کارمزد ۳۵ میلیون یورو | ۸ آبان | منبع: footyinsider247»)؛ شناسهٔ نامعتبر → 400. DOM 390×844: کارت ۱۷ ردیف، چیپ‌های دوتایی جهت+احتمال، کنسول ۰ / خطا ۰.
+
+**پذیرش:** eslint 0/0 ← tsc 0 (یک اصلاح: Exclude<…,""> بجای NonNullable — رشتهٔ خالی nullable نیست) ← build ← استارت (try=2) ← رگرسیون **۲۸/۲۸** ← domproof **۱۲/۱۲**.
+
+**نوبت گردشی بعدی: cycle-261 = آپدیت** (فرمول ((261 mod 5)+1)=۲)
