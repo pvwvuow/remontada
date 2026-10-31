@@ -196,7 +196,10 @@
     radial-gradient(130px 95px at 4% 102%, oklch(0.62 0.09 240 / 9%), transparent 72%),
     var(--glass-bg);
   border: 1px solid oklch(0.8 0.07 235 / 26%);
-  border-radius: 1.1rem;
+  /* ui-cycle-15: unify with .glass-card (1.25rem) — live audit at 390x844
+     showed every top-level glass panel at 20px except heroes at 17.6px,
+     sitting directly adjacent to cards on home/league/team/topscorers */
+  border-radius: 1.25rem;
   box-shadow:
     var(--glass-halo),
     inset 0 1px 0 var(--glass-highlight),
@@ -244,7 +247,8 @@
     radial-gradient(220px 170px at 12% 55%, rgba(114, 169, 234, 0.2), transparent 70%),
     linear-gradient(160deg, #29496569, #254e7a22 60%, #233a5020);
   border: 1px solid oklch(0.8 0.07 235 / 22%);
-  border-radius: 1.1rem;
+  /* ui-cycle-15: same panel-corner unification as .glass-hero */
+  border-radius: 1.25rem;
   box-shadow: inset 0 1px 0 oklch(0.88 0.05 232 / 16%);
 }
 /* avatar / initials tile used inside the scorer hero */
