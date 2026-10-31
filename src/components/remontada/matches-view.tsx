@@ -6,6 +6,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { LeagueGroup, NormMatch } from "@/lib/fotmob";
+import { LEAGUES } from "@/lib/leagues";
 import { faDigits, faMinute, jalaliShort, offsetDateISO, tehranTime } from "@/lib/format";
 import { useFavorites } from "@/lib/favorites";
 import { TeamLogo } from "@/components/remontada/team-logo";
@@ -13,6 +14,15 @@ import { EmptyState } from "@/components/remontada/empty-state";
 import { cn } from "@/lib/utils";
 
 export { tehranTime };
+
+// cycle-254: catalogued-league tier for the featured pick — same family as the
+// cycle-252 search ranking: feed/youth squads (PL U18 id 10068 served FOUR
+// matches at weight 121/112 on 2026-10-31, pushing every senior match off the
+// spotlight) must not outrank catalogued leagues on the day poster. Matches
+// whose leagueId sits in the LEAGUES catalog get a flat tier bonus that
+// dominates goals/live; the old ordering (live > goals > favs > finished)
+// then decides within each tier. Uncatalogued-only days keep the old behavior.
+const CATALOG_IDS = new Set(LEAGUES.map((l) => l.fotmobId));
 
 function StatusBadge({ m }: { m: NormMatch }) {
   if (m.cancelled) {
@@ -432,12 +442,14 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
   }, [statusFiltered, onlyFavs, favIds]);
 
   // featured "بازی ویژه" pick — pure presentation score over the currently
-  // visible (filter-respecting) matches: live games first, then goals,
-  // then favorites; falls back to the first visible match
+  // visible (filter-respecting) matches: catalogued leagues first (cycle-254
+  // tier), then live games, goals, favorites; falls back to the first visible
+  // match
   const featured = useMemo(() => {
     const all = shownGroups.flatMap((g) => g.matches);
     if (all.length === 0) return null;
     const weight = (m: NormMatch) =>
+      (CATALOG_IDS.has(m.leagueId) ? 500 : 0) +
       (m.live ? 100 : 0) +
       ((m.home.score ?? 0) + (m.away.score ?? 0)) * 3 +
       (m.finished ? 8 : 0) +
