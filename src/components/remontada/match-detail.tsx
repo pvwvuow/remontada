@@ -1995,6 +1995,65 @@ function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> 
 // Language: server-side ar-wins (the fresh 207 contract — RTL,
 // script-adjacent to the Persian UI); honest absence when the array is
 // empty (the block never renders).
+
+// fix cycle-249: the 207 onError just set visibility:hidden on a broken
+// cover — live patrol found the upstream wp-content cover of match 5795498
+// returning 403, which left a silent empty 72×48 slot (no broken icon, but
+// no signal either). Now a failed cover swaps to the SAME-SIZE doc-glyph
+// placeholder the no-image branch already renders (no layout shift), so a
+// dead editorial image degrades to the site's standard "no cover" look
+// instead of a blank hole.
+function PreviewRow({ r }: { r: NonNullable<DetailData["previews"]>[number] }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  return (
+    <a
+      href={r.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-start gap-3 px-3 py-2.5 group transition-colors hover:bg-[#ffffff06] border-b border-glass-border-soft last:border-b-0"
+    >
+      {r.image && !imgFailed ? (
+        <img
+          src={r.image}
+          alt=""
+          width={72}
+          height={48}
+          loading="lazy"
+          className="shrink-0 w-[72px] h-[48px] rounded-lg object-cover border border-[color:var(--glass-border-soft)]"
+          onError={() => setImgFailed(true)}
+        />
+      ) : (
+        <span className="shrink-0 w-[72px] h-[48px] rounded-lg bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] flex items-center justify-center" aria-hidden>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
+            <path d="M4 5.5h16v13H4z" />
+            <path d="M7 9.5h10M7 13h10M7 16.5h6" />
+          </svg>
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className="block text-[12px] font-black leading-snug text-[#ecf3fa] group-hover:text-primary transition-colors">{r.title}</span>
+        {r.description ? (
+          <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
+        ) : null}
+        {/* update cycle-209 (fix, no-findings polish): the per-row
+            source chip — the header attribution stays the generic
+            «منبع: Opta · FotMob» while single-source feeds were
+            ambiguous; r.source renders verbatim (the honest raw-label
+            family — injury names 96 / deep labels 206). Additive-only:
+            no pinned text moves, absent source → no chip. */}
+        {r.source ? (
+          <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/80" dir="ltr">
+            {r.source}
+          </span>
+        ) : null}
+      </span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
+        <path d="M7 17L17 7M9 7h8v8" />
+      </svg>
+    </a>
+  );
+}
+
 function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews"]> }) {
   return (
     <section className="glass-card overflow-hidden" aria-label="پیش‌نمای بازی" data-testid="match-previews">
@@ -2004,52 +2063,7 @@ function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews
       </header>
       <div>
         {previews.map((r, i) => (
-          <a
-            key={i}
-            href={r.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-start gap-3 px-3 py-2.5 group transition-colors hover:bg-[#ffffff06] border-b border-glass-border-soft last:border-b-0"
-          >
-            {r.image ? (
-              <img
-                src={r.image}
-                alt=""
-                width={72}
-                height={48}
-                loading="lazy"
-                className="shrink-0 w-[72px] h-[48px] rounded-lg object-cover border border-[color:var(--glass-border-soft)]"
-                onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
-              />
-            ) : (
-              <span className="shrink-0 w-9 h-9 rounded-lg bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] flex items-center justify-center" aria-hidden>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary">
-                  <path d="M4 5.5h16v13H4z" />
-                  <path d="M7 9.5h10M7 13h10M7 16.5h6" />
-                </svg>
-              </span>
-            )}
-            <span className="min-w-0 flex-1">
-              <span className="block text-[12px] font-black leading-snug text-[#ecf3fa] group-hover:text-primary transition-colors">{r.title}</span>
-              {r.description ? (
-                <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
-              ) : null}
-              {/* update cycle-209 (fix, no-findings polish): the per-row
-                  source chip — the header attribution stays the generic
-                  «منبع: Opta · FotMob» while single-source feeds were
-                  ambiguous; r.source renders verbatim (the honest raw-label
-                  family — injury names 96 / deep labels 206). Additive-only:
-                  no pinned text moves, absent source → no chip. */}
-              {r.source ? (
-                <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/80" dir="ltr">
-                  {r.source}
-                </span>
-              ) : null}
-            </span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
-              <path d="M7 17L17 7M9 7h8v8" />
-            </svg>
-          </a>
+          <PreviewRow key={i} r={r} />
         ))}
       </div>
     </section>
