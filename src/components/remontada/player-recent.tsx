@@ -115,7 +115,7 @@ export function RecentMatchesSection({
                     </span>
                     <span className="flex items-center gap-1.5 min-w-0 flex-1">
                       {multiSide && team === null && m.sideName && (
-                        <span className="shrink-0 rounded-md border border-border bg-white/[0.04] px-1.5 py-px text-[8.5px] font-bold text-muted-foreground max-w-[64px] truncate">
+                        <span className="shrink-0 rounded-md border border-border bg-white/[0.04] px-1.5 py-px text-[9px] font-bold text-muted-foreground max-w-[64px] truncate">
                           {m.sideName}
                         </span>
                       )}
@@ -124,7 +124,7 @@ export function RecentMatchesSection({
                         {m.isHome ? "میزبان" : "بیرون"} · {m.opponent}
                       </span>
                       {m.onBench && !m.played && (
-                        <span className="text-[8.5px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">روی نیمکت</span>
+                        <span className="text-[9px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">روی نیمکت</span>
                       )}
                       {m.potm && <span className="text-[9px] font-black text-chart-3 shrink-0" title="بهترین بازیکن زمین">★</span>}
                     </span>

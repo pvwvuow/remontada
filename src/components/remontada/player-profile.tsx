@@ -432,14 +432,14 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                           <div className="h-1 flex-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
                             <div className="h-full rounded-full bg-gold/70" style={{ width: `${s.pct}%` }} />
                           </div>
-                          <span className="text-[8.5px] text-muted-foreground tabular-persian shrink-0 whitespace-nowrap">
+                          <span className="text-[9px] text-muted-foreground tabular-persian shrink-0 whitespace-nowrap">
                             صدک {faDigits(s.pct)}
                             {s.per90 !== null ? ` · هر ۹۰ دقیقه ${s.per90}` : ""}
                           </span>
                         </div>
                       )}
                       {s.pct === null && s.per90 !== null && (
-                        <p className="text-[8.5px] text-muted-foreground tabular-persian mt-0.5">هر ۹۰ دقیقه {s.per90}</p>
+                        <p className="text-[9px] text-muted-foreground tabular-persian mt-0.5">هر ۹۰ دقیقه {s.per90}</p>
                       )}
                     </div>
                   ))}
@@ -568,17 +568,17 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   <p className="flex items-center gap-1.5 min-w-0">
                     <span className="font-bold text-[12.5px] truncate">{c.fa}</span>
                     {c.kind === "national" && (
-                      <span className="text-[8.5px] font-black text-mint border border-mint/25 bg-mint/10 rounded px-1 py-px shrink-0">
+                      <span className="text-[9px] font-black text-mint border border-mint/25 bg-mint/10 rounded px-1 py-px shrink-0">
                         تیم ملی
                       </span>
                     )}
                     {c.active && (
-                      <span className="text-[8.5px] font-black text-green-600 dark:text-green-400 border border-green-500/30 bg-green-500/10 rounded px-1 py-px shrink-0">
+                      <span className="text-[9px] font-black text-green-600 dark:text-green-400 border border-green-500/30 bg-green-500/10 rounded px-1 py-px shrink-0">
                         اکنون
                       </span>
                     )}
                     {c.transfer && (
-                      <span className="hidden sm:inline text-[8.5px] font-bold text-steel border border-glass-border-soft rounded px-1 py-px shrink-0">
+                      <span className="hidden sm:inline text-[9px] font-bold text-steel border border-glass-border-soft rounded px-1 py-px shrink-0">
                         {c.transfer}
                       </span>
                     )}

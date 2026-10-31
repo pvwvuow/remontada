@@ -83,7 +83,7 @@ function SegBox({ v, l }: { v: number; l: string }) {
   return (
     <div className="rounded-xl border border-glass-border-soft bg-white/[0.04] px-2.5 py-1.5 text-center min-w-[48px]">
       <p className="text-[16px] font-light tabular-persian text-[#dfedff] leading-none">{faDigits(String(v).padStart(2, "0"))}</p>
-      <p className="text-[8.5px] font-bold text-steel/80 mt-1">{l}</p>
+      <p className="text-[9px] font-bold text-steel/80 mt-1">{l}</p>
     </div>
   );
 }
@@ -314,7 +314,7 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
             <div key={k.l} className="rounded-xl border border-glass-border-soft bg-[#a9cdf611] px-2 py-2.5 text-center">
               <p className="text-[9px] text-steel/80 font-bold">{k.l}</p>
               <p className="text-base font-medium text-[#e0efff] tabular-persian leading-tight mt-0.5">{k.v}</p>
-              <p className="text-[8.5px] text-muted-foreground/80 tabular-persian mt-0.5">{k.sub}</p>
+              <p className="text-[9px] text-muted-foreground/80 tabular-persian mt-0.5">{k.sub}</p>
             </div>
           ))}
         </div>
@@ -362,7 +362,7 @@ function FormChips({ items }: { items: { res: "W" | "D" | "L"; title: string }[]
           key={i}
           title={f.title}
           className={cn(
-            "w-[18px] h-[18px] rounded-md border text-[8.5px] font-black flex items-center justify-center cursor-default",
+            "w-[18px] h-[18px] rounded-md border text-[9px] font-black flex items-center justify-center cursor-default",
             formChip(f.res)
           )}
         >
@@ -522,7 +522,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
         <p className="text-[12.5px] font-bold truncate text-[#e6f0fb] flex items-center gap-1.5">
           {p.name}
           {p.injured && (
-            <span className="text-[8.5px] font-black text-red-400 bg-red-400/10 border border-red-400/30 rounded-md px-1 py-px shrink-0">
+            <span className="text-[9px] font-black text-red-400 bg-red-400/10 border border-red-400/30 rounded-md px-1 py-px shrink-0">
               مصدوم
             </span>
           )}
@@ -962,7 +962,7 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
         <p className="text-[12.5px] font-black truncate flex items-center gap-1.5">
           {t.name}
           {t.live && (
-            <span className="shrink-0 rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-px text-[8.5px] font-black">
+            <span className="shrink-0 rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-px text-[9px] font-black">
               نیمکت فعلی
             </span>
           )}
@@ -1326,9 +1326,9 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
         )}
         {(p.motm || p.yellow || p.red) && (
           <span className="flex items-center gap-1">
-            {p.motm && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.emerald)}>بهترین بازیکن</span>}
-            {p.yellow && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.amber)}>کارت زرد</span>}
-            {p.red && <span className={cn("rounded-md border px-1.5 py-px text-[8.5px] font-black whitespace-nowrap", LINEUP_CHIP.rose)}>کارت قرمز</span>}
+            {p.motm && <span className={cn("rounded-md border px-1.5 py-px text-[9px] font-black whitespace-nowrap", LINEUP_CHIP.emerald)}>بهترین بازیکن</span>}
+            {p.yellow && <span className={cn("rounded-md border px-1.5 py-px text-[9px] font-black whitespace-nowrap", LINEUP_CHIP.amber)}>کارت زرد</span>}
+            {p.red && <span className={cn("rounded-md border px-1.5 py-px text-[9px] font-black whitespace-nowrap", LINEUP_CHIP.rose)}>کارت قرمز</span>}
           </span>
         )}
       </div>

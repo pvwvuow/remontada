@@ -719,7 +719,7 @@ function PreMatchPreview({ fixtures, standings }: { fixtures: NormFixture[]; sta
               title="صفحه بازی"
             >
               <span className="text-[12px] font-black tabular-persian">{tehranTime(f.utcTime)}</span>
-              <span className="text-[8.5px] text-muted-foreground font-bold">امروز</span>
+              <span className="text-[9px] text-muted-foreground font-bold">امروز</span>
             </Link>
             <PreviewSide team={f.away} row={rowsById.get(f.away.id)} />
           </div>

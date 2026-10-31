@@ -1172,7 +1172,7 @@ function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; m
           />
         ))}
       </div>
-      <span className="text-[8.5px] text-muted-foreground tabular-persian shrink-0">
+      <span className="text-[9px] text-muted-foreground tabular-persian shrink-0">
         {faDigits(z.left)}٪ · {faDigits(z.center)}٪ · {faDigits(z.right)}٪
       </span>
     </div>
@@ -1233,7 +1233,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   >
                     {p.shirt ? faDigits(p.shirt) : "–"}
                   </span>
-                  <span className="text-[8.5px] text-muted-foreground max-w-[64px] truncate leading-3">{p.nameFa || p.name}</span>
+                  <span className="text-[9px] text-muted-foreground max-w-[64px] truncate leading-3">{p.nameFa || p.name}</span>
                   {typeof p.rating === "number" && p.rating > 0 && (
                     /* ui-cycle-18: data floor 9px — rating is a value, never 8px */
                     <span className="text-[9px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
@@ -2103,7 +2103,7 @@ function TopPlayersCard({ tp, m }: { tp: NonNullable<DetailData["topPlayers"]>; 
                       {p.motm && <span className="text-chart-3" aria-hidden>★ </span>}
                       {p.nameFa || p.name}
                     </span>
-                    {p.pos ? <span className="block text-[8.5px] font-bold text-muted-foreground/80">{p.pos}</span> : null}
+                    {p.pos ? <span className="block text-[9px] font-bold text-muted-foreground/80">{p.pos}</span> : null}
                   </span>
                 </Link>
               ))
