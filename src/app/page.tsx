@@ -9,7 +9,7 @@ import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view"
 import { faDigits } from "@/lib/format";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
-import { SiteHeader } from "@/components/remontada/site-chrome";
+import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { cn } from "@/lib/utils";
 
@@ -275,34 +275,11 @@ export default function Home() {
       <BackToTop />
 
       {/* ---------- footer ---------- */}
-      <footer className="glass-bar-footer mt-auto">
-        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col items-center gap-2 text-center">
-          {/* ui-cycle-13: same completed metadata as the shared SiteFooter —
-              missing «بازیکنان», outbound source links, copyright line. */}
-          <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground flex-wrap justify-center">
-            <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
-            <span aria-hidden>·</span>
-            <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
-            <span aria-hidden>·</span>
-            <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
-            <span aria-hidden>·</span>
-            <Link href="/players" className="hover:text-primary transition-colors">بازیکنان</Link>
-            <span aria-hidden>·</span>
-            <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            داده‌های نتایج و جدول‌ها از{" "}
-            <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/80 hover:text-primary transition-colors">FotMob</a>
-            {" و "}
-            <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/80 hover:text-primary transition-colors">ESPN</a>
-            {" — اخبار از ESPN، BBC Sport و Sky Sports"}
-          </p>
-          <p className="text-[11px] text-muted-foreground/80">
-            رمانتادا — ساخته‌شده با عشق به فوتبال. نتایج با تأخیر چندثانیه‌ای نمایش داده می‌شوند.
-          </p>
-          <p className="text-[10px] text-muted-foreground/70">© ۲۰۲۶ رمانتادا · تمامی حقوق محفوظ است.</p>
-        </div>
-      </footer>
+      {/* ui-cycle-24: the homepage's private inline footer (pre-cycle-19 styling, no
+          tap-hit-row, «·» separators, divergent copy) is retired — the shared SiteFooter
+          becomes the ONE footer site-wide, carrying cycle-13 metadata, cycle-19 nav
+          tap-hit-row and cycle-24 attribution tap-hit-row everywhere. */}
+      <SiteFooter />
     </div>
   );
 }

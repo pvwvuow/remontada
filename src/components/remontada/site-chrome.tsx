@@ -159,7 +159,9 @@ export function SiteFooter() {
           <span className="text-gold">.</span>
         </p>
       </div>
-      <div className="max-w-5xl mx-auto px-4 pt-1 pb-5 flex flex-col items-center gap-1.5 text-center">
+      {/* ui-cycle-24: gap-1.5→gap-2 — the attribution links' tap-hit-row zone (4px up) would
+          overlap the nav row's zone (4px down) in a 2px band at gap-1.5=6px; at 8px they meet exactly. */}
+      <div className="max-w-5xl mx-auto px-4 pt-1 pb-5 flex flex-col items-center gap-2 text-center">
         {/* ui-cycle-13: footer metadata completed — the nav row gains the
             missing «بازیکنان» (header has it, footer didn't), data sources
             become real outbound links, and a copyright line signs the site. */}
@@ -177,9 +179,9 @@ export function SiteFooter() {
         </div>
         <p className="text-[10px] text-muted-foreground/80">
           داده‌ها از{" "}
-          <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/70 hover:text-primary transition-colors">FotMob</a>
+          <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row font-bold text-foreground/70 hover:text-primary transition-colors">FotMob</a>
           {" و "}
-          <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/70 hover:text-primary transition-colors">ESPN</a>
+          <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row font-bold text-foreground/70 hover:text-primary transition-colors">ESPN</a>
           {" — رمانتادا، مرجع فارسی نتایج زنده فوتبال"}
         </p>
         <p className="text-[10px] text-muted-foreground/70">© ۲۰۲۶ رمانتادا · تمامی حقوق محفوظ است.</p>
