@@ -211,7 +211,11 @@ export default function Home() {
               {t.label}
               {t.key === "matches" && liveCount > 0 && (
                 <span className="ms-1.5 inline-block align-top text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-full px-1.5 tabular-persian">
-                  {liveCount}
+                  {/* ui-cycle-16: render the live count with Persian digits —
+                      .tabular-persian only sets font-variant-numeric, it does
+                      not map 0-9 to ۰-۹; the badge was the one Latin-digit
+                      leak on the site (its own aria-label already said ۵) */}
+                  {faDigits(liveCount)}
                 </span>
               )}
               {tab === t.key && (
