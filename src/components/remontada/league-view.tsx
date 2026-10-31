@@ -459,7 +459,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
       >
         <Link
           href={`/topscorers/${leagueKey}`}
-          className="tap-hit-row inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
+          className="tap-hit-row leading-5 inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
         >
           صفحه کامل گلزنان
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>

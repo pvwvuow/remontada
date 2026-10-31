@@ -568,9 +568,13 @@
      and it never reaches the neighbouring row (5+4 <= 10px padding +
      1px border). */
 .tap-hit-name {
-  padding-top: 4px;
+  /* ui-cycle-28: 4→5 top — Latin-script names measured 23.0-23.8px effective
+     (WCAG 2.5.8 aim 24); +1px up stays inside the rows' 10px vertical padding
+     (topscorers rows py-2.5, league standings rows py-2.5), text position is
+     untouched because the extra padding cancels against the extra margin. */
+  padding-top: 5px;
   padding-bottom: 1px;
-  margin-top: -4px;
+  margin-top: -5px;
   margin-bottom: -1px;
 }
 .tap-hit-chip {

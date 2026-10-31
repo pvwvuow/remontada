@@ -179,9 +179,14 @@ export function SiteFooter() {
         </div>
         <p className="text-[10px] text-muted-foreground/80">
           داده‌ها از{" "}
-          <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row font-bold text-foreground/70 hover:text-primary transition-colors">FotMob</a>
+          {/* ui-cycle-28: leading-5 — 10px text rendered a 15px box; tap-hit-row's
+              +8 vertical landed at 23px, one px under the 24px aim. leading-5 lifts
+              the raw box to 20px (28px effective); inline-block is required because
+              a plain inline <a> keeps its font-metric height no matter the
+              line-height (measured live: lh 20px, rect still 15px). */}
+          <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row inline-block leading-5 font-bold text-foreground/70 hover:text-primary transition-colors">FotMob</a>
           {" و "}
-          <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row font-bold text-foreground/70 hover:text-primary transition-colors">ESPN</a>
+          <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="tap-hit-row inline-block leading-5 font-bold text-foreground/70 hover:text-primary transition-colors">ESPN</a>
           {" — رمانتادا، مرجع فارسی نتایج زنده فوتبال"}
         </p>
         <p className="text-[10px] text-muted-foreground/70">© ۲۰۲۶ رمانتادا · تمامی حقوق محفوظ است.</p>

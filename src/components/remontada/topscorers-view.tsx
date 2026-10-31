@@ -173,7 +173,15 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
               <div className="flex items-center gap-1.5 text-[9.5px] text-[#92adc9] mt-0.5 min-w-0">
                 <span className="truncate">{a.team}</span>
                 <span aria-hidden>·</span>
-                <Link href={`/league/${a.leagueKey}`} className="shrink-0 hover:text-primary transition-colors font-bold">
+                {/* ui-cycle-28: the assists league link was bare text at 14px —
+                    the worst remaining sub-24px target on the site. It now wears
+                    the exact chip treatment of the main rows (border+bg+px-1.5
+                    +py-px+tap-hit-chip, text-[10px] for line parity): 19px raw
+                    box, 25px effective, and the two cards finally match. */}
+                <Link
+                  href={`/league/${a.leagueKey}`}
+                  className="tap-hit-chip shrink-0 rounded-md border border-glass-border-soft bg-white/[0.03] px-1.5 py-px text-[10px] font-bold hover:text-primary hover:border-primary/40 transition-colors"
+                >
                   {a.leagueFa}
                 </Link>
               </div>
