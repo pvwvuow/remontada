@@ -4221,3 +4221,16 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (مسیر ƒ /rss.xml در فهرست روت‌ها) ← استارت رسمی try=2/200 ← رگرسیون رسمی ۲۸/۲۸ (BASE صریح) ← `/rss.xml` با curl: HTTP 200، content-type `application/rss+xml; charset=utf-8`، XML معتبر (ElementTree parse شد)، ۱۶ آیتم با تیتر فارسی، pubDate RFC-822، lastBuildDate، atom:link self ← پارتی head با curl روی ۱۱ کلاس صفحه: ۱۱/۱۱ لینک فید + ۳/۳ پوسته noindex تمیز (درس ابزاری: curlهای بلافاصله بعد از restart ممکن است به پروسهٔ در حال تحویل قدیم بخورد — سنجهٔ پارتی باید بعد از گرم‌شدن سرور تکرار شود) ← DOM با agent-browser در 390×844 (session تازه): /news با h1=«اخبار فوتبال»، rssHeadLink=true با href مطلق درست، ۱۷ ردیف خبر خارجی، بدون overflow، کنسول **۰ خط**؛ صفحهٔ اصلی هم rssHeadLink=true، بدون overflow، کنسول **۰ خط**.
 
 **نوبت گردشی بعدی: cycle-296 = آپدیت** (فرمول ((296 mod 5)+1)=۲)
+
+### Task ID: cycle-296 — آپدیت (صفحهٔ جستجوی قابل‌اشتراک /search — شکاف واقعی، کشف این چرخه)
+
+**تاریخ:** ۲۰۲۶-۱۱-۰۱ ~۰۵:۴۵ تهران · **ورودی:** سه نامِ رسمی در ۲۹۵ استخراج و بسته شدند و هیچ کارتی شکاف تازه اعلام نکرده بود ⇒ گشت زندهٔ خود چرخه: جستجو **فقط** dropdown هدر بود — هیچ صفحهٔ /search در اپ نبود و یک پرس‌وجو هرگز قابل‌اشتراک/بوکمارک نبود. پروب زندهٔ UA Chrome/124 قرارداد /api/search را تأیید کرد: ۵ بخش (تیم‌ها/رقابت‌ها/مربی‌ها/بازیکن‌ها/خبرها) با لنگرهای واقعی و پیام صادقانهٔ q کوتاه.
+
+**افزودنی سه‌قطعی (dropdown و قراردادهای کیبوردش دست‌نخورده):**
+1. **`src/components/remontada/search-page-client.tsx` (جدید):** آینهٔ پنج‌بخشی dropdown با همان طرح لنگرها، روی همان /api/search. **URL = state:** تایپ با debounce ۴۰۰ms به `?q=` می‌رود (router.replace — بدون اسپم تاریخچه) و هر نمای نتیجه یک لینک قابل‌اشتراک است. loading/failed/stale همه از «داده متعلق به کدام q است» مشتق می‌شوند (payload q-tag‌دار) — نتیجهٔ قدیمی هیچ‌وقت برای q جدید فلش نمی‌زند و setState فقط در callbackهای async است (قرارداد قانون react-hooks/set-state-in-effect که gate خودش در پذیرش گرفت).
+2. **`src/app/search/page.tsx` (جدید):** قرارداد کلاسیک SEO صفحهٔ جستجو — `robots: {index:false, follow:true}` + پوستهٔ `alternates: {}` (قرارداد fix-33: صفحهٔ noindex canonical تبلیغ نمی‌کند و طبق پارتی ۲۹۵ لینک RSS هم ندارد) + Suspense برای useSearchParams.
+3. **`search-box.tsx` — یک لنگر افزودنی:** «صفحهٔ کامل نتایج» در نوار راهنمای پایین dropdown (خارج از ردیف‌های انتخابی، بدون تداخل کیبورد) با data-testid و href=/search?q={q}.
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (ƒ /search در فهرست روت‌ها) ← استارت رسمی try=2/200 (سنجه بعد از گرم‌شدن — درس ۲۹۵) ← رگرسیون رسمی ۲۸/۲۸ (BASE صریح) ← curl: /search بدون q و با q=chelsea هر دو 200 با noindex، بدون canonical، بدون لینک RSS ← DOM با agent-browser در 390×844: لینک عمیق /search?q=chelsea → ۳ لنگر تیم + «۴ نتیجه برای «chelsea»» بدون overflow؛ تایپ واقعی کیبورد (درس ۲۹۳: click + keyboard type) روی input صفحه → URL به /search?q=salah رسید و ۲ لنگر بازیکن رندر شد؛ سفر کامل: dropdown هدر (دکمهٔ جستجوی تیم) → تایپ arsenal → لینک «صفحهٔ کامل نتایج» با href=/search?q=arsenal → کلیک → صفحهٔ نتایج با /team/9825 و «۳ نتیجه»؛ کنسول session تازه **۰ خط**.
+
+**نوبت گردشی بعدی: cycle-297 = آپدیت** (فرمول ((297 mod 5)+1)=۳)

@@ -587,6 +587,19 @@ export function SearchBox() {
                 <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">Enter</kbd> انتخاب</span>
                 <span aria-hidden>·</span>
                 <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">Esc</kbd> بستن</span>
+                {/* cycle-296 additive: the dropdown's shareable twin — the same
+                    query on the dedicated /search page (its own surface; the
+                    keyboard span above is untouched and the link sits outside
+                    the selectable rows, so no active-index interference) */}
+                <span aria-hidden>·</span>
+                <Link
+                  href={`/search?q=${encodeURIComponent(q.trim())}`}
+                  onClick={() => setOpen(false)}
+                  data-testid="search-page-link"
+                  className="inline-flex items-center font-bold text-sky-soft hover:underline"
+                >
+                  صفحهٔ کامل نتایج
+                </Link>
               </div>
             )}
           </div>
