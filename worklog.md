@@ -3803,3 +3803,17 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint src صفر/صفر ← tsc صفر ← build ✓ ← استارت رسمی (try=2, 200) ← رگرسیون **۲۸/۲۸** ← کنسول تمیز در همهٔ نقطه‌ها + کارت خبر بارسلونا با تیترهای فارسی و چیپ منبع سالم.
 
 **نوبت گردشی بعدی: cycle-265 = آپدیت** (فرمول ((265 mod 5)+1)=۱) — بک‌لاگ رسمی خالی است (کارت ۲۶۲)؛ شکار شکاف تازه یا خانوادهٔ payload جدید.
+
+### Task ID: cycle-265 — آپدیت (گشت‌زنی شکاف ۲: دیف-کلید سه خانوادهٔ باقی‌مانده — data/matches، matchDetails سطح اول، playerData سطح اول — همه پاک)
+
+**تاریخ:** ۲۰۲۶-۱۰-۳۱ ~۲۳:۰۵ تهران · **کامیت:** کارت مستندساز (پیشینهٔ کارت ۲۶۲ — کد تغییر نکرد؛ eslint/tsc/build مجدد لازم نبود) · **روش:** همان دیف-کلید ۲۶۲ — پروب زنده Node fetch با UA Chrome/124 + grep -c تک‌تک کلیدها روی src/ · **نمونه‌ها:** بازی امروز چلسی ۲-۰ یونایتد (۵۷۹۵۴۹۸) + ۵ بازی تمام‌شدهٔ دیگر از لیست امروز + playerData با POTM بازی (لابیا ۱۱۹۰۸۶۷) + دو id دیگر.
+
+**① خانوادهٔ data/matches (لیست روزانه):** کلیدهای شیء مسابقه: `id, leagueId, time, home, away, eliminatedTeamId, statusId, tournamentStage, status, timeTS` — همگی مصرفی به‌جز **eliminatedTeamId** → حذف صادقانه: نشانگر حذف‌شده از مرحلهٔ گروهی جام؛ در لیست‌های روزانهٔ سایت هیچ زمینهٔ نمایشی واقعی ندارد (ردیف بازی همه‌چیز لازم را دارد).
+
+**② matchDetails سطح اول (۱۶ کلید content):** مصرف‌شده و سالم: matchFacts، stats، playerStats، shotmap، weather، lineup، h2h، table، momentum («فشار بازی»)، attackingZones، highlights (۱۲۵)، reviews (۱۹۱)، previews (۲۰۷ «پیش‌نمای بازی» — preReview همین امروز ۸ ردیفی در بازی چلسی زنده دیده شد)، playerOfTheMatch، hasPlayoff. **صفر-مصرف، هر ۶ نمونه:** `buzz=null` (۶/۶)؛ `highlightStories` حداکثر ۱ استوری DAZN با محدودیت زبان جغرافیایی (allowed: pt/es — محتوای ثالث قابل‌اتکا نیست)؛ `liveticker/superlive` (config روتینگ فوت‌ماب)؛ `hasPendingVAR` (فلگ گذرای زنده — **کاندید آینده** فقط با اثبات زندهٔ وسط-VAR)؛ `matchFacts.QAData` (پرسش‌وپاسخ ماشینیِ تولیدشده از نتیجه — سایت خودش نتیجه را دارد)؛ `matchFacts.poll.oddspoll` (نظرسنجی شانس‌های شرط‌بندی — خارج از طراحی رمانتادا)؛ `matchInsightsConfig/preReview-config` (پیکربندی).
+
+**③ playerData سطح اول (۲۹ کلید):** همهٔ کلیدهای واقعی مصرفی — شامل `relatedLinksData` (mensNationalTeam+womensNationalTeam → nationalTeammates ادغام‌شده در buildRelatedLinks)، injuryInformation، traits، statSeasons، marketValues، careerHistory، nextMatch، initialMatchesPage؟ نه: **صفر-مصرف:** `matchFilters` + `initialMatchesPage` (پیکربندی/صفحه‌بندی اپ فوت‌ماب — سایت لیست ۶۸-۷۰ ردیفیِ خودش را دارد)؛ `meta.faqJSONLD/personJSONLD/breadcrumbJSONLD` (بلاب SEO — سایت JSON-LD خودش را می‌سازد)؛ `internationalDuty` (null در همهٔ پروب‌های امروز → شکل اثبات‌ناپذیر → ساختنِ کور ممنوع)؛ `status/dataProvider` (پروسه‌ای). آرشیو بازی‌های بازیکن هم از قبل کامل است (۶۸-۷۰ ردیف + بازکردن همه).
+
+**نتیجهٔ رسمی:** با کارت‌های ۲۶۲+۲۶۵ تمام خانواده‌های اصلی فوت‌ماب (teams، leagues، matchDetails سطح ۱ و ۲، لیست روزانهٔ matches، playerData) **به‌طور مستند سویپ‌شده‌اند — هیچ شکاف واقعی قابل‌پیاده‌سازی باقی نیست**. چرخه‌های آپدیت آینده فقط در سه حالت معنا دارند: (الف) فوت‌ماب بلاک/کلید جدید عرضه کند (دیف-کلید دوره‌ای روی همین کارت‌ها)؛ (ب) فلگ زندهٔ hasPendingVAR با اثبات وسط-بازی؛ (ج) تعریف شکاف جدید از سوی کاربر.
+
+**نوبت گردشی بعدی: cycle-266 = آپدیت** (فرمول ((266 mod 5)+1)=۲) — طبق نتیجهٔ رسمی همین کارت: اگر دیف-کلید سریع کلید جدید نشان نداد، گزارش «هیچ شکاف واقعی» صادقانه است؛ ساختن ویژگی مصنوعی ممنوع.
