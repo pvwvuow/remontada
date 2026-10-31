@@ -13,6 +13,12 @@ import { SITE_URL, SITE_NAME } from "@/lib/site";
 // ---- site-identity structured data (cycle 29) ------------------------------
 // Emitted sitewide from the root layout so every page (including the
 // client-rendered home) carries WebSite + Organization identity for crawlers.
+// cycle-300 (additive): the WebSite node now advertises the site's search
+// surface via the canonical SearchAction pattern (EntryPoint urlTemplate +
+// query-input). Cycle-296 built the shareable /search?q= page but this LD
+// layer never mentioned it — crawlers had no structured-data signal that
+// site search exists. The noindex on /search (296) stays correct: result
+// pages are documents to skip, the SearchAction declares the ACTION.
 const SITE_LD: Record<string, unknown> = {
   "@context": "https://schema.org",
   "@graph": [
@@ -23,6 +29,14 @@ const SITE_LD: Record<string, unknown> = {
       "alternateName": "Remontada",
       "url": SITE_URL,
       "inLanguage": "fa-IR",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `${SITE_URL}/search?q={search_term_string}`,
+        },
+        "query-input": "required name=search_term_string",
+      },
     },
     {
       "@type": "Organization",
