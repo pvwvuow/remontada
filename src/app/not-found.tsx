@@ -44,7 +44,7 @@ export default function NotFound() {
           <p className="text-xs text-muted-foreground">
             صفحه‌ای که دنبالش بودید پیدا نشد — شاید حذف شده یا آدرس اشتباه است.
           </p>
-          <p className="text-[11px] text-muted-foreground/70 mt-1">
+          <p className="text-[11px] text-muted-foreground/80 mt-1">
             می‌توانید از لینک‌های زیر ادامه دهید یا تیم مورد نظرتان را با جستجوی هدر پیدا کنید.
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">

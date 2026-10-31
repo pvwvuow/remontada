@@ -357,9 +357,14 @@
    violet with a legend-gold tail; used for the wordmark and card titles.
    Always paired with a solid fallback color first (color: transparent only
    inside the class, degrades to transparent if clip unsupported — we accept
-   it: every evergreen target supports background-clip: text). */
+   it: every evergreen target supports background-clip: text).
+   ui-cycle-10: the `background:` shorthand RESETS background-clip to
+   border-box (a later theme override restated the class with a
+   shorthand — measured live: computed clip = border-box -> gradient
+   painted whole boxes with invisible glyphs). The longhand
+   background-image survives the pipeline and keeps clip: text intact. */
 .arcane-text {
-  background: linear-gradient(
+  background-image: linear-gradient(
     100deg,
     oklch(0.95 0.02 235) 0%,
     oklch(0.88 0.05 245) 45%,
@@ -1089,9 +1094,14 @@
     0 0 3px rgba(240, 199, 94, 0.25);
 }
 /* the wordmark gradient: parchment steel melting into gold (the codex
-   text treatment — same stops shape, gold instead of violet) */
+   text treatment — same stops shape, gold instead of violet)
+   ui-cycle-10: longhand here too — this later override previously used
+   the `background:` shorthand, which silently RESET background-clip
+   back to border-box after cycle-61 set it (measured live: computed
+   clip = border-box -> the gradient painted whole boxes with invisible
+   glyphs instead of filling the letterforms) */
 .arcane-text {
-  background: linear-gradient(
+  background-image: linear-gradient(
     100deg,
     #f9ecc0 0%,
     #f0c75e 45%,

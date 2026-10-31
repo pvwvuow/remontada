@@ -53,7 +53,7 @@ export default function LeaguesPage() {
                 <span className="text-[10px] font-bold text-muted-foreground border border-border rounded-md px-1.5 py-0.5">
                   {l.ccode3}
                 </span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-primary transition-colors" aria-hidden>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors" aria-hidden>
                   <path d="M15 18l-6-6 6-6" />
                 </svg>
               </div>

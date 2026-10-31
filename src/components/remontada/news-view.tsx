@@ -52,7 +52,7 @@ function NewsCard({ item, idx = 0 }: { item: ClientNewsItem; idx?: number }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center">
-            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="text-muted-foreground/40" aria-hidden>
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4" className="text-muted-foreground/80" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
             </svg>

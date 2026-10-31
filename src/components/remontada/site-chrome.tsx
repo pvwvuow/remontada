@@ -169,7 +169,7 @@ export function SiteFooter() {
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
         </div>
-        <p className="text-[10px] text-muted-foreground/70">
+        <p className="text-[10px] text-muted-foreground/80">
           داده‌ها از FotMob و ESPN — رمانتادا، مرجع فارسی نتایج زنده فوتبال
         </p>
       </div>

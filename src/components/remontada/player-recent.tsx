@@ -143,7 +143,7 @@ export function RecentMatchesSection({
                       {m.goals > 0 && <span className="font-black text-mint">⚽{faDigits(m.goals)}</span>}
                       {m.rating && <span className="font-black text-chart-3">{faDigits(m.rating)}</span>}
                     </span>
-                    <span className="text-[9.5px] text-muted-foreground/70 tabular-persian shrink-0 w-14 text-end">
+                    <span className="text-[9.5px] text-muted-foreground/80 tabular-persian shrink-0 w-14 text-end">
                       {jd.day} {jd.month}
                     </span>
                   </Link>

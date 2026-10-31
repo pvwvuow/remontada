@@ -189,7 +189,7 @@ export function FavoriteFixtures() {
               <span className={cn("truncate text-[12.5px]", m.favSide === "home" ? "text-foreground" : "text-foreground/85")}>{m.homeName}</span>
               <TeamLogo id={m.homeId} alt="" size={18} />
             </div>
-            <span className="text-steel/50 text-[10px] font-bold px-1">vs</span>
+            <span className="text-steel/80 text-[10px] font-bold px-1">vs</span>
             {/* away */}
             <div className={cn("flex items-center gap-1.5 min-w-0", m.favSide === "away" ? "font-black" : "font-semibold")}>
               <TeamLogo id={m.awayId} alt="" size={18} />
@@ -205,7 +205,7 @@ export function FavoriteFixtures() {
         ))}
       </div>
       <div className="px-3.5 pb-2 -mt-0.5 flex items-center justify-between gap-2">
-        <span className="text-[9.5px] text-muted-foreground/70 truncate">{shown[0]?.leagueFa ? `${shown[0].leagueFa} و سایر رقابت‌ها` : ""}</span>
+        <span className="text-[9.5px] text-muted-foreground/80 truncate">{shown[0]?.leagueFa ? `${shown[0].leagueFa} و سایر رقابت‌ها` : ""}</span>
         {(hidden > 0 || expanded) && items.length > MAX_SHOW && (
           <button
             onClick={() => setExpanded((v) => !v)}

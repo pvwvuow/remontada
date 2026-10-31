@@ -20,7 +20,7 @@ function StatBox({ display, title, accent }: { display: string; title: string; a
       <p className={cn("font-medium text-[15px] text-[#e0efff] tabular-persian leading-6", accent && "text-chart-3")} dir="ltr">
         {faDigits(display)}
       </p>
-      <p className="text-[9px] text-steel/70 truncate">{title}</p>
+      <p className="text-[9px] text-steel/80 truncate">{title}</p>
     </div>
   );
 }
@@ -364,7 +364,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                     </svg>
                   )}
                   {s.fa}
-                  <span className="text-[9px] font-bold text-steel/70 tabular-persian">{faDigits(String(s.occurrences))} بازی</span>
+                  <span className="text-[9px] font-bold text-steel/80 tabular-persian">{faDigits(String(s.occurrences))} بازی</span>
                 </span>
               ))}
             </div>
@@ -390,7 +390,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                 </span>
                 <span className="text-[10.5px] font-black text-steel mt-2">{featuredStat.title}</span>
               </div>
-              <p className="text-[9px] font-bold tracking-[0.22em] text-steel/60 uppercase text-end shrink-0 pb-1.5">
+              <p className="text-[9px] font-bold tracking-[0.22em] text-steel/80 uppercase text-end shrink-0 pb-1.5">
                 {p.season.leagueFa}
               </p>
             </div>
@@ -602,7 +602,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                 {p.careerYouth.map((y, i) => (
                   <span key={`${y.teamId}-${i}`} className="text-[10.5px] text-muted-foreground">
                     {y.fa}
-                    <span className="tabular-persian text-muted-foreground/60">
+                    <span className="tabular-persian text-muted-foreground/80">
                       {" "}({y.from ? faDigits(y.from) : "؟"}{y.to ? `–${faDigits(y.to)}` : ""})
                     </span>
                   </span>
@@ -627,7 +627,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
           <ul className="glass-list">
             {p.statSeasons.map((s, i) => (
               <li key={`${s.season}-${i}`} className="flex items-start gap-3 px-3 sm:px-4 py-2.5">
-                <span className="text-[10px] font-black text-steel/70 tabular-persian w-[52px] shrink-0 pt-0.5">{faDigits(s.season)}</span>
+                <span className="text-[10px] font-black text-steel/80 tabular-persian w-[52px] shrink-0 pt-0.5">{faDigits(s.season)}</span>
                 <p className="flex flex-wrap gap-1.5 min-w-0">
                   {s.tournaments.map((t, j) =>
                     t.leagueKey ? (
@@ -709,7 +709,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
           side filter club vs national + show-all toggle, SSR-friendly) ---------- */}
       <RecentMatchesSection recent={p.recent} teams={p.recentTeams} />
 
-      <p className="text-[10px] text-muted-foreground/60 text-center">
+      <p className="text-[10px] text-muted-foreground/80 text-center">
         آمار از FotMob — امتیازها و ارزش بازار تقریبی است و هر {faDigits(10)} دقیقه به‌روزرسانی می‌شود.
       </p>
     </div>

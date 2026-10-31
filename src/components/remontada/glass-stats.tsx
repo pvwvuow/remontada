@@ -89,7 +89,7 @@ export function GlassLeagueHeader({
           {/* cycle-61: card titles carry the arcane identity */}
           <Title className="arcane-text text-[13.5px] font-extrabold truncate leading-5">{title}</Title>
           {sub && (
-            <p className="text-[8px] font-bold tracking-[0.22em] text-steel/75 uppercase truncate mt-0.5">{sub}</p>
+            <p className="text-[8px] font-bold tracking-[0.22em] text-steel/80 uppercase truncate mt-0.5">{sub}</p>
           )}
         </div>
       </div>
@@ -109,7 +109,7 @@ export function GlassLeagueHeader({
     uppercase meta line («LEAGUE STANDINGS — 20 CLUBS» equivalent). */
 export function GlassPosterMeta({ right, left, className = "" }: { right: string; left?: string; className?: string }) {
   return (
-    <div className={cn("mx-4 mb-1.5 flex items-center justify-between gap-2 text-[9px] font-bold text-steel/70", className)}>
+    <div className={cn("mx-4 mb-1.5 flex items-center justify-between gap-2 text-[9px] font-bold text-steel/80", className)}>
       <span className="truncate">{right}</span>
       {left && <span className="shrink-0 tabular-persian">{left}</span>}
     </div>

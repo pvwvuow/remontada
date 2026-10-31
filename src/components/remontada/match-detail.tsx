@@ -412,7 +412,7 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
           {p.stats.map((s, i) => (
             <div key={i} className="px-2 py-2 text-center border-b border-glass-border-soft/70 sm:[&:nth-child(-n+4)]:border-b-0 sm:border-e sm:last:border-e-0 [&:nth-child(odd)]:border-s sm:[&:nth-child(odd)]:border-s-0">
               <p className="font-medium text-[13.5px] text-[#e0efff] tabular-persian leading-5" dir="ltr">{faDigits(s.display)}</p>
-              <p className="text-[9px] text-steel/70 truncate">{s.title}</p>
+              <p className="text-[9px] text-steel/80 truncate">{s.title}</p>
             </div>
           ))}
         </div>
@@ -469,7 +469,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.leagueFa || m.leagueName}
           </Link>
         </h2>
-        {m.round && <span className="text-steel/70 shrink-0">{m.round}</span>}
+        {m.round && <span className="text-steel/80 shrink-0">{m.round}</span>}
         <ShareButton
           title={`${m.home.fa || m.home.name} ${m.home.score ?? ""} - ${m.away.score ?? ""} ${m.away.fa || m.away.name} | رمانتادا`}
           path={`/match/${m.id}`}
@@ -494,7 +494,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
           {m.started && !m.cancelled ? (
             <div className={cn("flex items-center gap-2.5 font-black tabular-persian text-3xl sm:text-4xl", m.live ? "text-red-200 live-glow score-battle" : "")}>
               <span className={m.live ? undefined : "score-forge"}>{m.home.score != null ? faDigits(m.home.score) : "—"}</span>
-              <span className="text-muted-foreground/40 text-2xl">:</span>
+              <span className="text-muted-foreground/80 text-2xl">:</span>
               <span className={m.live ? undefined : "score-forge"}>{m.away.score != null ? faDigits(m.away.score) : "—"}</span>
             </div>
           ) : (
@@ -553,7 +553,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
                   <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink> {faMinute(s.minute)}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
+                  {s.assist && <span className="text-muted-foreground/80">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
                 </span>
               ))}
           </div>
@@ -562,7 +562,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.away.score !== null &&
               scorers.filter((s) => s.side === "away").map((s, i) => (
                 <span key={i} className="flex items-center gap-1.5 text-muted-foreground tabular-persian">
-                  {s.assist && <span className="text-muted-foreground/60">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
+                  {s.assist && <span className="text-muted-foreground/80">(پاس: <PlayerNameLink id={s.assistId} fa={s.assistFa} name={s.assist}>{s.assistFa || s.assist}</PlayerNameLink>)</span>}
                   {s.penalty && " (پ)"}
                   {s.ownGoal && " (گل به خودی)"}
                   {faMinute(s.minute)} <PlayerNameLink id={s.playerId} fa={s.playerFa} name={s.player} cls="font-semibold text-foreground/85">{s.playerFa || s.player}</PlayerNameLink>
@@ -614,7 +614,7 @@ function ShootoutCard({ shootout, match }: { shootout: NonNullable<DetailData["s
           </div>
         ))}
       </div>
-      <div className="px-4 py-2 text-[10px] text-steel/60 border-t border-glass-border-soft">
+      <div className="px-4 py-2 text-[10px] text-steel/80 border-t border-glass-border-soft">
         {match.home.fa || match.home.name} — سمت راست | {match.away.fa || match.away.name} — سمت چپ
       </div>
     </div>
@@ -648,7 +648,7 @@ function TeamXgStrip({ xg, match }: { xg: NonNullable<DetailData["xg"]>; match: 
       key={label}
       className="inline-flex items-center gap-1 rounded-md bg-white/[0.045] border border-glass-border-soft px-1.5 py-0.5 text-[10px] text-steel tabular-persian leading-4"
     >
-      <span className="text-steel/60">{label}</span>
+      <span className="text-steel/80">{label}</span>
       <span className="font-bold text-[#dcebfa]">{value}</span>
     </span>
   );
@@ -688,7 +688,7 @@ function TeamXgStrip({ xg, match }: { xg: NonNullable<DetailData["xg"]>; match: 
               {b.goals > 0 && chip("گل", faDigits(b.goals))}
             </>
           ) : (
-            <span className="text-[10px] text-steel/50">شوتی ثبت نشده</span>
+            <span className="text-[10px] text-steel/80">شوتی ثبت نشده</span>
           )}
         </div>
       </div>
@@ -705,7 +705,7 @@ function TeamXgStrip({ xg, match }: { xg: NonNullable<DetailData["xg"]>; match: 
         <div className="flex-1" />
         <div className="bg-chart-4 h-full rounded-full transition-all" style={{ width: `${100 - hp}%` }} />
       </div>
-      <p className="text-[10px] text-steel/55 text-center leading-4">
+      <p className="text-[10px] text-steel/80 text-center leading-4">
         {xg.source === "stats"
           ? "اسکوآپ رسمی فوت‌ماب · سهم هر تیم در نوار نسبت اسکوآپ‌هاست"
           : "اسکوآپ حاصل مجموع شوت‌های ثبت‌شده است (ردیف رسمی فوت‌ماب موجود نبود)"}
@@ -721,7 +721,7 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
     <div className="glass-card p-3">
       <div className="flex items-center justify-between text-[10.5px] text-steel/80 mb-2 tabular-persian">
         <span className="font-bold">{match.away.fa || match.away.name} ({faDigits(awayCount)})</span>
-        <span className="text-steel/50">جهت حمله →</span>
+        <span className="text-steel/80">جهت حمله →</span>
         <span className="font-bold">({faDigits(homeCount)}) {match.home.fa || match.home.name}</span>
       </div>
       <div dir="ltr" className="relative w-full aspect-[105/68] rounded-lg border border-glass-border-soft bg-[oklch(0.24_0.04_150/30%)] overflow-hidden">
@@ -842,7 +842,7 @@ function ratingPillClass(r: number): string {
 }
 
 function RatingPill({ rating }: { rating?: number }) {
-  if (rating == null) return <span className="text-[10px] text-steel/40 tabular-persian">—</span>;
+  if (rating == null) return <span className="text-[10px] text-steel/80 tabular-persian">—</span>;
   return (
     <span
       className={cn(
@@ -859,7 +859,7 @@ function RatingPill({ rating }: { rating?: number }) {
 function PlayerChip({ label, value }: { label: string; value: string }) {
   return (
     <span className="inline-flex items-center gap-1 rounded-md bg-white/[0.045] border border-glass-border-soft px-1.5 py-0.5 text-[10px] text-steel tabular-persian leading-4">
-      <span className="text-steel/60">{label}</span>
+      <span className="text-steel/80">{label}</span>
       <span className="font-bold text-[#dcebfa]">{value}</span>
     </span>
   );
@@ -879,7 +879,7 @@ function PlayerDeepPanel({ deep }: { deep: PlayerStatDeepSection[] }) {
     >
       {deep.map((sec, si) => (
         <div key={sec.key} className={cn(si > 0 && "border-t border-glass-border-soft/60")}>
-          <p className="px-3 pt-2 pb-1 text-[9.5px] font-black text-steel/60">{sec.titleFa}</p>
+          <p className="px-3 pt-2 pb-1 text-[9.5px] font-black text-steel/80">{sec.titleFa}</p>
           <div className="px-3 pb-2 flex flex-col gap-0.5">
             {sec.rows.map((r) => (
               <div key={r.label} className="flex items-center justify-between gap-2 text-[11px]" title={r.labelFa !== r.label ? r.label : undefined}>
@@ -930,7 +930,7 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
       <div className="min-w-0 flex-1 flex flex-col gap-1.5">
         <p className="flex items-center gap-1.5 min-w-0 text-[12.5px] font-bold text-[#eef5fc]">
           {p.shirt && (
-            <span className="shrink-0 text-[10px] font-black text-steel/70 bg-white/[0.05] rounded px-1 py-px tabular-persian" dir="ltr">
+            <span className="shrink-0 text-[10px] font-black text-steel/80 bg-white/[0.05] rounded px-1 py-px tabular-persian" dir="ltr">
               {faDigits(p.shirt)}
             </span>
           )}
@@ -955,7 +955,7 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
           onClick={() => setDeepOpen((v) => !v)}
           aria-expanded={deepOpen}
           data-testid="player-deep-toggle"
-          className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-steel/70 hover:text-primary transition-colors"
+          className="inline-flex items-center gap-0.5 text-[9.5px] font-bold text-steel/80 hover:text-primary transition-colors"
         >
           جزئیات
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden className={cn("transition-transform", deepOpen && "rotate-180")}>
@@ -992,11 +992,11 @@ function PlayerTeamCard({ rows, match, side }: { rows: PlayerStatRow[]; match: D
         <span className="font-black text-[12.5px] text-[#ecf3fa]">{team.fa || team.name}</span>
         {/* fix cycle-59: team name is the lineup section heading */}
         <h2 className="sr-only">{team.fa || team.name}</h2>
-        <span className="text-[10px] text-steel/60 tabular-persian mr-auto">{faDigits(rows.length)} بازیکن</span>
+        <span className="text-[10px] text-steel/80 tabular-persian mr-auto">{faDigits(rows.length)} بازیکن</span>
       </header>
       {groups.map((grp) => (
         <div key={grp.title}>
-          <p className="px-4 pt-2.5 pb-1 text-[9.5px] font-black text-steel/60">{grp.title}</p>
+          <p className="px-4 pt-2.5 pb-1 text-[9.5px] font-black text-steel/80">{grp.title}</p>
           {grp.list.map((p) => (
             <PlayerRow key={p.id} p={p} />
           ))}
@@ -1011,7 +1011,7 @@ function PlayerStatsTables({ playerStats, match }: { playerStats: NonNullable<De
     <div className="flex flex-col gap-4">
       {playerStats.home.length > 0 && <PlayerTeamCard rows={playerStats.home} match={match} side="home" />}
       {playerStats.away.length > 0 && <PlayerTeamCard rows={playerStats.away} match={match} side="away" />}
-      <p className="text-[10px] text-steel/50 text-center">امتیاز و آمار هر بازیکن از فوت‌ماب — بهترین‌ها بالای هر گروه</p>
+      <p className="text-[10px] text-steel/80 text-center">امتیاز و آمار هر بازیکن از فوت‌ماب — بهترین‌ها بالای هر گروه</p>
     </div>
   );
 }
@@ -1051,7 +1051,7 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
             <div className="flex flex-col items-center min-w-[54px]">
               <span className="text-[11px] font-black text-muted-foreground tabular-persian">{faMinute(e.minute)}</span>
               {e.homeScore !== null && e.awayScore !== null && e.type === "Goal" && (
-                <span className="text-[10px] text-muted-foreground/70 tabular-persian">
+                <span className="text-[10px] text-muted-foreground/80 tabular-persian">
                   {faDigits(e.homeScore)}:{faDigits(e.awayScore)}
                 </span>
               )}
@@ -1064,7 +1064,7 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
           </div>
         ))}
       </div>
-      <div className="px-4 py-2 text-[10px] text-steel/60 border-t border-glass-border-soft">
+      <div className="px-4 py-2 text-[10px] text-steel/80 border-t border-glass-border-soft">
         {match.home.fa || match.home.name} — رویدادهای سمت راست | {match.away.fa || match.away.name} — رویدادهای سمت چپ
       </div>
     </div>
@@ -1161,7 +1161,7 @@ function ZoneCard({ zones, match }: { zones: NonNullable<DetailData["zones"]>; m
   );
   const subRow = (z: ZoneSplit, fa: string, base: string) => (
     <div className="flex items-center gap-2 ps-3" data-testid="zone-half">
-      <span className="text-[9px] font-bold text-steel/70 w-14 shrink-0">{fa}</span>
+      <span className="text-[9px] font-bold text-steel/80 w-14 shrink-0">{fa}</span>
       <div className="flex h-1.5 flex-1 rounded-full overflow-hidden gap-px" dir="ltr">
         {LANES.map((l, i) => (
           <div
@@ -1455,7 +1455,7 @@ function InfoPanel({ data }: { data: DetailData }) {
                     {f === "W" ? "ب" : f === "D" ? "م" : "با"}
                   </span>
                 ))}
-                {data.form![side].length === 0 && <span className="text-[10px] text-muted-foreground/60">—</span>}
+                {data.form![side].length === 0 && <span className="text-[10px] text-muted-foreground/80">—</span>}
               </div>
             </div>
           ))}
@@ -1753,7 +1753,7 @@ function H2HMeetingRow({ m, curHomeId, curAwayId }: { m: H2HMeeting; curHomeId: 
         <span className="text-[10px] font-bold text-muted-foreground tabular-persian whitespace-nowrap">
           {j.weekday} {faDigits(j.day)} {j.month}
         </span>
-        <span className="text-[9px] text-muted-foreground/70 truncate max-w-full">{m.leagueFa}</span>
+        <span className="text-[9px] text-muted-foreground/80 truncate max-w-full">{m.leagueFa}</span>
       </div>
       <div className="flex-1 flex items-center gap-2 min-w-0">{teams}</div>
       {m.finished ? (
@@ -1916,7 +1916,7 @@ function HighlightsCard({ hl }: { hl: NonNullable<DetailData["highlights"]> }) {
         <span className="block text-[13px] font-black text-[#ecf3fa] group-hover:text-primary transition-colors">ویدیوی خلاصهٔ بازی</span>
         <span className="block text-[10px] font-bold text-muted-foreground mt-0.5">خلاصهٔ رسمی دیدار · منبع: یوتیوب — در تب جدید باز می‌شود</span>
       </span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0" aria-hidden>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors shrink-0" aria-hidden>
         <path d="M7 17L17 7M9 7h8v8" />
       </svg>
     </a>
@@ -1938,7 +1938,7 @@ function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> 
     <section className="glass-card overflow-hidden" aria-label="گزارش‌های بازی" data-testid="match-reviews">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
         <span className="text-[11px] font-black text-steel">گزارش‌های بازی</span>
-        <span className="text-[9px] text-muted-foreground/60 shrink-0">منبع: Opta · در تب جدید باز می‌شود</span>
+        <span className="text-[9px] text-muted-foreground/80 shrink-0">منبع: Opta · در تب جدید باز می‌شود</span>
       </header>
       <div>
         {reviews.map((r, i) => (
@@ -1973,7 +1973,7 @@ function ReviewsCard({ reviews }: { reviews: NonNullable<DetailData["reviews"]> 
                 <span className="block text-[10px] font-bold text-muted-foreground mt-1 leading-relaxed line-clamp-2">{r.description}</span>
               ) : null}
             </span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
               <path d="M7 17L17 7M9 7h8v8" />
             </svg>
           </a>
@@ -1999,7 +1999,7 @@ function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews
     <section className="glass-card overflow-hidden" aria-label="پیش‌نمای بازی" data-testid="match-previews">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
         <span className="text-[11px] font-black text-steel">پیش‌نمای بازی</span>
-        <span className="text-[9px] text-muted-foreground/60 shrink-0">منبع: Opta · FotMob · در تب جدید باز می‌شود</span>
+        <span className="text-[9px] text-muted-foreground/80 shrink-0">منبع: Opta · FotMob · در تب جدید باز می‌شود</span>
       </header>
       <div>
         {previews.map((r, i) => (
@@ -2040,12 +2040,12 @@ function PreviewsCard({ previews }: { previews: NonNullable<DetailData["previews
                   family — injury names 96 / deep labels 206). Additive-only:
                   no pinned text moves, absent source → no chip. */}
               {r.source ? (
-                <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/70" dir="ltr">
+                <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/80" dir="ltr">
                   {r.source}
                 </span>
               ) : null}
             </span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/50 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/80 group-hover:text-primary transition-colors shrink-0 mt-1" aria-hidden>
               <path d="M7 17L17 7M9 7h8v8" />
             </svg>
           </a>
@@ -2073,7 +2073,7 @@ function TopPlayersCard({ tp, m }: { tp: NonNullable<DetailData["topPlayers"]>; 
     <section className="glass-card overflow-hidden" aria-label="برترین‌های بازی" data-testid="match-top-players">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
         <span className="text-[11px] font-black text-steel">برترین‌های بازی</span>
-        <span className="text-[9px] text-muted-foreground/60 shrink-0">امتیاز فوت‌ماب · ۵ برتر هر تیم</span>
+        <span className="text-[9px] text-muted-foreground/80 shrink-0">امتیاز فوت‌ماب · ۵ برتر هر تیم</span>
       </header>
       <div className="grid grid-cols-2">
         {sides.map(([rows, team], si) => (
@@ -2102,12 +2102,12 @@ function TopPlayersCard({ tp, m }: { tp: NonNullable<DetailData["topPlayers"]>; 
                       {p.motm && <span className="text-chart-3" aria-hidden>★ </span>}
                       {p.nameFa || p.name}
                     </span>
-                    {p.pos ? <span className="block text-[8.5px] font-bold text-muted-foreground/70">{p.pos}</span> : null}
+                    {p.pos ? <span className="block text-[8.5px] font-bold text-muted-foreground/80">{p.pos}</span> : null}
                   </span>
                 </Link>
               ))
             ) : (
-              <p className="px-2.5 py-3 text-[9.5px] text-muted-foreground/60">در دسترس نیست</p>
+              <p className="px-2.5 py-3 text-[9.5px] text-muted-foreground/80">در دسترس نیست</p>
             )}
           </div>
         ))}
@@ -2260,7 +2260,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         <section className="glass-card p-3.5">
           <div className="flex items-center justify-between mb-2">
             <h3 className="text-[11px] font-black text-muted-foreground">فشار بازی</h3>
-            <span className="text-[9px] text-muted-foreground/60">{m.home.fa} ← → {m.away.fa}</span>
+            <span className="text-[9px] text-muted-foreground/80">{m.home.fa} ← → {m.away.fa}</span>
           </div>
           <div className="flex items-center gap-[2px] h-8" dir="ltr">
             {data.momentum.filter((_, i) => i % Math.ceil(data.momentum!.length / 60) === 0).map((p, i) => (

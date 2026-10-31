@@ -16,7 +16,7 @@ function LegRow({ leg, isFinal }: { leg: BracketLeg; isFinal: boolean }) {
   const awayWin = leg.away.winner === true;
   const inner = (
     <>
-      <span className={cn("flex items-center justify-end gap-1.5 min-w-0 font-semibold text-[12px]", awayWin && "text-muted-foreground/70", homeWin && "text-[#eaf4ff]")}>
+      <span className={cn("flex items-center justify-end gap-1.5 min-w-0 font-semibold text-[12px]", awayWin && "text-muted-foreground/80", homeWin && "text-[#eaf4ff]")}>
         <span className="truncate">{leg.home.name}</span>
       </span>
       <span className={cn("flex flex-col items-center min-w-[58px] shrink-0")}>
@@ -24,7 +24,7 @@ function LegRow({ leg, isFinal }: { leg: BracketLeg; isFinal: boolean }) {
           {leg.home.score ?? "—"} : {leg.away.score ?? "—"}
         </span>
       </span>
-      <span className={cn("flex items-center gap-1.5 min-w-0 font-semibold text-[12px]", homeWin && "text-muted-foreground/70", awayWin && "text-[#eaf4ff]")}>
+      <span className={cn("flex items-center gap-1.5 min-w-0 font-semibold text-[12px]", homeWin && "text-muted-foreground/80", awayWin && "text-[#eaf4ff]")}>
         <span className="truncate">{leg.away.name}</span>
       </span>
     </>
@@ -74,7 +74,7 @@ function MatchupCard({ m }: { m: BracketMatchup }) {
     <div className="glass-card border-dashed px-3 py-2.5 flex flex-col items-center gap-0.5 text-center">
       <span className="text-[11px] font-bold text-muted-foreground">قرعه هنوز نریخته</span>
       {draw && (
-        <span className="text-[10px] text-muted-foreground/70 tabular-persian">
+        <span className="text-[10px] text-muted-foreground/80 tabular-persian">
           قرعه: {draw.weekday} {draw.day} {draw.month}
         </span>
       )}
@@ -93,7 +93,7 @@ export function LeagueBracket({ data }: { data: LeagueBracketData }) {
           <h3 className="text-[11.5px] font-black text-[#b6cce3] px-1 flex items-center gap-1.5 shrink-0">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-soft/80" aria-hidden />
             {r.stageFa}
-            <span className="text-[9.5px] font-bold text-muted-foreground/70 tabular-persian">({faDigits(r.matchups.length)} دیدار)</span>
+            <span className="text-[9.5px] font-bold text-muted-foreground/80 tabular-persian">({faDigits(r.matchups.length)} دیدار)</span>
           </h3>
           <div className="flex flex-col gap-2">
             {r.matchups.map((m, i) => (

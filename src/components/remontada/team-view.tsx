@@ -83,7 +83,7 @@ function SegBox({ v, l }: { v: number; l: string }) {
   return (
     <div className="rounded-xl border border-glass-border-soft bg-white/[0.04] px-2.5 py-1.5 text-center min-w-[48px]">
       <p className="text-[16px] font-light tabular-persian text-[#dfedff] leading-none">{faDigits(String(v).padStart(2, "0"))}</p>
-      <p className="text-[8.5px] font-bold text-steel/70 mt-1">{l}</p>
+      <p className="text-[8.5px] font-bold text-steel/80 mt-1">{l}</p>
     </div>
   );
 }
@@ -175,7 +175,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
         ) : m.finished ? (
           <>
             <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
-            {m.round && <span className="text-[9px] text-muted-foreground/60 whitespace-nowrap">{faRound(m.round)}</span>}
+            {m.round && <span className="text-[9px] text-muted-foreground/80 whitespace-nowrap">{faRound(m.round)}</span>}
           </>
         ) : (
           <>
@@ -201,7 +201,7 @@ function TeamMatchRow({ m, teamId, label }: { m: Row; teamId: number; label: "re
       {/* score / result */}
       <div className="flex justify-end">
         {label === "upcoming" && !m.started ? (
-          <span className="text-[10px] text-muted-foreground/70 font-bold">پیش‌رو</span>
+          <span className="text-[10px] text-muted-foreground/80 font-bold">پیش‌رو</span>
         ) : (
           <div className="flex items-center gap-1.5">
             {m.started && !m.cancelled && (
@@ -254,7 +254,9 @@ function SplitBar({ label, d }: { label: string; d: { wins: number; draws: numbe
         <span>{label}</span>
         <span className="text-muted-foreground tabular-persian">
           {faDigits(d.wins)} ب · {faDigits(d.draws)} م · {faDigits(d.losses)} پ
-          <span className="mx-1 text-border">|</span>
+          {/* ui-cycle-10: was a bare "|" text at 14% alpha (contrast 1.26:1 + read aloud by
+              screen readers as a meaningless pipe) — now a decorative hairline, aria-hidden */}
+          <span aria-hidden="true" className="mx-1 inline-block h-3 w-px align-middle bg-steel/30" />
           گل {faDigits(d.gf)}:{faDigits(d.ga)}
         </span>
       </div>
@@ -310,7 +312,7 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
         <div className="grid grid-cols-4 gap-2">
           {kpis.map((k) => (
             <div key={k.l} className="rounded-xl border border-glass-border-soft bg-[#a9cdf611] px-2 py-2.5 text-center">
-              <p className="text-[9px] text-steel/70 font-bold">{k.l}</p>
+              <p className="text-[9px] text-steel/80 font-bold">{k.l}</p>
               <p className="text-base font-medium text-[#e0efff] tabular-persian leading-tight mt-0.5">{k.v}</p>
               <p className="text-[8.5px] text-muted-foreground/80 tabular-persian mt-0.5">{k.sub}</p>
             </div>
@@ -525,7 +527,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
             </span>
           )}
         </p>
-        <p className="text-[9.5px] text-steel/70 tabular-persian truncate">
+        <p className="text-[9.5px] text-steel/80 tabular-persian truncate">
           {[p.nationality, p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
             .filter(Boolean)
             .join(" · ")}
@@ -567,7 +569,7 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
       title="ترکیب تیم"
       extra={
         total > 0 ? (
-          <span className="text-[10px] text-steel/60 tabular-persian">
+          <span className="text-[10px] text-steel/80 tabular-persian">
             {faDigits(total)} بازیکن
           </span>
         ) : undefined
@@ -581,7 +583,7 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
             <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#e6f0fb]">
               {squad.coach.name}
             </p>
-            <p className="text-[9.5px] text-steel/70 tabular-persian shrink-0">
+            <p className="text-[9.5px] text-steel/80 tabular-persian shrink-0">
               {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
                 .filter(Boolean)
                 .join(" · ")}
@@ -592,7 +594,7 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
           <div key={g.key}>
             <p className="text-[10.5px] font-black text-steel/85 mb-1.5 flex items-center gap-2">
               {g.titleFa}
-              <span className="text-[9px] font-bold text-steel/50 tabular-persian">
+              <span className="text-[9px] font-bold text-steel/80 tabular-persian">
                 ({faDigits(g.players.length)})
               </span>
               <span className="h-px flex-1 bg-glass-border-soft/70" aria-hidden="true" />
@@ -790,7 +792,7 @@ function TeamVenueCard({ v }: { v: TeamVenue }) {
           <div className="grid grid-cols-3 gap-2">
             {chips.map((c) => (
               <div key={c.l} className="rounded-xl border border-glass-border-soft bg-white/[0.03] px-2 py-2 text-center">
-                <p className="text-[9px] text-steel/70 font-bold">{c.l}</p>
+                <p className="text-[9px] text-steel/80 font-bold">{c.l}</p>
                 <p className="text-[12.5px] font-black tabular-persian mt-0.5">{c.val}</p>
               </div>
             ))}
@@ -834,7 +836,7 @@ function TeamStatRowBox({ r }: { r: TeamStatRow }) {
       {/* cycle-77: topThree context — «سپس:» next-best teammates (player rows),
           «صدر:» the league leader (team rows, hidden when we are first) */}
       {r.extras && r.extras.length > 0 && (
-        <p className="text-[9.5px] font-bold text-steel/70 truncate ps-[42px] tabular-persian">
+        <p className="text-[9.5px] font-bold text-steel/80 truncate ps-[42px] tabular-persian">
           {player ? "سپس: " : "صدر: "}
           {r.extras.join(" · ")}
         </p>
@@ -852,7 +854,7 @@ function TeamStatsSection({ data }: { data: TeamStatsData }) {
       <div className="flex flex-col gap-2" data-testid="team-stats">
         {hasPlayers && (
           <>
-            <p className="text-[10px] font-bold text-steel/70 px-1">بهترین‌های تیم</p>
+            <p className="text-[10px] font-bold text-steel/80 px-1">بهترین‌های تیم</p>
             <ul className="flex flex-col gap-2" aria-label="بهترین‌های تیم">
               {data.playerRows.map((r) => (
                 <TeamStatRowBox key={`p:${r.key}`} r={r} />
@@ -862,7 +864,7 @@ function TeamStatsSection({ data }: { data: TeamStatsData }) {
         )}
         {hasTeams && (
           <>
-            <p className="text-[10px] font-bold text-steel/70 px-1">جایگاه در لیگ</p>
+            <p className="text-[10px] font-bold text-steel/80 px-1">جایگاه در لیگ</p>
             <ul className="flex flex-col gap-2" aria-label="جایگاه تیم در لیگ">
               {data.teamRows.map((r) => (
                 <TeamStatRowBox key={`t:${r.key}`} r={r} />
@@ -1110,7 +1112,7 @@ function SeasonFixtureRow({ f, teamId }: { f: TeamSeasonFixture; teamId: number 
       <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
         <div className="flex flex-col items-center leading-tight min-w-0">
           <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
-          <span className="text-[9px] text-muted-foreground/60 truncate max-w-[56px]">{f.tournamentFa}</span>
+          <span className="text-[9px] text-muted-foreground/80 truncate max-w-[56px]">{f.tournamentFa}</span>
         </div>
         <div className="flex items-center justify-end gap-2 min-w-0 text-[13px]">
           <span
@@ -1168,9 +1170,9 @@ function FixtureGroup({ label, items, teamId }: { label: string; items: TeamSeas
   const shown = all ? items : items.slice(0, FIXTURE_GROUP_SHOWN);
   return (
     <div>
-      <p className="text-[10px] font-bold text-steel/70 px-1 mb-1.5">
+      <p className="text-[10px] font-bold text-steel/80 px-1 mb-1.5">
         {label}
-        <span className="text-[9px] font-bold text-steel/50 tabular-persian"> ({faDigits(items.length)})</span>
+        <span className="text-[9px] font-bold text-steel/80 tabular-persian"> ({faDigits(items.length)})</span>
       </p>
       <div className="flex flex-col gap-1">
         {shown.map((f) => (
@@ -1220,7 +1222,7 @@ const DIFFICULTY_CHIP: Record<string, string> = {
 };
 
 function DifficultyDots({ value }: { value: number | null }) {
-  if (value == null) return <span className="text-[10px] text-steel/40 tabular-persian">—</span>;
+  if (value == null) return <span className="text-[10px] text-steel/80 tabular-persian">—</span>;
   const filled = value <= 1 ? "bg-emerald-400" : value === 2 ? "bg-amber-400" : "bg-rose-400";
   return (
     <span
@@ -1242,7 +1244,7 @@ function DifficultySection({ data }: { data: TeamFixtureDifficulty }) {
       title="سختی بازی‌های پیش‌رو"
       extra={
         <span className="flex items-center gap-1.5 min-w-0">
-          {data.leagueFa && <span className="text-[9px] font-bold text-steel/60 truncate">{data.leagueFa}</span>}
+          {data.leagueFa && <span className="text-[9px] font-bold text-steel/80 truncate">{data.leagueFa}</span>}
           {chip && data.verdictFa && (
             <span className={cn("shrink-0 rounded-md border px-1.5 py-px text-[9px] font-black whitespace-nowrap", chip)}>
               {data.verdictFa}
@@ -1258,7 +1260,7 @@ function DifficultySection({ data }: { data: TeamFixtureDifficulty }) {
             <div className="grid grid-cols-[52px_1fr_auto] items-center gap-2.5 px-3 sm:px-4 py-3">
               <div className="flex flex-col items-center leading-tight min-w-0">
                 <span className="text-[10px] font-bold text-muted-foreground whitespace-nowrap">{j.day} {j.month}</span>
-                <span className="text-[9px] font-bold text-muted-foreground/70">{f.isHome ? "خانه" : "بیرون"}</span>
+                <span className="text-[9px] font-bold text-muted-foreground/80">{f.isHome ? "خانه" : "بیرون"}</span>
               </div>
               <div className="flex items-center justify-end gap-2 min-w-0 text-[13px]">
                 <span className="truncate font-black">{f.opponentFa}</span>
@@ -1310,10 +1312,10 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
       <div className="min-w-0">
         <p className="truncate text-[12.5px] font-black">
           {p.name}
-          {p.shirt && <span className="ms-1.5 text-[9.5px] font-bold text-steel/70 tabular-persian">#{faDigits(p.shirt)}</span>}
+          {p.shirt && <span className="ms-1.5 text-[9.5px] font-bold text-steel/80 tabular-persian">#{faDigits(p.shirt)}</span>}
         </p>
         {facts.length > 0 && (
-          <p className="text-[9px] text-steel/70 truncate tabular-persian mt-0.5">{facts.join(" · ")}</p>
+          <p className="text-[9px] text-steel/80 truncate tabular-persian mt-0.5">{facts.join(" · ")}</p>
         )}
       </div>
       <div className="flex flex-col items-end gap-1 shrink-0">
@@ -1362,7 +1364,7 @@ function LastLineupSection({ data }: { data: TeamLastLineup }) {
         <Link
           href={`/match/${data.lastMatch.matchId}`}
           prefetch={false}
-          className="flex items-center justify-end gap-1.5 px-3 sm:px-4 pb-1.5 text-[9.5px] text-steel/70 hover:text-sky-soft transition-colors min-w-0"
+          className="flex items-center justify-end gap-1.5 px-3 sm:px-4 pb-1.5 text-[9.5px] text-steel/80 hover:text-sky-soft transition-colors min-w-0"
         >
           <span className="truncate tabular-persian">آخرین بازی: در برابر {data.lastMatch.opponentFa}</span>
           <img
@@ -1382,7 +1384,7 @@ function LastLineupSection({ data }: { data: TeamLastLineup }) {
         ))}
       </div>
       {meta.length > 0 && (
-        <p className="text-[9.5px] text-steel/70 tabular-persian px-1 pt-1.5">{meta.join(" · ")}</p>
+        <p className="text-[9.5px] text-steel/80 tabular-persian px-1 pt-1.5">{meta.join(" · ")}</p>
       )}
       <p className="text-[9px] text-muted-foreground px-1 pt-1">امتیاز بزرگ = امتیاز همان بازی از فوت‌ماب؛ «فصل» = میانگین فصل بازیکن.</p>
     </Section>
@@ -1732,7 +1734,7 @@ export function TeamView({ teamId }: { teamId: number }) {
                 { l: "گل", v: `${st.gd > 0 ? "+" : ""}${st.gd}` },
               ].map((x) => (
                 <div key={x.l} className="rounded-xl border border-glass-border-soft bg-white/[0.03] px-3 py-2">
-                  <p className="text-[9px] text-steel/70 font-bold">{x.l}</p>
+                  <p className="text-[9px] text-steel/80 font-bold">{x.l}</p>
                   {/* cycle-154: the GD chip is always a string («+9») — the old
                       typeof guard let the string path render Latin digits inside
                       an otherwise all-faDigits header. faDigits is safe on any

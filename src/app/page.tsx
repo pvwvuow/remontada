@@ -286,7 +286,7 @@ export default function Home() {
             داده‌های نتایج و جدول‌ها از <span className="font-bold text-foreground/80">FotMob</span> و
             <span className="font-bold text-foreground/80"> ESPN</span> — اخبار از ESPN، BBC Sport و Sky Sports
           </p>
-          <p className="text-[11px] text-muted-foreground/70">
+          <p className="text-[11px] text-muted-foreground/80">
             رمانتادا — ساخته‌شده با عشق به فوتبال. نتایج با تأخیر چندثانیه‌ای نمایش داده می‌شوند.
           </p>
         </div>

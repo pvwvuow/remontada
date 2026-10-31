@@ -235,7 +235,7 @@ export function SearchBox() {
                 onChange={(e) => setQ(e.target.value)}
                 onKeyDown={onKeyDown}
                 placeholder="نام تیم… مثلاً پرسپولیس یا Real"
-                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-muted-foreground/60"
+                className="w-full bg-transparent text-[13px] font-medium outline-none placeholder:text-muted-foreground/80"
                 maxLength={40}
               />
               {loading && (
@@ -454,7 +454,7 @@ export function SearchBox() {
             </div>
             {/* cycle-66 — palette hint bar: the little game-UI footer */}
             {q.trim().length >= 2 && (
-              <div className="flex items-center justify-center gap-2.5 px-3 py-2 border-t border-[color:var(--glass-hairline)] text-[9px] text-muted-foreground/75 bg-white/[0.015]">
+              <div className="flex items-center justify-center gap-2.5 px-3 py-2 border-t border-[color:var(--glass-hairline)] text-[9px] text-muted-foreground/80 bg-white/[0.015]">
                 <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">↑</kbd><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">↓</kbd> حرکت</span>
                 <span aria-hidden>·</span>
                 <span className="inline-flex items-center gap-1"><kbd className="inline-flex items-center rounded border border-glass-border-soft bg-white/[0.05] px-1 py-px font-bold">Enter</kbd> انتخاب</span>

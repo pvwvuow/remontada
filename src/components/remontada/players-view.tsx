@@ -509,7 +509,7 @@ export function PlayersView() {
           </p>
         </div>
         {mode === "stars" && data?.updatedAt && (
-          <span className="text-[9px] text-steel/70 tabular-persian">{timeAgoFa(data.updatedAt)}</span>
+          <span className="text-[9px] text-steel/80 tabular-persian">{timeAgoFa(data.updatedAt)}</span>
         )}
       </div>
 
@@ -612,7 +612,7 @@ export function PlayersView() {
                   ))}
                 </div>
               )}
-              <p className="text-[9.5px] text-steel/70 text-center pb-1">
+              <p className="text-[9.5px] text-steel/80 text-center pb-1">
                 آمار از FotMob — با هر بار بازکردن صفحه خودکار به‌روز می‌شود.
               </p>
             </>
@@ -699,7 +699,7 @@ export function PlayersView() {
                     <h2 className="text-[12px] font-black text-steel px-1 flex items-center gap-1.5">
                       <span className="inline-block w-1 h-3.5 rounded-full bg-primary/70" aria-hidden />
                       {g.titleFa}
-                      <span className="text-[9.5px] font-bold text-steel/60 tabular-persian">({faDigits(g.players.length)})</span>
+                      <span className="text-[9.5px] font-bold text-steel/80 tabular-persian">({faDigits(g.players.length)})</span>
                     </h2>
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2" data-testid={`group-${g.key}`}>
                       {g.players.map((p) => (
@@ -708,7 +708,7 @@ export function PlayersView() {
                     </div>
                   </section>
                 ))}
-                <p className="text-[9.5px] text-steel/70 text-center pb-1">
+                <p className="text-[9.5px] text-steel/80 text-center pb-1">
                   عکس‌ها از FotMob با بالاترین رزولوشن موجود — با هر بار بازکردن صفحه خودکار به‌روز می‌شود.
                 </p>
               </div>

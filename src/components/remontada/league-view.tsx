@@ -92,7 +92,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
             {tehranTime(f.utcTime)}
           </span>
         )}
-        {f.round && <span className="text-[9px] text-muted-foreground/60 mt-0.5">{f.round}</span>}
+        {f.round && <span className="text-[9px] text-muted-foreground/80 mt-0.5">{f.round}</span>}
       </div>
       <div className="flex items-center gap-2 min-w-0 font-semibold">
         { }
@@ -427,7 +427,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
               <span className="truncate">{stats.biggestWin.away.fa || stats.biggestWin.away.short}</span>
             </span>
           </Link>
-          {stats.biggestWin.round && <p className="px-4 pb-2.5 text-[9px] text-muted-foreground/70 tabular-persian">{faDigits(stats.biggestWin.round)}</p>}
+          {stats.biggestWin.round && <p className="px-4 pb-2.5 text-[9px] text-muted-foreground/80 tabular-persian">{faDigits(stats.biggestWin.round)}</p>}
         </div>
       )}
 
@@ -683,7 +683,7 @@ function PreviewSide({
           </div>
         </>
       ) : (
-        <span className="text-[10px] text-muted-foreground/70">خارج از جدول</span>
+        <span className="text-[10px] text-muted-foreground/80">خارج از جدول</span>
       )}
     </div>
   );
@@ -984,14 +984,14 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
 function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
   return (
     <div className="glass-card overflow-hidden" data-testid="league-titles">
-      <div className="grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-[color:var(--glass-border-soft)] text-[9px] font-black text-steel/60">
+      <div className="grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2.5 border-b border-[color:var(--glass-border-soft)] text-[9px] font-black text-steel/80">
         <span>فصل</span>
         <span className="text-start">قهرمان</span>
         <span className="text-start">نایب‌قهرمان</span>
       </div>
       {data.items.map((s, i) => (
         <div key={`${s.season}-${i}`} className={cn("grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2", i % 2 ? "bg-white/[0.02]" : "")}>
-          <span className="text-[10px] font-black text-steel/70 tabular-persian">{faDigits(s.season)}</span>
+          <span className="text-[10px] font-black text-steel/80 tabular-persian">{faDigits(s.season)}</span>
           {s.championId > 0 ? (
             <Link href={`/team/${s.championId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
               <img src={fotmobTeamLogo(s.championId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
@@ -1003,10 +1003,10 @@ function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
           {s.runnerUpId != null && s.runnerUpFa ? (
             <Link href={`/team/${s.runnerUpId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
               <img src={fotmobTeamLogo(s.runnerUpId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0 opacity-80" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-              <span className="truncate text-[11px] font-bold text-steel/70 group-hover:text-sky-soft transition-colors">{s.runnerUpFa}</span>
+              <span className="truncate text-[11px] font-bold text-steel/80 group-hover:text-sky-soft transition-colors">{s.runnerUpFa}</span>
             </Link>
           ) : (
-            <span className="text-[11px] text-steel/40">—</span>
+            <span className="text-[11px] text-steel/80">—</span>
           )}
         </div>
       ))}

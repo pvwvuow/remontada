@@ -43,7 +43,7 @@ export function FavoriteStar({
       aria-label={isFav ? `حذف ${team.fa} از علاقه‌مندی‌ها` : `افزودن ${team.fa} به علاقه‌مندی‌ها`}
       className={cn(
         "inline-flex items-center justify-center gap-1.5 shrink-0 transition-colors cursor-pointer",
-        isFav ? "text-amber-400" : "text-muted-foreground/50 hover:text-amber-400/80",
+        isFav ? "text-amber-400" : "text-muted-foreground/80 hover:text-amber-400/80",
         className
       )}
     >

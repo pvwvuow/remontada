@@ -111,7 +111,7 @@ function MatchRow({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
             {faDigits(m.home.score ?? "—")} : {faDigits(m.away.score ?? "—")}
           </span>
         ) : (
-          <span className="text-steel/40 text-xs font-bold">—</span>
+          <span className="text-steel/80 text-xs font-bold">—</span>
         )}
       </div>
 
@@ -124,7 +124,7 @@ function MatchRow({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
         {awayFav && <MiniStar />}
       </div>
 
-      <div className="flex justify-center text-steel/0 group-hover:text-steel/70 transition-colors">
+      <div className="flex justify-center text-steel/0 group-hover:text-steel/80 transition-colors">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
           <path d="M15 18l-6-6 6-6" />
         </svg>
@@ -156,7 +156,7 @@ function FeaturedMatch({ m, favIds }: { m: NormMatch; favIds: Set<number> }) {
           <span className="w-1.5 h-1.5 rounded-full bg-sky-soft inline-block shadow-[0_0_8px_oklch(0.8_0.08_240/90%),0_0_2px_oklch(0.85_0.07_240)]" />
           بازی ویژه
         </span>
-        <span className="text-[8.5px] font-bold tracking-[0.32em] text-steel/60 uppercase whitespace-nowrap">
+        <span className="text-[8.5px] font-bold tracking-[0.32em] text-steel/80 uppercase whitespace-nowrap">
           Top Match
         </span>
         <span className="ms-auto truncate text-[10px] text-muted-foreground font-semibold">
@@ -549,7 +549,7 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
             </button>
           )}
           {shownGroups.length > 0 && (
-            <p className="text-[10px] text-muted-foreground/70 tabular-persian">
+            <p className="text-[10px] text-muted-foreground/80 tabular-persian">
               {faDigits(shownGroups.reduce((a, g) => a + g.matches.length, 0))} بازی در {faDigits(shownGroups.length)} لیگ و جام
             </p>
           )}
