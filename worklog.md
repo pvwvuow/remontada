@@ -4328,3 +4328,23 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **کامیت:** `fa93c6e` — «Update (cycle 301):» — push و تأیید ls-remote (origin/main = fa93c6e).
 
 **نوبت گردشی بعدی: cycle-302 = بررسی باگ** (فرمول ((302 mod 5)+1)=۴) — گشت‌زنی صفحات + راستی‌آزمایی 390×844 پس از چهار آپدیت پیاپی (۲۹۸ تا ۳۰۱)
+
+---
+
+### Task ID: PROTOCOL-recovery-2026-11-01 — بازیابی سوم کانتینر (بازگشت به اسنپ‌شات دوران cycle-44)
+
+**کشف (ضربان 06:44+08):** سلامت :3000 = 500؛ مخزن محلی به HEAD قدیمی 52169b7 (دوران cycle-44) با درخت کثیف (.env/.gitignore/README.md) برگشته بود در حالی که origin/main = 7f9be25 (کارت cycle-301)؛ `scripts/start-remontada.sh` بیرونی کاملاً حذف شده بود. الگوی شناخته‌شدهٔ بازیابی (کارت‌های 2026-10-28 و 22:10+08).
+
+**اجرا طبق کارت PROTOCOL-recovery:**
+- کلون تازه از origin/main با URL داخل scripts/remote-token.txt → HEAD = 7f9be25، درخت تمیز (اسنپ‌شات کهنه به remontada.stale-20261101 منتقل شد)
+- bun install --frozen-lockfile (827 بسته) + prisma db push («database is already in sync» — .env در مخزن ردیابی می‌شود) + prisma generate
+- build ✓ (58 صفحهٔ استاتیک)
+- بازگردانی اسکریپت‌های بیرونی از نسخهٔ canonical داخل مخزن: start-remontada.sh + sync-to-github.sh → /home/z/my-project/scripts/ ؛ FRESHNESS GATE=1 راستی‌آزمایی شد؛ remote-token.txt → chmod 600
+- استارت فقط با اسکریپت رسمی: UP pid=1863 try=2 HTTP=200
+- رگرسیون رسمی 28/28 با BASE=http://localhost:3000 صریح
+
+**اثبات دورهٔ درست (نه اسنپ‌شات کهنه):** مانیفست ۶ shortcut با اولی «جستجو» (۳۰۱)؛ SearchAction در خانه (۳۰۰)؛ /rss.xml = 200 (۲۹۵).
+
+**اصلاح فرمول:** خط «نوبت گردشی بعدی» کارت ۳۰۱ اشتباه نوشته شده بود (۴=بررسی باگ)؛ محاسبهٔ درست: ((302 mod 5)+1)=۳ ⇒ **cycle-302 = آپدیت** — فرمول رسمی ملاک است (الگوی سه‌تایی ۳۰۰/۳۰۱/۳۰۲ آپدیت، سپس ۳۰۳=بررسی باگ، ۳۰۴=فیکس).
+
+**نوبت گردشی بعدی: cycle-302 = آپدیت** (فرمول ((302 mod 5)+1)=۳)
