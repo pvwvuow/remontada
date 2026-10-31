@@ -1264,11 +1264,6 @@ interface FotMobMatch {
     ongoing?: boolean;
     liveTime?: { short?: string; long?: string; ongoing?: boolean };
     reason?: { short?: string; long?: string };
-    // fix cycle-250: probed live 2026-10-31 — on matchday 5795498 the feed
-    // kept status.started=false four hours AFTER kick-off while
-    // status.halfs.firstHalfStarted carried the real "31.10.2026 13:30:00"
-    // stamp; the boolean flag lags, the halfs stamp does not.
-    halfs?: { firstHalfStarted?: string };
   };
 }
 
@@ -1282,16 +1277,14 @@ function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
       // status.liveTime.ongoing which never exists in the api/data/matches
       // payload, so everything after the 1st half was classified as not-live.
       const finished = !!m.status?.finished;
-      // fix cycle-250: the feed's started flag can lag the actual kick-off by
-      // hours (live probe 2026-10-31: 5795498 still started=false at 4h past
-      // kick-off while status.halfs.firstHalfStarted read "31.10.2026
-      // 13:30:00"). A present halfs.firstHalfStarted stamp is hard evidence
-      // the match has kicked off — OR it into started. finished and live are
-      // NOT derived (no comparable hard field; no heuristics — an interrupted
-      // or long game would be misclassified).
-      const halfKickedOff =
-        typeof m.status?.halfs?.firstHalfStarted === "string" &&
-        m.status.halfs.firstHalfStarted.length > 0;
+      // reverted cycle-251: the cycle-250 "halfs.firstHalfStarted = hard
+      // evidence of kick-off" clause was WRONG — live re-probe showed every
+      // fixture on the day feed carries the stamp (even the 23:30 Tehran
+      // late kick-off), so it is the SCHEDULED half-one time, pre-filled,
+      // not proof the ball rolled. ORing it in marked 542 not-yet-kicked-off
+      // matches as started (fake 0:0 scores on the homepage). The plain
+      // upstream flag is restored; statusId/ongoing remain the only live
+      // sources (they DID track reality: 2/3/10/6 while we watched).
       const live = (m.status?.ongoing === true || m.statusId === 2) && !finished;
       const halfTime = m.statusId === 10;
       const minute = !live
@@ -1310,7 +1303,7 @@ function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
         leagueFa: competitionFa(lg.name, lg.ccode),
         leagueCcode: lg.ccode,
         utcTime: m.status?.utcTime || "",
-        started: !!m.status?.started || halfKickedOff,
+        started: !!m.status?.started,
         finished: !!m.status?.finished,
         cancelled: !!m.status?.cancelled,
         live,

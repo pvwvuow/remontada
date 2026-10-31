@@ -976,6 +976,12 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
   const homeT = teams.find((t) => t.id === g.homeTeam?.id) || teams[0];
   const awayT = teams.find((t) => t.id === g.awayTeam?.id) || teams[1];
 
+  // reverted cycle-251: the kickoff-past axiom added here during this very
+  // cycle was withdrawn — the "four hours late" observation it was built on
+  // was a timezone misread (12:30Z kick-off read as 12:30 Tehran). No
+  // upstream lag evidence ever existed for the detail feed; the axiom would
+  // only have added risk (a postponed match before its cancelled flag lands
+  // would flip to live). Detail status keeps trusting the upstream booleans.
   const started = !!hs.started || !!g.started;
   const finished = !!hs.finished || !!g.finished;
   const cancelled = !!hs.cancelled;
