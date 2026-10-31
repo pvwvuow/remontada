@@ -100,7 +100,7 @@ function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: num
             <Link
               href={`/player/${s.playerId}`}
               prefetch={false}
-              className="font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
+              className="tap-hit-name font-bold text-[13px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
               title={s.nameFa && s.nameFa !== s.name ? s.name : "مشاهده پروفایل بازیکن"}
             >
               {s.nameFa || s.name}
@@ -113,7 +113,7 @@ function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: num
             <span aria-hidden>·</span>
             <Link
               href={`/league/${s.leagueKey}`}
-              className="shrink-0 rounded-md border border-glass-border-soft bg-white/[0.03] px-1.5 py-px font-bold hover:text-primary hover:border-primary/40 transition-colors"
+              className="tap-hit-chip shrink-0 rounded-md border border-glass-border-soft bg-white/[0.03] px-1.5 py-px font-bold hover:text-primary hover:border-primary/40 transition-colors"
             >
               {s.leagueFa}
             </Link>
@@ -161,7 +161,7 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
                 <Link
                   href={`/player/${a.playerId}`}
                   prefetch={false}
-                  className="font-bold text-[12.5px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
+                  className="tap-hit-name font-bold text-[12.5px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
                   title={a.nameFa && a.nameFa !== a.name ? a.name : "مشاهده پروفایل بازیکن"}
                 >
                   {a.nameFa || a.name}
@@ -200,7 +200,7 @@ function CardRow({ c, kind }: { c: GlobalCard; kind: "yellow" | "red" }) {
           <Link
             href={`/player/${c.playerId}`}
             prefetch={false}
-            className="font-bold text-[12px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
+            className="tap-hit-name font-bold text-[12px] truncate block hover:text-primary transition-colors w-fit max-w-full text-[#e5eefb]"
             title={c.nameFa && c.nameFa !== c.name ? c.name : "مشاهده پروفایل بازیکن"}
           >
             {c.nameFa || c.name}

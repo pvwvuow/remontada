@@ -184,7 +184,7 @@ function WinStatList({ title, items, tone }: { title: string; items: LeagueStats
             <img src={t.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center justify-between gap-2">
-                <Link href={`/team/${t.teamId}`} className="font-bold text-[12.5px] truncate hover:text-primary transition-colors" prefetch={false}>
+                <Link href={`/team/${t.teamId}`} className="tap-hit-name font-bold text-[12.5px] truncate hover:text-primary transition-colors" prefetch={false}>
                   {t.fa || t.short}
                 </Link>
                 <span className="text-[11px] font-black text-sky-soft tabular-persian shrink-0">{faDigits(t.wins)} برد</span>
@@ -832,7 +832,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                     )}
                   </td>
                   <td className="py-2 px-1 max-w-[132px] sm:max-w-none">
-                    <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
+                    <Link href={`/team/${r.teamId}`} className="tap-hit-row flex items-center gap-2 min-w-0 group" prefetch={false}>
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                       {/* ui-cycle-12: the leader wears the crown — same mark as
                           standings-view; inline-flex+gap-1 keeps it glued to the

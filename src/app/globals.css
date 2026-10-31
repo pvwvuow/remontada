@@ -554,6 +554,47 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* ui-cycle-17: in-content touch hit-area expansion (mobile 390x844;
+   WCAG 2.5.8 aims for >=24px). Two instruments, chosen per element:
+   - .tap-hit-name for the stacked primary row links: they truncate
+     (overflow:hidden clips any ::after), are bare text (no bg/border),
+     so invisible vertical padding + equal negative margin widens the
+     clickable box with zero net layout: +4px up into the row's 10px
+     padding, +1px down toward the league chip (their 2px gap stays
+     exactly consumed, no overlap), rows keep their measured heights.
+   - .tap-hit-chip for the league chip links: no overflow clipping, so
+     a transparent absolute ::after extends the tap box 1px up / 5px
+     down / 3px sideways into the 6px flex gaps — no paint, no layout,
+     and it never reaches the neighbouring row (5+4 <= 10px padding +
+     1px border). */
+.tap-hit-name {
+  padding-top: 4px;
+  padding-bottom: 1px;
+  margin-top: -4px;
+  margin-bottom: -1px;
+}
+.tap-hit-chip {
+  position: relative;
+}
+.tap-hit-chip::after {
+  content: "";
+  position: absolute;
+  inset: -1px -3px -5px;
+}
+/* league standings variant: the row link is a flex box (its inner span
+   truncates, the <a> itself does not clip), so a transparent ::after
+   grows the tap box to 22+8=30px; td py-2 (8px) absorbs 4+4 from
+   adjacent rows with zero overlap, and the points cell to the sides is
+   not interactive. */
+.tap-hit-row {
+  position: relative;
+}
+.tap-hit-row::after {
+  content: "";
+  position: absolute;
+  inset: -4px -6px;
+}
+
 /* ==================================================================
    Fantasy Quest layer (ui-quest 1-10) — a minimal game-menu atmosphere
    laid over the Football Glass Studio theme: drifting aurora fields,
