@@ -152,6 +152,10 @@ interface DetailData {
   // update cycle-110: match insights («بینش‌ها») — mirrors /api/match/[id];
   // curated Persian templates only (unknown upstream ids never reach here)
   insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
+  // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — mirrors
+  // /api/match/[id]; one row per market (1x2/bts/ou/dc) whose fact survived
+  // the curated template map; rendered on the info tab, honest-hides otherwise
+  poll?: { title: string; text: string }[] | null;
   // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
   // تیم») — mirrors /api/match/[id]; rendered on the h2h tab, hidden when
   // the payload lacks the block (cycle-111 legend convention)
@@ -1418,6 +1422,42 @@ function InsightsCard({ insights }: { insights: NonNullable<DetailData["insights
   );
 }
 
+// update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») on the info tab —
+// same card rhythm as InsightsCard; each row = the market question («چه کسی
+// پیروز می‌شود؟» / «هر دو تیم گل می‌زنند؟» / «بیش از ۲.۵ گل؟» / «شانس
+// دوگانه») + the Persian fact sentence. Display-only, honest-hide when the
+// payload lacks the block (finished matches / unknown templates).
+function PollIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M4 20V10m6 10V4m6 16v-7" />
+      <path d="M2 20h20" />
+    </svg>
+  );
+}
+function PollCard({ poll }: { poll: NonNullable<DetailData["poll"]> }) {
+  if (poll.length === 0) return null;
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-poll">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa] flex items-center gap-1.5">
+          <PollIcon className="text-chart-3" />
+          نظرسنجی پیش‌بازی
+        </span>
+        <span className="font-bold text-steel/80 tabular-persian">{faDigits(poll.length)} پرسش</span>
+      </header>
+      <ul className="glass-list">
+        {poll.map((it, i) => (
+          <li key={i} className="px-4 py-2.5 text-[12px] leading-6">
+            <p className="font-black text-[11.5px] text-mint">{it.title}</p>
+            <p className="font-semibold text-start mt-0.5">{it.text}</p>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- info ----------
 function InfoPanel({ data }: { data: DetailData }) {
   const rows: { label: string; value?: string }[] = [
@@ -2400,6 +2440,9 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         {tab === "info" && (
           <div className="flex flex-col gap-4">
             {data.insights && data.insights.length > 0 && <InsightsCard insights={data.insights} />}
+            {/* cycle-257: pre-match poll — hidden when the payload lacks it
+                (finished matches / unknown templates self-heal in ≤25s) */}
+            {data.poll && data.poll.length > 0 && <PollCard poll={data.poll} />}
             {data.weather && <WeatherCard weather={data.weather} />}
             <InfoPanel data={data} />
             {/* cycle-115: referee & stadium facts — hidden when the payload

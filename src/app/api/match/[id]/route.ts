@@ -145,6 +145,20 @@ interface FMPotm {
 // matchFacts.insights carries pre-match story lines as localized templates
 // (localizedTextId + statValues[{value,name,type}] + team color). Curated
 // Persian templates live in MATCH_INSIGHT_FA; unknown ids are dropped.
+// update cycle-257 probed (UA Chrome/124, live sweep across 40 matches of
+// PL/Bundesliga/LaLiga/…, 2026-10-31): matchFacts.poll.oddspoll — the PRE-MATCH
+// poll widget («چه کسی پیروز می‌شود؟»). Facts[] = one row per market
+// (1x2 / bts / ou / dc), each carrying a TextTemplateId + StatValues where a
+// role string ("home_team"/"away_team") stands for the side name and bare
+// strings are numbers. 16 distinct TextTemplateIds probed; unknown ids drop.
+interface FMPollFact {
+  OddsType?: string;
+  DefaultLabel?: string;
+  TextLabelId?: string;
+  TextTemplateId?: string;
+  StatValues?: string[];
+  defaultText?: string;
+}
 interface FMInsightStatValue { value?: number | string | null; name?: string | null; type?: string }
 interface FMInsight {
   type?: string; // "team" | "player"
@@ -174,6 +188,44 @@ const MATCH_INSIGHT_FA: Record<string, string> = {
   "insights_player_most_shots_on_target_for_team": "{0} بیشترین شوت در چارچوب را به‌ازای هر بازی برای {1} دارد ({2}).",
   "insights_player_chances_created_rank_in_competition": "{0} در ساختن موقعیت طلایی رتبهٔ {1} رقابت را دارد ({2}).",
   "insights_player_goals_scored": "{0} آقای گل رقابت است ({1}).",
+};
+
+// update cycle-257: the pre-match poll — Persian renderings. Two curated
+// maps probed live (UA Chrome/124, 2026-10-31, 40-match sweep → 16 distinct
+// TextTemplateIds):
+//
+// · MATCH_POLL_TITLE_FA — the market question per OddsType (upstream
+//   DefaultLabel "Who will win?" / "Will both teams score?" / "Will there be
+//   more than 2.5 goals?" / "Double chance"). Unknown OddsType drops.
+// · MATCH_POLL_FA — the fact sentence per TextTemplateId; {N} fills from
+//   StatValues in order, where the role strings "home_team"/"away_team"
+//   resolve to the sides' Persian names and bare values pass through
+//   faDigits (decimals keep the ASCII dot — xG convention). Unknown
+//   TextTemplateIds never render (honest drop, MATCH_INSIGHT_FA rule).
+const MATCH_POLL_TITLE_FA: Record<string, string> = {
+  "1x2": "چه کسی پیروز می‌شود؟",
+  bts: "هر دو تیم گل می‌زنند؟",
+  ou: "بیش از ۲.۵ گل؟",
+  dc: "شانس دوگانه",
+};
+const MATCH_POLL_FA: Record<string, string> = {
+  not_won_team: "{0} در {1} بازی اخیر خود به پیروزی نرسیده است.",
+  bad_form_team: "{0} در {1} بازی اخیر خود شکست خورده است.",
+  goalless_team: "{0} در {1} بازی اخیر خود گلی نزده است.",
+  draw_streak_team: "{0} در {1} بازی اخیر خود به تساوی نرسیده است.",
+  goalstreak_team_home: "{0} در {1} بازی خانگی اخیر خود گلزنی کرده است.",
+  goalstreak_team_away: "{0} در {1} بازی خارج از خانهٔ اخیر خود گلزنی کرده است.",
+  goals_team: "{0} در {2} بازی اخیر خود {1} گل به ثمر رسانده است.",
+  h2h_winstreak: "{0} در {2} دیدار اخیر مقابل {1} پیروز شده است.",
+  h2h_draw_streak_v2: "{0} و {1} در {2} دیدار اخیر مقابل یکدیگر به تساوی رسیده‌اند.",
+  h2h_no_draws_v2: "{2} دیدار اخیر {0} و {1} مقابل یکدیگر بدون تساوی بوده است.",
+  h2h_undefeated: "{0} در {2} دیدار اخیر مقابل {1} شکست‌ناپذیر بوده است ({3} برد، {4} تساوی).",
+  draw_streak_both: "{0} در {2} بازی اخیر و {1} در {3} بازی اخیر به تساوی نرسیده‌اند.",
+  goalstreak_team_both: "{0} در {1} بازی اخیر و {2} در {3} بازی اخیر گلزنی کرده است.",
+  goals_total_last_3_both: "{0} در {2} بازی اخیر {3} گل زده و {1} {4} گل زده است.",
+  average_goals_last3_both: "میانگین گل {0} در سه بازی اخیر {2} و میانگین گل {1} {3} است.",
+  team_form_both:
+    "فرم {0} در پنج بازی اخیر: {1} برد، {2} تساوی، {3} شکست — فرم {4}: {5} برد، {6} تساوی، {7} شکست.",
 };
 // update cycle-117 probed (UA Chrome/124, live sweep across MLS/Brazil/
 // Libertadores, 2026-10-29): matchFacts.topScorers — each side's LEAGUE
@@ -225,6 +277,10 @@ interface FMMatchDetails {
       ];
       playerOfTheMatch?: FMPotm | null;
       insights?: FMInsight[];
+      // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — present on
+      // upcoming AND live matches; absent on many finished feeds. Optional →
+      // the surface honest-hides (cycle-117 topScorers convention).
+      poll?: { oddspoll?: { Facts?: FMPollFact[] } | null } | null;
       // update cycle-125: the official YouTube highlight video link +
       // thumbnail (live-probed UA Chrome/124, 2026-10-29: present for FEATURED
       // finished matches only — 2 of 3 sampled; absent/None otherwise → the
@@ -755,6 +811,11 @@ export interface MatchDetailNormalized {
   // unknown localizedTextId are dropped (honest convention, like the weather
   // keys); empty when the payload has none (or all unmapped)
   insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
+  // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — one row per
+  // market whose fact sentence survived the curated template map; null when
+  // the match is finished (the poll is a pre-match artifact) or no fact
+  // resolved (unknown templates drop honestly)
+  poll?: { title: string; text: string }[] | null;
   // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
   // تیم») — one entry per side, only finite stats carried (honest absence
   // per field); null when the payload lacks the block (some feeds do) or
@@ -1757,6 +1818,49 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     }
   }
 
+  // ---------------- pre-match poll (update cycle-257) ----------------
+  // matchFacts.poll.oddspoll.Facts: one fact per betting market (1x2 / bts /
+  // ou / dc). Each fact renders as «title: sentence» through the curated
+  // MATCH_POLL_TITLE_FA / MATCH_POLL_FA maps; StatValues roles resolve to the
+  // sides' Persian names, bare values → Persian digits (decimals keep the
+  // ASCII dot). Unknown title/template ids and incomplete placeholder sets
+  // drop honestly. The poll is a PRE-MATCH artifact (upstream keeps it on
+  // live feeds too, where the sentences stay true) → dropped once finished.
+  // No cache-key bump: the 25s matchDetails cache self-heals (cycle-117 rule).
+  let poll: MatchDetailNormalized["poll"] = null;
+  {
+    const g2 = raw.content?.matchFacts?.poll?.oddspoll;
+    const finished = raw.general?.finished;
+    if (!finished && Array.isArray(g2?.Facts) && g2.Facts.length > 0) {
+      const homeFa = teamFa(g.homeTeam?.name || "") || g.homeTeam?.name || "";
+      const awayFa = teamFa(g.awayTeam?.name || "") || g.awayTeam?.name || "";
+      const roleOf = (v: string): string =>
+        v === "home_team" ? homeFa : v === "away_team" ? awayFa : "";
+      const fill = (tpl: string, svs: string[]): string =>
+        tpl.replace(/\{(\d+)\}/g, (_m, idx: string) => {
+          const v = svs[Number(idx)];
+          if (v === undefined) return "…";
+          const name = roleOf(v);
+          if (name) return name;
+          // bare values are always numeric upstream — anything else is an
+          // unexpected shape → the "…" guard drops the whole fact honestly
+          if (/^-?\d+(\.\d+)?$/.test(v)) return faDigits(v);
+          return "…";
+        });
+      const out: NonNullable<MatchDetailNormalized["poll"]> = [];
+      for (const f of g2.Facts) {
+        const title = f.OddsType ? MATCH_POLL_TITLE_FA[f.OddsType] : undefined;
+        const tpl = f.TextTemplateId ? MATCH_POLL_FA[f.TextTemplateId] : undefined;
+        if (!title || !tpl) continue; // unknown market/template → honest drop
+        const text = fill(tpl, Array.isArray(f.StatValues) ? f.StatValues : []);
+        if (text.includes("…")) continue; // incomplete placeholder set → skip
+        out.push({ title, text });
+        if (out.length >= 4) break;
+      }
+      if (out.length > 0) poll = out;
+    }
+  }
+
   // ---------------- season top scorers of the two sides (update cycle-117) ----------------
   // matchFacts.topScorers: each side's LEAGUE season top scorer + their
   // season line (goals/assists/xG/minutes-per-goal/MOTM/rating/games).
@@ -1827,6 +1931,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     zones,
     weather,
     insights,
+    poll,
     topScorers,
     shootout,
     shots,
