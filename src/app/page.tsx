@@ -273,22 +273,30 @@ export default function Home() {
       {/* ---------- footer ---------- */}
       <footer className="glass-bar-footer mt-auto">
         <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col items-center gap-2 text-center">
-          <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
+          {/* ui-cycle-13: same completed metadata as the shared SiteFooter —
+              missing «بازیکنان», outbound source links, copyright line. */}
+          <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground flex-wrap justify-center">
             <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
             <span aria-hidden>·</span>
             <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
             <span aria-hidden>·</span>
             <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
             <span aria-hidden>·</span>
+            <Link href="/players" className="hover:text-primary transition-colors">بازیکنان</Link>
+            <span aria-hidden>·</span>
             <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
           </div>
           <p className="text-xs text-muted-foreground">
-            داده‌های نتایج و جدول‌ها از <span className="font-bold text-foreground/80">FotMob</span> و
-            <span className="font-bold text-foreground/80"> ESPN</span> — اخبار از ESPN، BBC Sport و Sky Sports
+            داده‌های نتایج و جدول‌ها از{" "}
+            <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/80 hover:text-primary transition-colors">FotMob</a>
+            {" و "}
+            <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/80 hover:text-primary transition-colors">ESPN</a>
+            {" — اخبار از ESPN، BBC Sport و Sky Sports"}
           </p>
           <p className="text-[11px] text-muted-foreground/80">
             رمانتادا — ساخته‌شده با عشق به فوتبال. نتایج با تأخیر چندثانیه‌ای نمایش داده می‌شوند.
           </p>
+          <p className="text-[10px] text-muted-foreground/70">© ۲۰۲۶ رمانتادا · تمامی حقوق محفوظ است.</p>
         </div>
       </footer>
     </div>

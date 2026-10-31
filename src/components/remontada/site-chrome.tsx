@@ -160,18 +160,28 @@ export function SiteFooter() {
         </p>
       </div>
       <div className="max-w-5xl mx-auto px-4 pt-1 pb-5 flex flex-col items-center gap-1.5 text-center">
-        <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground">
+        {/* ui-cycle-13: footer metadata completed — the nav row gains the
+            missing «بازیکنان» (header has it, footer didn't), data sources
+            become real outbound links, and a copyright line signs the site. */}
+        <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground flex-wrap justify-center">
           <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
+          <Link href="/players" className="hover:text-primary transition-colors">بازیکنان</Link>
+          <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
         </div>
         <p className="text-[10px] text-muted-foreground/80">
-          داده‌ها از FotMob و ESPN — رمانتادا، مرجع فارسی نتایج زنده فوتبال
+          داده‌ها از{" "}
+          <a href="https://www.fotmob.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/70 hover:text-primary transition-colors">FotMob</a>
+          {" و "}
+          <a href="https://www.espn.com/" target="_blank" rel="noopener noreferrer" className="font-bold text-foreground/70 hover:text-primary transition-colors">ESPN</a>
+          {" — رمانتادا، مرجع فارسی نتایج زنده فوتبال"}
         </p>
+        <p className="text-[10px] text-muted-foreground/70">© ۲۰۲۶ رمانتادا · تمامی حقوق محفوظ است.</p>
       </div>
     </footer>
   );
