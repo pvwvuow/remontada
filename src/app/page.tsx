@@ -6,7 +6,7 @@ import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
 import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
-import { faDigits } from "@/lib/format";
+import { faDigits, offsetDateISO } from "@/lib/format";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
@@ -52,6 +52,50 @@ export default function Home() {
   const [lastFetch, setLastFetch] = useState<string | null>(null);
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
+
+  // cycle-297: URL = view for the date carousel — the ±7-day fixtures view
+  // was the last major surface whose state lived only in client memory (a
+  // «بازی‌های فردا» view could never be shared or bookmarked). The contract
+  // mirrors the tab-restore precedent above: parse ONCE post-hydration (no
+  // SSR mismatch — the shell always prerenders today). ?date=YYYY-MM-DD
+  // drives the offset; the fetch gate below keeps the deep link's FIRST
+  // request on the right day. Live probe (cycle-297): /api/matches clamps
+  // offset to ±7 server-side — the UI clamps BEFORE the fetch instead, and
+  // per the cycle-99 marker contract corrects the address to what is shown.
+  const [urlApplied, setUrlApplied] = useState(false);
+  useEffect(() => {
+    const raw = new URLSearchParams(window.location.search).get("date");
+    if (raw === null) {
+      setUrlApplied(true);
+      return;
+    }
+    const m = /^(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(raw);
+    const todayNoon = new Date(`${offsetDateISO(0)}T12:00:00Z`).getTime();
+    const req = m ? new Date(`${raw}T12:00:00Z`).getTime() : NaN;
+    if (!m || !Number.isFinite(req)) {
+      // malformed → drop the param; the view honestly stays today
+      window.history.replaceState(null, "", "/");
+      setUrlApplied(true);
+      return;
+    }
+    const diff = Math.round((req - todayNoon) / 86_400_000);
+    const clamped = Math.max(-7, Math.min(7, diff));
+    if (clamped !== diff) {
+      // well-formed but outside the designed ±7 carousel — the URL must
+      // show the day that is actually rendered (the 99 contract)
+      window.history.replaceState(null, "", `/?date=${offsetDateISO(clamped)}`);
+    } else if (clamped === 0) {
+      window.history.replaceState(null, "", "/"); // today = the clean canonical view
+    }
+    if (clamped !== 0) setOffset(clamped);
+    setUrlApplied(true);
+  }, []);
+
+  // carousel clicks keep the address honest: a day view IS a shareable URL
+  const changeOffset = useCallback((o: number) => {
+    setOffset(o);
+    window.history.replaceState(null, "", o === 0 ? "/" : `/?date=${offsetDateISO(o)}`);
+  }, []);
 
   // --- standings state ---
   const [leagueKey, setLeagueKey] = useState("pl");
@@ -107,10 +151,12 @@ export default function Home() {
     }
   }, []);
 
-  // initial + offset change
+  // initial + offset change — gated until the URL's ?date= has been applied
+  // once, so a deep link's FIRST fetch is already the right day
   useEffect(() => {
+    if (!urlApplied) return;
     fetchMatches();
-  }, [offset, fetchMatches]);
+  }, [urlApplied, offset, fetchMatches]);
 
   // initial standings & news (lazy per tab)
   useEffect(() => {
@@ -249,7 +295,7 @@ export default function Home() {
               groups={groups}
               loading={matchesLoading}
               offset={offset}
-              onOffsetChange={setOffset}
+              onOffsetChange={changeOffset}
             />
           </>
         )}
