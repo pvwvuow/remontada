@@ -811,14 +811,38 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                 >
                   <td className="py-2.5 pe-1 ps-2.5 sm:ps-3 relative">
                     {r.qualColor && <span className="absolute inset-y-1 right-0 w-[3px] rounded-full" style={{ backgroundColor: r.qualColor }} aria-hidden />}
-                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
-                      {faDigits(pad2(r.idx))}
-                    </span>
+                    {/* ui-cycle-12: podium medallions — the home-page standings
+                        (standings-view, cycle-64) already celebrates top-3 with
+                        gold/silver/bronze medals; the /league/* table (this one,
+                        the surface users actually open) showed a bare number.
+                        Same classes, same CSS, now consistent across both. */}
+                    {r.idx <= 3 ? (
+                      <span
+                        className={cn(
+                          "rank-medal tabular-persian",
+                          r.idx === 1 ? "rank-medal-gold" : r.idx === 2 ? "rank-medal-silver" : "rank-medal-bronze"
+                        )}
+                      >
+                        {faDigits(r.idx)}
+                      </span>
+                    ) : (
+                      <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                        {faDigits(pad2(r.idx))}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2 px-1 max-w-[132px] sm:max-w-none">
                     <Link href={`/team/${r.teamId}`} className="flex items-center gap-2 min-w-0 group" prefetch={false}>
                       <img src={r.logo} alt="" width={18} height={18} loading="lazy" className="w-[18px] h-[18px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
-                      <span className={cn("font-bold truncate group-hover:text-primary transition-colors", leader && "text-[#f1f7ff]")}>
+                      {/* ui-cycle-12: the leader wears the crown — same mark as
+                          standings-view; inline-flex+gap-1 keeps it glued to the
+                          name without breaking truncate. */}
+                      <span className={cn("font-bold truncate group-hover:text-primary transition-colors inline-flex items-center gap-1", leader && "text-[#f1f7ff]")}>
+                        {leader && (
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="text-gold shrink-0" aria-label="صدرنشین">
+                            <path d="M3 8l4.5 3L12 5l4.5 6L21 8l-1.6 9H4.6L3 8z" />
+                          </svg>
+                        )}
                         {r.fa || r.name}
                       </span>
                     </Link>
@@ -836,9 +860,12 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                   </td>
                   <td className="py-2 px-2 sm:px-2.5 text-center">
                     <span
+                      // ui-cycle-12: leader points pill goes gold (matches
+                      // standings-view) — the blue tint read as a normal
+                      // hover state, the gold reads as the scoreboard moment.
                       className={cn(
                         "font-black tabular-persian rounded-lg px-1.5 sm:px-2 py-0.5 inline-block min-w-[30px] sm:min-w-[34px]",
-                        leader ? "text-[#f0f6ff] bg-[#bddcfa26]" : "text-[#e4eefb] bg-[#9ec3e50b]"
+                        leader ? "text-[#f6efdc] bg-[#e3c7671f] shadow-[0_0_12px_oklch(0.84_0.12_85/0.22)]" : "text-[#e4eefb] bg-[#9ec3e50b]"
                       )}
                     >
                       {faDigits(r.pts)}
@@ -931,9 +958,23 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
                   )}
                 >
                   <td className="py-2.5 pe-1 ps-2.5 sm:ps-3">
-                    <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
-                      {faDigits(pad2(r.idx))}
-                    </span>
+                    {/* ui-cycle-12: same podium medallions as the main table —
+                        the xG mirror shares the league ordering, one rank
+                        language across the page. */}
+                    {r.idx <= 3 ? (
+                      <span
+                        className={cn(
+                          "rank-medal tabular-persian",
+                          r.idx === 1 ? "rank-medal-gold" : r.idx === 2 ? "rank-medal-silver" : "rank-medal-bronze"
+                        )}
+                      >
+                        {faDigits(r.idx)}
+                      </span>
+                    ) : (
+                      <span className={cn("font-bold tabular-persian text-[11px]", r.idx <= 3 ? "text-[#deedfc]" : "text-[#8da7c3]/90")}>
+                        {faDigits(pad2(r.idx))}
+                      </span>
+                    )}
                   </td>
                   <td className="py-2.5 px-1 max-w-[128px] sm:max-w-none">
                     <span className="flex items-center gap-2 min-w-0">
