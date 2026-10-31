@@ -37,10 +37,23 @@ function Hl({ text, range }: { text: string; range?: [number, number] | null }) 
   );
 }
 
+// cycle-269: honest cap for the live search — the cycle-268 patrol measured a
+// cold /api/search (team-index rebuild, 10-min cache) exceeding 30s while the
+// server eventually completed and cached; the client previously waited forever
+// (spinner, no AbortController). 20s gives the cold rebuild a fair window —
+// if it is aborted, the server-side work still finishes and caches, so the
+// user's immediate retry hits the warm cache and answers instantly.
+const SEARCH_TIMEOUT_MS = 20_000;
+
 export function SearchBox() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
+  // cycle-269: true only when the 20s cap aborted the request — the dialog
+  // then shows the honest retry message instead of a silent stuck spinner
+  // (and the «پیدا نشد» empty-state stays quiet: an aborted search never
+  // earned the right to claim «not found»)
+  const [timedOut, setTimedOut] = useState(false);
   const [results, setResults] = useState<TeamSearchResult[]>([]);
   // cycle-166: the «آقای گل» player pool joins the search — teams stay first
   // (results), players render as their own section below with /player links
@@ -77,6 +90,7 @@ export function SearchBox() {
       setLeagues([]);
       setNews([]);
       setActive(0);
+      setTimedOut(false);
       kbNav.current = false;
     }
   }, [open]);
@@ -103,7 +117,11 @@ export function SearchBox() {
     return () => document.removeEventListener("mousedown", onDown);
   }, [open]);
 
-  // debounced live search
+  // debounced live search — cycle-269: every in-flight request is bound to an
+  // AbortController with a 20s honest cap (SEARCH_TIMEOUT_MS above). The cap
+  // abort keeps previous results and shows the retry message; any cleanup
+  // (new keystroke, dialog close, unmount) aborts the orphan request instead
+  // of letting it run to completion behind the UI.
   useEffect(() => {
     const query = q.trim();
     if (query.length < 2) {
@@ -113,12 +131,23 @@ export function SearchBox() {
       setNews([]);
       setCoaches([]);
       setLoading(false);
+      setTimedOut(false);
       return;
     }
     setLoading(true);
+    setTimedOut(false);
+    const ac = new AbortController();
+    let abortedByCap = false;
+    const cap = setTimeout(() => {
+      abortedByCap = true;
+      ac.abort();
+    }, SEARCH_TIMEOUT_MS);
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+        const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+          signal: ac.signal,
+        });
         const json = await res.json();
         if (json.ok) {
           setResults(json.results as TeamSearchResult[]);
@@ -129,12 +158,18 @@ export function SearchBox() {
           setActive(0);
         }
       } catch {
-        // keep previous results on failure
+        // cap-abort: keep previous results, flip the honest retry message;
+        // every other failure (cleanup abort, network) keeps the old contract
+        if (abortedByCap) setTimedOut(true);
       } finally {
         setLoading(false);
       }
     }, 250);
-    return () => clearTimeout(t);
+    return () => {
+      clearTimeout(t);
+      clearTimeout(cap);
+      ac.abort();
+    };
   }, [q]);
 
   const go = useCallback(
@@ -261,11 +296,20 @@ export function SearchBox() {
             </div>
 
             <div className="max-h-[46vh] overflow-y-auto">
+              {timedOut && !loading && (
+                <p
+                  data-testid="search-timeout"
+                  aria-live="polite"
+                  className="text-[11px] text-muted-foreground text-center pt-3 pb-1 px-4"
+                >
+                  جستجو بیش از حد طول کشید — دوباره تلاش کنید.
+                </p>
+              )}
               {q.trim().length < 2 ? (
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
                   حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های {faDigits(24)} لیگ و جام
                 </p>
-              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 && news.length === 0 && coaches.length === 0 ? (
+              ) : !loading && !timedOut && results.length === 0 && leagues.length === 0 && players.length === 0 && news.length === 0 && coaches.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">
                   <p className="text-[11.5px] text-muted-foreground">تیمی یا بازیکنی با این نام پیدا نشد.</p>
                   <div className="w-full">
