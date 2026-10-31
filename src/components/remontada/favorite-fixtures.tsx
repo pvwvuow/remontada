@@ -53,8 +53,19 @@ export function FavoriteFixtures() {
   // cycle-23: user-selectable horizon (3 or 7 days), persisted locally
   const [days, setDays] = useState<3 | 7>(3);
   const stoppedRef = useRef(false);
+  // ui-cycle-11: real empty states — mounted gates the SSR/hydration flash
+  // (server snapshot is always empty), scanDone separates "scan found
+  // nothing" from "scan still running / failed" so the empty note never
+  // lies during the first load or a network hiccup.
+  const [mounted, setMounted] = useState(false);
+  const [scanDone, setScanDone] = useState(false);
 
   const favKey = favs.map((f) => f.id).join(",");
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
 
   // restore the saved horizon (after hydration to avoid mismatch)
   // NOTE: setState must not run synchronously inside the effect body
@@ -83,9 +94,15 @@ export function FavoriteFixtures() {
   useEffect(() => {
     stoppedRef.current = false;
     const favIds = new Set(favKey.split(",").filter(Boolean).map(Number));
+    // ui-cycle-11: a new scan invalidates the previous "scan done" verdict
+    // (deferred setState — same pattern as the horizon restore above)
+    const t0 = setTimeout(() => setScanDone(false), 0);
     if (favIds.size === 0) {
       const t = setTimeout(() => setItems([]), 0);
-      return () => clearTimeout(t);
+      return () => {
+        clearTimeout(t0);
+        clearTimeout(t);
+      };
     }
 
     const tick = async () => {
@@ -119,8 +136,10 @@ export function FavoriteFixtures() {
         }
         found.sort((a, b) => (a.utcTime || "").localeCompare(b.utcTime || ""));
         setItems(found.slice(0, 40));
+        setScanDone(true);
       } catch {
         // network hiccup — keep last state, retry on next tick
+        // (scanDone untouched: an inconclusive scan must not claim emptiness)
       }
     };
 
@@ -128,11 +147,72 @@ export function FavoriteFixtures() {
     const iv = setInterval(() => void tick(), 5 * 60_000);
     return () => {
       stoppedRef.current = true;
+      clearTimeout(t0);
       clearInterval(iv);
     };
   }, [favKey, days]);
 
-  if (favs.length === 0 || items.length === 0) return null;
+  // cycle-23 horizon selector, shared by the fixtures card and the
+  // ui-cycle-11 empty card (so the user can widen 3→7 days in place).
+  // Defined BEFORE the early returns below — a const referenced inside a
+  // return branch that sits above its declaration would hit the TDZ.
+  const horizonSwitch = (
+    <div className="ms-auto flex items-center gap-1" role="group" aria-label="بازه زمانی" title="بروزرسانی خودکار هر ۵ دقیقه">
+      {[3, 7].map((d) => (
+        <button
+          key={d}
+          onClick={() => setRange(d as 3 | 7)}
+          aria-pressed={days === d}
+          title={`${d} روز آینده`}
+          className={cn(
+            "text-[10px] font-black rounded-md px-2 py-1 border transition-colors cursor-pointer tabular-persian",
+            days === d
+              ? "text-amber-300 bg-amber-400/15 border-amber-400/40"
+              : "text-muted-foreground bg-white/[0.03] border-glass-border-soft hover:text-foreground",
+          )}
+        >
+          {faDigits(d)} روز
+        </button>
+      ))}
+    </div>
+  );
+
+  // ui-cycle-11: the two REAL empty states, previously both silently null —
+  //  A) no favorites at all — the star feature was undiscoverable from home;
+  //  B) favorites exist but no upcoming fixture inside the horizon — the
+  //     section vanished with no explanation right after the user starred a
+  //     team. Both are now quiet glass cards in the same visual language.
+  if (!mounted) return null;
+  if (favs.length === 0) {
+    return (
+      <section data-testid="fav-fixtures-onboard" className="glass-card px-3.5 py-3 flex items-center gap-2.5" aria-label="راهنمای تیم‌های مورد علاقه">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className="text-amber-400 shrink-0" aria-hidden>
+          <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
+        </svg>
+        <div className="min-w-0 flex flex-col gap-0.5">
+          <p className="text-[11.5px] font-black">تیم‌های ستاره‌دار را دنبال کنید</p>
+          <p className="text-[10.5px] text-muted-foreground/80 leading-4">روی ⭐ کنار نام هر تیم (در جستجو یا صفحهٔ تیم) بزنید — بازی‌های پیش‌رویش و اعلان گلش همین‌جا ظاهر می‌شود.</p>
+        </div>
+      </section>
+    );
+  }
+  if (items.length === 0) {
+    if (!scanDone) return null;
+    return (
+      <section data-testid="fav-fixtures-none" className="glass-card overflow-hidden" aria-label="بازی‌های بعدی تیم‌های مورد علاقه">
+        <header className="flex items-center gap-2 px-3.5 py-2.5 border-b border-glass-border-soft bg-amber-400/[0.04]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" className="text-amber-400 shrink-0" aria-hidden>
+            <path d="M12 2.6l2.86 5.8 6.4.93-4.63 4.51 1.09 6.37L12 17.2l-5.72 3.01 1.09-6.37-4.63-4.51 6.4-.93L12 2.6z" />
+          </svg>
+          <h2 className="rune-title font-black text-[12.5px]">بازی‌های بعدی تیم‌های من</h2>
+          {horizonSwitch}
+        </header>
+        <div className="px-3.5 py-4 text-center">
+          <p className="text-[11.5px] text-muted-foreground">در {faDigits(days)} روز آینده بازی پیش‌رویی برای تیم‌های ستاره‌دار پیدا نشد.</p>
+        </div>
+      </section>
+    );
+  }
   const shown = expanded ? items : items.slice(0, MAX_SHOW);
   const hidden = items.length - shown.length;
 
@@ -147,24 +227,7 @@ export function FavoriteFixtures() {
           {faDigits(items.length)} بازی
         </span>
         {/* cycle-23: horizon selector (3 or 7 days) */}
-        <div className="ms-auto flex items-center gap-1" role="group" aria-label="بازه زمانی" title="بروزرسانی خودکار هر ۵ دقیقه">
-          {[3, 7].map((d) => (
-            <button
-              key={d}
-              onClick={() => setRange(d as 3 | 7)}
-              aria-pressed={days === d}
-              title={`${d} روز آینده`}
-              className={cn(
-                "text-[10px] font-black rounded-md px-2 py-1 border transition-colors cursor-pointer tabular-persian",
-                days === d
-                  ? "text-amber-300 bg-amber-400/15 border-amber-400/40"
-                  : "text-muted-foreground bg-white/[0.03] border-glass-border-soft hover:text-foreground",
-              )}
-            >
-              {faDigits(d)} روز
-            </button>
-          ))}
-        </div>
+        {horizonSwitch}
       </header>
       <div className="glass-list py-1 flex flex-col">
         {shown.map((m) => (
