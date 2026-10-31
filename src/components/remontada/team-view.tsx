@@ -303,7 +303,7 @@ function SeasonPanel({ s }: { s: TeamSeasonStats }) {
     <section className="glass-card overflow-hidden">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
         <h2 className="text-[12.5px] font-black text-[#ecf3fa]">آمار فصل</h2>
-        <Link href={`/league/${s.leagueKey}`} className="text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
+        <Link href={`/league/${s.leagueKey}`} className="tap-hit-row text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
           {s.leagueFa}{s.season ? ` · فصل ${faDigits(s.season)}` : ""}
         </Link>
       </header>
@@ -448,7 +448,7 @@ function PreMatchPanel({
     <section className="glass-card overflow-hidden">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between gap-2">
         <h2 className="text-[12.5px] font-black text-[#ecf3fa]">مصاف پیش از بازی</h2>
-        <Link href={`/match/${pm.matchId}`} prefetch={false} className="text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
+        <Link href={`/match/${pm.matchId}`} prefetch={false} className="tap-hit-row text-[10px] font-bold text-steel/80 hover:text-sky-soft transition-colors">
           صفحه بازی ←
         </Link>
       </header>
@@ -1183,7 +1183,7 @@ function FixtureGroup({ label, items, teamId }: { label: string; items: TeamSeas
         <button
           type="button"
           onClick={() => setAll((v) => !v)}
-          className="mt-2 mx-auto block text-[10.5px] font-bold text-sky-soft hover:text-foreground transition-colors cursor-pointer"
+          className="tap-hit-row mt-2 mx-auto block text-[10.5px] font-bold text-sky-soft hover:text-foreground transition-colors cursor-pointer"
         >
           {all ? "نمایش کمتر" : `نمایش همهٔ ${faDigits(items.length)} بازی`}
         </button>
@@ -1689,7 +1689,7 @@ export function TeamView({ teamId }: { teamId: number }) {
             </div>
             {st ? (
               <p className="text-[11px] text-steel/85 mt-0.5">
-                <Link href={`/league/${st.leagueKey}`} className="hover:text-sky-soft transition-colors font-bold">
+                <Link href={`/league/${st.leagueKey}`} className="tap-hit-row hover:text-sky-soft transition-colors font-bold">
                   {st.leagueFa}
                 </Link>
                 {" · "}
@@ -1697,7 +1697,7 @@ export function TeamView({ teamId }: { teamId: number }) {
               </p>
             ) : season ? (
               <p className="text-[11px] text-steel/85 mt-0.5">
-                <Link href={`/league/${season.leagueKey}`} className="hover:text-sky-soft transition-colors font-bold">
+                <Link href={`/league/${season.leagueKey}`} className="tap-hit-row hover:text-sky-soft transition-colors font-bold">
                   {season.leagueFa}
                 </Link>
                 {season.season ? ` · فصل ${faDigits(season.season)}` : ""}
