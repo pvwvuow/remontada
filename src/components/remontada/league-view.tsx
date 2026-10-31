@@ -446,6 +446,10 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
   const lgCfg = LEAGUES.find((l) => l.key === leagueKey);
   const [top, ...rest] = list;
   return (
+    /* Ninth-generation tap-hit-row: the two small links of the «آقای گل» card —
+       the 15px header action and the 22px leader-name link — get the transparent
+       ::after extension; both sit amid ≥2px of non-interactive padding/text and
+       ≥8px from the nearest interactive neighbour, so the zone never covers one. */
     <div className="glass-card overflow-hidden">
       <GlassLeagueHeader
         leagueId={lgCfg?.fotmobId}
@@ -455,7 +459,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
       >
         <Link
           href={`/topscorers/${leagueKey}`}
-          className="inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
+          className="tap-hit-row inline-flex items-center gap-1 text-[10px] font-bold text-chart-3 hover:text-primary transition-colors"
         >
           صفحه کامل گلزنان
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden>
@@ -473,10 +477,14 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
               <Link
                 href={`/player/${top.playerId}`}
                 prefetch={false}
-                className="block text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5 hover:text-primary transition-colors w-fit max-w-full"
+                className="tap-hit-row block w-fit max-w-full mt-0.5 hover:text-primary transition-colors"
                 title={top.nameFa && top.nameFa !== top.name ? top.name : `پروفایل ${top.name}`}
               >
-                {top.nameFa || top.name}
+                {/* truncate lives on the inner span: overflow:hidden on the link itself
+                    would clip the tap-hit-row ::after zone entirely (measured live) */}
+                <span className="block text-[14.5px] font-bold text-[#f1f7fd] truncate">
+                  {top.nameFa || top.name}
+                </span>
               </Link>
             ) : (
               <p className="text-[14.5px] font-bold text-[#f1f7fd] truncate mt-0.5">{top.nameFa || top.name}</p>

@@ -413,7 +413,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
         <div className="min-w-0">
           <Link
             href="/topscorers"
-            className="text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
+            className="tap-hit-row text-[11px] font-bold text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1"
           >
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" aria-hidden>
               <path d="M9 5l7 7-7 7" />
