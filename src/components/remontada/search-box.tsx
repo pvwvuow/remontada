@@ -5,6 +5,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import type { TeamSearchResult, PlayerSearchResult, LeagueSearchResult } from "@/lib/fotmob";
 import type { NewsSearchResult } from "@/lib/news";
 import { fotmobTeamLogo, teamFa } from "@/lib/leagues";
@@ -244,10 +245,14 @@ export function SearchBox() {
     if (e.key === "ArrowUp") { e.preventDefault(); kbNav.current = true; setActive((a) => Math.max(a - 1, 0)); }
     if (e.key === "Enter") {
       e.preventDefault();
+      // cycle-284: the index walk must match the render order (teams → leagues →
+      // مربی‌ها → players → خبرها). Coaches were skipped, so Enter on a coach row
+      // mis-navigated to a player (or died on coaches-only result sets).
       if (active < results.length) { if (results[active]) go(results[active].teamId); }
       else if (active < results.length + leagues.length) { const l = leagues[active - results.length]; if (l) goLeague(l.key); }
-      else if (active < results.length + leagues.length + players.length) { const p = players[active - results.length - leagues.length]; if (p) goPlayer(p.playerId); }
-      else { const n = news[active - results.length - leagues.length - players.length]; if (n) openNews(n.link); }
+      else if (active < results.length + leagues.length + coaches.length) { const c = coaches[active - results.length - leagues.length]; if (c) goCoach(c.id); }
+      else if (active < results.length + leagues.length + coaches.length + players.length) { const p = players[active - results.length - leagues.length - coaches.length]; if (p) goPlayer(p.playerId); }
+      else { const n = news[active - results.length - leagues.length - coaches.length - players.length]; if (n) openNews(n.link); }
     }
   };
 
@@ -333,9 +338,13 @@ export function SearchBox() {
                 <ul className="p-1.5 flex flex-col">
                   {results.map((r, i) => (
                     <li key={r.teamId} className="relative">
-                      <button
-                        type="button"
-                        onClick={() => go(r.teamId)}
+                      {/* cycle-284: rows are real <Link>s — middle-click/right-click
+                          «open in new tab» works and the rows are semantic links;
+                          click keeps the same close-then-push behavior via onClick */}
+                      <Link
+                        href={`/team/${r.teamId}`}
+                        prefetch={false}
+                        onClick={() => setOpen(false)}
                         onMouseEnter={() => setActive(i)}
                         className={cn(
                           "w-full flex items-center gap-2.5 ps-8 pe-2.5 py-2 rounded-xl text-start transition-colors",
@@ -362,8 +371,8 @@ export function SearchBox() {
                             </span>
                           )}
                         </span>
-                      </button>
-                      {/* favorite star — sibling of the row button (no nested buttons) */}
+                      </Link>
+                      {/* favorite star — sibling of the row link (no nested interactive elements) */}
                       <FavoriteStar
                         team={{ id: r.teamId, fa: r.fa || r.name, en: r.name }}
                         size={14}
@@ -382,9 +391,10 @@ export function SearchBox() {
                       const idx = results.length + i;
                       return (
                         <li key={l.key}>
-                          <button
-                            type="button"
-                            onClick={() => goLeague(l.key)}
+                          <Link
+                            href={`/league/${l.key}`}
+                            prefetch={false}
+                            onClick={() => setOpen(false)}
                             onMouseEnter={() => setActive(idx)}
                             className={cn(
                               "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
@@ -411,7 +421,7 @@ export function SearchBox() {
                             <span className="shrink-0 text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
                               رقابت
                             </span>
-                          </button>
+                          </Link>
                         </li>
                       );
                     })}
@@ -428,9 +438,10 @@ export function SearchBox() {
                       const idx = results.length + leagues.length + i;
                       return (
                         <li key={c.id}>
-                          <button
-                            type="button"
-                            onClick={() => goCoach(c.id)}
+                          <Link
+                            href={`/coach/${c.id}`}
+                            prefetch={false}
+                            onClick={() => setOpen(false)}
                             onMouseEnter={() => setActive(idx)}
                             className={cn(
                               "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
@@ -460,7 +471,7 @@ export function SearchBox() {
                             <span className="shrink-0 text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
                               مربی
                             </span>
-                          </button>
+                          </Link>
                         </li>
                       );
                     })}
@@ -476,9 +487,10 @@ export function SearchBox() {
                       const idx = results.length + leagues.length + coaches.length + i;
                       return (
                         <li key={p.playerId}>
-                          <button
-                            type="button"
-                            onClick={() => goPlayer(p.playerId)}
+                          <Link
+                            href={`/player/${p.playerId}`}
+                            prefetch={false}
+                            onClick={() => setOpen(false)}
                             onMouseEnter={() => setActive(idx)}
                             className={cn(
                               "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
@@ -515,7 +527,7 @@ export function SearchBox() {
                                 {p.season ? `${p.leagueFa} · ${faDigits(p.season)}` : p.leagueFa}
                               </span>
                             </span>
-                          </button>
+                          </Link>
                         </li>
                       );
                     })}
