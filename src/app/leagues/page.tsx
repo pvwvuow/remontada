@@ -4,7 +4,9 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { FavoritesSection } from "@/components/remontada/favorites-section";
 import { TeamLogo } from "@/components/remontada/team-logo";
+import { JsonLd } from "@/components/remontada/json-ld";
 import { LEAGUES } from "@/lib/leagues";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "لیگ‌ها و جام‌ها",
@@ -24,10 +26,28 @@ const POPULAR_TEAMS: { id: number; fa: string; en: string; leagueKey: string }[]
 ];
 
 export default function LeaguesPage() {
+  // update cycle-291: ItemList JSON-LD — the /players index has carried the
+  // same page-class schema since its cycle; the leagues index is the other
+  // nav-dock index and emits exactly the cards it renders below (LEAGUES is
+  // build-time static, so unlike /players no try/catch is needed)
+  const itemListLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "لیگ‌ها و جام‌ها",
+    "numberOfItems": LEAGUES.length,
+    "itemListElement": LEAGUES.map((l, i) => ({
+      "@type": "ListItem",
+      "position": i + 1,
+      "name": l.faName,
+      "url": `${SITE_URL}/league/${l.key}`,
+    })),
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
+        <JsonLd data={itemListLd} />
         <div className="mb-4 px-1">
           <h1 className="text-lg font-black">لیگ‌ها و جام‌ها</h1>
           <p className="text-[11px] text-muted-foreground mt-0.5">

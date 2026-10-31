@@ -4146,3 +4146,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** JSON معتبر (python assert ترتیب دقیق) ← eslint 0/0 ← tsc 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون رسمی ۲۸/۲۸ (شامل خودِ manifest، BASE صریح) ← DOM با agent-browser در 390×844: fetch('/manifest.webmanifest') → ۵ شورتکات با نام‌های فارسی، `link[rel=manifest]` حاضر، کنسول session تازه **۰ خط**.
 
 **نوبت گردشی بعدی: cycle-291 = آپدیت** (فرمول ((291 mod 5)+1)=۲)
+
+### Task ID: cycle-291 — آپدیت (ItemList JSON-LD برای ایندکس لیگ‌ها — پارتی اسکیمای ناوبر)
+
+**تاریخ:** ۲۰۲۶-۱۱-۰۱ ~۰۴:۲۵ تهران · **ورودی:** چرخهٔ بعد از آپدیت ۲۹۰. پروب‌های زنده: جستجوگر هر ۵ سکشن را دارد (تیم‌ها→رقابت‌ها→مربی‌ها→بازیکنان→خبرها + span کیبورد ۲۰۲/۲۵۶)، sitemap هر ۵ مسیر ثابت را دارد، صفحهٔ بازیکن از قبل Person JSON-LD حاضر (اثبات زنده: «Roméo Lavia» + affiliation SportsTeam).
+
+**شکاف واقعی:** از صفحات ایندکس ناوبر، `/players` از قبل **ItemList** JSON-LD دارد اما `/leagues` فقط LD سراسری layout را داشت (curl: ۱ بلوک WebSite+Organization، بدون LD سطح صفحه). آینهٔ مستقیم الگوی `/players` — `@type:"ItemList"` با دقیقاً همان کارت‌هایی که صفحه رندر می‌کند: ۲۴ لیگ از ثابت build-time LEAGUES (بدون نیاز به try/catch برخلاف /players که دادهٔ شبکه دارد)، هر ListItem با position (i+1)، name=faName فارسی، url=`/league/{key}`.
+
+**فیکس:** `src/app/leagues/page.tsx` — ایمپورت JsonLd + SITE_URL، ساخت itemListLd داخل کامپوننت، `<JsonLd data={itemListLd} />` بالای محتوا. صفر تغییر API، صفر دادهٔ جدید.
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون رسمی ۲۸/۲۸ (BASE صریح) ← اثبات زندهٔ curl: ۲ بلوک LD (سراسری + ItemList=۲۴) ← DOM با agent-browser در 390×844: ۲ بلوک، ۲۴ ListItem = ۲۴ کارت واقعی (توازی ۱:۱)، اولین آیتم «لیگ قهرمانان اروپا»، h1 فارسی، بدون overflow افقی، کنسول session تازه **۰ خط**.
+
+**نوبت گردشی بعدی: cycle-292 = آپدیت** (فرمول ((292 mod 5)+1)=۳)
