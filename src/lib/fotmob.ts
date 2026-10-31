@@ -8078,10 +8078,36 @@ interface FMTeamFixtureRaw {
   notStarted?: boolean;
 }
 
+// cycle-264: key bumped v1→v2 — builds before this fix could cache the
+// transient upstream `null` body (JSON-valid!) for the full 60 min in L1+L2
+// (L2 persists across restarts), so a single glitched fetch hid every lazy
+// team section for an hour after the upstream healed. The v2 key makes any
+// poisoned row unreachable instantly (same convention as the 196
+// standings:v10 / player:v9 lessons).
 const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
-  cached(`teamDataRaw:${teamId}`, 60 * 60_000, async () =>
-    fetchJson<FMTeamDataRaw>(`https://www.fotmob.com/api/data/teams?id=${teamId}`, 15000)
-  );
+  cached(`teamDataRaw:v2:${teamId}`, 60 * 60_000, async () => {
+    const data = await fetchJson<FMTeamDataRaw>(
+      `https://www.fotmob.com/api/data/teams?id=${teamId}`,
+      15000
+    );
+    // cycle-264: live-probed transient upstream shape (2026-10-31 ~22:30
+    // Tehran): teams?id=17 answered 200 with a literal `null` body (4 bytes)
+    // while every other team/league/match id returned full payloads — and it
+    // heals on its own moments later. JSON null parses fine so fetchJson
+    // resolves instead of throwing; the guard lives INSIDE the producer (the
+    // documented getLeagueRaw convention) so nothing unusable is ever cached
+    // — each request retries upstream instead. The five families below are
+    // exactly the keys every consumer reads (diff-ключ sweep, cycle-262): a
+    // payload without any of them would only ever normalize to nulls.
+    if (
+      data == null ||
+      typeof data !== "object" ||
+      !("squad" in data || "transfers" in data || "fixtures" in data || "history" in data || "overview" in data)
+    ) {
+      throw new Error(`teams payload unusable for id ${teamId}`);
+    }
+    return data;
+  });
 
 export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return null;

@@ -848,6 +848,22 @@ function TeamNewsSection({ data }: { data: TeamNewsData }) {
   );
 }
 
+// cycle-264: honest in-flight placeholder for the club news card — the only
+// lazy section with a genuinely slow path (server-side LLM translation on
+// cache miss). Same pulse language as the hero fidelity skeleton; unmounts
+// the moment the fetch settles (card or honest absence).
+function TeamNewsShimmer() {
+  return (
+    <div className="glass-card px-3 py-2.5" aria-busy="true" data-testid="team-news-loading">
+      <p className="text-[11px] text-muted-foreground">در حال دریافت اخبار باشگاه…</p>
+      <div className="mt-2 space-y-2" aria-hidden="true">
+        <div className="h-3.5 w-3/4 rounded bg-white/[0.05] animate-pulse" />
+        <div className="h-2.5 w-1/2 rounded bg-white/[0.05] animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
 function TeamTransfersSection({ data }: { data: TeamTransfersData }) {
   return (
     <Section
@@ -1616,6 +1632,12 @@ export function TeamView({ teamId }: { teamId: number }) {
   // (zero extra upstream); the Persian headline upgrade happens server-side
   // with its own 60-min cache. Stays null → section hidden (honest absence).
   const [teamNews, setTeamNews] = useState<TeamNewsData | null>(null);
+  // cycle-264: the news endpoint's cache-miss path runs the LLM translate
+  // stage (up to its 10s budget), so between the hero skeleton unmounting
+  // and the card arriving the page used to show plain silence and then
+  // jump — an honest in-place loading shimmer fills that exact window and
+  // unmounts on arrival or honest absence (null feed / fetch failure).
+  const [teamNewsLoading, setTeamNewsLoading] = useState(true);
   useEffect(() => {
     let alive = true;
     fetch(`/api/team-news/${teamId}`, { cache: "no-store" })
@@ -1625,6 +1647,9 @@ export function TeamView({ teamId }: { teamId: number }) {
       })
       .catch(() => {
         /* teamNews stays null → section hidden */
+      })
+      .finally(() => {
+        setTeamNewsLoading(false);
       });
     return () => {
       alive = false;
@@ -2040,7 +2065,9 @@ export function TeamView({ teamId }: { teamId: number }) {
       {rumours && rumours.items.length > 0 && <TeamRumoursSection data={rumours} />}
 
       {/* cycle-261: team news digest («اخبار باشگاه») — lazily probed, hidden
-          when the source has no digest (honest absence) */}
+          when the source has no digest (honest absence); cycle-264: the only
+          lazy section with a slow server path gets an in-flight shimmer */}
+      {teamNewsLoading && <TeamNewsShimmer />}
       {teamNews && teamNews.items.length > 0 && <TeamNewsSection data={teamNews} />}
 
       {/* cycle-72: team trophies («گنجهٔ افتخارات») — lazily probed, hidden when absent */}
