@@ -31,7 +31,8 @@ export async function GET(req: NextRequest) {
     // cycle-200: competitions join the same way — a NEW `leagues` field
     // folded from the in-memory catalog (zero upstream fetches)
     // cycle-202: news joins the same way — a NEW `news` field folded from
-    // the cached news:v1 feed (warm-only read, zero fresh upstream calls)
+    // the cached news feed (warm-only read, zero fresh upstream calls;
+    // key news:v2 since fix cycle-294)
     // cycle-256: coaches join the same way — a NEW `coaches` field folded
     // from the live-probed static seed (zero upstream fetches)
     const [results, players, news] = await Promise.all([searchTeams(q), searchPlayers(q), searchNews(q)]);

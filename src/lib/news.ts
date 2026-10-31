@@ -4,7 +4,9 @@
 // The producer is the EXACT code that lived in src/app/api/news/route.ts
 // (cycles 57–138), moved here so TWO routes can share ONE cached
 // instance: /api/news (the page feed) and /api/search (the cycle-202
-// «خبرها» index). Same cache key `news:v1`, same 15-min TTL, same
+// «خبرها» index). Cache key `news:v2` (bumped from v1 by fix cycle-294:
+// the v1 row was poisoned by an empty-outage snapshot — an empty feed
+// used to be cached as a fresh 15-min success), same 15-min TTL, same
 // translation stage — zero behavior change for the feed route.
 //
 // cycle-202: the header search never covered the news page — 16
@@ -208,13 +210,28 @@ async function loadNews(): Promise<NewsItem[]> {
     .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime())
     .slice(0, 16);
 
+  // fix cycle-294 (registered finding from the cycle-293 patrol): an empty
+  // upstream feed is an outage that LOOKS like success — returning [] would
+  // be cached as a fresh 15-min "good" answer and lock every consumer
+  // (page snapshot, /api/news, warm search fold) out of real data for the
+  // whole window. Throwing instead routes the failure through cached()'s
+  // cycle-42 stale-while-error: the last known non-empty news:v2 snapshot
+  // is served WITHOUT being re-cached as fresh, and a true cold start
+  // surfaces the honest 502 to the client.
+  if (deduped.length === 0) {
+    throw new Error("[news] upstream feed returned 0 usable items");
+  }
+
   await translateTitles(deduped);
   return deduped;
 }
 
 /** the shared producer — /api/news and searchNews both ride this entry */
 export function getNewsFeed(): Promise<NewsItem[]> {
-  return cached("news:v1", 15 * 60_000, loadNews);
+  // fix cycle-294: key bumped v1 -> v2 to shed the empty-outage row that
+  // was already sitting in L2 (an L2 fresh hit bypasses the producer, so
+  // the throw guard alone could not clear a poisoned row)
+  return cached("news:v2", 15 * 60_000, loadNews);
 }
 
 // ---------------- cycle-202: news joins the header search ----------------
@@ -229,7 +246,7 @@ export interface NewsSearchResult {
   hl?: { fa: [number, number] | null; en: [number, number] | null };
 }
 
-/** cycle-202: WARM-ONLY fold of the news:v1 feed — search must NEVER
+/** cycle-202: WARM-ONLY fold of the news:v2 feed — search must NEVER
  *  trigger the ~20s cold producer inside a keystroke request, so an
  *  absent/expired cache answers [] (honest absence; the section hides).
  *  Normalized on BOTH titles (the Persian one the portal displays and
@@ -237,7 +254,7 @@ export interface NewsSearchResult {
 export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult[]> {
   const nq = normalizeQuery(q);
   if (nq.length < 2) return [];
-  const hit = await cacheGetDeep<NewsItem[]>("news:v1");
+  const hit = await cacheGetDeep<NewsItem[]>("news:v2");
   if (!hit || hit.stale) return [];
   const scored: { it: NewsItem; score: number }[] = [];
   for (const it of hit.value) {
