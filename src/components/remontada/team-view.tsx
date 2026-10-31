@@ -580,9 +580,15 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
           <div className="flex items-center gap-2.5 rounded-xl border border-gold/25 bg-gold/[0.06] px-3 py-2">
             <span className="text-gold text-[11px] font-black shrink-0">سرمربی</span>
             <span className="h-3 w-px bg-gold/30 shrink-0" aria-hidden="true" />
-            <p className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#e6f0fb]">
+            {/* cycle-255: the chip now routes to the coach profile (/coach/[id]) —
+                the squad.coach id is the playerData coach id-space */}
+            <Link
+              href={`/coach/${squad.coach.id}`}
+              className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#e6f0fb] hover:text-sky-soft transition-colors tap-hit-row"
+              prefetch={false}
+            >
               {squad.coach.name}
-            </p>
+            </Link>
             <p className="text-[9.5px] text-steel/80 tabular-persian shrink-0">
               {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
                 .filter(Boolean)

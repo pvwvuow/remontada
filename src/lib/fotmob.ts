@@ -3,7 +3,7 @@
 // Primary:  FotMob (unofficial, keyless)
 // Fallback: ESPN public APIs
 // ------------------------------------------------------------------
-import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "./leagues";
+import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa, countryFa } from "./leagues";
 import { cached } from "./cache";
 import { faDigits, jalaliShort } from "./format";
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
@@ -5808,8 +5808,20 @@ export class PlayerNotFoundError extends Error {}
 
 const PLAYER_NOT_FOUND = { __remontadaPlayerNotFound: true } as const;
 
+// cycle-255: identity check alone is NOT enough — cached() persists values to
+// the L2 SQLite, and a JSON round-trip re-creates the sentinel as a NEW object
+// (proven live: post-restart /api/player/<unknown> answered 502 instead of 404).
+// The structural check survives the round-trip for BOTH the player and coach
+// read paths.
+function isPlayerSentinel(v: unknown): boolean {
+  return typeof v === "object" && v !== null && "__remontadaPlayerNotFound" in v;
+}
+
 interface FMPlayerInfoEntry {
   title?: string;
+  // cycle-255: stable upstream key ("age_sentencecase"/"country_sentencecase")
+  // — coach profile reads it for age/country; titles stay unmapped (english)
+  translationKey?: string;
   value?: { numberValue?: number; fallback?: unknown; key?: string | null; dateValue?: string } | null;
   icon?: { id?: string } | null;
 }
@@ -5817,6 +5829,17 @@ interface FMPlayerDetails {
   id?: number;
   name?: string;
   isCoach?: boolean;
+  // cycle-255 probed (UA Chrome/124, 2026-10-31, Xabi Alonso id 30889): the
+  // current-bench record block — teamId/teamName/teamColors + matches/wins/
+  // draws/losses. Optional: player payloads answer null.
+  coachStats?: {
+    activeCareerEntry?: {
+      teamId?: number; teamName?: string;
+      teamColors?: Record<string, string>;
+      startDate?: string | null; endDate?: string | null;
+      matches?: number; wins?: number; draws?: number; losses?: number;
+    } | null;
+  } | null;
   // cycle-86 probed: explicit false for non-captains, absent on some payloads
   isCaptain?: boolean;
   status?: string;
@@ -5852,7 +5875,10 @@ interface FMPlayerDetails {
   }[] | null;
   // cycle-20: career path + trophies (both optional — many players lack them)
   careerHistory?: {
-    careerItems?: Partial<Record<"senior" | "youth" | "national team", { teamEntries?: FMCareerEntry[] | null } | null>> | null;
+    // cycle-255: "coach" joined the union — playerData serves coaches too and
+    // the coach page reads careerItems.coach.teamEntries[] (stints); the
+    // player-side senior/youth/national-team reads are untouched.
+    careerItems?: Partial<Record<"senior" | "youth" | "national team" | "coach", { teamEntries?: FMCareerEntry[] | null } | null>> | null;
   } | null;
   trophies?: {
     playerTrophies?: {
@@ -6915,7 +6941,7 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
     return normalizePlayer(raw, id);
   });
-  if (payload === PLAYER_NOT_FOUND || !payload || typeof payload !== "object") {
+  if (payload === PLAYER_NOT_FOUND || isPlayerSentinel(payload) || !payload || typeof payload !== "object") {
     throw new PlayerNotFoundError(`player ${id} not found`);
   }
   // cycle-189: the root nameFa is a single playerFa(raw.name) call — re-apply
@@ -9142,4 +9168,129 @@ export async function getLeagueTitleHistory(leagueKey: string, season?: string):
   if (items.length === 0) return null;
   // upstream serves seasons[] NEWEST-first (probed: seasons[0] = 2025/2026) — serve as-is.
   return { total: items.length, items };
+}
+
+// ---------------- FotMob: coach profile (cycle-255 «صفحهٔ مربی») ----------------
+// playerData serves COACHES too (probed live 2026-10-31, UA Chrome/124,
+// Xabi Alonso id 30889 — Chelsea's bench): isCoach=true + coachStats.
+// activeCareerEntry (current bench W/D/L: 11/6/1/4) + careerHistory.careerItems.
+// coach.teamEntries[] (stints with startDate/endDate/active) + the shared
+// playerTrophies block. Non-coach ids (plain players) → the sentinel →
+// CoachNotFoundError → honest 404, same contract as getPlayerData.
+
+export class CoachNotFoundError extends Error {}
+
+export interface CoachStint {
+  teamId: number;
+  team: string;   // english name
+  fa: string;     // teamFa map hit else english fallback
+  logo: string;
+  from: string;   // gregorian year (faDigits applied in the UI)
+  to: string;     // gregorian year or "" while active
+  active: boolean;
+}
+
+export interface CoachData {
+  id: string;
+  name: string;
+  age: number | null;
+  countryFa: string | null; // countryFa() hit; null → the UI falls back to english
+  countryEn: string | null;
+  team: {
+    id: number; name: string; fa: string; logo: string;
+    matches: number; wins: number; draws: number; losses: number;
+  } | null;
+  career: CoachStint[];
+  trophies: { teamName: string; leagueName: string; seasonsWon: string[]; runnerUp: number }[];
+}
+
+function coachInfoRow(raw: FMPlayerDetails, translationKey: string): { text: string | null; num: number | null } {
+  const rows = Array.isArray(raw.playerInformation)
+    ? raw.playerInformation
+    : Object.values(raw.playerInformation || {});
+  for (const r of rows) {
+    if (r?.translationKey !== translationKey) continue;
+    const v = r.value || {};
+    const num = typeof v.numberValue === "number" ? v.numberValue : null;
+    const text = typeof v.fallback === "string" && v.fallback ? v.fallback : num != null ? String(num) : null;
+    return { text, num };
+  }
+  return { text: null, num: null };
+}
+
+/**
+ * Full coach payload for the SSR /coach/[id] page + /api/coach/[id].
+ * Same error contract as getPlayerData: unknown/non-coach id → cached
+ * sentinel → CoachNotFoundError (real 404); upstream/network failure →
+ * the error propagates (nothing cached → the next request retries).
+ */
+export async function getCoachData(id: string): Promise<CoachData> {
+  if (!/^\d{3,12}$/.test(id)) throw new CoachNotFoundError(`bad coach id: ${id}`);
+  const payload = await cached(`coach:v1:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
+    const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
+    if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
+    if (!raw.name || !raw.id || raw.isCoach !== true) return PLAYER_NOT_FOUND;
+
+    // current bench record (optional — some coach payloads answer without it)
+    const ace = raw.coachStats?.activeCareerEntry || null;
+    const team = ace && ace.teamId && ace.teamName
+      ? {
+          id: ace.teamId,
+          name: ace.teamName,
+          fa: teamFa(ace.teamName) || ace.teamName,
+          logo: fotmobTeamLogo(ace.teamId),
+          matches: Number(ace.matches || 0),
+          wins: Number(ace.wins || 0),
+          draws: Number(ace.draws || 0),
+          losses: Number(ace.losses || 0),
+        }
+      : null;
+
+    // stints — upstream order kept (newest first on the probe); the active
+    // flag renders the «اکنون» badge and clears the end year
+    const entries = raw.careerHistory?.careerItems?.coach?.teamEntries || [];
+    const career: CoachStint[] = entries
+      .filter((e) => e && e.team && e.teamId)
+      .map((e) => ({
+        teamId: Number(e.teamId),
+        team: String(e.team),
+        fa: teamFa(String(e.team)) || String(e.team),
+        logo: fotmobTeamLogo(Number(e.teamId)),
+        from: e.startDate ? String(e.startDate).slice(0, 4) : "",
+        to: e.active ? "" : e.endDate ? String(e.endDate).slice(0, 4) : "",
+        active: !!e.active,
+      }));
+
+    // shared trophies block — the player-honours normalization, reused
+    const trophies: CoachData["trophies"] = [];
+    for (const pt of raw.trophies?.playerTrophies || []) {
+      for (const t of pt.tournaments || []) {
+        const won = t.seasonsWon || [];
+        const runnerUp = (t.seasonsRunnerUp || []).length;
+        if (won.length === 0 && runnerUp === 0) continue;
+        trophies.push({ teamName: pt.teamName || "", leagueName: t.leagueName || "", seasonsWon: won, runnerUp });
+      }
+    }
+    trophies.sort((a, b) => b.seasonsWon.length - a.seasonsWon.length);
+
+    const country = coachInfoRow(raw, "country_sentencecase");
+    const age = coachInfoRow(raw, "age_sentencecase");
+
+    return {
+      id: String(raw.id),
+      name: String(raw.name),
+      age: age.num,
+      countryFa: country.text ? countryFa(country.text) || null : null,
+      countryEn: country.text,
+      team,
+      career,
+      trophies: trophies.slice(0, 12),
+    };
+  });
+  if (payload === PLAYER_NOT_FOUND || isPlayerSentinel(payload) || !payload || typeof payload !== "object") {
+    throw new CoachNotFoundError(`coach ${id} not found`);
+  }
+  // same explicit cast as getPlayerData — the cached<T> union doesn't narrow
+  // by the sentinel identity check alone
+  return payload as CoachData;
 }
