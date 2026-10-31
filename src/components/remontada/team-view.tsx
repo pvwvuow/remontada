@@ -1629,13 +1629,40 @@ export function TeamView({ teamId }: { teamId: number }) {
 
   if (loading && !data) {
     return (
+      /* ui-cycle-30: fidelity skeleton — the old stub (centered 64px block +
+         two bars + one h-40 card ≈ 250px) made the cold-start page jump from
+         623px to 13,913px of layout when the real content landed. This
+         skeleton mirrors the real first-paint shape: the glass-hero card with
+         the 72px glyph slot, the RTL name/meta/form-chip stack, then three
+         row cards — same classes, same RTL order, so the swap is a settle,
+         not a lurch. sr-only h1 keeps the one-h1-per-state a11y contract
+         (same class as the error shell, cycle-74/84). */
       <div className="flex flex-col gap-4" aria-busy="true">
-        <div className="glass-card p-8 flex flex-col items-center gap-4">
-          <div className="w-16 h-16 rounded bg-white/[0.05] animate-pulse" />
-          <div className="h-5 w-40 rounded bg-white/[0.05] animate-pulse" />
-          <div className="h-3 w-24 rounded bg-white/[0.05] animate-pulse" />
-        </div>
-        <div className="glass-card h-40 animate-pulse" />
+        <h1 className="sr-only">صفحه تیم</h1>
+        <section className="glass-card glass-hero overflow-hidden">
+          <div className="p-5 flex items-center gap-4">
+            <span className="brand-glyph w-[72px] h-[72px] flex items-center justify-center shrink-0">
+              <span className="block w-14 h-14 rounded-lg bg-white/[0.05] animate-pulse" />
+            </span>
+            <div className="min-w-0 flex-1 flex flex-col gap-2">
+              <div className="h-5 w-44 rounded bg-white/[0.05] animate-pulse" />
+              <div className="h-3 w-52 max-w-full rounded bg-white/[0.05] animate-pulse" />
+              <div className="flex items-center gap-1.5 mt-1">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <span key={i} className="w-[22px] h-[22px] rounded-md bg-white/[0.05] animate-pulse" />
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="glass-card p-4 flex flex-col gap-2.5">
+            <div className="h-3.5 w-28 rounded bg-white/[0.05] animate-pulse" />
+            {[0, 1, 2].map((j) => (
+              <div key={j} className="h-4 rounded bg-white/[0.05] animate-pulse" style={{ width: `${88 - j * 17}%` }} />
+            ))}
+          </div>
+        ))}
       </div>
     );
   }
