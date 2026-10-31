@@ -18,7 +18,9 @@
   ],
   "shortcuts": [
     { "name": "نتایج زنده", "url": "/", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "لیگ‌ها", "url": "/leagues", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "آقای گلان", "url": "/topscorers", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "بازیکنان", "url": "/players", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "اخبار", "url": "/news", "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }] }
   ]
 }
