@@ -7400,7 +7400,12 @@ export async function searchTeams(q: string, limit = 8): Promise<TeamSearchResul
     }
     if (score > 0) scored.push({ e, score, matchedOn });
   }
-  scored.sort((a, b) => b.score - a.score || a.e.rank - b.e.rank);
+  // update cycle-252: same cross-league tie-break fix as the player search
+  // below — the U18 squad's table rank 1 outranked the senior side's PL
+  // rank 1; feed-depot entries (leagueKey «feed-…») demote below catalogued
+  // leagues so the senior team answers first.
+  const feedDep = (e: TeamIndexEntry) => (e.leagueKey?.startsWith("feed-") ? 1 : 0);
+  scored.sort((a, b) => b.score - a.score || feedDep(a.e) - feedDep(b.e) || a.e.rank - b.e.rank);
   return scored.slice(0, limit).map(({ e, matchedOn }) => {
     const faRange = rangeOf(e.fa || "", nq);
     const nameRange = rangeOf(e.name || "", nq);
@@ -7672,7 +7677,15 @@ export async function searchPlayers(q: string, limit = 6): Promise<PlayerSearchR
     }
     if (score > 0) scored.push({ e, score, matchedOn });
   }
-  scored.sort((a, b) => b.score - a.score || a.e.rank - b.e.rank);
+  // update cycle-252: the rank tie-break was cross-league and lost sight of
+  // seniority — «Chelsea» returned Chelsea U18 first because both entries
+  // scored 80 (aliases start with the query) and the youth side's rank 0 in
+  // its U18 table beat the senior side's rank 1 in the PL table. League
+  // ranks are only comparable inside one league, so non-catalogued feeds
+  // (leagueKey «feed-…»: U18/development/qualifying squads) now sort after
+  // every catalogued league before rank is consulted. Zero upstream cost.
+  const feedDep = (e: PlayerIndexEntry) => (e.leagueKey?.startsWith("feed-") ? 1 : 0);
+  scored.sort((a, b) => b.score - a.score || feedDep(a.e) - feedDep(b.e) || a.e.rank - b.e.rank);
   return scored.slice(0, limit).map(({ e, matchedOn }) => {
     const faRange = rangeOf(e.fa || "", nq);
     const nameRange = rangeOf(e.name || "", nq);
