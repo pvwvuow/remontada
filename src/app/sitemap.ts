@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { LEAGUES } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
-import { getStandings } from "@/lib/fotmob";
+import { getStandings, getTeamSquad } from "@/lib/fotmob";
 
 // cycle-20: the sitemap now also lists /player/[id] pages for the top
 // scorers of every league (playerId comes with the standings payload).
@@ -63,5 +63,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...staticRoutes, ...leagueRoutes, ...scorersRoutes, ...teamRoutes, ...playerRoutes];
+  // cycle-286: the last page class missing from the sitemap — /coach/[id]
+  // profiles. Same spirit as fix cycle-33 (popular team pages belong in the
+  // sitemap): the current coach of every popular team, read from the squad
+  // payload we already fetch (getTeamSquad → squad.coach.id) — no new
+  // upstream surface, failures swallowed per-team so the sitemap always
+  // renders. Coach careers change slowly → weekly cadence.
+  const coachRoutes: MetadataRoute.Sitemap = [];
+  const seenCoaches = new Set<number>();
+  const squadSettled = await Promise.allSettled(popularTeamIds.map((id) => getTeamSquad(id)));
+  for (const r of squadSettled) {
+    if (r.status !== "fulfilled" || !r.value?.coach?.id) continue;
+    const coachId = r.value.coach.id;
+    if (seenCoaches.has(coachId)) continue;
+    seenCoaches.add(coachId);
+    coachRoutes.push({
+      url: `${SITE_URL}/coach/${coachId}`,
+      lastModified: now,
+      changeFrequency: "weekly" as const,
+      priority: 0.5,
+    });
+  }
+
+  return [...staticRoutes, ...leagueRoutes, ...scorersRoutes, ...teamRoutes, ...playerRoutes, ...coachRoutes];
 }
