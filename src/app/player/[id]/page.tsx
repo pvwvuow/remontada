@@ -10,6 +10,7 @@ import { notFound } from "next/navigation";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { PlayerProfile } from "@/components/remontada/player-profile";
 import { PlayerNotFoundError, getPlayerData, type PlayerData } from "@/lib/fotmob";
+import { RSS_ALTERNATE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -28,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: `${display} — پروفایل بازیکن`,
       description: desc,
-      alternates: { canonical: `/player/${id}` },
+      alternates: { canonical: `/player/${id}`, ...RSS_ALTERNATE },
       openGraph: { title: `${display} — پروفایل بازیکن | رمانتادا`, description: desc, type: "profile" },
     };
   } catch {

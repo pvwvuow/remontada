@@ -4208,3 +4208,16 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون رسمی ۲۸/۲۸ (BASE صریح) ← DOM با agent-browser در 390×844: h1=«اخبار فوتبال»، ۲ بلوک LD، ۱۸ ردیف خبر با ۱۶ تیتر فارسی، بدون overflow، کنسول session تازه **۰ خط**.
 
 **نوبت گردشی بعدی: cycle-295 = آپدیت** (فرمول ((295 mod 5)+1)=۱)
+
+### Task ID: cycle-295 — آپدیت (فید RSS 2.0 خبری — شکاف واقعی توزیع، کشف این چرخه)
+
+**تاریخ:** ۲۰۲۶-۱۱-۰۱ ~۰۵:۲۵ تهران · **ورودی:** هر سه نامِ باقی‌ماندهٔ رسمی (انتخابگر فصل، براکت جام‌ها، انتقال‌ها) با بازبینی کد زنده **از قبل فعال** بودند (league-view ترتیب ۱۱۳۸/۱۱۴۲ + team-view ۱۵۹۸ + قرارداد فصل cycle-99/180/182) و هیچ کارتی از ۲۹۰-۲۹۴ شکاف تازه اعلام نکرده بود — پس شکاف با گشت زندهٔ خودِ چرخه پیدا شد: مقایسهٔ پارتی API/UI (همهٔ ۲۵ هم‌خوان deep-file رندر می‌شوند؛ کلیدهای خام payload مسابقه/تیم/لیگ همه مصرف‌شده) و پروب zندهٔ خبری با UA Chrome/124 ⇒ **هیچ مسیر rss/atom/feed در کل اپ وجود نداشت** — خبر یکی از ۵ سطح dock است و تنها سطحی بود که مصرف‌کننده داشت اما سطح توزیع نداشت.
+
+**افزودنی خالص در سه لایه:**
+1. **`src/app/rss.xml/route.ts` (جدید):** فید RSS 2.0 بدون وابستگی، از همان producer ۱۵ دقیقه‌ای getNewsFeed (news:v2 با گارد cycle-294 — قطعی سرد آپاستریم اینجا هم 502 صادقانه می‌دهد، هرگز کانال خالی دروغین). قرارداد آینهٔ صفحه: title = titleFa||title (قرارداد خود NewsItem)، ترتیب producer (LD=UI=data=feed)، سقف ۵۰ آیتم، حذف آیتم بدون لینک (الزام spec؛ پروب زنده: ۱۶/۱۶ لینک‌دار). **کشف entity آپاستریم:** رشته‌های JSON از قبل HTML-entity دارند (لینک BBC به‌طور واقعی `&amp;` بایت‌به‌بایت در JSON دارد) ⇒ xmlText() اول entityهای نامی/عددی رایج را decode و بعد XML-escape می‌کند تا خروجی بایت‌درست باشد (double-escape ممنوع). اثبات: `at_medium=RSS&at_campaign` با & تک‌گانه decode می‌شود.
+2. **`src/lib/site.ts` — RSS_ALTERNATE:** درس merge سطحی metadata: صفحهٔ دارای `alternates` خودش، کل alternates لایه‌وت را (شامل types) پاک می‌کند — الگوی canonical چرخهٔ ۲۸۹ یک لایه عمیق‌تر.
+3. **پارتی head در ۱۰ سگمنت canonical‌دار:** layout + leagues/news (۲۸۹) + league/[key] + team/[id] + players + topscorers + topscorers/[leagueKey] + player/[id] + coach/[id] + match/[id] — همگی `...RSS_ALTERNATE` را spread می‌کنند؛ شاخه‌های noindex (`alternates: {}`، قرارداد fix-33) **عمداً دست‌نخورده** ماندند (اثبات: /team/abc و /player/abc و /match/abc بدون لینک فید).
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (مسیر ƒ /rss.xml در فهرست روت‌ها) ← استارت رسمی try=2/200 ← رگرسیون رسمی ۲۸/۲۸ (BASE صریح) ← `/rss.xml` با curl: HTTP 200، content-type `application/rss+xml; charset=utf-8`، XML معتبر (ElementTree parse شد)، ۱۶ آیتم با تیتر فارسی، pubDate RFC-822، lastBuildDate، atom:link self ← پارتی head با curl روی ۱۱ کلاس صفحه: ۱۱/۱۱ لینک فید + ۳/۳ پوسته noindex تمیز (درس ابزاری: curlهای بلافاصله بعد از restart ممکن است به پروسهٔ در حال تحویل قدیم بخورد — سنجهٔ پارتی باید بعد از گرم‌شدن سرور تکرار شود) ← DOM با agent-browser در 390×844 (session تازه): /news با h1=«اخبار فوتبال»، rssHeadLink=true با href مطلق درست، ۱۷ ردیف خبر خارجی، بدون overflow، کنسول **۰ خط**؛ صفحهٔ اصلی هم rssHeadLink=true، بدون overflow، کنسول **۰ خط**.
+
+**نوبت گردشی بعدی: cycle-296 = آپدیت** (فرمول ((296 mod 5)+1)=۲)

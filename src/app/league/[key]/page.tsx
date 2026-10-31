@@ -4,7 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LEAGUES } from "@/lib/leagues";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // unknown league keys → hard 404 (only the 10 known competitions are valid)
 export const dynamicParams = false;
@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: { params: Promise<{ key: stri
   return {
     title: `${name} | جدول، برنامه و نتایج`,
     description: `جدول رده‌بندی، برنامه بازی‌ها، نتایج اخیر و آقای گل ${name} — رمانتادا، مرجع فارسی فوتبال`,
-    alternates: { canonical: `/league/${key}` },
+    alternates: { canonical: `/league/${key}`, ...RSS_ALTERNATE },
   };
 }
 

@@ -4,7 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getMatchLdData } from "@/lib/fotmob";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // ---- dynamic SEO (cycle 29) ------------------------------------------------
 // Title/description from the same cached match payload the JSON-LD uses:
@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title,
       description: desc,
-      alternates: { canonical: `/match/${id}` },
+      alternates: { canonical: `/match/${id}`, ...RSS_ALTERNATE },
       openGraph: { title: `${title} | رمانتادا`, description: desc },
     };
   } catch {

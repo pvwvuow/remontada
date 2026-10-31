@@ -61,7 +61,12 @@ export const metadata: Metadata = {
   ],
   applicationName: SITE_NAME,
   manifest: "/manifest.webmanifest",
-  alternates: { canonical: "/" },
+  // cycle-295 additive: advertise the RSS feed (src/app/rss.xml) in every
+  // page's head — the sitewide discovery surface of the news feed.
+  alternates: {
+    canonical: "/",
+    types: { "application/rss+xml": "/rss.xml" },
+  },
   openGraph: {
     title: TITLE_DEFAULT,
     description: DESCRIPTION,

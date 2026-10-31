@@ -14,6 +14,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { CoachView } from "@/components/remontada/coach-view";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { CoachNotFoundError, getCoachData, type CoachData } from "@/lib/fotmob";
+import { RSS_ALTERNATE } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +31,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title: `${display} — پروفایل مربی`,
       description: desc,
-      alternates: { canonical: `/coach/${id}` },
+      alternates: { canonical: `/coach/${id}`, ...RSS_ALTERNATE },
       openGraph: { title: `${display} — پروفایل مربی | رمانتادا`, description: desc, type: "profile" },
     };
   } catch {

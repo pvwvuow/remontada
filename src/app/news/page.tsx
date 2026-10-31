@@ -4,13 +4,13 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getNewsFeed, type NewsItem } from "@/lib/news";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "اخبار فوتبال",
   description: "آخرین اخبار داغ فوتبال جهان از ESPN، BBC Sport و Sky Sports با ترجمه فارسی — رمانتادا",
   // fix cycle-289: self canonical — previously inherited the layout root "/"
-  alternates: { canonical: "/news" },
+  alternates: { canonical: "/news", ...RSS_ALTERNATE },
 };
 
 export default async function NewsPage() {

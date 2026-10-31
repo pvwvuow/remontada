@@ -4,7 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getAllTopScorers, type GlobalScorer } from "@/lib/fotmob";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 const TITLE = "بازیکنان برتر لیگ‌های بزرگ";
 const DESCRIPTION =
@@ -13,7 +13,7 @@ const DESCRIPTION =
 export const metadata: Metadata = {
   title: TITLE,
   description: DESCRIPTION,
-  alternates: { canonical: "/players" },
+  alternates: { canonical: "/players", ...RSS_ALTERNATE },
   openGraph: {
     title: `${TITLE} | رمانتادا`,
     description: DESCRIPTION,

@@ -4,7 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getTeamIndex } from "@/lib/fotmob";
-import { SITE_URL } from "@/lib/site";
+import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // ---- dynamic SEO (cycle 29) ------------------------------------------------
 // Team pages used to ship a generic static title and no structured data.
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     return {
       title,
       description: desc,
-      alternates: { canonical: `/team/${id}` },
+      alternates: { canonical: `/team/${id}`, ...RSS_ALTERNATE },
       openGraph: { title: `${name} — صفحه تیم | رمانتادا`, description: desc },
     };
   } catch {
