@@ -9294,3 +9294,75 @@ export async function getCoachData(id: string): Promise<CoachData> {
   // by the sentinel identity check alone
   return payload as CoachData;
 }
+
+// ---------------- coach search (cycle-256) ----------------
+// cycle-255 built the /coach/[id] surface (playerData serves coaches); this
+// cycle makes coaches FINDABLE from the header search. The index is a
+// live-probed SEED — same curated-seed convention as SEARCH_FALLBACK_TEAMS:
+// every entry read from the real data/teams?id=X .coach block (UA Chrome/124,
+// 2026-10-31, 30 clubs of the catalogued leagues; Iranian clubs' payloads
+// honestly lack the coach object → absent until a richer source exists).
+// Search-time cost: ZERO upstream fetches (static array); team fa names ride
+// teamFa at match time; rows link the club badge (no coach headshots exist).
+
+export interface CoachSearchResult {
+  id: number;       // coach id (the playerData id-space → /coach/[id])
+  name: string;     // upstream english name
+  teamId: number;   // current club (badge + fa chip in the UI)
+  teamName: string; // english club name
+}
+
+const COACH_SEED: CoachSearchResult[] = [
+  { id: 24011, name: "Mikel Arteta", teamId: 9825, teamName: "Arsenal" },
+  { id: 2642, name: "Diego Simeone", teamId: 9906, teamName: "Atlético Madrid" },
+  { id: 131509, name: "Hans-Dieter Flick", teamId: 8634, teamName: "Barcelona" },
+  { id: 1515447, name: "Carles Martínez", teamId: 8178, teamName: "Bayer Leverkusen" },
+  { id: 1415967, name: "Aaron Danks", teamId: 9823, teamName: "Bayern München" },
+  { id: 33072, name: "Niko Kovač", teamId: 9789, teamName: "Borussia Dortmund" },
+  { id: 38711, name: "Keith Andrews", teamId: 9937, teamName: "Brentford" },
+  { id: 208516, name: "Fabian Hürzeler", teamId: 10204, teamName: "Brighton & Hove Albion" },
+  { id: 30889, name: "Xabi Alonso", teamId: 8455, teamName: "Chelsea" },
+  { id: 30613, name: "Cesc Fàbregas", teamId: 10171, teamName: "Como" },
+  { id: 94647, name: "Vincent Wagner", teamId: 8232, teamName: "Elversberg" },
+  { id: 36771, name: "Julian Schuster", teamId: 8358, teamName: "Freiburg" },
+  { id: 1188285, name: "Massimiliano Alvini", teamId: 9891, teamName: "Frosinone" },
+  { id: 27692, name: "Cristian Chivu", teamId: 8636, teamName: "Inter" },
+  { id: 30721, name: "Gennaro Gattuso", teamId: 8543, teamName: "Lazio" },
+  { id: 1108529, name: "Davide Ancelotti", teamId: 8639, teamName: "Lille" },
+  { id: 33025, name: "Andoni Iraola", teamId: 8650, teamName: "Liverpool" },
+  { id: 361759, name: "Paulo Fonseca", teamId: 9748, teamName: "Lyon" },
+  { id: 34000, name: "Enzo Maresca", teamId: 8456, teamName: "Manchester City" },
+  { id: 11754, name: "Ruben Amorim", teamId: 8564, teamName: "Milan" },
+  { id: 41167, name: "Filipe Luís", teamId: 9829, teamName: "Monaco" },
+  { id: 24105, name: "Liam Rosenior", teamId: 6379, teamName: "Paris FC" },
+  { id: 11532, name: "Luis Enrique", teamId: 9847, teamName: "Paris Saint-Germain" },
+  { id: 30459, name: "Martín Demichelis", teamId: 178475, teamName: "RB Leipzig" },
+  { id: 78591, name: "Manuel Pellegrini", teamId: 8603, teamName: "Real Betis" },
+  { id: 78719, name: "José Mourinho", teamId: 8633, teamName: "Real Madrid" },
+  { id: 27204, name: "Pellegrino Matarazzo", teamId: 8560, teamName: "Real Sociedad" },
+  { id: 804046, name: "Franck Haise", teamId: 9851, teamName: "Rennes" },
+  { id: 96945, name: "Gian Piero Gasperini", teamId: 8686, teamName: "Roma" },
+  { id: 242474, name: "Luis García", teamId: 8302, teamName: "Sevilla" },
+];
+
+/** Header-search coach bucket — same fold/scoring family as searchLeagues.
+ *  Haystack = coach name + club en/fa; the static seed answers instantly. */
+export function searchCoaches(q: string, limit = 4): CoachSearchResult[] {
+  const nq = normalizeQuery(q);
+  if (nq.length < 2) return [];
+  const scored: { e: CoachSearchResult; score: number }[] = [];
+  for (const e of COACH_SEED) {
+    const hay = normalizeQuery(`${e.name} ${e.teamName} ${teamFa(e.teamName) || e.teamName}`);
+    let score = -1;
+    if (hay === nq) score = 100;
+    else if (hay.startsWith(nq)) score = 80;
+    else if (hay.includes(nq)) score = 50;
+    else {
+      const words = nq.split(" ");
+      if (words.length > 1 && words.every((w) => hay.includes(w))) score = 40;
+    }
+    if (score > 0) scored.push({ e, score });
+  }
+  scored.sort((a, b) => b.score - a.score || a.e.name.localeCompare(b.e.name));
+  return scored.slice(0, limit).map(({ e }) => e);
+}

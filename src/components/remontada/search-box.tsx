@@ -7,7 +7,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { TeamSearchResult, PlayerSearchResult, LeagueSearchResult } from "@/lib/fotmob";
 import type { NewsSearchResult } from "@/lib/news";
-import { fotmobTeamLogo } from "@/lib/leagues";
+import { fotmobTeamLogo, teamFa } from "@/lib/leagues";
+import type { CoachSearchResult } from "@/lib/fotmob";
 import { useFavorites } from "@/lib/favorites";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { faDigits, timeAgoFa } from "@/lib/format";
@@ -51,6 +52,10 @@ export function SearchBox() {
   // players, every row the real external article (warm-only index: an
   // unwarmed feed answers [] and the section honestly hides)
   const [news, setNews] = useState<NewsSearchResult[]>([]);
+  // cycle-256: coaches join the same additive way — a «مربی‌ها» section
+  // between leagues and players, every row a real /coach/{id} link backed
+  // by the cycle-255 profile page
+  const [coaches, setCoaches] = useState<CoachSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [active, setActive] = useState(0); // keyboard-highlighted result
   const favorites = useFavorites();
@@ -106,6 +111,7 @@ export function SearchBox() {
       setPlayers([]);
       setLeagues([]);
       setNews([]);
+      setCoaches([]);
       setLoading(false);
       return;
     }
@@ -119,6 +125,7 @@ export function SearchBox() {
           setPlayers((json.players ?? []) as PlayerSearchResult[]);
           setLeagues((json.leagues ?? []) as LeagueSearchResult[]);
           setNews((json.news ?? []) as NewsSearchResult[]);
+          setCoaches((json.coaches ?? []) as CoachSearchResult[]);
           setActive(0);
         }
       } catch {
@@ -141,11 +148,21 @@ export function SearchBox() {
   // cycle-166: keyboard selection spans teams first, then the players section
   // cycle-200: the span is teams → leagues → players (matches the render order)
   // cycle-202: the span extends to news (teams → leagues → players → خبرها)
-  const totalRows = results.length + leagues.length + players.length + news.length;
+  // cycle-256: the span extends to coaches (teams → leagues → مربی‌ها → players → خبرها)
+  const totalRows = results.length + leagues.length + coaches.length + players.length + news.length;
   const goPlayer = useCallback(
     (playerId: number) => {
       setOpen(false);
       router.push(`/player/${playerId}`);
+    },
+    [router]
+  );
+
+  // cycle-256: coach rows navigate the cycle-255 profile page
+  const goCoach = useCallback(
+    (coachId: number) => {
+      setOpen(false);
+      router.push(`/coach/${coachId}`);
     },
     [router]
   );
@@ -248,7 +265,7 @@ export function SearchBox() {
                 <p className="text-[11.5px] text-muted-foreground text-center py-6 px-4">
                   حداقل {faDigits(2)} حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های {faDigits(24)} لیگ و جام
                 </p>
-              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 && news.length === 0 ? (
+              ) : !loading && results.length === 0 && leagues.length === 0 && players.length === 0 && news.length === 0 && coaches.length === 0 ? (
                 <div className="py-4 px-4 flex flex-col items-center gap-3">
                   <p className="text-[11.5px] text-muted-foreground">تیمی یا بازیکنی با این نام پیدا نشد.</p>
                   <div className="w-full">
@@ -358,12 +375,59 @@ export function SearchBox() {
                 </div>
               )}
 
+              {/* ---------- cycle-256: the coach seed joins the search ---------- */}
+              {coaches.length > 0 && (
+                <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5" data-testid="search-coaches">
+                  <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">مربی‌ها</p>
+                  <ul className="px-1.5 flex flex-col">
+                    {coaches.map((c, i) => {
+                      const idx = results.length + leagues.length + i;
+                      return (
+                        <li key={c.id}>
+                          <button
+                            type="button"
+                            onClick={() => goCoach(c.id)}
+                            onMouseEnter={() => setActive(idx)}
+                            className={cn(
+                              "w-full flex items-center gap-2.5 ps-4 pe-2.5 py-2 rounded-xl text-start transition-colors",
+                              idx === active ? "cmd-active" : "hover:bg-white/[0.05]"
+                            )}
+                          >
+                            {/* no coach headshots exist upstream — the club badge rides in */}
+                            <img
+                              src={fotmobTeamLogo(c.teamId)}
+                              alt=""
+                              width={22}
+                              height={22}
+                              loading="lazy"
+                              className="w-[22px] h-[22px] object-contain shrink-0"
+                              onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
+                            />
+                            <span className="min-w-0 flex-1">
+                              <span className="block font-bold text-[13px] truncate" dir="auto">
+                                {c.name}
+                              </span>
+                              <span className="block text-[10px] text-muted-foreground truncate">
+                                {teamFa(c.teamName) || c.teamName}
+                              </span>
+                            </span>
+                            <span className="shrink-0 text-[9.5px] font-bold text-muted-foreground border border-[color:var(--glass-border-soft)] bg-white/[0.03] rounded-md px-1.5 py-px">
+                              مربی
+                            </span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
               {players.length > 0 && (
                 <div className="border-t border-[color:var(--glass-hairline)] pt-1 pb-1.5">
                   <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">بازیکنان</p>
                   <ul className="px-1.5 flex flex-col">
                     {players.map((p, i) => {
-                      const idx = results.length + leagues.length + i;
+                      const idx = results.length + leagues.length + coaches.length + i;
                       return (
                         <li key={p.playerId}>
                           <button
@@ -419,7 +483,7 @@ export function SearchBox() {
                   <p className="text-[9.5px] font-bold text-muted-foreground/80 px-4 pt-1.5 pb-1">خبرها</p>
                   <ul className="px-1.5 flex flex-col">
                     {news.map((n, i) => {
-                      const idx = results.length + leagues.length + players.length + i;
+                      const idx = results.length + leagues.length + coaches.length + players.length + i;
                       return (
                         <li key={`${n.source}-${n.publishedAt}-${i}`}>
                           <a
