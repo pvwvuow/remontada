@@ -71,9 +71,23 @@ export default function Home() {
     }
     const m = /^(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(raw);
     const todayNoon = new Date(`${offsetDateISO(0)}T12:00:00Z`).getTime();
-    const req = m ? new Date(`${raw}T12:00:00Z`).getTime() : NaN;
-    if (!m || !Number.isFinite(req)) {
-      // malformed → drop the param; the view honestly stays today
+    // cycle-299 fix (the 298 bug-hunt's registered finding): that regex
+    // accepts impossible calendar dates (2026-02-30, 2026-11-31) which V8
+    // silently rolls over — near a month start the rolled day can land
+    // INSIDE the ±7 window and the URL would keep showing the impossible
+    // date while rendering the rolled day (the 99 contract broken: address
+    // ≠ rendered view). The honest fix is calendar validation by
+    // re-serialization: rebuild YYYY-MM-DD from the parsed date's own UTC
+    // parts (exact — the input was pinned to noon UTC); any mismatch means
+    // the string was never a real day → malformed.
+    const d = m ? new Date(`${raw}T12:00:00Z`) : null;
+    const reser = d
+      ? `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
+      : "";
+    const req = d ? d.getTime() : NaN;
+    if (!m || !Number.isFinite(req) || reser !== raw) {
+      // malformed (bad shape OR impossible calendar date) → drop the param;
+      // the view honestly stays today
       window.history.replaceState(null, "", "/");
       setUrlApplied(true);
       return;
