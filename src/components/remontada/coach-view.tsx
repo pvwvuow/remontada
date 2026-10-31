@@ -61,7 +61,10 @@ export function CoachView({ c }: { c: CoachData }) {
   const personLd = {
     "@context": "https://schema.org",
     "@type": "Person",
-    name: c.name,
+    // cycle-259: Persian rendering first (bug-hunt 258 finding), english as
+    // alternateName when it differs — mirrors the team SportsTeam convention
+    name: c.fa || c.name,
+    ...(c.fa && c.fa !== c.name ? { alternateName: c.name } : {}),
     url: `/coach/${c.id}`,
     jobTitle: "Manager",
     ...(c.team
@@ -88,7 +91,7 @@ export function CoachView({ c }: { c: CoachData }) {
           <div className="min-w-0 flex-1">
             <p className="text-[9.5px] font-black text-gold tracking-wide mb-0.5">سرمربی</p>
             <h1 className="font-black text-lg leading-7 truncate text-[#f1f7fd]" dir="auto">
-              {c.name}
+              {c.fa || c.name}
             </h1>
             <p className="text-[11px] text-steel flex items-center gap-1.5 flex-wrap mt-0.5">
               {subParts.length > 0 && <span className="font-bold text-[#ecf3fa]/85">{subParts.join(" · ")}</span>}
@@ -107,7 +110,7 @@ export function CoachView({ c }: { c: CoachData }) {
               )}
             </p>
           </div>
-          <ShareButton title={`${c.name} — پروفایل مربی | رمانتادا`} path={`/coach/${c.id}`} size={28} />
+          <ShareButton title={`${c.fa || c.name} — پروفایل مربی | رمانتادا`} path={`/coach/${c.id}`} size={28} />
         </div>
       </section>
 

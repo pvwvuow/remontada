@@ -24,13 +24,14 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   }
   try {
     const c = await getCoachData(id);
+    const display = c.fa || c.name; // cycle-259: Persian first (bug-hunt 258 finding)
     const teamName = c.team?.fa || c.team?.name || "";
-    const desc = `کارنامهٔ نیمکت، سوابق هدایت و افتخارات ${c.name}${teamName ? `، سرمربی ${teamName}` : ""} — رمانتادا`;
+    const desc = `کارنامهٔ نیمکت، سوابق هدایت و افتخارات ${display}${teamName ? `، سرمربی ${teamName}` : ""} — رمانتادا`;
     return {
-      title: `${c.name} — پروفایل مربی`,
+      title: `${display} — پروفایل مربی`,
       description: desc,
       alternates: { canonical: `/coach/${id}` },
-      openGraph: { title: `${c.name} — پروفایل مربی | رمانتادا`, description: desc, type: "profile" },
+      openGraph: { title: `${display} — پروفایل مربی | رمانتادا`, description: desc, type: "profile" },
     };
   } catch {
     // missing coach / upstream hiccup — the page itself handles the UX

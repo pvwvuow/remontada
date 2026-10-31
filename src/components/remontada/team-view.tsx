@@ -587,7 +587,8 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
               className="min-w-0 flex-1 truncate text-[12px] font-bold text-[#e6f0fb] hover:text-sky-soft transition-colors tap-hit-row"
               prefetch={false}
             >
-              {squad.coach.name}
+              {/* cycle-259: Persian coach name first (bug-hunt 258 finding) */}
+              {squad.coach.fa || squad.coach.name}
             </Link>
             <p className="text-[9.5px] text-steel/80 tabular-persian shrink-0">
               {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]

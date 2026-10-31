@@ -7813,7 +7813,7 @@ export interface TeamSquad {
   // without a second fetch; UI prefers the Persian name from the standings
   // rows when the team is in the loaded league list
   teamName?: string;
-  coach: { id: number; name: string; age?: number; nationality?: string } | null;
+  coach: { id: number; name: string; fa?: string | null; age?: number; nationality?: string } | null;
   groups: {
     key: "keepers" | "defenders" | "midfielders" | "attackers";
     titleFa: string;
@@ -8056,7 +8056,14 @@ export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
     if (title === "coach") {
       const c = members[0];
       if (c?.id && c.name) {
-        coach = { id: c.id, name: c.name, ...(c.age != null ? { age: c.age } : {}), ...(c.cname ? { nationality: c.cname } : {}) };
+        coach = {
+          id: c.id,
+          name: c.name,
+          // cycle-259 (bug-hunt 258 finding): the chip renders Persian first
+          fa: coachFa(c.id),
+          ...(c.age != null ? { age: c.age } : {}),
+          ...(c.cname ? { nationality: c.cname } : {}),
+        };
       }
       continue;
     }
@@ -9193,6 +9200,9 @@ export interface CoachStint {
 export interface CoachData {
   id: string;
   name: string;
+  // cycle-259: the COACH_FA seed hit (bug-hunt 258 finding — coach h1 rendered
+  // raw english while players ride playerFa). null → the UI falls back to name
+  fa: string | null;
   age: number | null;
   countryFa: string | null; // countryFa() hit; null → the UI falls back to english
   countryEn: string | null;
@@ -9226,7 +9236,7 @@ function coachInfoRow(raw: FMPlayerDetails, translationKey: string): { text: str
  */
 export async function getCoachData(id: string): Promise<CoachData> {
   if (!/^\d{3,12}$/.test(id)) throw new CoachNotFoundError(`bad coach id: ${id}`);
-  const payload = await cached(`coach:v1:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
+  const payload = await cached(`coach:v2:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id || raw.isCoach !== true) return PLAYER_NOT_FOUND;
@@ -9279,6 +9289,7 @@ export async function getCoachData(id: string): Promise<CoachData> {
     return {
       id: String(raw.id),
       name: String(raw.name),
+      fa: coachFa(Number(raw.id)),
       age: age.num,
       countryFa: country.text ? countryFa(country.text) || null : null,
       countryEn: country.text,
@@ -9308,51 +9319,64 @@ export async function getCoachData(id: string): Promise<CoachData> {
 export interface CoachSearchResult {
   id: number;       // coach id (the playerData id-space → /coach/[id])
   name: string;     // upstream english name
+  // cycle-259 (bug-hunt 258 finding): Persian rendering joins the seed — the
+  // search haystack must answer PERSIAN queries («مورینیو»، «آلونسو»،
+  // «پلگرینی») on a Persian-first site, and the UI row + coach h1 render it.
+  fa: string | null;
   teamId: number;   // current club (badge + fa chip in the UI)
   teamName: string; // english club name
 }
 
 const COACH_SEED: CoachSearchResult[] = [
-  { id: 24011, name: "Mikel Arteta", teamId: 9825, teamName: "Arsenal" },
-  { id: 2642, name: "Diego Simeone", teamId: 9906, teamName: "Atlético Madrid" },
-  { id: 131509, name: "Hans-Dieter Flick", teamId: 8634, teamName: "Barcelona" },
-  { id: 1515447, name: "Carles Martínez", teamId: 8178, teamName: "Bayer Leverkusen" },
-  { id: 1415967, name: "Aaron Danks", teamId: 9823, teamName: "Bayern München" },
-  { id: 33072, name: "Niko Kovač", teamId: 9789, teamName: "Borussia Dortmund" },
-  { id: 38711, name: "Keith Andrews", teamId: 9937, teamName: "Brentford" },
-  { id: 208516, name: "Fabian Hürzeler", teamId: 10204, teamName: "Brighton & Hove Albion" },
-  { id: 30889, name: "Xabi Alonso", teamId: 8455, teamName: "Chelsea" },
-  { id: 30613, name: "Cesc Fàbregas", teamId: 10171, teamName: "Como" },
-  { id: 94647, name: "Vincent Wagner", teamId: 8232, teamName: "Elversberg" },
-  { id: 36771, name: "Julian Schuster", teamId: 8358, teamName: "Freiburg" },
-  { id: 1188285, name: "Massimiliano Alvini", teamId: 9891, teamName: "Frosinone" },
-  { id: 27692, name: "Cristian Chivu", teamId: 8636, teamName: "Inter" },
-  { id: 30721, name: "Gennaro Gattuso", teamId: 8543, teamName: "Lazio" },
-  { id: 1108529, name: "Davide Ancelotti", teamId: 8639, teamName: "Lille" },
-  { id: 33025, name: "Andoni Iraola", teamId: 8650, teamName: "Liverpool" },
-  { id: 361759, name: "Paulo Fonseca", teamId: 9748, teamName: "Lyon" },
-  { id: 34000, name: "Enzo Maresca", teamId: 8456, teamName: "Manchester City" },
-  { id: 11754, name: "Ruben Amorim", teamId: 8564, teamName: "Milan" },
-  { id: 41167, name: "Filipe Luís", teamId: 9829, teamName: "Monaco" },
-  { id: 24105, name: "Liam Rosenior", teamId: 6379, teamName: "Paris FC" },
-  { id: 11532, name: "Luis Enrique", teamId: 9847, teamName: "Paris Saint-Germain" },
-  { id: 30459, name: "Martín Demichelis", teamId: 178475, teamName: "RB Leipzig" },
-  { id: 78591, name: "Manuel Pellegrini", teamId: 8603, teamName: "Real Betis" },
-  { id: 78719, name: "José Mourinho", teamId: 8633, teamName: "Real Madrid" },
-  { id: 27204, name: "Pellegrino Matarazzo", teamId: 8560, teamName: "Real Sociedad" },
-  { id: 804046, name: "Franck Haise", teamId: 9851, teamName: "Rennes" },
-  { id: 96945, name: "Gian Piero Gasperini", teamId: 8686, teamName: "Roma" },
-  { id: 242474, name: "Luis García", teamId: 8302, teamName: "Sevilla" },
+  { id: 24011, name: "Mikel Arteta", fa: "میکل آرتتا", teamId: 9825, teamName: "Arsenal" },
+  { id: 2642, name: "Diego Simeone", fa: "دیگو سیمئونه", teamId: 9906, teamName: "Atlético Madrid" },
+  { id: 131509, name: "Hans-Dieter Flick", fa: "هانسی فلیک", teamId: 8634, teamName: "Barcelona" },
+  { id: 1515447, name: "Carles Martínez", fa: "کارلس مارتینس", teamId: 8178, teamName: "Bayer Leverkusen" },
+  { id: 1415967, name: "Aaron Danks", fa: "آرون دنکس", teamId: 9823, teamName: "Bayern München" },
+  { id: 33072, name: "Niko Kovač", fa: "نیکو کواچ", teamId: 9789, teamName: "Borussia Dortmund" },
+  { id: 38711, name: "Keith Andrews", fa: "کیت اندروز", teamId: 9937, teamName: "Brentford" },
+  { id: 208516, name: "Fabian Hürzeler", fa: "فابیان هورزلر", teamId: 10204, teamName: "Brighton & Hove Albion" },
+  { id: 30889, name: "Xabi Alonso", fa: "شابی آلونسو", teamId: 8455, teamName: "Chelsea" },
+  { id: 30613, name: "Cesc Fàbregas", fa: "سسک فابرگاس", teamId: 10171, teamName: "Como" },
+  { id: 94647, name: "Vincent Wagner", fa: "وینسنت واگنر", teamId: 8232, teamName: "Elversberg" },
+  { id: 36771, name: "Julian Schuster", fa: "یولیان شوستر", teamId: 8358, teamName: "Freiburg" },
+  { id: 1188285, name: "Massimiliano Alvini", fa: "ماسیمیلیانو آلوینی", teamId: 9891, teamName: "Frosinone" },
+  { id: 27692, name: "Cristian Chivu", fa: "کریستیان کیوو", teamId: 8636, teamName: "Inter" },
+  { id: 30721, name: "Gennaro Gattuso", fa: "جنارو گاتوزو", teamId: 8543, teamName: "Lazio" },
+  { id: 1108529, name: "Davide Ancelotti", fa: "داویده آنچلوتی", teamId: 8639, teamName: "Lille" },
+  { id: 33025, name: "Andoni Iraola", fa: "آندونی ایرولا", teamId: 8650, teamName: "Liverpool" },
+  { id: 361759, name: "Paulo Fonseca", fa: "پائولو فونسکا", teamId: 9748, teamName: "Lyon" },
+  { id: 34000, name: "Enzo Maresca", fa: "انزو مارسکا", teamId: 8456, teamName: "Manchester City" },
+  { id: 11754, name: "Ruben Amorim", fa: "روبن آموریم", teamId: 8564, teamName: "Milan" },
+  { id: 41167, name: "Filipe Luís", fa: "فیلیپه لوئیس", teamId: 9829, teamName: "Monaco" },
+  { id: 24105, name: "Liam Rosenior", fa: "لیام روزنیور", teamId: 6379, teamName: "Paris FC" },
+  { id: 11532, name: "Luis Enrique", fa: "لوییس انریکه", teamId: 9847, teamName: "Paris Saint-Germain" },
+  { id: 30459, name: "Martín Demichelis", fa: "مارتین دمیکیلیس", teamId: 178475, teamName: "RB Leipzig" },
+  { id: 78591, name: "Manuel Pellegrini", fa: "مانوئل پلگرینی", teamId: 8603, teamName: "Real Betis" },
+  { id: 78719, name: "José Mourinho", fa: "ژوزه مورینیو", teamId: 8633, teamName: "Real Madrid" },
+  { id: 27204, name: "Pellegrino Matarazzo", fa: "پلگرینو ماتارازو", teamId: 8560, teamName: "Real Sociedad" },
+  { id: 804046, name: "Franck Haise", fa: "فرانک هایز", teamId: 9851, teamName: "Rennes" },
+  { id: 96945, name: "Gian Piero Gasperini", fa: "جان‌پی‌یرو گاسپرینی", teamId: 8686, teamName: "Roma" },
+  { id: 242474, name: "Luis García", fa: "لوییس گارسیا", teamId: 8302, teamName: "Sevilla" },
 ];
 
+// cycle-259: Persian name of a coach by id — the seed is the single source
+// (30 catalogued-club benches). Coaches outside the seed → null (the UI and
+// the API fall back to the upstream english name — honest, no guessing).
+export function coachFa(id: number): string | null {
+  if (!Number.isFinite(id)) return null;
+  return COACH_SEED.find((e) => e.id === id)?.fa ?? null;
+}
+
 /** Header-search coach bucket — same fold/scoring family as searchLeagues.
- *  Haystack = coach name + club en/fa; the static seed answers instantly. */
+ *  Haystack = coach en/fa name + club en/fa (cycle-259: the PERSIAN coach name
+ *  joins so «مورینیو»/«آلونسو» hit); the static seed answers instantly. */
 export function searchCoaches(q: string, limit = 4): CoachSearchResult[] {
   const nq = normalizeQuery(q);
   if (nq.length < 2) return [];
   const scored: { e: CoachSearchResult; score: number }[] = [];
   for (const e of COACH_SEED) {
-    const hay = normalizeQuery(`${e.name} ${e.teamName} ${teamFa(e.teamName) || e.teamName}`);
+    const hay = normalizeQuery(`${e.name} ${e.fa || ""} ${e.teamName} ${teamFa(e.teamName) || e.teamName}`);
     let score = -1;
     if (hay === nq) score = 100;
     else if (hay.startsWith(nq)) score = 80;

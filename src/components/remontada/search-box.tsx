@@ -404,8 +404,10 @@ export function SearchBox() {
                               onError={(e) => { e.currentTarget.style.visibility = "hidden"; }}
                             />
                             <span className="min-w-0 flex-1">
+                              {/* cycle-259: Persian coach name first (bug-hunt 258
+                                  finding) — english falls back dir="auto" */}
                               <span className="block font-bold text-[13px] truncate" dir="auto">
-                                {c.name}
+                                {c.fa || c.name}
                               </span>
                               <span className="block text-[10px] text-muted-foreground truncate">
                                 {teamFa(c.teamName) || c.teamName}
