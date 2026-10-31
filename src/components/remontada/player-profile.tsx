@@ -557,7 +557,8 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
             {p.career.map((c, i) => (
               <li key={`${c.teamId}-${c.from}-${i}`} className="flex items-center gap-3 px-3 sm:px-4 py-2.5">
                 {c.kind === "senior" ? (
-                  <Link href={`/team/${c.teamId}`} prefetch={false} className="shrink-0" aria-label={c.fa}>
+                  /* ui-cycle-19: tap-hit-row — career logo link 22×22 → 34×30 hit box */
+                  <Link href={`/team/${c.teamId}`} prefetch={false} className="tap-hit-row shrink-0" aria-label={c.fa}>
                     <TeamLogo id={c.teamId} alt={c.fa} size={22} />
                   </Link>
                 ) : (

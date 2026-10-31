@@ -164,15 +164,16 @@ export function SiteFooter() {
             missing «بازیکنان» (header has it, footer didn't), data sources
             become real outbound links, and a copyright line signs the site. */}
         <div className="flex items-center gap-3 text-[11px] font-bold text-muted-foreground flex-wrap justify-center">
-          <Link href="/" className="hover:text-primary transition-colors">نتایج زنده</Link>
+          {/* ui-cycle-19: tap-hit-row — footer nav links 16.5px → 24.5px hit height */}
+          <Link href="/" className="tap-hit-row hover:text-primary transition-colors">نتایج زنده</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
-          <Link href="/leagues" className="hover:text-primary transition-colors">لیگ‌ها</Link>
+          <Link href="/leagues" className="tap-hit-row hover:text-primary transition-colors">لیگ‌ها</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
-          <Link href="/topscorers" className="hover:text-primary transition-colors">گلزنان</Link>
+          <Link href="/topscorers" className="tap-hit-row hover:text-primary transition-colors">گلزنان</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
-          <Link href="/players" className="hover:text-primary transition-colors">بازیکنان</Link>
+          <Link href="/players" className="tap-hit-row hover:text-primary transition-colors">بازیکنان</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
-          <Link href="/news" className="hover:text-primary transition-colors">اخبار</Link>
+          <Link href="/news" className="tap-hit-row hover:text-primary transition-colors">اخبار</Link>
         </div>
         <p className="text-[10px] text-muted-foreground/80">
           داده‌ها از{" "}

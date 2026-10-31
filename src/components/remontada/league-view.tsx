@@ -664,7 +664,8 @@ function PreviewSide({
 }) {
   return (
     <div className="flex flex-col items-center gap-1.5 text-center min-w-0">
-      <Link href={`/team/${team.id}`} prefetch={false} className="flex items-center gap-2 min-w-0 group">
+      <Link href={`/team/${team.id}`} prefetch={false} className="tap-hit-row flex items-center gap-2 min-w-0 group">
+        {/* ui-cycle-19: tap-hit-row — preview side team links 22px → 30px */}
         { }
         <img src={team.logo} alt="" width={22} height={22} loading="lazy" className="w-[22px] h-[22px] object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         <span className="font-black text-[12.5px] sm:text-[13px] truncate group-hover:text-primary transition-colors">
@@ -1035,7 +1036,7 @@ function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
         <div key={`${s.season}-${i}`} className={cn("grid grid-cols-[58px_1fr_1fr] items-center gap-2 px-3 sm:px-4 py-2", i % 2 ? "bg-white/[0.02]" : "")}>
           <span className="text-[10px] font-black text-steel/80 tabular-persian">{faDigits(s.season)}</span>
           {s.championId > 0 ? (
-            <Link href={`/team/${s.championId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
+            <Link href={`/team/${s.championId}`} prefetch={false} className="tap-hit-row flex items-center gap-1.5 min-w-0 group">
               <img src={fotmobTeamLogo(s.championId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
               <span className="truncate text-[11.5px] font-black group-hover:text-sky-soft transition-colors">{s.championFa}</span>
             </Link>
@@ -1043,7 +1044,7 @@ function LeagueTitles({ data }: { data: LeagueTitleHistory }) {
             <span className="truncate text-[11.5px] font-black">{s.championFa}</span>
           )}
           {s.runnerUpId != null && s.runnerUpFa ? (
-            <Link href={`/team/${s.runnerUpId}`} prefetch={false} className="flex items-center gap-1.5 min-w-0 group">
+            <Link href={`/team/${s.runnerUpId}`} prefetch={false} className="tap-hit-row flex items-center gap-1.5 min-w-0 group">
               <img src={fotmobTeamLogo(s.runnerUpId)} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain shrink-0 opacity-80" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
               <span className="truncate text-[11px] font-bold text-steel/80 group-hover:text-sky-soft transition-colors">{s.runnerUpFa}</span>
             </Link>
