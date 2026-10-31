@@ -7962,6 +7962,14 @@ interface FMTeamDataRaw {
     // Shape uniform across probed clubs (City/Arsenal/Brighton: 11 starters
     // each); absent/empty → section hidden (honest, legend-111 contract).
     lastLineupStats?: FMLastLineupStatsRaw;
+    // cycle-261 probed (2026-10-31, Node fetch — the TLS-fingerprint reality
+    // of cycle-257): overview.newsSummary = the club press digest. Shape
+    // {items[]} with each item {summary, source{sourceName, uri, articleId,
+    // title}}; uri is ALWAYS a full https fotmob.com/news URL (probed) and
+    // sourceName is a publisher tag ("Opta"). Present on major clubs (City:
+    // 3 rows); null on smaller ones (probed 9865 LaLiga2) → section hidden
+    // (honest absence, the cycle-260 rumours convention).
+    newsSummary?: FMNewsSummaryRaw;
   };
   stats?: {
     players?: FMStatBlock[];
@@ -8012,6 +8020,21 @@ interface FMTopPlayerRowRaw {
 interface FMVenueRaw {
   widget?: { name?: string; city?: string };
   statPairs?: [string, string | number | null][];
+}
+
+// cycle-261: raw club news digest (see FMTeamDataRaw.overview comment)
+interface FMNewsSummaryRaw {
+  items?: FMNewsItemRaw[];
+}
+
+interface FMNewsItemRaw {
+  summary?: string;
+  source?: {
+    sourceName?: string;
+    uri?: string;
+    articleId?: string;
+    title?: string;
+  };
 }
 
 interface FMTeamTrophyRaw {
@@ -8312,6 +8335,54 @@ export async function getTeamRumours(teamId: number): Promise<TeamRumoursData | 
     nOut: items.filter((x) => x.kind === "out").length,
     items,
   };
+}
+
+// ---------------- FotMob: team news digest (data/teams, cycle-261) ----------------
+/** One club news digest row («اخبار باشگاه», cycle-261) from the SAME
+ *  data/teams payload as the transfers/rumours feeds — zero extra upstream.
+ *  titleFa rides the exact /api/news LLM translate stage (translateBatch,
+ *  English fallback — the news-page convention); the summary line stays
+ *  English as on the news cards. Parser drops any row whose title, summary,
+ *  source name or https link did not survive (honest-drop convention). */
+export interface TeamNewsItem {
+  title: string; // original (English)
+  titleFa: string; // Persian via the translate stage (falls back to English)
+  summary: string;
+  sourceName: string;
+  url: string; // https-only article link
+}
+
+export interface TeamNewsData {
+  total: number;
+  items: TeamNewsItem[];
+}
+
+/**
+ * Team-level club news digest («اخبار باشگاه», cycle-261) from the SAME
+ * data/teams payload — overview.newsSummary rides the one cached
+ * `teamDataRaw:{id}` fetch, so this costs ZERO extra upstream. Source order
+ * is the feed's own (newest-first) — kept as-is. Returns null when the
+ * payload has no digest so the UI hides the section (same contract as
+ * getTeamRumours). titleFa is filled with the English title here; the
+ * /api/team-news route upgrades it via the shared translate stage.
+ */
+export async function getTeamNews(teamId: number): Promise<TeamNewsData | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.overview?.newsSummary?.items;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const items: TeamNewsItem[] = [];
+  for (const n of list) {
+    const title = (n?.source?.title || "").trim();
+    const summary = (n?.summary || "").trim();
+    const sourceName = (n?.source?.sourceName || "").trim();
+    const uri = n?.source?.uri || "";
+    if (!title || !summary || !sourceName || !/^https:\/\//.test(uri)) continue;
+    items.push({ title, titleFa: title, summary, sourceName, url: uri });
+    if (items.length >= 6) break; // probed feed depth: 3 rows on City
+  }
+  if (items.length === 0) return null;
+  return { total: items.length, items };
 }
 
 // ---------------- FotMob: team trophies (data/teams endpoint, cycle-72) ----------------

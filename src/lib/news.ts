@@ -112,10 +112,14 @@ async function espnNews(slug: string, league: string): Promise<NewsItem[]> {
 // instead of hanging; a still-running background completion is discarded.
 const TRANSLATE_BUDGET_MS = 10_000;
 
-async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
-  const toTranslate = items.slice(0, 16);
-  if (toTranslate.length === 0) return items; // nothing to translate — skip the LLM entirely
-  const titles = toTranslate.map((n) => n.title.replace(/"/g, "'"));
+// cycle-261: the batched LLM call extracted VERBATIM from translateTitles so
+// the team news digest (overview.newsSummary) can ride the exact same
+// «ترجمهٔ خودی» stage. One call for any array of football strings, the same
+// 10s hard budget and JSON-array protocol; per-slot null on ANY failure so
+// every caller keeps its honest original.
+export async function translateBatch(titles: string[]): Promise<(string | null)[]> {
+  const out: (string | null)[] = titles.map(() => null);
+  if (titles.length === 0) return out; // nothing to translate — skip the LLM entirely
   const payload = JSON.stringify(titles);
   const work = (async (): Promise<string> => {
     try {
@@ -138,7 +142,7 @@ async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
       });
       return completion.choices[0]?.message?.content || "";
     } catch {
-      return ""; // any SDK failure → the JSON match below throws → English titles
+      return ""; // any SDK failure → the JSON match below throws → null slots
     }
   })();
   let timer: ReturnType<typeof setTimeout> | null = null;
@@ -152,16 +156,27 @@ async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
     if (text === null) throw new Error("translation budget exceeded");
     const jsonMatch = text.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error("no json in response");
-    const arr = JSON.parse(jsonMatch[0]) as string[];
-    if (!Array.isArray(arr) || arr.length !== toTranslate.length) throw new Error("bad translation array");
-    toTranslate.forEach((n, i) => {
-      if (arr[i] && typeof arr[i] === "string") n.titleFa = arr[i];
+    const arr = JSON.parse(jsonMatch[0]) as unknown[];
+    if (!Array.isArray(arr) || arr.length !== titles.length) throw new Error("bad translation array");
+    arr.forEach((v, i) => {
+      if (typeof v === "string" && v) out[i] = v;
     });
   } catch {
-    // keep English titles on any failure (translation timeout included)
+    // keep the null slots on any failure (translation timeout included)
   } finally {
     if (timer) clearTimeout(timer);
   }
+  return out;
+}
+
+async function translateTitles(items: NewsItem[]): Promise<NewsItem[]> {
+  const toTranslate = items.slice(0, 16);
+  if (toTranslate.length === 0) return items; // nothing to translate — skip the LLM entirely
+  const fa = await translateBatch(toTranslate.map((n) => n.title.replace(/"/g, "'")));
+  toTranslate.forEach((n, i) => {
+    const v = fa[i];
+    if (v) n.titleFa = v;
+  });
   return items;
 }
 

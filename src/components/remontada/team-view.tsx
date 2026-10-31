@@ -6,7 +6,8 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamNewsData, TeamNewsItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
+import { sourceStyle } from "@/components/remontada/news-view";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -795,6 +796,58 @@ function TeamRumoursSection({ data }: { data: TeamRumoursData }) {
   );
 }
 
+// ---------------- team news digest («اخبار باشگاه», cycle-261) ----------------
+// overview.newsSummary on the SAME data/teams payload (zero extra upstream):
+// the club's press digest. Headlines ride the /api/news LLM translate stage
+// (titleFa with the honest English fallback — the news-page convention) and
+// the summary line stays English exactly like the news cards. Rows whose
+// title/summary/source/https-link did not survive were already dropped by
+// the parser; the source chip reuses the news page's sourceStyle (unknown
+// publishers → the muted default).
+function TeamNewsRow({ n }: { n: TeamNewsItem }) {
+  return (
+    <li className="glass-card px-3 py-2.5">
+      <a
+        href={n.url}
+        target="_blank"
+        rel="noopener noreferrer nofollow"
+        className="text-[12.5px] font-black leading-5 block hover:text-sky-soft transition-colors"
+        title={n.titleFa && n.titleFa !== n.title ? n.title : `خبر باشگاه — ${n.sourceName}`}
+      >
+        {n.titleFa || n.title}
+      </a>
+      {n.summary && (
+        <p className="text-[11px] text-[#b4c8df]/75 leading-5 mt-1 line-clamp-2">{n.summary}</p>
+      )}
+      <p className="text-[9.5px] text-muted-foreground mt-1.5 flex items-center gap-1.5">
+        <span className={cn("text-[9px] font-black border rounded-md px-1.5 py-0.5", sourceStyle(n.sourceName))}>
+          {n.sourceName}
+        </span>
+        <span>خبر خارجی — باز در تب جدید</span>
+      </p>
+    </li>
+  );
+}
+
+function TeamNewsSection({ data }: { data: TeamNewsData }) {
+  return (
+    <Section
+      title="اخبار باشگاه"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+          {faDigits(data.total)} خبر
+        </span>
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-news" aria-label="اخبار باشگاه تیم">
+        {data.items.map((n, i) => (
+          <TeamNewsRow key={`${i}:${n.url}`} n={n} />
+        ))}
+      </ul>
+    </Section>
+  );
+}
+
 function TeamTransfersSection({ data }: { data: TeamTransfersData }) {
   return (
     <Section
@@ -1558,6 +1611,26 @@ export function TeamView({ teamId }: { teamId: number }) {
     };
   }, [teamId]);
 
+  // cycle-261: lazy team news digest («اخبار باشگاه») — overview.newsSummary
+  // rides the SAME cached data/teams fetch as the transfers/rumours feeds
+  // (zero extra upstream); the Persian headline upgrade happens server-side
+  // with its own 60-min cache. Stays null → section hidden (honest absence).
+  const [teamNews, setTeamNews] = useState<TeamNewsData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-news/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.news) setTeamNews(j.news as TeamNewsData);
+      })
+      .catch(() => {
+        /* teamNews stays null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
   // cycle-72: lazy team trophies («گنجهٔ افتخارات») — same data/teams source
   // (shared upstream cache), fetched after mount; stays null → section hidden.
   const [trophies, setTrophies] = useState<TeamTrophiesData | null>(null);
@@ -1965,6 +2038,10 @@ export function TeamView({ teamId }: { teamId: number }) {
       {/* cycle-260: team transfer rumours («شایعات انتقال») — lazily probed,
           hidden when the source has no feed (honest absence) */}
       {rumours && rumours.items.length > 0 && <TeamRumoursSection data={rumours} />}
+
+      {/* cycle-261: team news digest («اخبار باشگاه») — lazily probed, hidden
+          when the source has no digest (honest absence) */}
+      {teamNews && teamNews.items.length > 0 && <TeamNewsSection data={teamNews} />}
 
       {/* cycle-72: team trophies («گنجهٔ افتخارات») — lazily probed, hidden when absent */}
       {trophies && trophies.items.length > 0 && <TeamTrophiesSection data={trophies} />}
