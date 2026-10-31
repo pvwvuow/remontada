@@ -70,12 +70,17 @@ export function RecentMatchesSection({
       ) : (
         <>
           {multiSide && (
-            <div className="flex flex-wrap gap-1.5 px-3 sm:px-4 pt-2.5" role="tablist" aria-label="فیلتر تیم بازیکن">
+            /* Eighth-generation tap-hit-row: ::after extends 6px horizontally --
+               gap-x-1.5 (6px) tiles it exactly against neighbour pills; gap-y-2 (8px)
+               tiles the 4px+4px vertical extension of wrapped rows; pb-1 (4px) lets the
+               downward zone end exactly at the first match row's top edge so the
+               interactive list is never covered (cycle-24 meet-exactly convention). */
+            <div className="flex flex-wrap gap-x-1.5 gap-y-2 px-3 sm:px-4 pt-2.5 pb-1" role="tablist" aria-label="فیلتر تیم بازیکن">
               <button
                 type="button"
                 onClick={() => pick(null)}
                 className={cn(
-                  "rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
+                  "tap-hit-row rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
                   team === null ? "border-sky-soft/40 bg-sky-soft/10 text-sky-soft" : "border-border bg-white/[0.03] text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -87,7 +92,7 @@ export function RecentMatchesSection({
                   type="button"
                   onClick={() => pick(t.id)}
                   className={cn(
-                    "rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
+                    "tap-hit-row rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
                     team === t.id ? "border-sky-soft/40 bg-sky-soft/10 text-sky-soft" : "border-border bg-white/[0.03] text-muted-foreground hover:text-foreground"
                   )}
                 >
