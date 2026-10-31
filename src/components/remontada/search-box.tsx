@@ -320,16 +320,21 @@ export function SearchBox() {
                   <div className="w-full">
                     <p className="text-[10px] font-bold text-muted-foreground/80 text-center mb-2">شاید دنبال این تیم‌ها بودید:</p>
                     <div className="flex flex-wrap justify-center gap-1.5">
+                      {/* cycle-285: the item cycle-284 explicitly left out of scope —
+                          chips are now real <Link>s too (same look, same click
+                          close-then-push via onClick): middle-click/right-click
+                          «open in new tab» works on the not-found suggestions */}
                       {suggestions.map((t) => (
-                        <button
+                        <Link
                           key={t.id}
-                          type="button"
-                          onClick={() => go(t.id)}
+                          href={`/team/${t.id}`}
+                          prefetch={false}
+                          onClick={() => setOpen(false)}
                           className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--glass-border-soft)] bg-white/[0.04] ps-1.5 pe-2.5 py-1 text-[11px] font-bold hover:bg-sky-soft/10 hover:border-sky-soft/40 hover:text-sky-soft transition-colors"
                         >
                           <img src={t.logo} alt="" width={16} height={16} loading="lazy" className="w-4 h-4 object-contain" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
                           {t.fa}
-                        </button>
+                        </Link>
                       ))}
                     </div>
                   </div>
