@@ -777,8 +777,20 @@ function ShotmapPitch({ shots, match }: { shots: NonNullable<DetailData["shots"]
 // side at all (upcoming / small-league 404 / failed join — honest absence).
 function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; match: DetailMatch }) {
   const sides = (["home", "away"] as const).filter((s) => tm[s]);
-  const [side, setSide] = useState<"home" | "away">(sides[0] ?? "home");
-  const cur = tm[side] ?? tm[sides[0]] ?? null;
+  // cycle-274: the default side is a DERIVED contract, not mount-time state.
+  // The old useState(sides[0]) latched its initial value forever: a mount with
+  // home still absent (partial payload — buildTouchMap legitimately emits
+  // {home:null, away:…} when the lineup join missed the home side, and that
+  // answer is cached up to 1 h for finished matches) locked the card to away
+  // and never recovered when home data arrived. Now the user pick is honored
+  // only while the picked side still exists; otherwise every render falls
+  // back deterministically to home-first. Cycle-273 logged the one-off
+  // symptom (away summary on first paint, 0/7 repro since); this removes the
+  // latch structurally instead of chasing the race.
+  const [picked, setPicked] = useState<"home" | "away" | null>(null);
+  // (new-match reset rides the key={m.id} at the render site — remount, no effect)
+  const side = picked && tm[picked] ? picked : tm.home ? "home" : sides[0] ?? "away";
+  const cur = tm[side] ?? null;
   if (!cur) return null;
   const isHome = side === "home";
   const sideName = (s: "home" | "away") =>
@@ -796,7 +808,7 @@ function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; 
           <button
             key={s}
             type="button"
-            onClick={() => setSide(s)}
+            onClick={() => setPicked(s)}
             aria-pressed={side === s}
             data-testid={`touchmap-side-${s}`}
             className={cn(
@@ -2338,7 +2350,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           to any tab. Hidden when the payload carries no side at all
           (upcoming / small-league 404 / failed lineup join — honest absence). */}
       {data.touchMap && (data.touchMap.home || data.touchMap.away) && (
-        <TouchmapCard tm={data.touchMap} match={m} />
+        <TouchmapCard key={m.id} tm={data.touchMap} match={m} />
       )}
 
       {/* tabs */}
