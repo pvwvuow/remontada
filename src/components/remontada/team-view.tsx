@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
+import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
 import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
@@ -698,6 +698,100 @@ function TeamTransferRow({ t }: { t: TeamTransferItem }) {
         )}
       </div>
     </li>
+  );
+}
+
+// ---------------- team transfer rumours («شایعات انتقال», cycle-260) ----------------
+// Same visual language as the transfers feed above: direction chip, from→to
+// club tags, Jalali date — plus the rumour-specific probability pill
+// (High = mint, Medium = sky, Low = muted; ""/unknown → honest omission) and
+// the source attribution (only when both name and https URL survived the
+// parser — external, rel-hardened).
+const TEAM_PROB_CHIP: Record<Exclude<TeamRumourItem["probability"], "">, string> = {
+  high: "text-mint border-mint/30 bg-mint/10",
+  medium: "text-sky-soft border-sky-soft/30 bg-sky-soft/10",
+  low: "text-muted-foreground border-[color:var(--glass-border-soft)] bg-white/[0.04]",
+};
+
+function TeamRumourRow({ r }: { r: TeamRumourItem }) {
+  const j = r.date ? jalaliShort(r.date) : null;
+  return (
+    <li className="glass-card px-3 py-2.5 flex items-start gap-2.5">
+      <span
+        className="shrink-0 w-8 h-8 rounded-lg bg-white/[0.05] border border-[color:var(--glass-border-soft)] grid place-items-center text-[10px] font-black text-[#c3d4ea]"
+        aria-hidden
+      >
+        {r.position || "—"}
+      </span>
+      <div className="flex-1 min-w-0">
+        {r.playerId > 0 ? (
+          <Link
+            href={`/player/${r.playerId}`}
+            prefetch={false}
+            className="tap-hit-row text-[12.5px] font-black block max-w-full w-fit rounded-md glass-row-hover"
+            title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}
+          >
+            <span className="block truncate">{r.nameFa || r.name}</span>
+          </Link>
+        ) : (
+          <p className="text-[12.5px] font-black truncate">{r.nameFa || r.name}</p>
+        )}
+        <p className="text-[11px] text-[#b4c8df]/75 flex items-center gap-1.5 mt-0.5">
+          <span className="min-w-0 flex items-center gap-1">
+            <TransferClubTag id={r.from.id} name={r.from.fa} />
+          </span>
+          <span className="text-muted-foreground shrink-0" aria-hidden>←</span>
+          <span className="min-w-0 flex items-center gap-1">
+            <TransferClubTag id={r.to.id} name={r.to.fa} />
+          </span>
+        </p>
+      </div>
+      <div className="shrink-0 flex flex-col items-end gap-1">
+        <span className={cn("text-[9.5px] font-black rounded-md border px-1.5 py-0.5", TEAM_KIND_CHIP[r.kind])}>
+          {r.kindFa}
+        </span>
+        {r.probability && (
+          <span className={cn("text-[9.5px] font-black rounded-md border px-1.5 py-0.5", TEAM_PROB_CHIP[r.probability])}>
+            {r.probabilityFa}
+          </span>
+        )}
+        <span className="text-[10px] font-bold text-[#c3d4ea]">{r.feeFa}</span>
+        {j && (
+          <span className="text-[9.5px] text-muted-foreground tabular-persian whitespace-nowrap">
+            {j.day} {j.month}
+          </span>
+        )}
+        {r.sourceName && r.sourceUrl && (
+          <a
+            href={r.sourceUrl}
+            target="_blank"
+            rel="noopener noreferrer nofollow"
+            className="text-[9px] text-muted-foreground underline decoration-dotted underline-offset-2 max-w-[9rem] truncate hover:text-[#c3d4ea]"
+          >
+            منبع: {r.sourceName}
+          </a>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function TeamRumoursSection({ data }: { data: TeamRumoursData }) {
+  return (
+    <Section
+      title="شایعات انتقال"
+      extra={
+        <span className="text-[10px] font-bold text-muted-foreground tabular-persian">
+          ورودی {faDigits(data.nIn)} · خروجی {faDigits(data.nOut)}
+        </span>
+      }
+    >
+      <ul className="flex flex-col gap-2" data-testid="team-rumours" aria-label="شایعات انتقال تیم">
+        {data.items.map((r, i) => (
+          <TeamRumourRow key={`${r.playerId}:${r.date}:${i}`} r={r} />
+        ))}
+      </ul>
+    </Section>
   );
 }
 
@@ -1445,6 +1539,25 @@ export function TeamView({ teamId }: { teamId: number }) {
     };
   }, [teamId]);
 
+  // cycle-260: lazy team transfer rumours («شایعات انتقال») — the rumour
+  // array rides the SAME cached data/teams fetch as the transfers feed, so
+  // this second probe is upstream-free; stays null → section hidden.
+  const [rumours, setRumours] = useState<TeamRumoursData | null>(null);
+  useEffect(() => {
+    let alive = true;
+    fetch(`/api/team-rumours/${teamId}`, { cache: "no-store" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (alive && j?.ok && j.rumours) setRumours(j.rumours as TeamRumoursData);
+      })
+      .catch(() => {
+        /* rumours stay null → section hidden */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [teamId]);
+
   // cycle-72: lazy team trophies («گنجهٔ افتخارات») — same data/teams source
   // (shared upstream cache), fetched after mount; stays null → section hidden.
   const [trophies, setTrophies] = useState<TeamTrophiesData | null>(null);
@@ -1848,6 +1961,10 @@ export function TeamView({ teamId }: { teamId: number }) {
 
       {/* cycle-71: team transfers («بازار انتقال‌ها») — lazily probed, hidden when absent */}
       {transfers && transfers.items.length > 0 && <TeamTransfersSection data={transfers} />}
+
+      {/* cycle-260: team transfer rumours («شایعات انتقال») — lazily probed,
+          hidden when the source has no feed (honest absence) */}
+      {rumours && rumours.items.length > 0 && <TeamRumoursSection data={rumours} />}
 
       {/* cycle-72: team trophies («گنجهٔ افتخارات») — lazily probed, hidden when absent */}
       {trophies && trophies.items.length > 0 && <TeamTrophiesSection data={trophies} />}

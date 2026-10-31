@@ -7869,6 +7869,33 @@ interface FMTeamTransferRaw {
   onLoan?: boolean;
 }
 
+// cycle-260 probed (2026-10-31, Node fetch — the TLS-fingerprint reality of
+// cycle-257): the SAME api/data/teams payload carries transfers.allRumours[]
+// — press rumours with a probability enum. Row shape ≈ FMTeamTransferRaw but
+// fee carries a real `value` (EUR), plus probability ("Low"/"Medium"/"High"
+// — the full probed set over 104 rows on 10 clubs), marketValue, rumourId and
+// sourceName/sourceUrl (probed: sourceUrl always a full https URL). The feed
+// rides the ONE cached teams fetch — zero extra upstream.
+interface FMRumourRaw {
+  name?: string;
+  playerId?: number;
+  position?: { label?: string };
+  transferDate?: string;
+  fromClub?: string;
+  fromClubFullName?: string;
+  fromClubId?: number;
+  toClub?: string;
+  toClubFullName?: string;
+  toClubId?: number;
+  fee?: { feeText?: string; value?: number | null } | null;
+  transferType?: { text?: string };
+  contractExtension?: boolean;
+  onLoan?: boolean;
+  probability?: string;
+  sourceName?: string | null;
+  sourceUrl?: string | null;
+}
+
 /** Raw api/data/teams payload — shared by the squad (cycle-70), transfers
  * (cycle-71), trophies (cycle-72) and venue (cycle-75) reads — ONE upstream
  * fetch per hour. */
@@ -7889,7 +7916,7 @@ interface FMStatBlock {
 
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
-  transfers?: { allTransfers?: FMTeamTransferRaw[] };
+  transfers?: { allTransfers?: FMTeamTransferRaw[]; allRumours?: FMRumourRaw[] };
   fixtures?: {
     allFixtures?: { fixtures?: FMTeamFixtureRaw[] };
     primaryTournamentId?: number | string;
@@ -8176,6 +8203,113 @@ export async function getTeamTransfers(teamId: number): Promise<TeamTransfersDat
     nIn: items.filter((x) => x.kind === "in").length,
     nOut: items.filter((x) => x.kind === "out").length,
     nInternal: items.filter((x) => x.kind === "internal").length,
+    items,
+  };
+}
+
+// ---------------- FotMob: team transfer RUMOURS (data/teams, cycle-260) ----------------
+/** One press rumour of the team («شایعات انتقال», cycle-260). Direction and
+ *  naming follow the cycle-71 transfer contract; the rumour-specific bits are
+ *  the probability pill (honest Persian, "" → UI omits the pill) and the
+ *  source attribution (only surfaced when BOTH name and an https URL exist —
+ *  the honest-link rule). */
+export interface TeamRumourItem {
+  playerId: number;
+  name: string;
+  nameFa: string;
+  position: string;
+  date: string; // ISO
+  kind: "in" | "out" | "internal";
+  kindFa: string;
+  from: { id: number; fa: string };
+  to: { id: number; fa: string };
+  feeFa: string;
+  probability: "" | "low" | "medium" | "high";
+  probabilityFa: string;
+  sourceName: string | null;
+  sourceUrl: string | null;
+}
+
+export interface TeamRumoursData {
+  total: number;
+  nIn: number;
+  nOut: number;
+  items: TeamRumourItem[];
+}
+
+/** Persian fee/type label for the RUMOUR feed — like teamTransferFeeFa but
+ *  rumour rows carry a REAL fee.value (probed: 35,000,000 on a 2026/27 City
+ *  rumour) while amountEuroEstimated is absent on the shape. */
+const rumourFeeFa = (t: FMRumourRaw): string => {
+  if (t.contractExtension) return "تمدید قرارداد";
+  if (typeof t.fee?.value === "number" && t.fee.value > 0) return `کارمزد ${euroFa(t.fee.value)}`;
+  const feeText = (t.fee?.feeText || "").toLowerCase();
+  const typeText = (t.transferType?.text || "").toLowerCase();
+  if (feeText === "on loan" || typeText === "on loan" || t.onLoan) return "انتقال امانی";
+  if (feeText === "free transfer" || typeText === "free transfer") return "انتقال آزاد";
+  if (feeText === "undisclosed" || typeText === "undisclosed") return "کارمزد نامشخص";
+  if (feeText === "fee") return "کارمزد";
+  if (typeText === "contract") return "قرارداد";
+  return t.transferType?.text || t.fee?.feeText || "انتقال";
+};
+
+/** Probed probability enum (104 rows / 10 clubs): "Low" | "Medium" | "High".
+ *  Unknown values degrade to "" both sides — the UI omits the pill (the
+ *  honest-drop convention of MATCH_POLL_FA / MATCH_INSIGHT_FA). */
+const RUMOUR_PROBABILITY_FA: Record<string, string> = {
+  low: "احتمال کم",
+  medium: "احتمال متوسط",
+  high: "احتمال زیاد",
+};
+
+/**
+ * Team-level transfer RUMOUR feed («شایعات انتقال», cycle-260) from the SAME
+ * data/teams payload as the cycle-71 feed — allRumours rides the one cached
+ * `teamDataRaw:{id}` fetch, so this costs ZERO extra upstream. Direction is
+ * classified against the team id exactly like the transfers feed (in = toId,
+ * out = fromId, internal = both). Source order is already date-desc — kept
+ * as-is. Returns null when the payload has no rumour feed so the UI hides
+ * the section (same contract as getTeamTransfers).
+ */
+export async function getTeamRumours(teamId: number): Promise<TeamRumoursData | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  const raw = await getTeamDataRaw(teamId);
+  const list = raw?.transfers?.allRumours;
+  if (!Array.isArray(list) || list.length === 0) return null;
+  const items: TeamRumourItem[] = [];
+  for (const t of list) {
+    if (!t?.name || !t?.fromClub || !t?.toClub) continue;
+    const fromId = Number(t.fromClubId || 0);
+    const toId = Number(t.toClubId || 0);
+    if (fromId !== teamId && toId !== teamId) continue;
+    const kind: TeamRumourItem["kind"] =
+      fromId === teamId && toId === teamId ? "internal" : toId === teamId ? "in" : "out";
+    const probKey = (t.probability || "").toLowerCase();
+    const probability = probKey === "low" || probKey === "medium" || probKey === "high" ? probKey : "";
+    const srcName = t.sourceName || null;
+    const srcUrl = t.sourceUrl && /^https:\/\//.test(t.sourceUrl) ? t.sourceUrl : null;
+    items.push({
+      playerId: Number(t.playerId || 0),
+      name: t.name,
+      nameFa: playerFa(t.name),
+      position: t.position?.label || "",
+      date: t.transferDate || "",
+      kind,
+      kindFa: kind === "in" ? "ورودی" : kind === "out" ? "خروجی" : "تمدید",
+      from: { id: fromId, fa: teamFa(t.fromClubFullName, t.fromClub) || t.fromClubFullName || t.fromClub },
+      to: { id: toId, fa: teamFa(t.toClubFullName, t.toClub) || t.toClubFullName || t.toClub },
+      feeFa: rumourFeeFa(t),
+      probability,
+      probabilityFa: probability ? RUMOUR_PROBABILITY_FA[probability] : "",
+      sourceName: srcName,
+      sourceUrl: srcName && srcUrl ? srcUrl : null,
+    });
+  }
+  if (items.length === 0) return null;
+  return {
+    total: items.length,
+    nIn: items.filter((x) => x.kind === "in").length,
+    nOut: items.filter((x) => x.kind === "out").length,
     items,
   };
 }
