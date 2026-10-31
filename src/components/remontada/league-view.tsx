@@ -1294,6 +1294,29 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
             <div key={i} className="h-4 rounded bg-white/[0.06] animate-pulse" style={{ width: `${40 + ((i * 17) % 45)}%` }} />
           ))}
         </div>
+      ) : loading && season != null ? (
+        /* ui-cycle-9 (BL-9): season-switch skeleton. The old season's table
+           used to stay on screen dimmed to opacity-50 while the new season
+           fetched — rows of ۲۰۲۴/۲۰۲۵ impersonating the selected «فصل
+           ۲۰۲۳/۲۰۲۴», with only a 10px «در حال بارگذاری…» hint. A real
+           table-shaped skeleton (rank chip + name bar + RTL-aligned number
+           bars, aria-busy) now owns the content area until the payload
+           lands, so the label and the rows on screen can never disagree. */
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <div className="glass-card p-4 flex flex-col gap-2.5">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 animate-pulse">
+                <div className="w-6 h-6 rounded-md bg-white/[0.07] shrink-0" />
+                <div className="h-3.5 rounded bg-white/[0.06]" style={{ width: `${30 + ((i * 23) % 40)}%` }} />
+                <div className="ms-auto flex gap-2 shrink-0">
+                  <div className="w-8 h-3.5 rounded bg-white/[0.05]" />
+                  <div className="w-8 h-3.5 rounded bg-white/[0.05]" />
+                  <div className="w-8 h-3.5 rounded bg-white/[0.05]" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         <div className={cn("transition-opacity", loading && "opacity-50")}>
           {tab === "standings" && (standings ? (
