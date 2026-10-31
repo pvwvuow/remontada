@@ -1235,7 +1235,8 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   </span>
                   <span className="text-[8.5px] text-muted-foreground max-w-[64px] truncate leading-3">{p.nameFa || p.name}</span>
                   {typeof p.rating === "number" && p.rating > 0 && (
-                    <span className="text-[8px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
+                    /* ui-cycle-18: data floor 9px — rating is a value, never 8px */
+                    <span className="text-[9px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
                   )}
                 </Link>
               ))}

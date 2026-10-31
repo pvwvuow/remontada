@@ -485,7 +485,8 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
           </div>
           <div className="text-center shrink-0 ps-1">
             <p className="text-[34px] leading-none font-light text-[#dfedff] tabular-persian">{faDigits(pad2(top.goals))}</p>
-            <p className="text-[8px] font-bold text-[#c6dcf3] mt-1">گل</p>
+            {/* ui-cycle-18: data floor 9px */}
+            <p className="text-[9px] font-bold text-[#c6dcf3] mt-1">گل</p>
           </div>
         </div>
         <ol className="mt-1 flex flex-col">

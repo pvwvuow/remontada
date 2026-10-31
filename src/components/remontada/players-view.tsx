@@ -224,7 +224,8 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
           {/* auto ladder: 64px render → 150px source (crisp @2×), see player-photo.tsx */}
           <PlayerPhoto id={p.id} name={name} size={64} rounded="rounded-2xl" />
           {p.injured && (
-            <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-md border border-rose-400/30 bg-rose-500/20 px-1.5 py-px text-[8px] font-black text-rose-300 whitespace-nowrap">
+            /* ui-cycle-18: data floor 9px — status flags carry meaning, never 8px */
+            <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 rounded-md border border-rose-400/30 bg-rose-500/20 px-1.5 py-px text-[9px] font-black text-rose-300 whitespace-nowrap">
               مصدوم
             </span>
           )}

@@ -130,7 +130,8 @@ function ScorerRow({ s, mainRank, showGlobal }: { s: GlobalScorer; mainRank: num
         </div>
         <span className="shrink-0 min-w-[44px] text-center rounded-lg bg-[#a9cdf611] px-2 py-1.5">
           <span className="font-semibold text-[#e0efff] tabular-persian text-[15px]">{faDigits(s.goals)}</span>
-          <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">گل</span>
+          {/* ui-cycle-18: data floor 9px — unit labels of numbers never below 9px */}
+          <span className="text-[9px] font-bold text-[#8fa8c1] ms-1">گل</span>
         </span>
       </div>
     </li>
@@ -179,7 +180,7 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
             </div>
             <span className="shrink-0 min-w-[38px] text-center rounded-lg bg-[#a9cdf611] px-2 py-1">
               <span className="font-semibold text-[#e0efff] tabular-persian text-[14px]">{faDigits(a.value)}</span>
-              <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">پاس</span>
+              <span className="text-[9px] font-bold text-[#8fa8c1] ms-1">پاس</span>
             </span>
           </li>
         ))}
@@ -223,7 +224,7 @@ function CardRow({ c, kind }: { c: GlobalCard; kind: "yellow" | "red" }) {
         <span className={cn("font-semibold tabular-persian text-[13.5px]", kind === "yellow" ? "text-amber-300" : "text-rose-300")}>
           {faDigits(c.value)}
         </span>
-        <span className="text-[8px] font-bold text-[#8fa8c1] ms-1">{kind === "yellow" ? "زرد" : "قرمز"}</span>
+        <span className="text-[9px] font-bold text-[#8fa8c1] ms-1">{kind === "yellow" ? "زرد" : "قرمز"}</span>
       </span>
     </li>
   );
@@ -636,7 +637,7 @@ export function TopScorersView() {
                   <p className="text-[44px] sm:text-[56px] leading-none font-light arcane-text tabular-persian">
                     {faDigits(pad2(heroScorer.s.goals))}
                   </p>
-                  <p className="text-[8.5px] font-bold text-[#c6dcf3] mt-1.5">گل</p>
+                  <p className="text-[9px] font-bold text-[#c6dcf3] mt-1.5">گل</p>
                 </div>
               </div>
             </>
