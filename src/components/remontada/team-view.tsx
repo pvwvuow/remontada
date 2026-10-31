@@ -657,10 +657,14 @@ function TeamTransferRow({ t }: { t: TeamTransferItem }) {
           <Link
             href={`/player/${t.playerId}`}
             prefetch={false}
-            className="text-[12.5px] font-black truncate block max-w-full w-fit rounded-md glass-row-hover"
+            className="tap-hit-row text-[12.5px] font-black block max-w-full w-fit rounded-md glass-row-hover"
             title={t.nameFa && t.nameFa !== t.name ? t.name : `پروفایل ${t.name}`}
           >
-            {t.nameFa || t.name}
+            {/* tenth-generation tap-hit-row; truncate lives on the inner span —
+                overflow:hidden on the link would clip the ::after zone entirely
+                (ui-cycle-26 lesson); the 4px downward reach lands on the
+                non-interactive clubs line, the kind chip sits 10px away */}
+            <span className="block truncate">{t.nameFa || t.name}</span>
           </Link>
         ) : (
           <p className="text-[12.5px] font-black truncate">{t.nameFa || t.name}</p>
@@ -1679,6 +1683,7 @@ export function TeamView({ teamId }: { teamId: number }) {
               <FavoriteStar
                 team={{ id: teamId, fa: data.team.fa || data.team.name, en: data.team.name }}
                 size={20}
+                className="tap-hit-row"
               />
               <ShareButton
                 title={`${data.team.fa || data.team.name} | رمانتادا`}
