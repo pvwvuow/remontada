@@ -102,6 +102,84 @@ function toRows(metric: Metric, scorers: GlobalScorer[], assists: GlobalAssist[]
     }));
 }
 
+// ---------- ui-cycle-20: loading states join the site's skeleton language ----------
+// The three plain «در حال دریافت…» text boxes predate the shared skeleton
+// pattern (glass blocks + animate-pulse + aria-busy, shaped like the real
+// content) used by topscorers / league-scorers / standings / matches / news.
+// Same visual contract now — truthful shapes, no layout jump on resolve.
+
+function StarsSkeleton() {
+  return (
+    <div className="flex flex-col gap-2" aria-busy="true" aria-label="در حال بارگذاری بازیکنان">
+      <div className="grid grid-cols-3 gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="glass-popover rounded-2xl p-3 flex flex-col items-center gap-2">
+            <div className="w-[88px] h-[88px] rounded-2xl bg-muted animate-pulse" />
+            <div className="h-3 rounded bg-muted animate-pulse w-3/4" />
+            <div className="h-2.5 rounded bg-muted animate-pulse w-1/2" />
+            <div className="flex gap-1">
+              <div className="w-9 h-4 rounded-md bg-muted animate-pulse" />
+              <div className="w-9 h-4 rounded-md bg-muted animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <div key={i} className="glass-popover rounded-2xl p-3 flex flex-col items-center gap-2">
+            <div className="w-[60px] h-[60px] rounded-2xl bg-muted animate-pulse" />
+            <div className="h-3 rounded bg-muted animate-pulse w-3/4" />
+            <div className="h-2.5 rounded bg-muted animate-pulse w-1/2" />
+            <div className="flex gap-1">
+              <div className="w-8 h-4 rounded-md bg-muted animate-pulse" />
+              <div className="w-8 h-4 rounded-md bg-muted animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TeamsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2" aria-busy="true" aria-label="در حال بارگذاری تیم‌ها">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="glass-popover rounded-2xl px-3 py-2.5 flex items-center gap-2">
+          <div className="w-[22px] h-[22px] rounded bg-muted animate-pulse shrink-0" />
+          <div className="h-3 rounded bg-muted animate-pulse flex-1" style={{ maxWidth: `${55 + ((i * 17) % 35)}%` }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SquadSkeleton() {
+  return (
+    <div className="flex flex-col gap-3" aria-busy="true" aria-label="در حال بارگذاری ترکیب تیم">
+      <div className="glass-popover rounded-2xl p-3 flex items-center gap-2.5">
+        <div className="w-[30px] h-[30px] rounded-lg bg-muted animate-pulse shrink-0" />
+        <div className="flex flex-col gap-1.5">
+          <div className="h-3.5 rounded bg-muted animate-pulse w-32" />
+          <div className="h-2.5 rounded bg-muted animate-pulse w-24" />
+        </div>
+      </div>
+      <section className="flex flex-col gap-2">
+        <div className="h-3.5 w-20 rounded bg-muted animate-pulse" />
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="glass-popover rounded-2xl p-3 flex flex-col items-center gap-2">
+              <div className="w-16 h-16 rounded-2xl bg-muted animate-pulse" />
+              <div className="h-3 rounded bg-muted animate-pulse w-3/4" />
+              <div className="h-2.5 rounded bg-muted animate-pulse w-1/3" />
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function PlayerCard({ p, rank, metric, big = false }: { p: Row; rank: number; metric: Metric; big?: boolean }) {
   const name = p.nameFa || p.name;
   const chips: { label: string; value: string; cls: string; title: string }[] = [
@@ -570,9 +648,7 @@ export function PlayersView() {
           {error ? (
             <EmptyState title="بازیکنان" sub={error} />
           ) : starsLoading && !data ? (
-            <div className="glass-popover rounded-2xl p-6 text-center text-[12px] text-steel" role="status">
-              در حال دریافت بازیکنان…
-            </div>
+            <StarsSkeleton />
           ) : list.length === 0 ? (
             <EmptyState
               title="بازیکنان"
@@ -641,9 +717,7 @@ export function PlayersView() {
           {teamsErr ? (
             <EmptyState title="تیم‌ها" sub={teamsErr} />
           ) : !teams ? (
-            <div className="glass-popover rounded-2xl p-6 text-center text-[12px] text-steel" role="status">
-              در حال دریافت تیم‌ها…
-            </div>
+            <TeamsSkeleton />
           ) : (
             <div className="flex flex-col gap-3">
               <p className="text-[10px] text-steel px-1">
@@ -676,9 +750,7 @@ export function PlayersView() {
             (squadErr ? (
               <EmptyState title="ترکیب تیم" sub={squadErr} />
             ) : !squad ? (
-              <div className="glass-popover rounded-2xl p-6 text-center text-[12px] text-steel" role="status">
-                در حال دریافت ترکیب تیم…
-              </div>
+              <SquadSkeleton />
             ) : (
               <div className="flex flex-col gap-3" data-testid="squad-panel">
                 {/* squad header */}
