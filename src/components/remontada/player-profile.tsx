@@ -266,7 +266,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   {p.positionFa && <span aria-hidden>·</span>}
                   <Link
                     href={`/team/${p.team.id}`}
-                    className="inline-flex items-center gap-1.5 hover:text-sky-soft transition-colors font-bold"
+                    className="tap-hit-row inline-flex items-center gap-1.5 hover:text-sky-soft transition-colors font-bold"
                     prefetch={false}
                   >
                     <TeamLogo id={p.team.id} alt="" size={14} />
@@ -636,7 +636,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                         key={`${t.name}-${j}`}
                         href={`/league/${t.leagueKey}`}
                         prefetch={false}
-                        className="text-[10.5px] font-bold text-sky-soft border border-glass-border-soft rounded px-1.5 py-px hover:bg-white/5"
+                        className="tap-hit-row text-[10.5px] font-bold text-sky-soft border border-glass-border-soft rounded px-1.5 py-px hover:bg-white/5"
                       >
                         {t.nameFa}
                       </Link>
