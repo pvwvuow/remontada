@@ -4294,3 +4294,19 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **کامیت:** `0a1a69c` — «Fix (cycle 299):» — push شد و ls-remote تأیید کرد (origin/main = 0a1a69c).
 
 **نوبت گردشی بعدی: cycle-300 = آپدیت** (فرمول ((300 mod 5)+1)=۱) — کاندید ثبت‌شده: افزودن /rss.xml به sitemap.xml (مشاهدهٔ ۲ کارت ۲۹۸) یا کشف شکاف تازه با پروب زنده
+
+---
+
+### Task ID: cycle-300 — آپدیت (تبلیغ سطح جستجوی سایت در WebSite LD — الگوی رسمی SearchAction)
+
+**شکاف کشف‌شده با پروب زندهٔ این چرخه (UA Chrome/124):** چرخهٔ ۲۹۶ صفحهٔ اشتراک‌پذیر `/search?q=` را ساخت اما لایهٔ structured-data هرگز آن را معرفی نکرد — نود WebSite در SITE_LD (کارت ۲۹) فقط name/alternateName/url/inLanguage داشت و خزنده‌ها هیچ سیگنال SD از وجود جستجوی سایت نداشتند.
+
+**پیاده‌سازی additive تک‌نودی در `src/app/layout.tsx`:** `potentialAction` = SearchAction با `target` = EntryPoint و `urlTemplate` = `https://remontada.vercel.app/search?q={search_term_string}` + `query-input` = «required name=search_term_string» — الگوی دقیق schema.org روی همان قرارداد /search?q= (نه مسیر تازه، نه سطح تکراری). noindex صفحهٔ /search (۲۹۶) سالم و دست‌نخورده ماند: صفحاتِ نتیجه سند برای رد شدن‌اند؛ SearchAction خودِ «اکشن» را اعلام می‌کند. کاندید مشاهدهٔ ۲ کارت ۲۹۸ (RSS در sitemap) عمداً دست‌نخورده ماند — قضاوت ثبت‌شدهٔ ۲۹۸ پابرجاست (sitemap صفحات را فهرست می‌کند؛ فید با هدلینک‌های ۲۹۵ روی ۱۱ صفحهٔ کانونی توزیع می‌شود).
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون رسمی 28/28 (BASE صریح).
+
+**شواهد زنده:** LD خانه JSON معتبر با SearchAction دقیق (EntryPoint urlTemplate .../search?q={search_term_string} + query-input required)؛ sitewide — /news:۱، /leagues:۱، /search:۲ (با کپی flight)؛ اثبات DOM با agent-browser در 390×844: خانه کنسول ۰ / errors ۰ / overflow ۰؛ رگرسیون /search?q=chelsea — URL حفظ شد، متا robots «noindex, follow» سالم (قرارداد ۲۹۶)، کنسول ۰، overflow ۰.
+
+**کامیت:** `f17030b` — «Update (cycle 300):» — push و تأیید ls-remote (origin/main = f17030b).
+
+**نوبت گردشی بعدی: cycle-301 = آپدیت** (فرمول ((301 mod 5)+1)=۲) — شکاف تازه با پروب زنده کشف شود؛ کاندیدهای ثبت‌شده: RSS در sitemap (اختیاری، قضاوت ۲۹۸ پابرجاست) یا ایدهٔ تازه
