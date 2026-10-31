@@ -9,6 +9,9 @@ import { LEAGUES } from "@/lib/leagues";
 export const metadata: Metadata = {
   title: "لیگ‌ها و جام‌ها",
   description: "فهرست لیگ‌ها و جام‌های پوشش‌داده‌شده در رمانتادا: لیگ قهرمانان اروپا، لیگ اروپا، کنفرانس لیگ، لیگ قهرمانان آسیا، پریمیرلیگ، لالیگا، سری‌آ، بوندسلیگا، لیگ ۱ فرانسه، لیگ خلیج فارس، سوپرلیگ ترکیه، لیگ برتر اسکاتلند، لیگ حرفه‌ای عربستان، چمپیونشیپ انگلیس، لیگ پرتغال، لیگ برتر امارات، لیگ ستارگان قطر، اردیویزهٔ هلند، لیگ قهرمانان آسیا ۲، سوپرلیگ سوئیس، لیگ برتر کرواسی، سوپرلیگ مالزی، اکستراکلاسا لهستان و لیگ بلژیک",
+  // fix cycle-289: without a self canonical this index page inherited the
+  // layout's root "/" canonical — the mirror of fix cycle-33's noindex case
+  alternates: { canonical: "/leagues" },
 };
 
 // FotMob team ids (verified against live standings / match feed)

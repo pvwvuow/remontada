@@ -6,6 +6,8 @@ import { BackToTop } from "@/components/remontada/back-to-top";
 export const metadata: Metadata = {
   title: "اخبار فوتبال",
   description: "آخرین اخبار داغ فوتبال جهان از ESPN، BBC Sport و Sky Sports با ترجمه فارسی — رمانتادا",
+  // fix cycle-289: self canonical — previously inherited the layout root "/"
+  alternates: { canonical: "/news" },
 };
 
 export default function NewsPage() {
