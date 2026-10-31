@@ -148,7 +148,7 @@ function AssistsCard({ data }: { data: GlobalScorersData }) {
           <path d="M4 19h16" />
           <path d="M5 15l5-5 4 3 5-7" />
         </svg>
-        <h2 className="text-[12.5px] font-black">مسابقه پاس گل</h2>
+        <h2 className="text-[12.5px] font-black text-[#dceafd]">مسابقه پاس گل</h2>
         <span className="ms-auto text-[10px] text-steel tabular-persian">{faDigits(list.length)} بازیکن برتر</span>
       </header>
       <ol className="p-1.5 flex flex-col">
@@ -252,7 +252,7 @@ function CardsCard({ data }: { data: GlobalScorersData }) {
           <rect x="7.5" y="3.5" width="9" height="14" rx="1.8" />
           <rect x="4.5" y="6.5" width="9" height="14" rx="1.8" />
         </svg>
-        <h2 className="text-[12.5px] font-black">آقای کارت</h2>
+        <h2 className="text-[12.5px] font-black text-[#dceafd]">آقای کارت</h2>
         <span className="ms-auto text-[10px] text-steel tabular-persian">
           {faDigits(yellow.length)} زرد · {faDigits(red.length)} قرمز
         </span>

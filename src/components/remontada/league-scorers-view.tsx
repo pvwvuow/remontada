@@ -601,13 +601,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           honest absence when the feed has no assists (mas). */}
       {data && !loading && (data.assists || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" className="text-chart-2" aria-hidden>
               <path d="M4 19h16" />
               <path d="M5 15l5-5 4 3 5-7" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">بهترین پاس‌دهندگان</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">پاس گل فصل</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">پاس گل فصل</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.assists || []).map((a, i) => {
@@ -655,14 +655,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           the feed has no G+A category (→ the section simply hides). */}
       {data && !loading && (data.gPlusA || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="9" cy="9" r="5.2" />
               <path d="M15.5 8.5h6M18.5 5.5v6" />
               <path d="M4.5 20.5l6.5-6.5" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل+پاس</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">گل و پاسِ فصل</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">گل و پاسِ فصل</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.gPlusA || []).map((r, i) => {
@@ -709,12 +709,12 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category (mas → the section simply hides). */}
       {data && !loading && (data.ratings || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M12 3l2.7 5.7 6.3.8-4.6 4.3 1.2 6.2-5.6-3.1-5.6 3.1 1.2-6.2L3 9.5l6.3-.8z" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">برترین امتیازها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">ریتینگ فوت‌ماب فصل</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">ریتینگ فوت‌ماب فصل</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.ratings || []).map((r, i) => {
@@ -772,14 +772,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           goals (xG)" category → the section simply hides. */}
       {data && !loading && (data.xg || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <circle cx="12" cy="12" r="4.5" />
               <circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل مورد انتظار</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت موقعیت‌ها</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">کیفیت موقعیت‌ها</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.xg || []).map((r, i) => {
@@ -848,14 +848,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           team category → the section simply hides. */}
       {data && !loading && (data.teamGoalsPerMatch || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M4 8 Q12 2 20 8 L20 19 Q12 23 4 19 Z" />
               <path d="M4 8 L12 13 L20 8" />
               <path d="M12 13 L12 22.5" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل به از مسابقهٔ تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">قدرت حمله — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">قدرت حمله — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamGoalsPerMatch || []).map((r, i) => {
@@ -927,14 +927,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           team category → the section simply hides. */}
       {data && !loading && (data.teamCorners || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M6 21 L6 4" />
               <path d="M6 4 L17 7 L6 10" />
               <path d="M3 21 L9 21" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">کرنرهای تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم حملات — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">حجم حملات — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamCorners || []).map((r, i) => {
@@ -995,14 +995,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           feed has no team-xG category → the section simply hides. */}
       {data && !loading && (data.teamXg || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <circle cx="12" cy="12" r="4.5" />
               <circle cx="12" cy="12" r="0.8" fill="currentColor" stroke="none" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل مورد انتظار تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت موقعیت‌ها — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">کیفیت موقعیت‌ها — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamXg || []).map((r, i) => {
@@ -1068,13 +1068,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category → the section simply hides. */}
       {data && !loading && (data.teamCleanSheets || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M12 3l8 3.5v5c0 4.6-3.2 8.2-8 9.5-4.8-1.3-8-4.9-8-9.5v-5z" />
               <path d="M9 12l2 2 4-4" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل نخرده‌های تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">دروازهٔ بسته — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">دروازهٔ بسته — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamCleanSheets || []).map((r, i) => {
@@ -1136,14 +1136,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           simply hides. */}
       {data && !loading && (data.teamPossession || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M12 12V3.5" />
               <path d="M12 12l6.5 5.8" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">مالکیت توپ تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کنترل توپ — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">کنترل توپ — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamPossession || []).map((r, i) => {
@@ -1207,12 +1207,12 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           hides. */}
       {data && !loading && (data.teamYellowCards || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <rect x="7" y="3.5" width="10" height="15" rx="1.6" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">کارت‌های زرد تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">انضباط — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">انضباط — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamYellowCards || []).map((r, i) => {
@@ -1275,12 +1275,12 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           hides. */}
       {data && !loading && (data.teamRedCards || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-[#eb5757]" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-[#eb5757]" aria-hidden>
               <rect x="7" y="3.5" width="10" height="15" rx="1.6" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">کارت‌های قرمز تیم‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">انضباط — سطح تیم</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">انضباط — سطح تیم</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.teamRedCards || []).map((r, i) => {
@@ -1347,14 +1347,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           goals on target (xGOT)" category → the section simply hides. */}
       {data && !loading && (data.xgot || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <rect x="3" y="7" width="18" height="10" rx="1" />
               <path d="M3 12h18" />
               <path d="M12 7v10" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل مورد انتظار روی دروازه</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت شوت روی دروازه</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">کیفیت شوت روی دروازه</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.xgot || []).map((r, i) => {
@@ -1414,15 +1414,15 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           hides. */}
       {data && !loading && (data.goalsPer90 || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="13" r="8" />
               <path d="M12 13l3.2-3.2" />
               <path d="M10 2h4" />
               <path d="M12 5V2" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل در هر ۹۰</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">بهره‌وری گلزنی</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">بهره‌وری گلزنی</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.goalsPer90 || []).map((r, i) => {
@@ -1484,15 +1484,15 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           assist (xA)" category → the section simply hides. */}
       {data && !loading && (data.xa || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M4 20h16" />
               <path d="M4 16c4-1 8-5 9-9" />
               <path d="M13 4l3 3-4 4-3-3z" />
               <circle cx="5.5" cy="18.5" r="1.2" fill="currentColor" stroke="none" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">پاس مورد انتظار</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">کیفیت خلق موقعیت</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">کیفیت خلق موقعیت</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.xa || []).map((r, i) => {
@@ -1553,15 +1553,15 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category → the section simply hides. */}
       {data && !loading && (data.bigChancesCreated || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <rect x="3" y="12" width="18" height="7" rx="1.5" />
               <path d="M6 12V8a2 2 0 012-2h3" />
               <path d="M9 4l2 2-2 2" />
               <circle cx="7.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">سانس بزرگ خلق‌شده</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم خلق موقعیت</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">حجم خلق موقعیت</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.bigChancesCreated || []).map((r, i) => {
@@ -1625,8 +1625,8 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           the section simply hides. */}
       {data && !loading && (data.chancesCreated || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="6" cy="6" r="2.2" />
               <circle cx="18" cy="6" r="2.2" />
               <path d="M7.5 8L12 20" />
@@ -1634,7 +1634,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               <path d="M8 12h8" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">فرصت‌های خلق‌شده</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم کل فرصت‌سازی</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">حجم کل فرصت‌سازی</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.chancesCreated || []).map((r, i) => {
@@ -1697,8 +1697,8 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           no "Big chances missed" category → the section simply hides. */}
       {data && !loading && (data.bigChancesMissed || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <rect x="3" y="12" width="18" height="7" rx="1.5" />
               <path d="M6 12V8a2 2 0 012-2h3" />
               <circle cx="7.5" cy="15.5" r="1.1" fill="currentColor" stroke="none" />
@@ -1706,7 +1706,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               <path d="M19 5l-4 4" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">سانس بزرگ ازدست‌رفته</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حجم سانس ازدست‌رفته</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">حجم سانس ازدست‌رفته</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.bigChancesMissed || []).map((r, i) => {
@@ -1761,13 +1761,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           "Minutes played" category → the section simply hides. */}
       {data && !loading && (data.minutes || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v5l3.5 2" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">بیشترین دقایق</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">حضور در میدان</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">حضور در میدان</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.minutes || []).map((r, i) => {
@@ -1825,15 +1825,15 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           no "Save percentage" category → the section simply hides. */}
       {data && !loading && (data.savePercentage || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M9 15l6-6" />
               <circle cx="9.4" cy="9.4" r="1" />
               <circle cx="14.6" cy="14.6" r="1" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">درصد سیو</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">دقت مهار</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">دقت مهار</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.savePercentage || []).map((r, i) => {
@@ -1891,14 +1891,14 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           section simply hides. */}
       {data && !loading && (data.savesPer90 || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <circle cx="12" cy="12" r="9" />
               <path d="M12 7v6" />
               <circle cx="12" cy="15.6" r="1" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">سیو در هر ۹۰</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">مهار شوت‌ها</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">مهار شوت‌ها</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.savesPer90 || []).map((r, i) => {
@@ -1946,13 +1946,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           surface. */}
       {data && !loading && (data.cleanSheets || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M12 3l8 3.5v5c0 4.6-3.2 8.2-8 9.5-4.8-1.3-8-4.9-8-9.5v-5z" />
               <path d="M9 12l2 2 4-4" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل نخرده‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">دروازه‌بان‌های فصل</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">دروازه‌بان‌های فصل</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.cleanSheets || []).map((r, i) => {
@@ -2005,13 +2005,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category (persiangulf, probed → the section simply hides). */}
       {data && !loading && (data.goalsPrevented || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M12 3l8 3.5v5c0 4.6-3.2 8.2-8 9.5-4.8-1.3-8-4.9-8-9.5v-5z" />
               <path d="M9 12h6" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">گل‌های پیشگیری‌شده</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">xG منهای گل خورده</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">xG منهای گل خورده</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.goalsPrevented || []).map((r, i) => {
@@ -2071,13 +2071,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category). */}
       {data && !loading && (data.penaltySaves || []).length > 0 && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
               <path d="M12 3l8 3.5v5c0 4.6-3.2 8.2-8 9.5-4.8-1.3-8-4.9-8-9.5v-5z" />
               <circle cx="12" cy="11.5" r="2.4" />
             </svg>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">پنالتی‌های مهارشده</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">مهار از نقطهٔ پنالتی</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">مهار از نقطهٔ پنالتی</span>
           </div>
           <ol className="px-2 pb-2.5 flex flex-col">
             {(data.penaltySaves || []).map((r, i) => {
@@ -2123,13 +2123,13 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           old seasons hide the whole card with the payload's own omission). */}
       {data && !loading && data.cards && ((data.cards.yellow || []).length > 0 || (data.cards.red || []).length > 0) && (
         <div className="glass-card overflow-hidden">
-          <div className="flex items-center gap-1.5 px-4 pt-3.5 pb-1">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
             <span className="flex gap-1" aria-hidden>
               <span className="w-1.5 h-2.5 rounded-[2px] bg-[#f2c94c]" />
               <span className="w-1.5 h-2.5 rounded-[2px] bg-[#eb5757]" />
             </span>
             <h2 className="text-[12.5px] font-black text-[#dceafd]">کارت‌ها</h2>
-            <span className="ms-auto text-[9px] text-[#8fa8c1] tabular-persian">زرد / قرمز فصل</span>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">زرد / قرمز فصل</span>
           </div>
           <div className="grid grid-cols-2 gap-2 px-2 pb-2.5">
             {(["yellow", "red"] as const).map((kind) => {
