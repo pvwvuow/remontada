@@ -843,7 +843,14 @@
   .fx-stars { animation: twinkle-a 5.5s ease-in-out infinite alternate; }
   .fx-stars-b { animation: twinkle-b 7s ease-in-out infinite alternate; }
   .rune-ring::before { animation: rune-orbit 16s linear infinite; }
-  .glass-card, .glass-hero, .glass-scorer-hero { animation: card-in 0.38s ease both; }
+  /* ui-cycle-14: the entrance now rides the .reveal class that CardReveal
+     (IntersectionObserver, root layout) adds when a card actually nears the
+     viewport. Before: all 186 glass-cards on the home portal animated at
+     t=0 — 183 below the fold, finishing before any scroll could reach them
+     (pure startup waste, effect never seen). Cards without .reveal are
+     fully visible (the opacity:0 from-frame only exists under the
+     animation), so SSR/no-JS/RM degrade to "no entrance", never to blank. */
+  .glass-card.reveal, .glass-hero.reveal, .glass-scorer-hero.reveal { animation: card-in 0.38s ease both; }
 }
 @keyframes aurora-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-7vmax, 5vmax, 0) scale(1.14); } }
 @keyframes aurora-b { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(6vmax, -4vmax, 0) scale(0.94); } }

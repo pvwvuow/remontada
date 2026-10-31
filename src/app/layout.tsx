@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { PwaRegister } from "@/components/remontada/pwa-register";
+import { CardReveal } from "@/components/remontada/card-reveal";
 import { NavDock } from "@/components/remontada/nav-dock";
 import { FantasyBackdrop } from "@/components/remontada/fantasy-backdrop";
 import { PortalGate } from "@/components/remontada/portal-gate";
@@ -116,6 +117,8 @@ export default function RootLayout({
         <FantasyBackdrop />
         {children}
         <NavDock />
+        {/* ui-cycle-14: viewport-gated card entrances (renders null — no DOM) */}
+        <CardReveal />
         <PortalGate />
         <Toaster />
         <PwaRegister />
