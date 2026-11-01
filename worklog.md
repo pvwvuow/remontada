@@ -4716,3 +4716,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=15539 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
 
 **نوبت گردشی بعدی: cycle-321 = آپدیت** (فرمول ((321 mod 5)+1)=۲) — پویش تازهٔ شکاف با پروب زنده الزامی است؛ ثبت‌شده برای آینده: meta.personJSONLD بالادستی (شکلش با Person فعلی مقایسه شود — شاید فیلد کمکی داشته باشد)، playerInformation.dateValue (فیلد تاریخ دیده‌شده ولی بازنشده).
+---
+### Task ID: cycle-321 — آپدیت (enrichment LD Person صفحهٔ بازیکن از فکت‌های ساختاریافتهٔ پیلود)
+
+**پویش تازهٔ شکاف (الزام کارت ۳۲۰، نامزدهای ثبت‌شده پروب شدند):** `playerInformation.dateValue` = همان contract_end پردازش‌شدهٔ از قبل (cycle-86) — رد مستند. `meta.personJSONLD` باز شد: شکل کامل Person بالادستی با birthDate/height(QuantitativeValue cm)/weight(kg)/gender — سه اولی در LD فعلی صفحه غایب‌اند (مقایسهٔ کلیدبه‌کلید با personLd خط ~۲۱۷). gender رد شد (ارزش ساختاری کم). weight فقط در personJSONLD است (playerInformation ورودی Weight ندارد — پروب کامل هر ۷ ورودی). الگوی ۳۱۷: فقط فکت‌های ساختاریافتهٔ غایب هاروست می‌شوند، LD انگلیسی خام embed نمی‌شود.
+
+**اجرا (۲ فایل، افزودنی):** lib/fotmob.ts — FMPlayerDetails برش narrow از meta.personJSONLD (weight فقط)؛ normalizePlayer بعد از حلقهٔ info: info.birthDate (از birthDate.utcTime سطح بالا → ISO تاریخ‌تنها، فقط با تاریخ قابل‌پارس) و info.weightKg (فقط عدد متناهی >0) — صفر درخواست بالادستی جدید؛ کش player:v9 → **v10** (خروجی نرمال‌شده تغییر کرد — قرارداد ۵۲/۸۶/۸۷/۹۶/۱۳۵/۱۵۹/۱۹۷/۲۰۱). player-profile.tsx — personLd سه فیلد شرطی گرفت: birthDate، height QuantitativeValue (cm، از info.height موجود)، weight QuantitativeValue (kg)؛ پیلودهای v9 قدیمی یا مربی‌های بی‌کلید فیلدها را ساده حذف می‌کنند.
+
+**اثبات زنده:** /player/696679 → Person LD کامل: name/jobTitle/affiliation(با alternateName فارسی)/nationality + **birthDate «1996-12-14» + height {cm, 176} + weight {kg, 69}** — همان فکت‌های بالادستی؛ /player/78719 (مورینیو، پیلود بی‌meta) → birthDate حاضر (بالادستی دارد)، height/weight ساده حذف — کاهش صادقانه بدون کرش؛ DOM 390×844 fresh-session: h1 «رافینیا»، ۴ بلوک LD (graph/BreadcrumbList/FAQPage/Person)، enriched={birth 1996-12-14, height 176, weight 69}، overflowX=false، کنسول صفر.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=16611 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**نوبت گردشی بعدی: cycle-322 = آپدیت** (فرمول ((322 mod 5)+1)=۳) — پویش تازهٔ شکاف با پروب زنده الزامی است؛ پیلودهای بازیکن/تیم/مسابقه/لیگ اکنون تا عمق ۲ تک‌تک مقایسه شده‌اند (۳۱۰/۳۱۵/۳۲۰/۳۲۱) — نامزد بعدی باید از عمق ۳ یا پیلود تازه (teams.details فیلدهای دیده‌نشده، league payload deep) با پروب اثبات شود.

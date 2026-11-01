@@ -6121,6 +6121,17 @@ interface FMPlayerDetails {
     mensNationalTeam?: { id?: number; name?: string }[] | null;
     womensNationalTeam?: { id?: number; name?: string }[] | null;
   } | null;
+  // cycle-321 probed (UA Chrome/124, 2026-11-01, Raphinha 696679): the LD
+  // block rides on meta.personJSONLD — the ONLY payload source for weight
+  // (QuantitativeValue kg); birthDate/height/nationality/affiliation/gender
+  // live there too but top-level birthDate + playerInformation already cover
+  // the others. Narrow slice on purpose; optional: coach/keyless payloads
+  // answered without it in the 317 probe.
+  meta?: {
+    personJSONLD?: {
+      weight?: { value?: string | number; unitText?: string } | null;
+    } | null;
+  } | null;
 }
 
 interface FMCareerEntry {
@@ -6229,6 +6240,12 @@ export interface PlayerData {
   info: {
     age?: number; height?: string; shirt?: number; foot?: string;
     country?: string; countryCcode?: string; marketValue?: string; contractEnd?: string;
+    // cycle-321: Person-LD enrichment facts (birth from the payload top-level
+    // birthDate, weight ONLY from meta.personJSONLD.weight — playerInformation
+    // carries no Weight entry). OPTIONAL by contract: stale v9-cached
+    // snapshots legitimately lack them → the Person LD simply omits the
+    // fields (the 135 honesty pattern). Always present after the v10 bump.
+    birthDate?: string; weightKg?: number;
   };
   season: { leagueFa: string; season: string; stats: PlayerSeasonStat[] } | null;
   recent: PlayerRecentMatch[];
@@ -6603,6 +6620,18 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
       if (iso && !Number.isNaN(new Date(iso).getTime())) info.contractEnd = jalaliContract(iso);
     }
   }
+
+  // cycle-321: Person-LD enrichment facts, harvested best-effort from the
+  // SAME raw payload (zero new upstream requests). birthDate: top-level
+  // birthDate.utcTime → date-only ISO («1996-12-14»); weight: ONLY source is
+  // meta.personJSONLD.weight.value (kg — playerInformation has no Weight
+  // entry; probed). Absent on keyless/coach payloads → fields stay undefined
+  // → the Person LD omits them (honest absence, the 135 pattern).
+  const birthIso = raw.birthDate?.utcTime;
+  if (birthIso && !Number.isNaN(new Date(birthIso).getTime())) info.birthDate = birthIso.slice(0, 10);
+  const wRaw = raw.meta?.personJSONLD?.weight?.value;
+  const wNum = wRaw != null ? Number(wRaw) : NaN;
+  if (Number.isFinite(wNum) && wNum > 0) info.weightKg = wNum;
 
   // season stats from mainLeague (title → Persian via localizedTitleId)
   let season: PlayerData["season"] = null;
@@ -7089,7 +7118,11 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // statSeasons rows («رقابت‌های هر فصل»); a v8-cached shape would serve
   // profiles WITHOUT the block from the persistent SQLite L2 across restarts
   // for up to the TTL (same convention as cycle-52/86/87/96/135/159/197)
-  const payload = await cached(`player:v9:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-321: key bumped to v10 — normalized output changed in place: info
+  // gained the optional birthDate/weightKg Person-LD facts; a v9-cached
+  // snapshot would serve profiles WITHOUT them for up to the 10-min TTL
+  // (same convention as cycle-52/86/87/96/135/159/197/201)
+  const payload = await cached(`player:v10:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

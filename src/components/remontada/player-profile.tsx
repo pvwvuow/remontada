@@ -231,6 +231,24 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         }
       : {}),
     ...(p.info.country ? { nationality: { "@type": "Country", name: p.info.country } } : {}),
+    // cycle-321: Person-LD enrichment — the payload's meta.personJSONLD
+    // carries birthDate/height/weight the page LD never had (the 317
+    // convention: harvest only the structured facts missing from ours; never
+    // embed the upstream English LD verbatim). Conditional emission — old
+    // v9-cached payloads or keyless coach rows omit them cleanly.
+    ...(p.info.birthDate ? { birthDate: p.info.birthDate } : {}),
+    ...(p.info.height && /\d/.test(String(p.info.height))
+      ? {
+          height: {
+            "@type": "QuantitativeValue",
+            unitText: "cm",
+            value: String(p.info.height).replace(/cm/i, "").trim(),
+          },
+        }
+      : {}),
+    ...(p.info.weightKg != null
+      ? { weight: { "@type": "QuantitativeValue", unitText: "kg", value: p.info.weightKg } }
+      : {}),
   };
 
   // cycle-82: market-value sparkline geometry (x 1..99, y 3..27 in a 101×30 viewBox)
