@@ -5498,3 +5498,13 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc --noEmit 0 ← build 0 ← استارت رسمی (UP pid=27964، HTTP 200) ← رگرسیون ۲۸/۲۸ با BASE صریح ← DOM در 390×844 (scripts/cycle370-domproof.sh) **۲۲/۲۲**: /topscorers بدون رقم نقطه‌دار و بج «xG ۱۱٫۰»؛ /team/9825 میانگین «۱٫۶» و صفر نقطه؛ /match/5749720 اولین pill «۸٫۷» و صفر نقطه؛ /player/737066 صفر نقطه؛ /league/pl پودیوم meter «آرسنال ۱۱۹٫۶ کیلومتر» با ٫ + صفر نقطه (شامل بخش تیم هفته)؛ scrollW=cw=390، page errors ۰، console errors ۰ همهٔ صفحات.
 
 **نوبت گردشی بعدی: cycle-371 = آپدیت** (فرمول ((371 mod 5)+1)=۲) — نامزد: گذر اختصاصی league-scorers-view (۴۷ نقطه، ممیزی dir=ltr).
+
+## Task ID: PROTOCOL-recovery (بازیافت دوم کانتینر) — بازیابی کامل از عصر cycle-44 به origin=7e3afe7 (پس از cycle-370)
+
+تاریخ: ۲۰۲۶-۱۱-۰۲ (۰۳:۰۵ بیدارباش). نشانه‌ها: سلامت ۵۰۰، اسکریپت‌های start/sync/recover و پروب‌ها پاک شده، مخزن محلی 52169b7 (کارت cycle-44) در حالی که origin/main=7e3afe7 (کارت cycle-370) — بازیافت کانتینر دوم (قبلش عصر cycle-368). درخت «کثیف» = آرتیفکت بازیابی، نه نشست موازی (درس ثبت‌شده؛ داور: ls-remote).
+
+**اجرا عین پروتکل (اسکریپت بازسازی‌شده scripts/recover-remontada.sh):** کلون تازه از origin/main با توکن scripts/remote-token.txt → .env نجات‌یافته از مخزن کثیف (کپی پیش از تعویض) → bun install --frozen-lockfile (۸۲۷ بسته) → prisma db push + generate با DATABASE_URL صریح → build در مسیر نهایی (توالی «تعویض-سپس-build» درس مسیر standalone/remontada-fresh بازیافت اول را یک‌جا حل کرد؛ یک build کافی بود) → cp -r .next/static به standalone → start-remontada.sh بازسازی‌شده (kill :3000 + بوت standalone) → HTTP 200 (pid=1719). sync-to-github.sh با گیت FRESHNESS بازسازی شد: `grep -c "FRESHNESS GATE" scripts/sync-to-github.sh` = 1 ✓. رگرسیون ۲۸/۲۸ با BASE=http://localhost:3000 صریح ✓.
+
+**بدون تغییر کد محصول** — فقط کانتینر و اسکریپت‌های اپراتوری. بازیابی شمارهٔ چرخه مصرف نمی‌کند؛ گردش سرِ جای خودش می‌ماند.
+
+**نوبت گردشی بعدی: cycle-371 = آپدیت** (فرمول ((371 mod 5)+1)=۲) — نامزد: گذر اختصاصی league-scorers-view (۴۷ نقطه، ممیزی dir=ltr).
