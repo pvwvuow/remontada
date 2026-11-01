@@ -16,7 +16,7 @@ import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
 import { LeagueTransfersList } from "@/components/remontada/league-transfers";
 import { LeagueTotwSection } from "@/components/remontada/league-totw";
-import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
+import { faDecimal, faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -343,23 +343,25 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 // formatted with the payload's own stat.format/stat.fractions hints so the
 // numbers stay honest (percent/number/currency/kph/fraction).
 function boardValue(v: number, fmt: string, fractions: number): string {
-  if (fmt === "percent") return `${faDigits(v.toFixed(1))}٪`;
-  if (fmt === "kph") return faDigits(v.toFixed(1));
+  // cycle-369: decimal renders go through faDecimal — the Persian decimal
+  // separator ٫ between Persian digits (bug-hunt 368 finding).
+  if (fmt === "percent") return `${faDecimal(v.toFixed(1))}٪`;
+  if (fmt === "kph") return faDecimal(v.toFixed(1));
   // cycle-367: meter boards render kilometers (deepStatValueFa convention);
   // sub-1km values (defensive) stay meters.
   if (fmt === "meter") {
-    return v >= 1000 ? `${faDigits(String(Math.round(v / 100) / 10))} کیلومتر` : `${faDigits(String(v))} متر`;
+    return v >= 1000 ? `${faDecimal(String(Math.round(v / 100) / 10))} کیلومتر` : `${faDecimal(String(v))} متر`;
   }
   if (fmt === "currency") {
     const abs = Math.abs(v);
-    if (abs >= 1e9) return `${faDigits((v / 1e9).toFixed(2))} میلیارد`;
-    if (abs >= 1e6) return `${faDigits((v / 1e6).toFixed(1))} میلیون`;
+    if (abs >= 1e9) return `${faDecimal((v / 1e9).toFixed(2))} میلیارد`;
+    if (abs >= 1e6) return `${faDecimal((v / 1e6).toFixed(1))} میلیون`;
     return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
   }
   if (fmt === "number") {
     return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
   }
-  return faDigits(v.toFixed(Math.max(0, Math.min(fractions, 2))));
+  return faDecimal(v.toFixed(Math.max(0, Math.min(fractions, 2))));
 }
 
 function BoardRow({ row, kind }: { row: LeagueBoard["rows"][number] & { _v: string }; kind: "team" | "player" }) {
@@ -485,7 +487,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
     <div className="flex flex-col gap-4">
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <KpiCard label="میانگین گل هر بازی" value={faDigits(stats.avgGoals.toFixed(2))} sub={`${faDigits(stats.totalGoals)} گل در ${faDigits(n)} بازی`} />
+        <KpiCard label="میانگین گل هر بازی" value={faDecimal(stats.avgGoals.toFixed(2))} sub={`${faDigits(stats.totalGoals)} گل در ${faDigits(n)} بازی`} />
         <KpiCard label="هر دو تیم گل زدند" value={`${faDigits(Math.round(stats.bttsPct))}٪`} sub="از بازی‌های برگزارشده" />
         <KpiCard label="برد میزبان‌ها" value={`${faDigits(pct(stats.homeWins))}٪`} sub={`${faDigits(stats.homeWins)} بازی`} />
         <KpiCard label="برد مهمان‌ها" value={`${faDigits(pct(stats.awayWins))}٪`} sub={`${faDigits(stats.awayWins)} بازی`} />
@@ -533,7 +535,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
                   <div className="mt-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
                     <div className="h-full bg-chart-3/60 rounded-full" style={{ width: `${(r.goals / maxRoundGoals) * 100}%` }} />
                   </div>
-                  <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDigits(r.avg.toFixed(1))} گل</p>
+                  <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDecimal(r.avg.toFixed(1))} گل</p>
                 </div>
               </li>
             ))}
@@ -1100,7 +1102,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
 function XgTable({ rows }: { rows: StandingsRow[] }) {
   const withXg = useMemo(() => rows.filter((r) => typeof r.xg === "number"), [rows]);
   if (withXg.length === 0) return null;
-  const fmt1 = (v: number) => faDigits(v.toFixed(1));
+  const fmt1 = (v: number) => faDecimal(v.toFixed(1));
   return (
     <div className="glass-card overflow-hidden" data-testid="league-xg">
       <header className="px-4 pt-3.5 pb-2 flex items-baseline justify-between gap-2">

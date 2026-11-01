@@ -8,6 +8,18 @@ export function faDigits(input: string | number): string {
   return String(input).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
 }
 
+/** Persian numerals with the Persian decimal separator ٫ (U+066B).
+ *
+ *  cycle-369 fix (bug-hunt 368 finding): faDigits maps digits only, so
+ *  numeric renders showed «۱۱۹.۴» — an ASCII '.' sitting between Persian
+ *  digits — while the documented convention is the Persian decimal
+ *  separator «۱۱۹٫۴». Numeric renders call this instead.
+ *  Numeric-render-scoped ONLY, never global: dates, paths, hrefs and
+ *  version-like strings carry meaningful dots that faDigits must preserve. */
+export function faDecimal(input: string | number): string {
+  return faDigits(String(input).replace(/(\d)\.(\d)/g, "$1٫$2"));
+}
+
 export function enDigits(input: string): string {
   return input
     .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
