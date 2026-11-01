@@ -86,13 +86,13 @@ for a, c in pairs:
 
 print("== E. og:image wiring across surfaces ==")
 wiring = [
-    ("/league/pl",        "https://remontada.vercel.app/api/og/pl"),
-    ("/league/ucl",       "https://remontada.vercel.app/api/og/ucl"),
-    ("/league/persiangulf","https://remontada.vercel.app/api/og/persiangulf"),
-    ("/topscorers/pl",    "https://remontada.vercel.app/api/og/pl"),
-    ("/topscorers/acl",   "https://remontada.vercel.app/api/og/acl"),
-    ("/player/696679",    "https://remontada.vercel.app/api/og/person/696679?k=player"),
-    ("/coach/30889",      "https://remontada.vercel.app/api/og/person/30889?k=coach"),
+    ("/league/pl",        "https://remontada.zxy.site/api/og/pl"),
+    ("/league/ucl",       "https://remontada.zxy.site/api/og/ucl"),
+    ("/league/persiangulf","https://remontada.zxy.site/api/og/persiangulf"),
+    ("/topscorers/pl",    "https://remontada.zxy.site/api/og/pl"),
+    ("/topscorers/acl",   "https://remontada.zxy.site/api/og/acl"),
+    ("/player/696679",    "https://remontada.zxy.site/api/og/person/696679?k=player"),
+    ("/coach/30889",      "https://remontada.zxy.site/api/og/person/30889?k=coach"),
 ]
 for page, want in wiring:
     st, hd, b = get(page)

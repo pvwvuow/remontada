@@ -8,12 +8,12 @@ const cases: Array<
 > = [
   [
     {},
-    "https://remontada.vercel.app",
-    "no env at all — sandbox default unchanged (zero local regression)",
+    "https://remontada.zxy.site",
+    "no env at all — the real production domain (374: dead vercel fallback retired)",
   ],
   [
     { NEXT_PUBLIC_SITE_URL: "" },
-    "https://remontada.vercel.app",
+    "https://remontada.zxy.site",
     "empty override falls through (pre-334 `||` parity)",
   ],
   [
@@ -26,7 +26,7 @@ const cases: Array<
       VERCEL_ENV: "preview",
       VERCEL_PROJECT_PRODUCTION_URL: "remontada-git-main-pvwvuow.vercel.app",
     },
-    "https://remontada.vercel.app",
+    "https://remontada.zxy.site",
     "preview build never leaks an ephemeral domain into canonicals",
   ],
   [
