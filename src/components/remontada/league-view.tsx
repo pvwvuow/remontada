@@ -1423,7 +1423,20 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
       {/* league header */}
       <div className="flex items-center justify-between gap-3 px-1">
         <div>
-          <h1 className="text-lg font-black">{lg.faName}</h1>
+          {/* cycle-346: the competition's OFFICIAL brand color — details.
+              leagueColor surfaced through the standings payload (strict-hex
+              guarded in lib), rendered as a live accent dot beside the league
+              name; hidden when upstream lacks the field. */}
+          <h1 className="text-lg font-black flex items-center gap-2">
+            {standings?.color && (
+              <span
+                aria-hidden
+                className="inline-block w-2.5 h-2.5 rounded-full ring-1 ring-white/25 shrink-0"
+                style={{ backgroundColor: standings.color }}
+              />
+            )}
+            {lg.faName}
+          </h1>
           <p className="text-[11px] text-muted-foreground">
             {shownSeason && <>فصل {faDigits(shownSeason)} · </>}
             {fixtures && <>در مجموع {faDigits(fixtures.total)} بازی</>}

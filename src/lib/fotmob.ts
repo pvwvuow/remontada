@@ -960,6 +960,12 @@ export interface StandingsData {
   groups?: { fa: string; count: number }[];
   home?: StandingsRow[];   // cycle-52 additive: FotMob per-side split (optional — hidden when absent)
   away?: StandingsRow[];
+  /** cycle-346 additive: the competition's OFFICIAL brand color (upstream
+   *  details.leagueColor, strict-hex validated — hidden when upstream lacks
+   *  it). Surfaced as the accent dot beside the league-page h1. Optional by
+   *  contract: v38-cached snapshots legitimately lack it (the 345 L2-SQLite
+   *  rule — shape changes ride a cache-key bump, here v38→v39). */
+  color?: string;
   scorers: ScorerEntry[];
   assists: AssistEntry[];
   /** cycle-210 additive: «آقای امتیاز» — the league's own FotMob-rating
@@ -1607,7 +1613,7 @@ const STANDINGS_LEGEND_FA: Record<string, string> = {
 };
 
 interface FotMobLeague {
-  details?: { name?: string; seasons?: { year?: string; active?: boolean }[] };
+  details?: { name?: string; seasons?: { year?: string; active?: boolean }[]; leagueColor?: string };
   allAvailableSeasons?: string[];
   table?: { data?: {
     table?: { all?: FotMobRow[]; home?: FotMobRow[]; away?: FotMobRow[] };
@@ -5286,8 +5292,19 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // builds; the cached() TTL reader falls back to quiet for pre-102
     // entries (old behavior preserved for one TTL generation).
     const matchday = isLeagueMatchday(raw);
+    // cycle-346: the competition's OFFICIAL brand color (details.leagueColor —
+    // probed live UA Chrome/124: pl #3F1152, ucl #162E58, laliga #345DDF,
+    // ligue1 #085FFF — the field rode every payload but nothing consumed it).
+    // Strict 6-digit-hex guard: a malformed upstream value hides the accent
+    // instead of leaking into CSS.
+    const leagueColor =
+      typeof raw.details?.leagueColor === "string" &&
+      /^#[0-9a-fA-F]{6}$/.test(raw.details.leagueColor)
+        ? raw.details.leagueColor
+        : undefined;
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
+      ...(leagueColor ? { color: leagueColor } : {}),
       ...(groups.length > 0 ? { groups } : {}),
       ...(selectedSeason ? { selectedSeason } : {}),
       ...(allSeasons && allSeasons.length > 1 ? { allSeasons } : {}),
@@ -5492,7 +5509,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // passing family's SECOND surface); old v37 rows lack it and would
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the 52/…/246 additive-shape convention).
-    await cached(`standings:v38:${leagueKey}:${season || "cur"}`, (mapped) =>
+    await cached(`standings:v39:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
