@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { Fragment, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { StandingsData, StandingsRow, LeagueFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard, LeagueTitleHistory } from "@/lib/fotmob";
+import type { StandingsData, StandingsRow, LeagueFixturesData, LeagueAllFixturesData, NormFixture, LeagueStats, LeagueBracketData, LeagueTransfersData, LeagueBoard, LeagueTitleHistory } from "@/lib/fotmob";
 // cycle-99: same strict season shape as the API guard — one regex, one
 // contract (client-safe module; a value import from fotmob.ts would drag
 // the server graph into the client bundle — caught in this cycle's build)
@@ -15,7 +15,7 @@ import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
 import { LeagueTransfersList } from "@/components/remontada/league-transfers";
-import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranTime, timeAgoFa } from "@/lib/format";
+import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -69,7 +69,7 @@ function faSeasonShort(s: string): string {
   return m ? faDigits(`${m[1]}/${m[2].slice(2)}`) : faDigits(s);
 }
 
-function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) {
+function FixtureRow({ f, showResult, showDate }: { f: NormFixture; showResult: boolean; showDate?: boolean }) {
   const j = jalaliShort(f.utcTime);
   return (
     <Link
@@ -92,6 +92,7 @@ function FixtureRow({ f, showResult }: { f: NormFixture; showResult: boolean }) 
             {tehranTime(f.utcTime)}
           </span>
         )}
+        {showDate && <span className="text-[9px] text-muted-foreground/80 mt-0.5">{tehranDateLong(f.utcTime)}</span>}
         {f.round && <span className="text-[9px] text-muted-foreground/80 mt-0.5">{f.round}</span>}
       </div>
       <div className="flex items-center gap-2 min-w-0 font-semibold">
@@ -164,6 +165,128 @@ function FixtureList({ items, showResult, dateGrouped }: { items: NormFixture[];
         );
       })}
     </div>
+  );
+}
+
+// ---------- cycle-315: «فصل کامل» — every fixture of the season ----------
+// The fixtures/recent tabs serve a ±window; this expander lazy-loads the
+// FULL season list (/api/league-fixtures-all — same cached league payload
+// producer as the tab and the ICS calendar, zero new upstream requests).
+// Rows reuse FixtureRow with a per-row mode (finished → score, else Tehran
+// time) plus the Jalali date line; rounds group under a Persian header
+// («هفتهٔ ۵», raw label for cup rounds). Season-aware: the fetch key
+// follows the selected season like every tab; a season without rows
+// degrades to the honest empty state.
+function AllSeasonFixtures({ leagueKey, season }: { leagueKey: string; season: string | null }) {
+  const [open, setOpen] = useState(false);
+  const [data, setData] = useState<LeagueAllFixturesData | null>(null);
+  const [state, setState] = useState<"idle" | "loading" | "error">("idle");
+
+  const load = () => {
+    setState("loading");
+    const sp = season ? `&season=${encodeURIComponent(season)}` : "";
+    fetch(`/api/league-fixtures-all?league=${leagueKey}${sp}`, { cache: "no-store" })
+      .then((r) => {
+        if (!r.ok) throw new Error(String(r.status));
+        return r.json();
+      })
+      .then((j) => {
+        if (!j?.ok) throw new Error("payload");
+        setData(j as LeagueAllFixturesData);
+        setState("idle");
+      })
+      .catch(() => setState("error"));
+  };
+
+  // league/season identity changes remount this component (the parent keys
+  // it by `${leagueKey}:${season}`) — no identity-change effect needed; the
+  // expand button is the single fetch trigger (one fetch per open).
+
+  const rounds = useMemo(() => {
+    const rows = data?.rows || [];
+    if (rows.length === 0) return [] as { label: string; rows: NormFixture[] }[];
+    const out: { label: string; rows: NormFixture[] }[] = [];
+    const seen = new Map<string, NormFixture[]>();
+    for (const r of rows) {
+      const k = r.round || "—";
+      let arr = seen.get(k);
+      if (!arr) {
+        arr = [];
+        seen.set(k, arr);
+        out.push({ label: k, rows: arr }); // same array reference — pushes below land here
+      }
+      arr.push(r);
+    }
+    return out; // group order = first appearance (rows arrive time-sorted)
+  }, [data]);
+
+  const roundLabel = (k: string) => (/^\d+$/.test(k) ? `هفتهٔ ${faDigits(k)}` : k);
+
+  return (
+    <section className="px-1 mt-3" aria-label="همهٔ مسابقه‌های فصل">
+      {!open ? (
+        <button
+          onClick={() => {
+            setOpen(true);
+            if (!data && state !== "loading") load();
+          }}
+          className="w-full text-center text-[12px] font-black text-sky-soft hover:text-foreground transition-colors border border-[color:var(--glass-border-soft)] rounded-xl py-2.5 bg-white/[0.03]"
+        >
+          نمایش همهٔ مسابقه‌های فصل
+        </button>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <button
+            onClick={() => setOpen(false)}
+            className="self-start text-[11px] font-black text-muted-foreground hover:text-foreground transition-colors"
+            aria-expanded="true"
+          >
+            بستن فهرست فصل کامل ▲
+          </button>
+          {state === "loading" && (
+            <p className="text-center text-[11px] text-muted-foreground py-6 animate-pulse">در حال بارگذاری برنامهٔ کامل فصل…</p>
+          )}
+          {state === "error" && (
+            <div className="text-center py-6 flex flex-col items-center gap-2">
+              <p className="text-[12px] font-black text-destructive">ارتباط برقرار نشد.</p>
+              <button
+                onClick={load}
+                className="text-[11px] font-black text-primary bg-primary/10 border border-primary/30 rounded-lg px-4 py-1.5 hover:bg-primary/15 transition-colors"
+              >
+                تلاش دوباره
+              </button>
+            </div>
+          )}
+          {state === "idle" && data && rounds.length === 0 && (
+            <EmptyState
+              icon="calendar"
+              compact
+              title="فیکسچری برای این فصل ثبت نشده است"
+              sub="به محض اعلام برنامه، همهٔ مسابقه‌ها همین‌جا نمایش داده می‌شوند."
+            />
+          )}
+          {state === "idle" && data && rounds.length > 0 && (
+            <>
+              <p className="text-[10px] text-muted-foreground px-1 tabular-persian">
+                {faDigits(data.total)} مسابقه{data.selectedSeason ? ` — فصل ${data.selectedSeason}` : ""}
+              </p>
+              {rounds.map((g) => (
+                <div key={g.label} className="glass-card overflow-hidden">
+                  <header className="px-4 py-2 border-b border-[color:var(--glass-hairline)] glass-thead text-[11px] font-black text-[#b6cce3]">
+                    {roundLabel(g.label)}
+                  </header>
+                  <div className="glass-list">
+                    {g.rows.map((r) => (
+                      <FixtureRow key={r.id} f={r} showResult={r.finished} showDate />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1436,7 +1559,16 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               )}
             </div>
           )}
-          {tab === "fixtures" && <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />}
+          {tab === "fixtures" && (
+            <>
+              <FixtureList items={fixtures?.upcoming || []} showResult={false} dateGrouped />
+              {/* cycle-315: the ±window above stays the fast default — the
+                  expander below serves the whole season on demand. The key
+                  remounts it on league/season change so its rows can never
+                  outlive the view they were fetched for. */}
+              <AllSeasonFixtures key={`${lg.key}:${season || "cur"}`} leagueKey={leagueKey} season={season} />
+            </>
+          )}
           {tab === "recent" && <FixtureList items={fixtures?.recent || []} showResult />}
           {tab === "scorers" && (standings ? <ScorersList data={standings} leagueKey={lg.key} /> : <EmptyState icon="medal" compact title="داده گلزنان در دسترس نیست" sub="ابتدا جدول لیگ بارگیری شود تا آقای گل نیز نمایش داده شود." />)}
           {tab === "bracket" && (bracket ? <LeagueBracket data={bracket} /> : null)}

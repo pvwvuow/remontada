@@ -5380,6 +5380,42 @@ export async function getLeagueCalendar(leagueKey: string, season?: string): Pro
   };
 }
 
+// ---------------- cycle-315: «فصل کامل» — every fixture of the season ----------------
+// The fixtures tab serves a ±window (upcoming/recent) while the SAME
+// getLeagueRaw payload carries fixtures.allMatches — the whole season
+// (live-probed 2026-11-01, UA Chrome/124: PL 2026/2027 → 380 rows). The
+// on-page full-season browse was the last missing read of that data: the
+// ICS calendar (cycle-312) already proves the extraction works, but only
+// as a download. Rides the same cached producer → zero new upstream
+// requests; rows reuse normalizeFixture verbatim (ids → /match/[id],
+// logos, Persian names, scores) so the UI contract matches the tab rows.
+export interface LeagueAllFixturesData {
+  leagueKey: string;
+  leagueFa: string;
+  season: string;
+  selectedSeason?: string;
+  total: number;
+  rows: NormFixture[];
+}
+
+export async function getLeagueAllFixtures(leagueKey: string, season?: string): Promise<LeagueAllFixturesData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey, season);
+  const all = (raw.fixtures?.allMatches || []) as FotMobFixture[];
+  const rows = all
+    .filter((f) => f?.id && f?.home && f?.away && f.status?.utcTime && !f.status?.cancelled)
+    .map((f) => normalizeFixture(f))
+    .sort((a, b) => a.utcTime.localeCompare(b.utcTime));
+  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  return {
+    leagueKey,
+    leagueFa: lg.faName,
+    season: raw.details?.seasons?.find?.((s) => s.active)?.year || season || "",
+    ...(selectedSeason ? { selectedSeason } : {}),
+    total: rows.length,
+    rows,
+  };
+}
+
 // ---------------- FotMob: cup knockout bracket (playoff) ----------------
 // cycle-56: raw shapes of the league payload's `playoff` key. Probed live:
 // UCL carries rounds (playoff, 1/8, 1/4, 1/2, final); each matchup holds the
