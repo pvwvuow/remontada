@@ -268,7 +268,11 @@ function AllSeasonFixtures({ leagueKey, season }: { leagueKey: string; season: s
           {state === "idle" && data && rounds.length > 0 && (
             <>
               <p className="text-[10px] text-muted-foreground px-1 tabular-persian">
-                {faDigits(data.total)} مسابقه{data.selectedSeason ? ` — فصل ${data.selectedSeason}` : ""}
+                {/* cycle-319: the season was the only raw-Latin season left on
+                    this page — subtitle, selector and ICS label all render it
+                    in Persian digits. Same faDigits convention as the tab
+                    subtitles (581/896/1552). */}
+                {faDigits(data.total)} مسابقه{data.selectedSeason ? ` — فصل ${faDigits(data.selectedSeason)}` : ""}
               </p>
               {rounds.map((g) => (
                 <div key={g.label} className="glass-card overflow-hidden">
