@@ -1477,7 +1477,7 @@ function InfoPanel({ data }: { data: DetailData }) {
     { label: "مرحله", value: data.info.round },
     { label: "تاریخ", value: data.info.date ? tehranDateLong(data.info.date) : undefined },
     { label: "ساعت", value: data.info.date ? `${tehranTime(data.info.date)} (به وقت تهران)` : undefined },
-    { label: "ورشوگاه", value: [data.info.stadium, data.info.city].filter(Boolean).join("، ") || data.info.stadium },
+    { label: "ورزشگاه", value: [data.info.stadium, data.info.city].filter(Boolean).join("، ") || data.info.stadium },
     { label: "داور", value: data.info.referee },
     { label: "تماشاگران", value: data.info.attendance ? faDigits(data.info.attendance) : undefined },
   ].filter((r) => r.value);
