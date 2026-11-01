@@ -1646,6 +1646,86 @@ const TEAM_FA: Record<string, string> = {
   "naft maysan": "نفت میسان",
   "al kahrabaa": "الکهربا",
   "karbalaa": "کربلا",
+
+  // ---- cycle-384 (bug-hunt 383 findings F1+F2+F3): one TEAM_FA block ----
+  // the 383 uncurated Latin scans found the same root cause through THREE
+  // display paths — title-history championFa/runnerUpFa, fixtures .fa and
+  // the matchDetails h1 — every name below was probed live from the exact
+  // upstream spelling (scripts/cycle384-probe.sh, 2026-11-02). Persian
+  // forms follow the press transliterations; cup-era prefix noise (FC/AFC/
+  // SC) is dropped when the city/club name is the natural Persian form.
+  // F1 facup: the 9 amateur-era names of the 145-season history.
+  "blackburn olympic fc": "بلکبرن المپیک",
+  "clapham rovers fc": "کلافام روورز",
+  "old carthusians fc": "اولد کارتوزیانز",
+  "old etonians fc": "اولد ایتونیانز",
+  "oxford university afc": "آکسفورد یونیورسیتی",
+  "queen's park": "کوئینز پارک",
+  "royal engineers afc": "رویال انجینیرز",
+  "wanderers football club": "واندررز",
+  "wimbledon fc": "ویمبلدون", // bare "wimbledon" already rides the 381 block
+  // F1 coppaitalia: the 7 historic names of the 78-season history.
+  "ac ancona": "آنکونا",
+  "alessandria": "الساندریا",
+  "football padova spa": "پادوا", // shares "padova" (380)
+  "novara": "نووارا",
+  "spal": "اسپال",
+  "vado": "وادو",
+  "vicenza": "ویتشنزا", // shares "lr vicenza" (380)
+  // F1 dfbpokal: the 18 historic names of the 83-season history.
+  "1860 münchen": "مونیخ ۱۸۶۰",
+  "alemannia aachen": "آلمانیا آخن",
+  "dresdner sc": "درسدنر",
+  "etb schwarz-weiß essen": "شوارتز وایس اسن",
+  "energie cottbus": "انرژی کوتبوس",
+  "fsv frankfurt": "اف‌اس‌وی فرانکفورت",
+  "first vienna fc 1894": "فرست وینا ۱۸۹۴",
+  "fortuna köln": "فورتونا کلن",
+  "kfc uerdingen": "کی‌اف‌سی اردینگن",
+  "karlsruher sc": "کارلسروهه",
+  "kickers offenbach": "کیکرز اوفنباخ",
+  "luftwaffen-sv hamburg": "لوفت‌وافن هامبورگ",
+  "msv duisburg": "ام‌اس‌وی دویسبورگ",
+  "rw essen": "روت‌وایس اسن",
+  "stuttgarter kickers": "اشتوتگارتر کیکرز",
+  "vfb borussia neunkirchen": "بروسیا نوین‌کیرشن",
+  "vfb leipzig": "لایپزیش", // city-name consistent with "rb leipzig"/"leipzig"
+  "waldhof mannheim": "والدهوف مانهایم",
+  // F2 dfbpokal: the 23 fixture-only minnows of the 2026/2027 first
+  // rounds (the 6 titles-list overlaps above are not repeated).
+  "1. fc phönix lübeck": "فونیکس لوبک",
+  "bahlinger sc": "باهلینگن",
+  "carl zeiss jena": "کارل زایس ینا",
+  "eintracht braunschweig": "اینتراخت برانشوایگ",
+  "eintracht trier": "اینتراخت تری‌یر",
+  "erzgebirge aue": "ارتس‌گبیرگ آئوه",
+  "fc hansa lüneburg": "هانزا لونه‌بورگ",
+  "hebc hamburg": "اچ‌ای‌بی‌سی هامبورگ",
+  "hallescher fc": "هالشر",
+  "hansa rostock": "هانزا روستوک",
+  "preussen münster": "پروسن مونستر",
+  "sc st. tönis": "سنت تونیس",
+  "sc verl": "فرل",
+  "ssv jeddeloh": "یدلوه",
+  "sv hemelingen": "هملینگن",
+  "saarbrücken": "زاربروکن",
+  "sonnenhof großaspach": "زوننهوف گروس‌آسپاخ",
+  "tsv schott mainz": "شوت ماینتس",
+  "vsg altglienicke": "آلت‌گلینیک",
+  "vfb krieschow": "کریشو",
+  "viktoria köln 1904": "ویکتوریا کلن",
+  "westfalia rhynern": "وستفالیا رینرن",
+  "würzburger kickers": "وورتسبورگر کیکرز",
+  // F4b: the 7 Azadegan League sides the home day-feed serves raw —
+  // audience-critical on a Persian portal (the Persian Gulf Pro League
+  // table teams were mapped in cycle-136; these ride the SAME map).
+  "mes kerman": "مس کرمان",
+  "naft bandar abbas": "نفت بندرعباس",
+  "qeshm island": "جزیره قشم",
+  "beasat kermanshah": "بیسات کرمانشاه",
+  "ario islamshahr": "آریو اسلامشهر",
+  "fc fard": "اف‌سی فرد",
+  "shahin bandar ameri": "شهین بندر عامری",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -1851,6 +1931,33 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "we league|JPN": "لیگ بانوان ژاپن",
   "women's league cup|ENG": "جام اتحادیه بانوان انگلیس",
   "wsl|ENG": "سوپرلیگ بانوان انگلیس",
+
+  // cycle-384 (bug-hunt 383 finding F4a): the 18 raw group headers the
+  // home day-feed served on the 2026-11-02 probe (date-dependent list —
+  // the 383 card documented 17 the day before). Every key is the exact
+  // lowercase upstream name + the ccode the feed rides; group letters
+  // keep the Latin-letter convention («— گروه A»). The AMBIGUOUS_NAMES
+  // gate ("prva liga") makes the country-qualified form mandatory there;
+  // the same shape is used throughout for consistency and safety ("cup"
+  // alone must never map globally).
+  "1. cfl|MNE": "لیگ اول مونته‌نگرو",
+  "1. divisjon|NOR": "لیگ یک نروژ",
+  "allsvenskan|SWE": "آلوسونسکان سوئد",
+  "baller league|ENG": "بالر لیگ",
+  "caf women's champions league|INT": "لیگ قهرمانان بانوان آفریقا",
+  "cup|CHI": "جام حذفی شیلی",
+  "cup|COL": "جام حذفی کلمبیا",
+  "kategoria superiore|ALB": "سوپرلیگ آلبانی",
+  "league cup grp. a|EGY": "جام اتحادیه مصر — گروه A",
+  "league cup grp. c|EGY": "جام اتحادیه مصر — گروه C",
+  "leumit league|ISR": "لیگ لومییت اسرائیل",
+  "liga nacional apertura|GUA": "لیگ ملی گواتمالا — آپرتورا",
+  "prva liga|MKD": "لیگ اول مقدونیه شمالی",
+  "primera b|COL": "پریمرا بی کلمبیا",
+  "saudi first division|KSA": "دسته اول عربستان",
+  "superligaen|DEN": "سوپرلیگ دانمارک",
+  "usl league one - championship - quarter-finals|USA": "یواس‌ال لیگ یک آمریکا — یک‌چهارم نهایی",
+  "veikkausliiga championship group|FIN": "ویکاس‌لییگا فنلاند — گروه قهرمانی",
 };
 
 // youth / women / reserve suffixes — translate the base name and append a
