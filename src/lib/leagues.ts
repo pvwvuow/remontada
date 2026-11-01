@@ -557,6 +557,24 @@ export const LEAGUES: LeagueConfig[] = [
   // globalMerge: false — the 376 one-flag semantic; a plain-year feed
   // must never enter the slash-season allSeasons intersection anyway.
   { key: "worldcup",   fotmobId: 77,          ccode3: "INT",  faName: "جام جهانی",          enName: "FIFA World Cup",   espnSlug: "fifa.world",       priority: 31, globalMerge: false, plainYearSeasons: true },
+  // cycle-385: AFC Asian Cup — the SECOND national-team competition and the
+  // most Iran-relevant one (Team Melli: 3 titles 1968/1972/1976 + the 2023
+  // semi-final). Probed live (UA Chrome/124, 2026-11-02): the 2024 final's
+  // day-tournament id 890103 answered NULL as a league page (the cycle-141
+  // gap); the real catalog id 290 came from matchDetails
+  // content.matchFacts.infoBox.Tournament.parentLeagueId via the
+  // /api/data/matchDetails?matchId= variant (the /api/data/match/{id} path
+  // 404s for this old fixture — new probe-artifact subclass). Shape:
+  // composite tables (6 groups + «Best 3rd placed teams» — the 382 class),
+  // the 144-slash playoff bracket (1/8→final, no bronze for 2023), 51
+  // fixtures with numeric + named roundNames, 18 title seasons (1956 Hong
+  // Kong → 2023 Qatar), plain-year allAvailableSeasons 2027→2011 (the 382
+  // flag), transfers.data=null + empty topPlayers (honest cup hiding),
+  // details.leagueColor absent (the dot hides, honest). ESPN slug probed
+  // live: afc.asian.cup → 200 (the _-variant 400s). globalMerge: false —
+  // the 376 one-flag semantic (the plain-year feed never enters the
+  // slash-season allSeasons intersection).
+  { key: "asiancup",   fotmobId: 290,         ccode3: "INT",  faName: "جام ملت‌های آسیا",   enName: "AFC Asian Cup",    espnSlug: "afc.asian.cup",    priority: 32, globalMerge: false, plainYearSeasons: true },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -1958,6 +1976,14 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "superligaen|DEN": "سوپرلیگ دانمارک",
   "usl league one - championship - quarter-finals|USA": "یواس‌ال لیگ یک آمریکا — یک‌چهارم نهایی",
   "veikkausliiga championship group|FIN": "ویکاس‌لییگا فنلاند — گروه قهرمانی",
+
+  // cycle-385: the AFC Asian Cup day-feed shapes — the group stage serves
+  // the bare name, the knockout rounds ride the «Final Stage» suffix
+  // (probed live: the 2024-02-10 final rode day-tournament 890103 as
+  // «Asian Cup Final Stage» cc=INT). Country-qualified like every
+  // day-feed entry so the league page and the feed never disagree.
+  "asian cup|INT": "جام ملت‌های آسیا",
+  "asian cup final stage|INT": "جام ملت‌های آسیا — مرحلهٔ حذفی",
 };
 
 // youth / women / reserve suffixes — translate the base name and append a
@@ -2001,6 +2027,27 @@ export function teamFa(...candidates: (string | undefined)[]): string {
     const wq = /^winner (qf|sf) ([1-9])$/.exec(key);
     if (wq) {
       return `برنده ${wq[1] === "qf" ? "یک‌چهارم نهایی" : "نیمه‌نهایی"} ${faDigits(wq[2])}`;
+    }
+    // cycle-385: the AFC Asian Cup bracket rides GROUP-POSITION codes —
+    // «1A»/«2D» (group winners/runners-up), «3CDE» (a best-3rd
+    // combination) and their composed winner strings «Winner 1A/3CDE»
+    // (probed live on league 290, season 2027 — the 2023 edition's R16
+    // carries the same 1X/3XYZ slots). Map honestly — the same class as
+    // the 380 guard above; letters keep the Latin-letter «گروه A»
+    // convention (COMPOSITE_REGION_FA, cycle-382).
+    const posFa = (code: string): string | null => {
+      const p = /^([123])([a-f])$/.exec(code);
+      if (p) return `${["اول", "دوم", "سوم"][Number(p[1]) - 1]} گروه ${p[2].toUpperCase()}`;
+      const t = /^3([a-f]{2,3})$/.exec(code);
+      if (t) return `سوم گروه‌های ${t[1].toUpperCase().split("").join("، ")}`;
+      return null;
+    };
+    const pos = posFa(key);
+    if (pos) return pos;
+    const wslot = /^winner ([123][a-f]\/(?:3[a-f]{2,3}|[123][a-f]))$/.exec(key);
+    if (wslot) {
+      const sides = wslot[1].split("/").map((s) => posFa(s) || s);
+      return `برنده ${sides.join("/")}`;
     }
   }
   // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
@@ -2075,6 +2122,21 @@ const COUNTRY_FA: Record<string, string> = {
   // unmapped by design until now; one entry heals both rows (Czechia's
   // modern keys already ride this map).
   "czechoslovakia": "چکسلواکی",
+  // cycle-385: the AFC Asian Cup's unique-name set (probed live on league
+  // 290 across the 2027 default + 2023/2019 historical feeds: 6+6 groups,
+  // best-3rd table, the 1/8→final bracket and the 18-season title history
+  // back to 1956 Hong Kong). 22 missing keys join COUNTRY_FA (not TEAM_FA)
+  // — the national-teams convention — so the 3-title Iran history (1968/
+  // 1972/1976), the 2023 semi-final run and every player-page country row
+  // for the same nations heal with one entry each. "uae" is the bare
+  // upstream spelling ("United Arab Emirates" already rides this map).
+  "uae": "امارات", "bahrain": "بحرین", "kuwait": "کویت", "oman": "عمان",
+  "china": "چین", "hong kong": "هنگ‌کنگ", "india": "هند", "indonesia": "اندونزی",
+  "kyrgyzstan": "قرقیزستان", "lebanon": "لبنان", "malaysia": "مالزی",
+  "myanmar": "میانمار", "north korea": "کره شمالی", "palestine": "فلسطین",
+  "philippines": "فیلیپین", "singapore": "سنگاپور", "syria": "سوریه",
+  "tajikistan": "تاجیکستان", "thailand": "تایلند", "turkmenistan": "ترکمنستان",
+  "vietnam": "ویتنام", "yemen": "یمن",
 };
 
 export function countryFa(name: string | undefined | null): string {

@@ -11058,6 +11058,20 @@ export async function getLeagueTitleHistory(leagueKey: string, season?: string):
   const { raw } = await getLeagueRaw(leagueKey, season);
   const list = raw?.seasons;
   if (!Array.isArray(list) || list.length === 0) return null;
+  // cycle-385 (discovered while implementing the Asian Cup — the 380
+  // discovery class): NT-tournament season labels carry the HOST suffix —
+  // «2023 Qatar», «2007 Indonesia / Malaysia / Thailand / Vietnam»
+  // (probed live on league 290). The UI's faDigits healed the digits, but
+  // the host rode raw Latin inside the «قهرمانان» tab. Map every host
+  // segment through countryFa (slash-separated co-hosts split honestly);
+  // club seasons («2025/2026») and bare calendar years («2026») carry no
+  // host and pass through byte-identical.
+  const seasonFa = (s: string): string => {
+    const m = /^((?:19|20)\d{2})\s+(.+)$/.exec(String(s || "").trim());
+    if (!m) return s;
+    const host = m[2].split("/").map((p) => countryFa(p.trim()) || p.trim()).join(" / ");
+    return `${m[1]} ${host}`;
+  };
   const items: LeagueTitleSeason[] = [];
   for (const s of list) {
     const seasonName = String(s?.seasonName || "");
@@ -11067,7 +11081,7 @@ export async function getLeagueTitleHistory(leagueKey: string, season?: string):
     const lName = String(s?.loser?.name || "");
     const lId = Number(s?.loser?.id || 0);
     items.push({
-      season: seasonName,
+      season: seasonFa(seasonName),
       championId: wId > 0 ? wId : 0,
       championFa: teamFa(wName) || wName,
       runnerUpId: lName && lId > 0 ? lId : null,
