@@ -15,6 +15,7 @@ import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
 import { LeagueTransfersList } from "@/components/remontada/league-transfers";
+import { LeagueTotwSection } from "@/components/remontada/league-totw";
 import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -1605,6 +1606,11 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
                   season={(standings.selectedSeason || standings.season) ? `فصل ${faDigits(standings.selectedSeason || standings.season)}` : undefined}
                 />
               )}
+              {/* cycle-360: «تیم هفته» — lazy TOTW section on a glass pitch,
+                  self-hiding for leagues/seasons without the surface (the
+                  upstream null body). Keyed like AllSeasonFixtures so a
+                  league/season switch refetches cleanly. */}
+              <LeagueTotwSection key={`${lg.key}:${season || "cur"}`} leagueKey={leagueKey} season={season} />
               {fixtures?.stats ? (
                 <StatsPanel stats={fixtures.stats} leagueFa={lg.faName} />
               ) : (

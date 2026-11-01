@@ -11138,3 +11138,158 @@ export function searchCoaches(q: string, limit = 4): CoachSearchResult[] {
   scored.sort((a, b) => b.score - a.score || a.e.name.localeCompare(b.e.name));
   return scored.slice(0, limit).map(({ e }) => e);
 }
+
+// ---------------- FotMob: league team of the week («تیم هفته», cycle-360) ----------------
+// Probed live (2026-11-01, UA Chrome/124). The TOTW surface stayed hidden
+// through cycles 355-357 because every probe used the singular patterns
+// (totw / teamOfTheWeek → 404 SPA); the REAL client XHRs (browser
+// performance entries on fotmob.com's own team-of-the-week page) revealed
+// the hyphenated pair:
+//   /api/data/team-of-the-week/rounds?leagueId={id}[&season=YYYY/YYYY]
+//     → {last:{roundId}, rounds:[{roundId, isCompleted}]} — roundId can be
+//       "TOTS" (team of the SEASON, the final entry of historical seasons;
+//       season 2025/2026 PL = 39 entries ending in TOTS).
+//   /api/data/team-of-the-week/team?leagueId={id}&roundId={r}[&season=…]
+//     → a BARE LIST of 11 players: {id, name:{firstName,lastName,fullName},
+//       rating:{num,isTop:{isTopRating}}, teamId, matchId (0 on TOTS),
+//       verticalLayout:{x,y,width,height}} — pitch coords 0..1 where x/y are
+//       the CELL CENTER (a 3-man row sits at x=0.21/0.5/0.79 with width
+//       0.29; the GK row spans the full width with x=0.5, width=1).
+//   A league without TOTW serves a literal `null` body (HTTP 200, 4 bytes)
+//   — the honest-absence path. Omitting season defaults to the current one.
+interface FMTotwName { firstName?: string | null; lastName?: string | null; fullName?: string | null }
+interface FMTotwItemRaw {
+  id?: number | string | null;
+  name?: FMTotwName | null;
+  rating?: { num?: string | null; isTop?: { isTopRating?: boolean } | null } | null;
+  teamId?: number | string | null;
+  matchId?: number | string | null;
+  verticalLayout?: { x?: number; y?: number; width?: number; height?: number } | null;
+  isTots?: boolean;
+}
+interface FMTotwRoundsRaw {
+  last?: { roundId?: string | number | null } | null;
+  rounds?: { roundId?: string | number | null; isCompleted?: boolean }[] | null;
+}
+
+export interface LeagueTotwPlayer {
+  playerId: number;
+  fa: string;        // playerFa hit else the honest Latin fullName
+  latin: string;     // upstream fullName (title/search fallback)
+  teamId: number;
+  teamFa: string;    // team-index hit else "" (the logo still renders from id)
+  rating: string;    // upstream rating string, e.g. "8.6"
+  isTop: boolean;    // upstream top-rating flag (the round's highest)
+  matchId: number | null; // 0/null → no match link (TOTS is a composite)
+  x: number;         // pitch-cell center 0..1
+  y: number;         // pitch-cell center 0..1
+  w: number;         // pitch-cell width 0..1
+}
+export interface LeagueTotw {
+  rounds: { roundId: string; completed: boolean }[];
+  last: string | null;
+  round: string;     // the resolved round this payload belongs to
+  players: LeagueTotwPlayer[];
+}
+
+const TOTW_TTL = 10 * 60 * 1000; // the 52/86/96/197/201/325/355 convention
+
+function totwRoundParam(v: string | number | null | undefined): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s === "" ? null : s;
+}
+
+function totwName(n: FMTotwName | null | undefined): string {
+  const full = n?.fullName?.trim();
+  if (full) return full;
+  return [n?.firstName?.trim(), n?.lastName?.trim()].filter(Boolean).join(" ");
+}
+
+export async function getLeagueTotw(
+  leagueKey: string,
+  season?: string,
+  round?: string
+): Promise<LeagueTotw | null> {
+  const lg = LEAGUES.find((l) => l.key === leagueKey);
+  if (!lg) return null;
+  const sp = season ? `&season=${encodeURIComponent(season)}` : "";
+  const keyBase = `totw:v1:${lg.fotmobId}:${season || "cur"}`;
+
+  const roundsRaw = await cached<FMTotwRoundsRaw | null>(
+    `${keyBase}:rounds`,
+    TOTW_TTL,
+    async () => {
+      try {
+        return await fetchJson<FMTotwRoundsRaw | null>(
+          `https://www.fotmob.com/api/data/team-of-the-week/rounds?leagueId=${lg.fotmobId}${sp}`,
+          9000
+        );
+      } catch {
+        return null; // honest absence: 404/timeout → no TOTW surface
+      }
+    }
+  );
+  if (!roundsRaw || !Array.isArray(roundsRaw.rounds) || roundsRaw.rounds.length === 0) return null;
+
+  const rounds = roundsRaw.rounds
+    .map((r) => ({ roundId: totwRoundParam(r?.roundId), completed: !!r?.isCompleted }))
+    .filter((r): r is { roundId: string; completed: boolean } => r.roundId != null);
+  if (rounds.length === 0) return null;
+
+  const last = totwRoundParam(roundsRaw.last?.roundId) ?? rounds[0].roundId;
+  const want = totwRoundParam(round) || last;
+  // an unknown round falls back to the last one — never a dead selector
+  const resolved = rounds.some((r) => r.roundId === want) ? want : last;
+
+  const listRaw = await cached<FMTotwItemRaw[] | null>(
+    `${keyBase}:${resolved}`,
+    TOTW_TTL,
+    async () => {
+      try {
+        return await fetchJson<FMTotwItemRaw[] | null>(
+          `https://www.fotmob.com/api/data/team-of-the-week/team?leagueId=${lg.fotmobId}&roundId=${encodeURIComponent(resolved)}${sp}`,
+          9000
+        );
+      } catch {
+        return null;
+      }
+    }
+  );
+  if (!Array.isArray(listRaw) || listRaw.length === 0) return null;
+
+  // team fa names ride the cached team index (id → fa); misses stay ""
+  const idx = new Map<number, string>();
+  try {
+    const index = await getTeamIndex();
+    for (const e of index) if (e.fa) idx.set(e.teamId, e.fa);
+  } catch { /* index unavailable → honest empty names, logos still render */ }
+
+  const players: LeagueTotwPlayer[] = [];
+  for (const p of listRaw) {
+    const playerId = Number(p?.id);
+    const lay = p?.verticalLayout;
+    const x = Number(lay?.x);
+    const y = Number(lay?.y);
+    const w = Number(lay?.width);
+    if (!Number.isFinite(playerId) || playerId <= 0) continue;
+    if (!Number.isFinite(x) || !Number.isFinite(y)) continue; // no dead nodes
+    const latin = totwName(p?.name);
+    const mid = Number(p?.matchId);
+    players.push({
+      playerId,
+      fa: latin ? playerFa(latin) : "",
+      latin,
+      teamId: Number(p?.teamId) || 0,
+      teamFa: idx.get(Number(p?.teamId)) || "",
+      rating: String(p?.rating?.num ?? "").trim(),
+      isTop: !!p?.rating?.isTop?.isTopRating,
+      matchId: Number.isFinite(mid) && mid > 0 ? mid : null,
+      x,
+      y,
+      w: Number.isFinite(w) && w > 0 ? w : 0.2,
+    });
+  }
+  if (players.length === 0) return null;
+  return { rounds, last, round: resolved, players };
+}
