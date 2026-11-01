@@ -373,6 +373,24 @@ export const LEAGUES: LeagueConfig[] = [
   // «First Division B» has live matches the same day and joins
   // COMPETITION_FA. Table is a NORMAL flat payload (data.table.all).
   { key: "belgium",    fotmobId: 40,          ccode3: "BEL",  faName: "لیگ بلژیک",          enName: "Belgian Pro League", espnSlug: "bel.1",          priority: 24 },
+  // cycle-361: Egyptian Premier League — 25th competition, 21st race
+  // participant. Found via web-search resolution of the FotMob id (519 —
+  // the site search/sitemap/suggest paths carry no ids). Live-probed
+  // 2026-11-01 (UA Chrome/124): flat 20-row 2026/2027 table (Pyramids FC
+  // 24 / Al Ahly SC / Zamalek SC), 17 slash-format seasons
+  // 2026/2027→2010/2011 (allAvailableSeasons) — the race window is 12
+  // (2026/2027→2015/2016 probed on /api/topscorers) so merging does NOT
+  // shrink the common window; stats.players = 39 keys → real scorers for
+  // /topscorers/egypt AND the race (the Iraq 524 counter-case: stats
+  // empty + hasTotw=false → recorded as a future candidate, thinner
+  // surfaces); transfers.data=100; hasTotw=true → the cycle-360 «تیم
+  // هفته» section lights up; historical 2019/2020 probed (18-row table,
+  // Al Ahly top, stats.players present); playoff=null → bracket tab
+  // honestly absent (cycle-56 contract). NO espnSlug (ESPN 400 for
+  // egy.1/egypt.1 — Gulf pattern). Upstream details.name is the generic
+  // "Premier League" — the catalog enName stays the canonical
+  // "Egyptian Premier League" so the site never collides with pl.
+  { key: "egypt",      fotmobId: 519,         ccode3: "EGY",  faName: "لیگ برتر مصر",       enName: "Egyptian Premier League",                       priority: 25 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -1373,6 +1391,26 @@ const TEAM_FA: Record<string, string> = {
   "sporting hasselt": "اسپورتینگ هاسلت",
   "ut arad": "یوت آراد",
   "umm salal": "ام صلال",
+  // cycle-361: Egyptian Premier League (fotmobId 519) — the EXACT upstream
+  // row names of the live 519 table; five clubs were already mapped for the
+  // CAF surfaces (pyramids fc, al ahly sc, zamalek sc, ceramica cleopatra,
+  // al mokawloon al arab) and are NOT repeated here. Persian forms are the
+  // standard press transliterations.
+  "al ittihad alexandria": "الاتحاد اسکندریه",
+  "modern sport fc": "مدرن اسپورت",
+  "zed fc": "زد",
+  "national bank": "بانک ملی",
+  "smouha sc": "سموحه",
+  "petrojet-suez": "پتروجت سوئز",
+  "al masry sc": "المصری",
+  "tala'ea el gaish": "طلائع الجیش",
+  "olympic el qanah fc": "المپیک",
+  "wadi degla fc": "وادی دجله",
+  "ghazl al mahalla": "غزل المحله",
+  "al sharkeyah-enppi": "الشرکیه",
+  "asyut petroleum": "پترول اسیوط",
+  "abo qir semad": "ابو قیر",
+  "el gouna fc": "الجونه",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
