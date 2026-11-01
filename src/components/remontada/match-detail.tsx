@@ -35,6 +35,8 @@ interface DetailMatch {
   away: { id: number; name: string; fa: string; logo: string; score: number | null };
 }
 interface TouchMapSide { points: { x: number; y: number }[]; players: number; touches: number }
+// update cycle-351: per-player drill-down (mirror of /api/match/[id])
+interface TouchMapPlayer { optaId: string; side: "home" | "away"; name: string; shirt?: string; points: { x: number; y: number }[]; touches: number }
 interface DetailScorer { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string; playerId?: number; assistId?: number }
 interface DetailEvent {
   type: string; typeFa: string; minute: string; side: "home" | "away" | "neutral";
@@ -85,7 +87,7 @@ interface DetailData {
   // update cycle-205: the per-side touch map («نقشهٔ گرمای لمس») — mirrors
   // /api/match/[id]; points sit in the raw 105 × 68 pitch space. null → the
   // card never renders (upcoming matches, small-league 404s, failed join).
-  touchMap?: { home: TouchMapSide | null; away: TouchMapSide | null } | null;
+  touchMap?: { home: TouchMapSide | null; away: TouchMapSide | null; players?: TouchMapPlayer[] } | null;
   // fix cycle-45: penalty shootout (was dropped entirely before)
   shootout?: {
     home: number;
@@ -798,6 +800,9 @@ function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; 
   // symptom (away summary on first paint, 0/7 repro since); this removes the
   // latch structurally instead of chasing the race.
   const [picked, setPicked] = useState<"home" | "away" | null>(null);
+  // cycle-351: per-player drill-down state — a chip optaId or null (aggregate).
+  // Hook stays above the early return (rules-of-hooks).
+  const [pickedPlayer, setPickedPlayer] = useState<string | null>(null);
   // (new-match reset rides the key={m.id} at the render site — remount, no effect)
   const side = picked && tm[picked] ? picked : tm.home ? "home" : sides[0] ?? "away";
   const cur = tm[side] ?? null;
@@ -805,12 +810,21 @@ function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; 
   const isHome = side === "home";
   const sideName = (s: "home" | "away") =>
     (s === "home" ? match.home.fa || match.home.name : match.away.fa || match.away.name);
+  // cycle-351: derived pick, never a latch — the chip is honored only while
+  // it belongs to the ACTIVE side; switching sides (or a stale cached payload
+  // without players[]) falls back to the side aggregate automatically, the
+  // same contract family as the cycle-274 side fix.
+  const playerList = (tm.players || []).filter((p) => p.side === side);
+  const curPlayer = pickedPlayer ? playerList.find((p) => p.optaId === pickedPlayer) ?? null : null;
+  const dots = curPlayer ? curPlayer.points : cur.points;
   return (
     <section className="glass-card overflow-hidden" data-testid="match-touchmap">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
         <span className="font-black text-[12px] text-[#ecf3fa]">نقشهٔ گرمای لمس</span>
         <span className="font-bold text-steel/80 tabular-persian">
-          {faDigits(cur.touches)} لمس · {faDigits(cur.players)} بازیکن
+          {curPlayer
+            ? `${curPlayer.name} · ${faDigits(curPlayer.touches)} لمس`
+            : `${faDigits(cur.touches)} لمس · ${faDigits(cur.players)} بازیکن`}
         </span>
       </header>
       <div className="px-3 pt-3 flex items-center gap-1.5" role="group" aria-label="انتخاب تیم در نقشهٔ لمس">
@@ -832,6 +846,46 @@ function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; 
           </button>
         ))}
       </div>
+      {/* cycle-351: per-player drill-down chips — touches-desc order from the
+          route; hidden entirely when the payload predates the layer (honest
+          absence, zero regression on the aggregate card) */}
+      {playerList.length > 0 && (
+        <div className="px-3 pt-1.5 flex items-center gap-1.5 overflow-x-auto" role="group" aria-label="انتخاب بازیکن در نقشهٔ لمس">
+          <button
+            type="button"
+            onClick={() => setPickedPlayer(null)}
+            aria-pressed={!curPlayer}
+            data-testid="touchmap-player-all"
+            className={cn(
+              "shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-black transition-colors border",
+              !curPlayer
+                ? "bg-[color:var(--glass-bg-strong)] border-[color:var(--glass-border)] text-primary"
+                : "bg-white/[0.02] border-glass-border-soft text-steel hover:text-primary"
+            )}
+          >
+            همه
+          </button>
+          {playerList.map((p) => (
+            <button
+              key={p.optaId}
+              type="button"
+              onClick={() => setPickedPlayer(p.optaId)}
+              aria-pressed={curPlayer?.optaId === p.optaId}
+              data-testid={`touchmap-player-${p.optaId}`}
+              className={cn(
+                "shrink-0 px-2.5 py-1 rounded-full text-[10.5px] font-bold whitespace-nowrap transition-colors border flex items-center gap-1",
+                curPlayer?.optaId === p.optaId
+                  ? "bg-[color:var(--glass-bg-strong)] border-[color:var(--glass-border)] text-primary"
+                  : "bg-white/[0.02] border-glass-border-soft text-steel hover:text-primary"
+              )}
+            >
+              {p.shirt && <span className="text-[9px] text-steel/70 tabular-persian">{faDigits(p.shirt)}</span>}
+              <span>{p.name}</span>
+              <span className="text-[9px] text-steel/70 tabular-persian">{faDigits(p.touches)}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="p-3">
         <div dir="ltr" className="relative w-full aspect-[105/68] rounded-lg border border-glass-border-soft bg-[oklch(0.24_0.04_150/30%)] overflow-hidden">
           {/* markings — same minimal pitch the shotmap uses */}
@@ -839,8 +893,9 @@ function TouchmapCard({ tm, match }: { tm: NonNullable<DetailData["touchMap"]>; 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[14%] aspect-square rounded-full border border-white/15" />
           <div className="absolute inset-y-[24%] left-0 w-[10%] border border-white/15 border-l-0" />
           <div className="absolute inset-y-[24%] right-0 w-[10%] border border-white/15 border-r-0" />
-          {/* touch dots — raw upstream coords, no attack-direction claim */}
-          {cur.points.map((p, i) => (
+          {/* touch dots — raw upstream coords, no attack-direction claim;
+              cycle-351: aggregate (side) or single player when a chip is on */}
+          {dots.map((p, i) => (
             <span
               key={i}
               className={cn(

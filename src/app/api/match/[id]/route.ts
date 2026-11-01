@@ -625,9 +625,25 @@ export interface TouchMapSide {
   players: number;                    // distinct players contributing dots
   touches: number;                    // = points.length
 }
+// update cycle-351: per-player drill-down of the SAME upstream feed — the
+// aggregate sides above stay byte-identical; players[] adds the granularity
+// FotMob's own match page shows per lineup row (probed live UA Chrome/124:
+// 22/22 heatmap keys join through the cycle-205 optaId crosswalk, and every
+// content.playerStats entry carries name + shirtNumber for the chips).
+export interface TouchMapPlayer {
+  optaId: string;
+  side: "home" | "away";
+  name: string;      // playerFa at normalize time (honest Persian, raw fallback)
+  shirt?: string;
+  points: { x: number; y: number }[];
+  touches: number;   // = points.length
+}
 export interface TouchMap {
   home: TouchMapSide | null;
   away: TouchMapSide | null;
+  // touches-desc, optaId tiebreak; optional so a stale pre-351 cached entry
+  // (TTL ≤ 1 h) still validates — the UI hides the drill-down when absent.
+  players?: TouchMapPlayer[];
 }
 interface FMHeatmapRaw {
   players?: Record<string, string>;
@@ -639,7 +655,9 @@ const TOUCH_RE = /cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g;
 
 async function buildTouchMap(
   id: string,
-  touchSides: Record<string, "home" | "away">
+  touchSides: Record<string, "home" | "away">,
+  // cycle-351: optaId → display meta (name/shirt), same join as touchSides
+  touchMeta: Record<string, { name?: string; shirt?: string }> = {}
 ): Promise<TouchMap | null> {
   if (Object.keys(touchSides).length === 0) return null;
   const hmUrl =
@@ -651,6 +669,7 @@ async function buildTouchMap(
   const awayPts: { x: number; y: number }[] = [];
   let homePlayers = 0;
   let awayPlayers = 0;
+  const playerRows: TouchMapPlayer[] = []; // cycle-351: per-player drill-down
   for (const [key, svg] of Object.entries(players)) {
     const opta = key.replace(/^p/, "");
     if (!opta) continue;
@@ -667,6 +686,15 @@ async function buildTouchMap(
       pts.push({ x: Math.round(cx * 10) / 10, y: Math.round(cy * 10) / 10 });
     }
     if (pts.length === 0) continue;
+    const meta = touchMeta[opta];
+    playerRows.push({
+      optaId: opta,
+      side,
+      name: playerFa(meta?.name || key),
+      ...(meta?.shirt ? { shirt: meta.shirt } : {}),
+      points: pts,
+      touches: pts.length,
+    });
     if (side === "home") {
       homePts.push(...pts);
       homePlayers++;
@@ -679,6 +707,11 @@ async function buildTouchMap(
   return {
     home: homePts.length > 0 ? { points: homePts, players: homePlayers, touches: homePts.length } : null,
     away: awayPts.length > 0 ? { points: awayPts, players: awayPlayers, touches: awayPts.length } : null,
+    // touches-desc, optaId tiebreak — chip row order is stable and the
+    // busiest players lead
+    players: playerRows.sort(
+      (a, b) => b.touches - a.touches || a.optaId.localeCompare(b.optaId)
+    ),
   };
 }
 
@@ -774,6 +807,9 @@ export interface MatchDetailNormalized {
   // INTERNAL ONLY — stripped from the JSON response in GET after the touch
   // map is assembled.
   touchSides?: Record<string, "home" | "away">;
+  // update cycle-351: optaId → {name, shirt} display meta for the per-player
+  // drill-down chips — built in the same crosswalk loop, INTERNAL ONLY too.
+  touchMeta?: Record<string, { name?: string; shirt?: string }>;
   // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
   // team's attacking output across the three pitch lanes; null when upstream
   // lacks the block (upcoming matches) or both sides are all-zero.
@@ -1339,6 +1375,10 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
   // entry whose teamId matches neither side is dropped (honest), unlike the
   // playerStats grouping above which defaults to home.
   const touchSides: Record<string, "home" | "away"> = {};
+  // cycle-351: display meta rides the same exact-match join — playerStats
+  // carries name + shirtNumber on EVERY entry (even stats-empty ones), so
+  // the per-player chips need zero extra upstream data.
+  const touchMeta: Record<string, { name?: string; shirt?: string }> = {};
   {
     const hId = g.homeTeam?.id;
     const aId = g.awayTeam?.id;
@@ -1347,6 +1387,11 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
       if (!oa || typeof oa !== "string" || !oa) continue;
       if (hId != null && e.teamId === hId) touchSides[oa] = "home";
       else if (aId != null && e.teamId === aId) touchSides[oa] = "away";
+      else continue;
+      touchMeta[oa] = {
+        name: typeof e.name === "string" && e.name ? e.name : undefined,
+        shirt: e.shirtNumber != null ? String(e.shirtNumber) : undefined,
+      };
     }
   }
 
@@ -2062,6 +2107,8 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
     // update cycle-205: the optaId → side crosswalk (internal — GET strips it
     // from the response once the touch map is assembled on top of it)
     touchSides,
+    // update cycle-351: display meta for the drill-down (stripped in GET too)
+    touchMeta,
     fetchedAt: new Date().toISOString(),
   };
 }
@@ -2097,23 +2144,25 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     // to null INSIDE the producer so the negative answer is cached too — one
     // 404 per TTL window at most; transient (non-404) failures throw past
     // the cache and degrade to a null card without polluting it. The key is
-    // versioned (touchMap:v2) so the pre-crosswalk null entries never
-    // shadow the fixed join.
+    // versioned (touchMap:v3 — cycle-351 added the per-player layer; v2
+    // aggregate-only entries must not shadow the new shape for up to 1 h)
+    // so the pre-crosswalk null entries never shadow the fixed join.
     let touchMap: TouchMap | null = null;
     if (norm.match.started && !norm.match.cancelled) {
       const ttl = norm.match.finished ? 3_600_000 : 30_000;
-      touchMap = await cached(`touchMap:v2:${id}`, ttl, async () => {
+      touchMap = await cached(`touchMap:v3:${id}`, ttl, async () => {
         try {
-          return await buildTouchMap(id, norm.touchSides || {});
+          return await buildTouchMap(id, norm.touchSides || {}, norm.touchMeta || {});
         } catch (err) {
           if (/\bHTTP 404\b/.test(err instanceof Error ? err.message : "")) return null;
           throw err;
         }
       }).catch(() => null);
     }
-    // touchSides is internal-only — never in the public response
+    // touchSides/touchMeta are internal-only — never in the public response
     const rest = { ...norm } as Record<string, unknown>;
     delete rest.touchSides;
+    delete rest.touchMeta;
     return NextResponse.json({ ok: true, ...rest, touchMap });
   } catch (err) {
     console.error("[api/match]", err);
