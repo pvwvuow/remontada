@@ -953,6 +953,9 @@ export interface MatchReview {
   source: string;
   url: string; // https://www.fotmob.com/news/... (opens in a new tab)
   date?: string; // upstream dateUpdated ISO
+  lang?: string; // fix cycle-349: upstream locale of the picked row (ar/en) —
+                 // previews render a «متن منبع» chip so Persian readers know
+                 // the text is upstream, not mistranslated site copy
 }
 
 // update cycle-117: one side's season top scorer for the h2h tab card.
@@ -1741,6 +1744,7 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
         source: typeof a.source === "string" && a.source ? a.source : "FotMob",
         url: a.shareUrl!,
         date: typeof a.dateUpdated === "string" && a.dateUpdated ? a.dateUpdated : undefined,
+        lang: typeof a.lang === "string" && a.lang ? a.lang : undefined,
       });
     }
     if (preRows.length > 0) previews = preRows;

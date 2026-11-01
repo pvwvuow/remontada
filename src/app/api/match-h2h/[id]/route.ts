@@ -48,6 +48,12 @@ interface FMH2HMatch {
 }
 interface FMH2HPayload {
   header?: { teams?: FMTeamRef[] };
+  // fix cycle-349: the match's own competition id — passed as the standings
+  // hint so a Premier League match compares PL season stats (not whichever
+  // league the team appears in first — ucl outranks pl in LEAGUES).
+  // NOTE: general carries FLAT fields (leagueId/leagueName/parentLeagueId,
+  // probed live on 5795501) — there is no general.league object.
+  general?: { leagueId?: number | string };
   content?: { h2h?: { summary?: number[]; matches?: FMH2HMatch[] } };
 }
 
@@ -161,9 +167,16 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
 
     // ---- season stats comparison of the two teams (best-effort) ----
     // leagueKey: standings lookup per team (works even when the two teams
-    // play in different leagues, e.g. cup or European fixtures)
+    // play in different leagues, e.g. cup or European fixtures).
+    // fix cycle-349: the match's own league id rides along as the standings
+    // hint — without it the first league containing the team won (ucl
+    // outranks pl in LEAGUES), so a Premier League match compared UCL stats.
+    const hintLeagueId =
+      raw.general?.leagueId != null && Number.isFinite(Number(raw.general.leagueId))
+        ? Number(raw.general.leagueId)
+        : undefined;
     const seasonFor = async (teamId: number): Promise<TeamSeasonStats | null> => {
-      const row = await findTeamInStandings(teamId).catch(() => null);
+      const row = await findTeamInStandings(teamId, hintLeagueId).catch(() => null);
       if (!row?.leagueKey) return null;
       return getTeamSeasonFromLeague(row.leagueKey, teamId).catch(() => null);
     };

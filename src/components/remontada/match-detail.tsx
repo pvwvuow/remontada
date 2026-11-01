@@ -208,6 +208,7 @@ interface DetailData {
     source: string;
     url: string; // fotmob news/topnews article, opens in a new tab
     date?: string;
+    lang?: string; // fix cycle-349: upstream locale (ar/en) → «متن منبع» chip
   }[] | null;
   // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
   // mirrors /api/match/[id]; null/both-empty → the block never renders
@@ -1786,6 +1787,14 @@ function SeasonComparePanel({
   const sideName = (t: H2HTeam & { season: TeamSeasonStats | null }) =>
     t.fa || t.name;
 
+  // fix cycle-349 (bug-hunt 348 finding 1): label the competition the numbers
+  // actually come from — the hint now prefers the match's own league, but a
+  // cup/european fixture can still legitimately compare mixed competitions.
+  const leagueLabel =
+    hs?.leagueFa && hs.leagueFa === as?.leagueFa
+      ? hs.leagueFa
+      : [hs?.leagueFa, as?.leagueFa].filter(Boolean).join(" / ") || null;
+
   return (
     <section className="glass-card p-4">
       <header className="flex items-center justify-between gap-2 mb-3">
@@ -1801,6 +1810,9 @@ function SeasonComparePanel({
           <img src={comparison.away.logo} alt="" width={20} height={20} className="w-5 h-5 object-contain shrink-0" onError={(e) => { e.currentTarget.style.visibility = "hidden"; }} />
         </span>
       </header>
+      {leagueLabel ? (
+        <p className="text-center text-[9.5px] font-bold text-steel/70 -mt-2 mb-2">آمار فصل: {leagueLabel}</p>
+      ) : null}
       <div className="glass-list">
         {rows.map((r) => {
           const max = Math.max(r.h ?? 0, r.a ?? 0, 0.0001);
@@ -2158,6 +2170,15 @@ function PreviewRow({ r }: { r: NonNullable<DetailData["previews"]>[number] }) {
         {r.source ? (
           <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/80" dir="ltr">
             {r.source}
+          </span>
+        ) : null}
+        {/* fix cycle-349 (bug-hunt 348 finding 2): the source-language chip —
+            the 207 contract prefers the ar locale over en, so preview text is
+            Arabic upstream, not site copy; label it honestly instead of
+            letting Persian readers read it as Persian. fa → no chip. */}
+        {r.lang && r.lang !== "fa" ? (
+          <span className="mt-1 inline-flex items-center rounded border border-[color:var(--glass-border-soft)] bg-[#ffffff06] px-1.5 py-px text-[9px] font-bold text-steel/80">
+            متن منبع: {r.lang === "ar" ? "عربی" : r.lang === "en" ? "انگلیسی" : r.lang}
           </span>
         ) : null}
       </span>
