@@ -1859,6 +1859,25 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Set piece goals": { fa: "گل از ضربات ایستگاهی", sub: "کرنر، پنالتی و ضربهٔ آزاد" },
     "Penalties awarded": { fa: "پنالتی گرفته‌شده", sub: "دریافت پنالتی در بازی‌های فصل" },
     "Yellow cards": { fa: "کارت زرد", sub: "بی‌نظمی فصل — سطح تیم" },
+    // cycle-365: the 196 catalog covered 14 of the 31 team leaderboards —
+    // the xGA/creator-volume/set-piece-defense/discipline/GK gaps stay
+    // uncurated (probe 2026-11-02 UA Chrome/124: all 12 new headers live on
+    // pl/laliga/ucl/seriea with stat.format hints fraction|number, honestly
+    // absent on the thin egypt/iraq feeds → the 92 honest-skip rule covers
+    // them). Same extraction, same chips, zero new fetches, zero logic
+    // changes — catalog entries only.
+    "xG conceded": { fa: "گل انتظاری خورده (xGA)", sub: "کیفیت موقعیت‌های داده‌شده به حریف" },
+    "Big chances": { fa: "موقعیت طلایی", sub: "موقعیت‌های خیلی خوب ساخته‌شده" },
+    "Big chances missed": { fa: "موقعیت طلایی از دست رفته", sub: "موقعیت‌های ناتمام‌مانده" },
+    "Touches in opposition box": { fa: "لمس در محدودهٔ حریف", sub: "حضور توپی در محدودهٔ جریمهٔ حریف" },
+    "Accurate crosses per match": { fa: "پاس عرضی دقیق در هر بازی", sub: "بازی عرضی و هوایی فصل" },
+    "Accurate passes per match": { fa: "پاس دقیق در هر بازی", sub: "میانگین پاس‌های درست" },
+    "Set piece goals conceded": { fa: "گل خورده از ضربات ایستگاهی", sub: "آسیب‌پذیری در کرنر و ضربهٔ آزاد" },
+    "Penalties conceded": { fa: "پنالتی داده‌شده", sub: "خطاهای داخل محدودهٔ جریمه" },
+    "Saves per match": { fa: "مهار در هر بازی", sub: "کار دروازه‌بان‌ها" },
+    "Fouls per match": { fa: "خطا در هر بازی", sub: "میانگین خطاهای فصل" },
+    "Red cards": { fa: "کارت قرمز", sub: "اخراج‌های فصل — سطح تیم" },
+    "Possession won final 3rd per match": { fa: "برد توپ در ثلث پایانی", sub: "پرس بلند و بازپس‌گیری جلو" },
   },
   player: {
     "FotMob rating": { fa: "امتیاز فوت‌ماب", sub: "میانگین نمره بازی‌ها" },
@@ -1878,6 +1897,24 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Expected assist (xA)": { fa: "پاس منجر انتظاری (xA)", sub: "کیفیت پاس‌های آخر" },
     "Clean sheets": { fa: "کلین‌شیت", sub: "دروازه‌بان‌ها؛ بازی بدون گل خورده" },
     "Save percentage": { fa: "درصد مهار", sub: "دروازه‌بان‌ها؛ سهم شوت‌های مهارشده" },
+    // cycle-365: 10 more of the 46 player leaderboards — the xG board (the
+    // payload carries the xg full list for آقای گل but NO podium existed),
+    // shooting precision (shots on target), combined output (xG+xA per 90),
+    // the rest of the defensive family (blocks/clearances/defensive
+    // actions), line-breaking passes, penalties won, long balls and
+    // recoveries. Same podium shape, same /player/{id} links, zero new
+    // fetches (probe 2026-11-02: all 10 live on the rich feeds with
+    // fraction/number format hints; thin leagues skip honestly).
+    "Expected goals (xG)": { fa: "گل انتظاری (xG)", sub: "کیفیت موقعیت‌های گرفته‌شده" },
+    "Shots on target per 90": { fa: "شوت در چارچوب در هر ۹۰ دقیقه", sub: "دقت شوت‌زنی" },
+    "xG + xA per 90": { fa: "xG + xA در هر ۹۰ دقیقه", sub: "جمع آفنس انتظاری گل و پاس" },
+    "Blocks per 90": { fa: "بلاک در هر ۹۰ دقیقه", sub: "دفاع از شوت و پاس حریف" },
+    "Clearances per 90": { fa: "دفع توپ در هر ۹۰ دقیقه", sub: "پاک‌سازی محدودهٔ خطر" },
+    "Defensive actions per 90": { fa: "اقدام دفاعی در هر ۹۰ دقیقه", sub: "تکل، قطع، بلاک و دفع" },
+    "Line-breaking passes per 90": { fa: "پاس خط‌شکن در هر ۹۰ دقیقه", sub: "شکستن خطوط دفاعی حریف" },
+    "Penalties won": { fa: "پنالتی گرفته‌شده", sub: "کسب پنالتی در بازی‌های فصل" },
+    "Accurate long balls per 90": { fa: "پاس بلند دقیق در هر ۹۰ دقیقه", sub: "تغییر جهت حمله با پاس بلند" },
+    "Recoveries per 90": { fa: "بردهای توپ در هر ۹۰ دقیقه", sub: "بازپس‌گیری مالکیت" },
   },
 };
 
