@@ -196,10 +196,26 @@ async function loadNews(): Promise<NewsItem[]> {
     if (r.status === "fulfilled") all.push(...r.value);
   }
 
+  // fix cycle-304 (this cycle's patrol finding): Sky's rss/12040 is the
+  // ALL-sports Sky Sports News wire — boxing (Canelo) and horse-racing
+  // (Breeders' Cup) items were landing on a football-only portal; since
+  // /news and /rss.xml share this same cached instance (news:v2), both
+  // leaked identically. Keep a Sky item only when its link lives under
+  // skysports.com/football/ — the /watch/video desk (source of the racing
+  // leak) and the other-sport sections are dropped. BBC (feeds.bbci.co.uk/
+  // sport/football) and ESPN (soccer/* slugs) are already sport-scoped and
+  // pass untouched. Documented trade-off: a rare Sky football video parked
+  // under /watch/video is sacrificed — content precision beats wire recall
+  // on a football portal. Runs BEFORE dedup/slice so non-football items
+  // never consume slots in the 16-item window.
+  const footballWire = all.filter(
+    (n) => n.source !== "Sky Sports" || /skysports\.com\/football\//.test(n.link ?? "")
+  );
+
   // dedup by normalized title, keep newest 48h only
   const cutoff = Date.now() - 48 * 3600_000;
   const seen = new Set<string>();
-  const deduped = all
+  const deduped = footballWire
     .filter((n) => {
       const k = n.title.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim().slice(0, 60);
       if (seen.has(k)) return false;
