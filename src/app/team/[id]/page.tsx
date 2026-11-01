@@ -38,10 +38,23 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       // team card was shared with NO preview at all. The index entry ships
       // the real club crest (images.fotmob.com teamlogo CDN — live-probed
       // 200 and the same URL family the search index already renders).
+      // update cycle-340: complete the share-card family — the twitter object
+      // was absent (twitter:title fell back to the layout default) and the og
+      // object carried no url/siteName/locale. Crest images stay (306).
       openGraph: {
         title: `${name} — صفحه تیم | رمانتادا`,
         description: desc,
+        type: "website",
+        siteName: "رمانتادا",
+        locale: "fa_IR",
+        url: `${SITE_URL}/team/${id}`,
         images: [{ url: entry.logo, alt: `نشان ${name}` }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${name} — صفحه تیم | رمانتادا`,
+        description: desc,
+        images: [entry.logo],
       },
     };
   } catch {

@@ -6,11 +6,36 @@ import { JsonLd } from "@/components/remontada/json-ld";
 import { getNewsFeed, type NewsItem } from "@/lib/news";
 import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
+// update cycle-340: per-page share card — /news was the last nav surface
+// still sharing the layout's wholesale defaults: the <title> was page-specific
+// but og:title/twitter:title both fell back to «رمانتادا | نتایج زنده…» and
+// og:url even pointed at the site ROOT. Same cycle-339 shape: the child
+// object replaces the layout's wholesale, so og.png is re-included explicitly
+// and siteName/locale/url come back page-specific.
+const NEWS_TITLE = "اخبار فوتبال | رمانتادا";
+const NEWS_DESC =
+  "آخرین اخبار داغ فوتبال جهان از ESPN، BBC Sport و Sky Sports با ترجمه فارسی — رمانتادا";
+
 export const metadata: Metadata = {
   title: "اخبار فوتبال",
-  description: "آخرین اخبار داغ فوتبال جهان از ESPN، BBC Sport و Sky Sports با ترجمه فارسی — رمانتادا",
+  description: NEWS_DESC,
   // fix cycle-289: self canonical — previously inherited the layout root "/"
   alternates: { canonical: "/news", ...RSS_ALTERNATE },
+  openGraph: {
+    title: NEWS_TITLE,
+    description: NEWS_DESC,
+    type: "website",
+    siteName: "رمانتادا",
+    locale: "fa_IR",
+    url: `${SITE_URL}/news`,
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: NEWS_TITLE,
+    description: NEWS_DESC,
+    images: ["/og.png"],
+  },
 };
 
 export default async function NewsPage() {

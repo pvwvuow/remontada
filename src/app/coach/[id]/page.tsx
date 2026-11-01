@@ -14,7 +14,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { CoachView } from "@/components/remontada/coach-view";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { CoachNotFoundError, getCoachData, type CoachData } from "@/lib/fotmob";
-import { RSS_ALTERNATE } from "@/lib/site";
+import { RSS_ALTERNATE, SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
 
@@ -32,7 +32,27 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: `${display} — پروفایل مربی`,
       description: desc,
       alternates: { canonical: `/coach/${id}`, ...RSS_ALTERNATE },
-      openGraph: { title: `${display} — پروفایل مربی | رمانتادا`, description: desc, type: "profile" },
+      // update cycle-340: the coach card was the last zero-preview share — its
+      // minimal og object carried NO images at all (the exact bug class 306
+      // fixed for team/match), no url/siteName/locale, and no twitter object.
+      // og.png parity: per-person headshots were probed and rejected in 306
+      // (playerimages 403s for some ids; the coach id-space rides the same
+      // player endpoint), so the honest site card is the safe image.
+      openGraph: {
+        title: `${display} — پروفایل مربی | رمانتادا`,
+        description: desc,
+        type: "profile",
+        siteName: "رمانتادا",
+        locale: "fa_IR",
+        url: `${SITE_URL}/coach/${id}`,
+        images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${display} — پروفایل مربی | رمانتادا`,
+        description: desc,
+        images: ["/og.png"],
+      },
     };
   } catch {
     // missing coach / upstream hiccup — the page itself handles the UX

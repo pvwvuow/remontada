@@ -46,7 +46,24 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title,
       description: desc,
       alternates: { canonical: `/match/${id}`, ...RSS_ALTERNATE },
-      openGraph: { title: `${title} | رمانتادا`, description: desc, images: ogImages },
+      // update cycle-340: complete the share-card family — twitter object was
+      // absent (twitter:title fell back to the layout default) and the og
+      // object carried no url/siteName/locale. ogImages degrade to og.png (306).
+      openGraph: {
+        title: `${title} | رمانتادا`,
+        description: desc,
+        type: "website",
+        siteName: "رمانتادا",
+        locale: "fa_IR",
+        url: `${SITE_URL}/match/${id}`,
+        images: ogImages,
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: `${title} | رمانتادا`,
+        description: desc,
+        images: ogImages.map((i) => i.url),
+      },
     };
   } catch {
     // fix cycle-33: upstream hiccup → keep the empty shell unindexed
