@@ -1814,7 +1814,7 @@ function statTeamCategory(raw: FotMobLeague, re: RegExp): FMStatTeamRow[] {
 // Categories are hidden when a league's feed lacks them (e.g. Top speed is
 // PL-only) and the whole section hides when the payload has none.
 
-export type LeagueBoardFmt = "fraction" | "percent" | "number" | "currency" | "kph";
+export type LeagueBoardFmt = "fraction" | "percent" | "number" | "currency" | "kph" | "meter";
 
 export interface LeagueBoardRow {
   rank: number;
@@ -1882,13 +1882,19 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     // the defensive-volume family completes it (tackles/interceptions/
     // clearances/long balls per match, probe 2026-11-02: 3/4 rich feeds
     // carry each header, fmt=fraction frac=1). The 5th remaining header,
-    // "Distance per match", stays uncurated ON PURPOSE: fmt=meter (leader
-    // val ۱۱۹۴۲۲٫۸) would need a m→km unit conversion — a boardValue
-    // logic change, not a catalog entry — and a raw meter render is wrong.
+    // "Distance per match", stayed uncurated at 366 because fmt=meter had
+    // no renderer — cycle-367 adds the meter format to the boards pipeline
+    // (mirroring the deep layer's deepStatValueFa m→km convention) so the
+    // LAST team board joins (probe 2026-11-02: pl Fulham ۱۱۹۴۲۲٫۸ m, ucl
+    // Bodø/Glimt ۱۲۳۵۶۰٫۳ m — 2/4 rich feeds, honest-skip elsewhere).
     "Tackles per match": { fa: "تکل در هر بازی", sub: "برندگی در تن‌به‌تن" },
     "Interceptions per match": { fa: "قطع توپ در هر بازی", sub: "خواندن مسیر پاس حریف" },
     "Clearances per match": { fa: "دفع توپ در هر بازی", sub: "پاک‌سازی محدودهٔ خطر" },
     "Accurate long balls per match": { fa: "پاس بلند دقیق در هر بازی", sub: "بازی مستقیم و تغییر جهت حمله" },
+    // cycle-367: the 31/31 team board — the meter pipeline arrives (same
+    // m→km convention deepStatValueFa already renders), so the last team
+    // leaderboard joins with a real unit instead of a raw ۱۱۹۴۲۲٫۸.
+    "Distance per match": { fa: "مسافت پوشیده در هر بازی", sub: "مجموع دویدن تیم — بر حسب کیلومتر" },
   },
   player: {
     "FotMob rating": { fa: "امتیاز فوت‌ماب", sub: "میانگین نمره بازی‌ها" },
@@ -1937,7 +1943,10 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     // duplicate of the آقای گل section — the no-repeat rule) and the
     // meter-format distance boards ("Total distance", "Distance per 90") —
     // same meter objection as the team side. Thin egypt/iraq feeds keep the
-    // 92 honest-skip.
+    // 92 honest-skip. cycle-367: that objection is RESOLVED — the boards
+    // pipeline now renders meter as kilometers (deep-layer convention), so
+    // the two distance boards join (probe: pl Wirtz ۱۳۰۵۴٫۷ m/90, Groß
+    // ۱۰۷۴۱۶٫۷ m total; ucl Mustafić/Prömel — 2/4 rich feeds).
     "Assists": { fa: "پاس گل", sub: "دقیق‌ترین سازندگان فصل" },
     "Goals + Assists": { fa: "گل + پاس گل", sub: "جمع مشارکت مستقیم در گل" },
     "Minutes played": { fa: "دقایق بازی", sub: "بازیکنان پرکار فصل" },
@@ -1959,6 +1968,9 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Penalty saves": { fa: "مهار پنالتی", sub: "دروازه‌بان‌ها؛ پنالتی‌های مهارشده" },
     "Total sprints": { fa: "جمع اسپرینت", sub: "شتاب‌گیری‌های فصل" },
     "Sprints per 90": { fa: "اسپرینت در هر ۹۰ دقیقه", sub: "نرخ شتاب‌گیری" },
+    // cycle-367: the distance boards — meter format, kilometers out.
+    "Total distance": { fa: "جمع مسافت پوشیده", sub: "مجموع دویدن در فصل — بر حسب کیلومتر" },
+    "Distance per 90": { fa: "مسافت در هر ۹۰ دقیقه", sub: "نرخ دویدن — بر حسب کیلومتر" },
   },
 };
 
@@ -2043,7 +2055,7 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
         header,
         headerFa: label.fa,
         ...(label.sub ? { subFa: label.sub } : {}),
-        fmt: (["fraction", "percent", "number", "currency", "kph"].includes(hint.format || "")
+        fmt: (["fraction", "percent", "number", "currency", "kph", "meter"].includes(hint.format || "")
           ? hint.format
           : "fraction") as LeagueBoardFmt,
         fractions: Number.isFinite(Number(hint.fractions)) ? Number(hint.fractions) : 1,

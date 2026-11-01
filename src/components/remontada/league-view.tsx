@@ -345,6 +345,11 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 function boardValue(v: number, fmt: string, fractions: number): string {
   if (fmt === "percent") return `${faDigits(v.toFixed(1))}٪`;
   if (fmt === "kph") return faDigits(v.toFixed(1));
+  // cycle-367: meter boards render kilometers (deepStatValueFa convention);
+  // sub-1km values (defensive) stay meters.
+  if (fmt === "meter") {
+    return v >= 1000 ? `${faDigits(String(Math.round(v / 100) / 10))} کیلومتر` : `${faDigits(String(v))} متر`;
+  }
   if (fmt === "currency") {
     const abs = Math.abs(v);
     if (abs >= 1e9) return `${faDigits((v / 1e9).toFixed(2))} میلیارد`;
