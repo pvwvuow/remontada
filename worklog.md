@@ -4559,3 +4559,18 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **ادامهٔ همان نشست:** با توجه به نرخ بالای بازیافت (~۲۶ دقیقه) و شکست concurrency موتور گردشی، چرخهٔ 310=آپدیت در همین نشست و بلافاصله بعد از بازیابی اجرا شد (کارت جداگانه).
 
 ---
+### Task ID: cycle-310 — آپدیت (BreadcrumbList روی صفحهٔ تیم — حلقهٔ جاماندهٔ الگوی نان‌مسیر league/topscorers)
+
+**پویش نامزدها (پروب زندهٔ UA Chrome/124، چند نامزد ردشده به‌دلیل تکراری‌بودن — قرارداد «بدون تکرار ویژگی قبلی»):** content.weather ← از قبل cycle-100 کامل است (WeatherCard + نقشهٔ فارسی localizedKey + verdict واحد باد)؛ history.trophyList ← از قبل TeamTrophiesSection؛ overview.fixtureDifficulty ← از قبل cycle-112 (DifficultySection)؛ liveticker مسابقه ← فقط متادیتا (هر دو endpoint REST ‏404)؛ highlightStories ← استوری‌های DAZN با محدودیت جغرافیایی (allowed:[jp] — رد مثل هدشات‌های 403 در 306)؛ superlive ← خاموش؛ buzz ← غایب. سطح مسابقه و تیم کاملاً برداشت شده است — پس حلقهٔ واقعاً جامانده انتخاب شد: BreadcrumbList که فقط /team/[id] ندارد (league/[key] و topscorers/[leagueKey] همان الگو را با واژگان خانه→لیگ‌ها دارند؛ breadcrumbJSONLD در src=0).
+
+**اجرا (یک فایل، server component):** در team/[id]/page.tsx داخل همان try موجود — مسیر خانه → لیگ‌ها → {leagueFa} (/league/{key}) → {teamFa} (/team/{id}) از TeamIndexEntry کش‌شده‌ای که صفحه از قبل می‌خواند؛ هر URL لینکی است که UI واقعاً می‌رندر می‌کند (هدر پروفایل به لیگ، داک ناوبری به خانه — سلسله‌مراتب مرئیِ همان مسیر)؛ تیم بدون لیگ فقط آن ListItem را می‌پرد، positionها پیوسته می‌مانند؛ best-effort مثل SportsTeam — هیچ‌وقت صفحه را نمی‌شکند.
+
+**اثبات زنده:** /team/8633 دو بلوک ld+json جدا دارد (SportsTeam دست‌نخورده + BreadcrumbList با ۴ ListItem ترتیبی: خانه/لیگ‌ها/لالیگا اسپانیا/رئال‌مادرید با URLهای درست)؛ DOM: هر دو اسکریپت حاضر، h1 سالم، بدون اورفلو در 390×844، کنسول fresh-session ۰/۰.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=2533 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**کامیت:** «Update (cycle 310):» — push و تأیید ls-remote (762cb95).
+
+**نوبت گردشی بعدی: cycle-311 = آپدیت** (فرمول ((311 mod 5)+1)=۲) — نامزد ثبت‌شده برای پویش بعدی: مسیر نان‌مسیر برای بقیهٔ خانواده‌ها (match/player/news/search) با همان واژگان.
+
+---
