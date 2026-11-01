@@ -113,7 +113,7 @@ interface FMLineupTeam {
   id: number; name: string; formation?: string | null;
   starters?: FMStarter[];
   subs?: FMStarter[];
-  coach?: { name?: string; firstName?: string; lastName?: string } | null;
+  coach?: { id?: number; name?: string; firstName?: string; lastName?: string } | null;
   // cycle-116: lineup-tab «غایبان و آمار ترکیب» — the unavailable (injured /
   // suspended / international duty) block + starter facts, unconsumed since
   // the beginning (probed shapes over 4 matches, UA Chrome/124).
@@ -597,6 +597,7 @@ interface LineupSide {
   formation?: string;
   coach?: string;
   coachFa?: string; // cycle-106 honest map (present only when a coach name exists)
+  coachId?: number; // fix cycle-354: /coach/[id] link — honest absence when upstream omits the id
   starterAge?: number;       // cycle-116 raw — the UI formats (میانگین سن)
   totalMarketValue?: number; // cycle-116 raw EUR
   totalMarketValueFa?: string; // cycle-116 display-ready «۲۵۶.۷ میلیون یورو» (marketValueFa server-side — the client bundle must NOT pull fotmob/db)
@@ -1490,6 +1491,7 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
         formation: t.formation || undefined,
         coach: coachName,
         coachFa: coachName ? playerFa(coachName) : undefined,
+        ...(isNum(t.coach?.id) ? { coachId: t.coach.id } : {}), // fix cycle-354: coach page link
         ...(isNum(t.averageStarterAge) ? { starterAge: t.averageStarterAge } : {}),
         ...(isNum(t.totalStarterMarketValue)
           ? { totalMarketValue: t.totalStarterMarketValue, totalMarketValueFa: marketValueFa(t.totalStarterMarketValue) }

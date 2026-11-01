@@ -46,7 +46,7 @@ interface DetailEvent {
 interface DetailStatRow { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }
 interface DetailStatGroup { title: string; rows: DetailStatRow[] }
 interface LineupSide {
-  teamId: number; name: string; fa: string; formation?: string; coach?: string; coachFa?: string;
+  teamId: number; name: string; fa: string; formation?: string; coach?: string; coachFa?: string; coachId?: number;
   starterAge?: number;         // cycle-116 raw — میانگین سن ترکیب اصلی
   totalMarketValueFa?: string; // cycle-116 display-ready (server-formatted EUR)
   unavailable?: {            // cycle-116 «غایبان» — reason chips honest-mapped
@@ -1327,7 +1327,19 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
           ))}
         </div>
         {t.coach && (
-          <p className="text-[10px] text-muted-foreground text-center">سرمربی: <span className="font-bold text-foreground/80">{t.coachFa || t.coach}</span></p>
+          /* fix cycle-354: the coach name links to its /coach/[id] profile when
+             the payload carries the id (probed present on every lineup payload);
+             honest plain-text fallback otherwise. */
+          <p className="text-[10px] text-muted-foreground text-center">
+            سرمربی:{" "}
+            {t.coachId ? (
+              <Link href={`/coach/${t.coachId}`} prefetch={false} className="font-bold text-foreground/80 hover:text-sky-soft transition-colors">
+                {t.coachFa || t.coach}
+              </Link>
+            ) : (
+              <span className="font-bold text-foreground/80">{t.coachFa || t.coach}</span>
+            )}
+          </p>
         )}
         {/* cycle-116: starter facts — میانگین سن + ارزش کل ترکیب (raw EUR,
             formatted with the shared marketValueFa wording) */}
