@@ -7254,6 +7254,23 @@ export function normalizeQuery(q: string): string {
     .trim();
 }
 
+/** update cycle-307: the relaxed companion of normalizeQuery — folds BOTH
+ *  alef forms (آ and ا) away entirely, after the standard fold. Persian
+ *  football media spell foreign names with transliteration variance that
+ *  the standard fold cannot bridge: epenthetic-alef insertion (یمال ↔
+ *  یامال — the cycle-305 registered observation: an LLM-translated feed
+ *  says «یمال» while users type the equally common «یامال», and the strict
+ *  includes() matcher sees two different strings) and hamza variance
+ *  (آلاوز ↔ الاوز). NEVER a primary pass — callers must score the strict
+ *  normalizeQuery match first and consult this fold only when the strict
+ *  pass returned ZERO rows, so no existing hit ever changes behavior; the
+ *  relaxed pass only turns honest zero-result pages into (still topical,
+ *  football-scoped) matches. Alef removal shifts string indices, so rows
+ *  matched through this fold carry NO highlight range (see searchNews). */
+export function relaxedFaFold(s: string): string {
+  return normalizeQuery(s).replace(/[آا]/g, "");
+}
+
 let teamIndexCache: { at: number; data: TeamIndexEntry[]; full: boolean } | null = null;
 let teamIndexLastGood: TeamIndexEntry[] | null = null;
 

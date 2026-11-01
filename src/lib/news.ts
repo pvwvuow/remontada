@@ -23,7 +23,7 @@
 // additive-field precedent — existing clients stay untouched).
 // ------------------------------------------------------------------
 import { cached, cacheGetDeep } from "@/lib/cache";
-import { normalizeQuery, rangeOf } from "@/lib/fotmob";
+import { normalizeQuery, rangeOf, relaxedFaFold } from "@/lib/fotmob";
 
 export interface NewsItem {
   title: string;        // original (English)
@@ -287,21 +287,24 @@ export interface NewsSearchResult {
   hl?: { fa: [number, number] | null; en: [number, number] | null };
 }
 
-/** cycle-202: WARM-ONLY fold of the news:v3 feed — search must NEVER
- *  trigger the ~20s cold producer inside a keystroke request, so an
- *  absent/expired cache answers [] (honest absence; the section hides).
- *  Normalized on BOTH titles (the Persian one the portal displays and
- *  the honest English original) so both alphabets find the row. */
-export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult[]> {
-  const nq = normalizeQuery(q);
-  if (nq.length < 2) return [];
-  // update cycle-305: the cached row is now {items, fetchedAt} — read .items
-  const hit = await cacheGetDeep<NewsFeed>("news:v3");
-  if (!hit || hit.stale) return [];
-  const scored: { it: NewsItem; score: number }[] = [];
-  for (const it of hit.value.items) {
-    const faHay = normalizeQuery(it.titleFa || "");
-    const enHay = normalizeQuery(it.title || "");
+/** update cycle-307: the shared matcher, extracted byte-identical from the
+ *  cycle-202 loop (exact 100 > prefix 80 > includes 50 > all-words 40, on
+ *  both the Persian title the portal displays and the honest English one)
+ *  so the strict pass and the cycle-307 relaxed pass reuse ONE scoring
+ *  implementation. `nq` must already be folded with the SAME `fold` the
+ *  haystacks go through — the strict caller passes normalizeQuery output,
+ *  the relaxed caller relaxedFaFold output (the fold is applied again on
+ *  the haystack strings; the standard fold is idempotent and the relaxed
+ *  one strips only alef letters, so re-folding is a no-op there). */
+function scoreFeed(
+  items: NewsItem[],
+  nq: string,
+  fold: (s: string) => string,
+): { it: NewsItem; score: number; onFa: boolean }[] {
+  const scored: { it: NewsItem; score: number; onFa: boolean }[] = [];
+  for (const it of items) {
+    const faHay = fold(it.titleFa || "");
+    const enHay = fold(it.title || "");
     let score = -1;
     let onFa = true;
     if (faHay === nq) score = 100;
@@ -317,20 +320,57 @@ export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult
         else if (words.length > 1 && words.every((w) => enHay.includes(w))) { score = 40; onFa = false; }
       }
     }
-    if (score > 0) scored.push({ it, score });
+    if (score > 0) scored.push({ it, score, onFa });
+  }
+  return scored;
+}
+
+/** cycle-202: WARM-ONLY fold of the news:v3 feed — search must NEVER
+ *  trigger the ~20s cold producer inside a keystroke request, so an
+ *  absent/expired cache answers [] (honest absence; the section hides).
+ *  Normalized on BOTH titles (the Persian one the portal displays and
+ *  the honest English original) so both alphabets find the row. */
+export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult[]> {
+  const nq = normalizeQuery(q);
+  if (nq.length < 2) return [];
+  // update cycle-305: the cached row is now {items, fetchedAt} — read .items
+  const hit = await cacheGetDeep<NewsFeed>("news:v3");
+  if (!hit || hit.stale) return [];
+
+  // strict pass — byte-identical behavior to the pre-307 matcher
+  let scored = scoreFeed(hit.value.items, nq, normalizeQuery);
+  let relaxed = false;
+  // update cycle-307 (the cycle-305 registered observation, now closed):
+  // zero-hits fallback for Persian transliteration variance around the
+  // alef letter — the strict includes() matcher cannot bridge «یامال»
+  // (how users type it) ↔ «یمال» (how the LLM-translated feed spells it)
+  // or «آلاوز» ↔ «الاوز». Only consulted when the strict pass found ZERO
+  // rows and the alef-stripped query is still ≥2 chars, so every existing
+  // hit path is untouched; matched rows carry no highlight (alef removal
+  // shifts indices — an original-text range would misalign, honest null).
+  if (scored.length === 0) {
+    const rnq = relaxedFaFold(nq);
+    if (rnq.length >= 2) {
+      scored = scoreFeed(hit.value.items, rnq, relaxedFaFold);
+      relaxed = scored.length > 0;
+    }
   }
   // stable sort → equal scores keep the feed's newest-first order
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit).map(({ it }) => {
-    const faRange = rangeOf(it.titleFa || "", nq);
-    const enRange = rangeOf(it.title || "", nq);
+  return scored.slice(0, limit).map(({ it, onFa }) => {
+    // relaxed rows carry no highlight: alef removal shifts string indices,
+    // so an original-text range would misalign — honest null instead; their
+    // matchedOn follows the side that actually matched (the strict rows keep
+    // the cycle-202 rangeOf convention, byte-identical to pre-307)
+    const faRange = relaxed ? null : rangeOf(it.titleFa || "", nq);
+    const enRange = relaxed ? null : rangeOf(it.title || "", nq);
     return {
       title: it.title,
       titleFa: it.titleFa,
       source: it.source,
       publishedAt: it.publishedAt,
       ...(it.link ? { link: it.link } : {}),
-      matchedOn: faRange ? it.titleFa : it.title,
+      matchedOn: relaxed ? (onFa ? it.titleFa : it.title) : faRange ? it.titleFa : it.title,
       hl: { fa: faRange, en: enRange },
     };
   });
