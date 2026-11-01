@@ -34,13 +34,16 @@ export async function generateMetadata({ params }: { params: Promise<{ key: stri
       siteName: "رمانتادا",
       locale: "fa_IR",
       url: `${SITE_URL}/league/${key}`,
-      images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+      // update cycle-341: the league's own dynamic share card (build-time
+      // next/og render — name + colour of the competition) instead of the
+      // generic static og.png; /api/og/[key] is SSG'd per league key.
+      images: [{ url: `/api/og/${key}`, width: 1200, height: 630, alt: `رمانتادا — ${name}` }],
     },
     twitter: {
       card: "summary_large_image",
       title: `${title} | رمانتادا`,
       description: desc,
-      images: ["/og.png"],
+      images: [`/api/og/${key}`],
     },
   };
 }
