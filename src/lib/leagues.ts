@@ -1744,6 +1744,14 @@ const TEAM_FA: Record<string, string> = {
   "ario islamshahr": "آریو اسلامشهر",
   "fc fard": "اف‌سی فرد",
   "shahin bandar ameri": "شهین بندر عامری",
+  // cycle-387: the multi-day window (offset -2..+2, scripts/cycle387-probe.sh)
+  // found exactly these 4 recurring raw Azadegan names beyond the 384 set —
+  // every key is the exact live-probed upstream spelling (the F2-378 guard):
+  // «Havadar SC» is the suffixed spelling the bare «havadar» key can't reach.
+  "havadar sc": "هوادار",
+  "kara gostar": "کارا گستر",
+  "naft masjed soleyman fc": "نفت مسجدسلیمان",
+  "niroye zamini": "نیروی زمینی",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -1757,6 +1765,10 @@ export function competitionFa(name: string, ccode?: string): string {
   // ambiguous names must match their country, otherwise keep original
   if (AMBIGUOUS_NAMES.has(n)) return name;
   if (COMPETITION_FA[n]) return COMPETITION_FA[n];
+  // cycle-387: the bounded suffix-family composer (the 386 F1 structural
+  // decision — see the block comment above competitionFaComposed)
+  const composed = competitionFaComposed(n, cc);
+  if (composed) return composed;
   // ui-cycle-4: MLS Next Pro playoff phases beyond the exact key above
   if (n.startsWith("mls next pro")) return "لیگ نکست پرو آمریکا";
   return name;
@@ -1984,7 +1996,125 @@ const COMPETITION_FA_CC: Record<string, string> = {
   // day-feed entry so the league page and the feed never disagree.
   "asian cup|INT": "جام ملت‌های آسیا",
   "asian cup final stage|INT": "جام ملت‌های آسیا — مرحلهٔ حذفی",
+
+  // cycle-387: the multi-day window's (offset -2..+2) point keys — the bases
+  // the suffix-family composer composes from, plus the one-off headers no
+  // family reaches. Every Persian name follows the established in-file
+  // conventions (جام حذفی X for domestic cups, X — گروه A Latin letter /
+  // X — گروه ۴ Persian digit, X — آپرتورا, پلی‌آف ارتقا).
+  "eredivisie vrouwen|NED": "اردیویزهٔ زنان هلند",
+  "premiere ligue|FRA": "لیگ برتر زنان فرانسه",
+  "nwsl|USA": "ان‌دبلیو‌اس‌ال",
+  "virsliga|LVA": "ویرسلیگا لتونی",
+  "pro league|UAE": "لیگ برتر امارات",
+  "premier league|CAN": "لیگ برتر کانادا",
+  "challenge league|SUI": "چلنج‌لیگ سوئیس",
+  "copa de la reina|ESP": "جام حذفی زنان اسپانیا",
+  "copa do brasil|BRA": "جام حذفی برزیل",
+  "dbu pokalen|DEN": "جام حذفی دانمارک",
+  "ligue i|TUN": "لیگ ۱ تونس",
+  "challenge cup|SCO": "جام چلنج اسکاتلند",
+  "fa cup|SVK": "جام حذفی اسلواکی",
+  "second division|QAT": "دسته دوم قطر",
+  "a-liga|DEN": "لیگ A دانمارک",
+  "swpl cup|SCO": "جام لیگ زنان اسکاتلند",
+  "swpl 1|SCO": "لیگ برتر زنان اسکاتلند",
+  "first division promotion playoff|IRL": "پلی‌آف ارتقا دسته اول ایرلند",
+  // composer bases — the per-instance keys above (australian championship
+  // grp. a/d|AUS, segunda federacion - group 1/2/3/5|ESP, league cup
+  // grp. a/c|EGY) proved the erosion class: the next day mints grp. b/c,
+  // group 4, grp. b/d. The base + composer heals the whole family with
+  // byte-consistent output instead of minting one key per day.
+  "australian championship|AUS": "قهرمانی استرالیا",
+  "segunda federacion|ESP": "سگوندا فدراسیون اسپانیا",
+  "liga de expansión mx - apertura|MEX": "لیگ گسترش مکزیک — آپرتورا",
+  "national league cup|ENG": "جام لیگ ملی انگلیس",
+  "efl trophy northern|ENG": "جام ای‌اف‌ال شمالی",
+  "efl trophy southern|ENG": "جام ای‌اف‌ال جنوبی",
+  "league cup|EGY": "جام اتحادیه مصر",
+  "league cup|THA": "جام اتحادیه تایلند",
+  "league cup|RSA": "جام اتحادیه آفریقای جنوبی",
+  "croatian cup|CRO": "جام حذفی کرواسی",
+  "uefa youth league|INT": "لیگ جوانان اروپا",
 };
+
+// cycle-387: THE structural decision for the day-feed header churn (the 386
+// F1 finding): the header list rotates daily (17 raw at offset=-1, 21 at
+// +1, 11 at +2 on the probe day) and point-mapping per day erodes — the
+// 383 root cause with a new dimension. Instead of minting one key per
+// (competition, stage) pair per day, competitionFa now COMPOSES a Persian
+// name from a verified base + an explicit suffix table, generalizing the
+// exact shapes the keys already established:
+//   «X — گروه A» Latin letter (the K1 convention) / «X — گروه ۴» Persian
+//   digit / «X — یک‌چهارم نهایی» / «X — پلی‌آف» / bare «Cup|CC» →
+//   «جام حذفی {country}» (the 384 cup|CHI/COL family).
+// It fires ONLY after the exact-key lookups fail, ONLY when the base
+// resolves through the verified maps (CC-qualified first, AMBIGUOUS-guarded
+// global next) and ONLY for suffixes in the explicit tables — anything
+// else keeps the honest raw passthrough. The mls-next-pro prefix rule
+// (ui-cycle-4) predates this and stays.
+const CUP_CC_FA: Record<string, string> = {
+  chi: "شیلی", col: "کلمبیا", egy: "مصر", cyp: "قبرس", chn: "چین", uru: "اروگوئه",
+};
+
+const STAGE_SUFFIX_FA: Record<string, string> = {
+  "league stage": "مرحلهٔ لیگی",
+  "2nd round": "دور دوم",
+  "8th finals": "یک‌شانزدهم نهایی",
+  "16th finals": "یک‌سی‌ودویم نهایی",
+  "quarter-finals": "یک‌چهارم نهایی",
+  "semi-finals": "نیمه‌نهایی",
+  "final": "فینال",
+  "play-offs": "پلی‌آف",
+  "playoff": "پلی‌آف",
+  "promotion playoff": "پلی‌آف ارتقا",
+  "championship group": "گروه قهرمانی",
+  "championship round": "دور قهرمانی",
+  "relegation round": "دور سقوط",
+  "relegation playoff": "پلی‌آف سقوط",
+};
+
+function competitionFaBase(n: string, cc: string): string | null {
+  if (cc && COMPETITION_FA_CC[`${n}|${cc}`]) return COMPETITION_FA_CC[`${n}|${cc}`];
+  if (AMBIGUOUS_NAMES.has(n)) return null;
+  return COMPETITION_FA[n] || null;
+}
+
+function competitionFaComposed(n: string, cc: string): string | null {
+  // bare national cup: «Cup|CC» → «جام حذفی {country}» — verified whitelist
+  if (n === "cup" && cc && CUP_CC_FA[cc.toLowerCase()]) {
+    return `جام حذفی ${CUP_CC_FA[cc.toLowerCase()]}`;
+  }
+  // Norwegian division sections: «3. Divisjon Avd. 2» → «لیگ سه نروژ — بخش ۲»
+  const avd = n.match(/^([123])\. divisjon avd\. ([0-9]+)$/);
+  if (avd && cc === "NOR") {
+    const tier = avd[1] === "1" ? "یک" : avd[1] === "2" ? "دو" : "سه";
+    return `لیگ ${tier} نروژ — بخش ${faDigits(avd[2])}`;
+  }
+  // group suffix: «X Group A / X Grp. B / X - Group 4» → «X — گروه A/۴»
+  const grp = n.match(/^(.*?)(?: - |\s)(?:grp\. |group )([a-z0-9]+)$/);
+  if (grp) {
+    const base = competitionFaBase(grp[1].trim(), cc);
+    if (base) {
+      const t = grp[2];
+      const label = /^[0-9]+$/.test(t) ? faDigits(t) : t.toUpperCase();
+      return `${base} — گروه ${label}`;
+    }
+  }
+  // stage suffix: «X - Apertura - Quarter-finals» → «X — آپرتورا — یک‌چهارم نهایی»
+  // walk the « - » segments from the RIGHTMOST (shortest) suffix so a
+  // chained name finds «quarter-finals» even though «apertura -
+  // quarter-finals» (the first split) is not a stage — probed live on
+  // «Liga de Expansión MX - Apertura - Quarter-finals» (MEX).
+  const segs = n.split(" - ");
+  for (let k = segs.length - 1; k >= 1; k--) {
+    const stage = STAGE_SUFFIX_FA[segs.slice(k).join(" - ")];
+    if (!stage) continue;
+    const base = competitionFaBase(segs.slice(0, k).join(" - "), cc);
+    if (base) return `${base} — ${stage}`;
+  }
+  return null;
+}
 
 // youth / women / reserve suffixes — translate the base name and append a
 // Persian qualifier so «Chelsea (W)», «Hoffenheim U19», «Werder Bremen II»
