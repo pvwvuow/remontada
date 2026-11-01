@@ -4839,3 +4839,14 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE=http://localhost:3000 **28/28** ← اثبات DOM در 390×844: /league/pl ‏th=17 / scoped=17 / unscoped=0، ستون «بعدی» سالم (۲۰ لینک /match)، overflowX=false؛ تب «جدول لیگ‌ها» خانه th=11 / scoped=11 / unscoped=0، overflowX=false؛ کنسول fresh-session (close→open) و errors صفر. جمع ۲۸/۲۸ scope — دقیقاً برابر شمارش سورس.
 
 **نوبت گردشی بعدی: cycle-330 = آپدیت** (فرمول ((330 mod 5)+1)=۱).
+### Task ID: PROTOCOL-recovery-2026-11-01f — بازیابی هشتم کانتینر (بازگشت به دوران cycle-44؛ سنگین‌ترین پاک‌سازی تاکنون — اسکریپت‌های بیرونی هم رفته‌اند)
+
+**کشف (ضربان ۱۴:۰۴+08):** همان الگوی تکرارشوندهٔ سندباکس ناپایدار — سلامت :3000 = **500**؛ مخزن محلی به HEAD قدیمی 52169b7 (عصر cycle-44) برگشته با درخت کثیفِ همیشگی (~۱۲۰ فایل: .env/.gitignore/README/فونت‌ها/آیکون‌ها/…)؛ origin/main = c63c5c3 (کارت چرخه-۳۲۹) جلوتر است. **سنگین‌تر از شش بازیابی قبلی:** کل /home/z/my-project/scripts/ به جز remote-token.txt و sync-to-github.sh و health-check.sh و cron-backup پاک شده بود — start-remontada.sh، gap-probe-325.py، probe-326.py و فایل‌های commit-msg حذف؛ FRESHNESS GATE در sync بیرونی = 0؛ worklog بیرونی به اسنپ‌شات کهنه (Oct 30) برگشته.
+
+**اجرا (این بار مستقیم از نسخهٔ canonical داخل مخزن — scripts/protocol-recovery.sh که خودش از /tmp اجرا شد):** کلون تازه در c63c5c3 (درخت تمیز) ← bun install --frozen-lockfile (827 بسته، 3.45s) ← DATABASE_URL صریح file:./dev.db + prisma db push + prisma generate ← bun run build (استاندالون ساخته شد) ← پاک‌سازی شنوندهٔ :3000 و `next start` رسمی (try=1/200، next-server pid=1689) ← رگرسیون BASE=http://localhost:3000 **28/28**.
+
+**بازگردانی زیرساخت بیرونی:** start-remontada.sh + sync-to-github.sh + recover-remontada.sh از نسخهٔ canonical مخزن به /home/z/my-project/scripts/ (chmod +x)؛ remote-token.txt → chmod 600؛ **FRESHNESS GATE=1** ✓؛ worklog بیرونی append شد (نه overwrite).
+
+**لنگرهای دوران (سریع):** خانه 200؛ /rss.xml 200؛ /team/8633 ‏LD «Place» (لنگر ۳۲۲)؛ /player/696679 «آمار فصل‌به‌فصل» (لنگر ۳۲۵) — همه روی بیلد c63c5c3. کارت ۳۲۹ هرگز از دست نرفت (روی origin بود).
+
+**نوبت گردشی دست‌نخورده: cycle-330 = آپدیت** — در همین نشست اجرا می‌شود (کارت جداگانه، سنت کارت هفتم).
