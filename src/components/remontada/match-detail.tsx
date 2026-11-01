@@ -1700,7 +1700,11 @@ const VS_CLS: Record<"above" | "below" | "average", string> = {
 };
 /** ≤2-decimal Persian number, trailing zeros trimmed (deepNumFa twin) */
 function faNum2(n: number): string {
-  return faDigits((Math.round(n * 100) / 100).toString());
+  // cycle-372: faDecimal — the average-age (lineup) and referee-average
+  // (yellow cards / fouls per match) renders carry the Persian separator ٫;
+  // was faDigits over a raw string (ASCII dot), the last dot render the
+  // 370/371 passes could not see (server payload interpolated client-side).
+  return faDecimal((Math.round(n * 100) / 100).toString());
 }
 function RefereeStadiumCard({ info }: { info: DetailData["info"] }) {
   const rs = info.refereeStats;

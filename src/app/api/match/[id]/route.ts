@@ -10,7 +10,7 @@ import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
 import { roundFa, unavailableReturnFa, marketValueFa } from "@/lib/fotmob";
 import { playerFa } from "@/lib/player-names-fa";
-import { faDigits } from "@/lib/format";
+import { faDecimal } from "@/lib/format";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -201,12 +201,14 @@ const MATCH_INSIGHT_FA: Record<string, string> = {
 // · MATCH_POLL_FA — the fact sentence per TextTemplateId; {N} fills from
 //   StatValues in order, where the role strings "home_team"/"away_team"
 //   resolve to the sides' Persian names and bare values pass through
-//   faDigits (decimals keep the ASCII dot — xG convention). Unknown
+//   faDecimal (cycle-372: decimals carry the Persian separator ٫ — the
+//   portal-wide 369/370/371 convention; this was the last documented
+//   ASCII-dot holdout since cycle-257). Unknown
 //   TextTemplateIds never render (honest drop, MATCH_INSIGHT_FA rule).
 const MATCH_POLL_TITLE_FA: Record<string, string> = {
   "1x2": "چه کسی پیروز می‌شود؟",
   bts: "هر دو تیم گل می‌زنند؟",
-  ou: "بیش از ۲.۵ گل؟",
+  ou: "بیش از ۲٫۵ گل؟",
   dc: "شانس دوگانه",
 };
 const MATCH_POLL_FA: Record<string, string> = {
@@ -1886,7 +1888,7 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
             return mapped || sv.name;
           }
           const n = sv.value;
-          return n === null || n === undefined ? "…" : faDigits(n);
+          return n === null || n === undefined ? "…" : faDecimal(n);
         });
       const out: NonNullable<MatchDetailNormalized["insights"]> = [];
       for (const it of rawIns) {
@@ -1937,7 +1939,7 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
           if (name) return name;
           // bare values are always numeric upstream — anything else is an
           // unexpected shape → the "…" guard drops the whole fact honestly
-          if (/^-?\d+(\.\d+)?$/.test(v)) return faDigits(v);
+          if (/^-?\d+(\.\d+)?$/.test(v)) return faDecimal(v);
           return "…";
         });
       const out: NonNullable<MatchDetailNormalized["poll"]> = [];
