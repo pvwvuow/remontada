@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStandings, LeagueUnavailableError, LEAGUES, SEASON_PARAM_RE, type StandingsData } from "@/lib/fotmob";
+import { getStandings, LeagueUnavailableError, LEAGUES, type StandingsData } from "@/lib/fotmob";
+import { seasonParamOk } from "@/lib/season";
 import { cacheGetDeep, cacheSet } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
@@ -24,14 +25,15 @@ const SNAPSHOT_TTL = 24 * 60 * 60_000; // last-known-good kept up to 24h (cycle-
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("league") || "pl";
-  const valid = LEAGUES.some((l) => l.key === key);
-  if (!valid) {
+  const lg = LEAGUES.find((l) => l.key === key);
+  if (!lg) {
     return NextResponse.json({ ok: false, error: `Unknown league key: ${key}` }, { status: 400 });
   }
   // cycle-55: optional historical season ("2024/2025") — strict shape, then
-  // passed straight to the FotMob fetch; anything else → 400
+  // passed straight to the FotMob fetch; anything else → 400. cycle-382:
+  // plain-year shapes ("2022") ride the per-league plainYearSeasons flag.
   const season = req.nextUrl.searchParams.get("season") || undefined;
-  if (season && !SEASON_PARAM_RE.test(season)) {
+  if (season && !seasonParamOk(season, lg.plainYearSeasons === true)) {
     return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
   }
   // cycle-114: snapshot probe BEFORE the fetch (cheap L1/L2 read, never

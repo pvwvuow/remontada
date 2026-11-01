@@ -9,7 +9,7 @@ import type { StandingsData, StandingsRow, LeagueFixturesData, LeagueAllFixtures
 // cycle-99: same strict season shape as the API guard — one regex, one
 // contract (client-safe module; a value import from fotmob.ts would drag
 // the server graph into the client bundle — caught in this cycle's build)
-import { SEASON_PARAM_RE } from "@/lib/season";
+import { seasonParamOk } from "@/lib/season";
 import { LEAGUES, fotmobTeamLogo, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
@@ -1264,8 +1264,10 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   // tab shows on historical views too (null → tab hidden)
   const [titles, setTitles] = useState<LeagueTitleHistory | null>(null);
 
-  // cycle-99: read the deep-linked season once on mount — strict SEASON_PARAM_RE
-  // shape (same guard as the API routes); anything else is ignored and the
+  // cycle-99: read the deep-linked season once on mount — strict season
+  // shape (same guard as the API routes; cycle-382 adds the plain-year
+  // "2022" shape for the per-league plainYearSeasons flag); anything else
+  // is ignored and the
   // current season loads. Probed upstream contract (cycle-99): a well-formed
   // season the league does not offer is silently served as the CURRENT season
   // (200 + payload marker selectedSeason=actual) — the honesty snap inside the
@@ -1275,7 +1277,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
     setSeeded(true);
     try {
       const raw = new URLSearchParams(window.location.search).get("season");
-      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
+      if (raw && seasonParamOk(raw, lg?.plainYearSeasons === true)) setSeason(raw);
     } catch { /* no window — ignore */ }
   }, [seeded]);
 

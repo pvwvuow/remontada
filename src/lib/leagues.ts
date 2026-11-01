@@ -19,6 +19,13 @@ export interface LeagueConfig {
    *  fixtures, bracket, titles, /topscorers/uecl (reads getStandings
    *  directly), players hub, search index all stay live. */
   globalMerge?: boolean;
+  /** cycle-382: national-team tournaments serve PLAIN-YEAR season names
+   *  ("2026", "2022" — the World Cup carries 23 of them). The flag lets
+   *  seasonParamOk() (season.ts) accept the plain shape for THIS league
+   *  only — API guards + client deep-link seeding pass it through; the
+   *  slash contract stays the default for every other competition and
+   *  every global surface. */
+  plainYearSeasons?: boolean;
 }
 
 export const LEAGUES: LeagueConfig[] = [
@@ -516,6 +523,40 @@ export const LEAGUES: LeagueConfig[] = [
   // line, pre-381). globalMerge: false — the 376 one-flag semantic
   // unchanged.
   { key: "facup",      fotmobId: 132,         ccode3: "ENG",  faName: "جام حذفی انگلیس",    enName: "FA Cup",           espnSlug: "eng.fa",           priority: 30, globalMerge: false },
+  // cycle-382: FIFA World Cup — the 31st competition, the FIRST
+  // national-team tournament on the portal and the closing of a class gap:
+  // every prior entry is a club competition. Feasibility first (live
+  // probes, UA Chrome/124): the 2026 final day feed (2026-07-19, Spain
+  // 1–0 Argentina) surfaced day-tournament id 894789 which answers NULL
+  // as a league page — the real page id via the cycle-141 crack
+  // (matchDetails parentLeagueId = 77). Feed shape: the CLASSIC table
+  // payload with composite:true + 13 sub-tables (12 groups 'Grp. A'..'Grp.
+  // L' ×4 rows + 'Best 3rd placed teams' ×12 — Iran 3 draws, 3-3, out as
+  // the 10th third-placed side), playoff SERVED in the cycle-144 slash
+  // shape (1/16:16, 1/8:8, 1/4:4, 1/2:2, final:1 matchups + a bronzeFinal
+  // DICT — France 4-6 England 2026 / Croatia 2-1 Morocco 2022 — parsed as
+  // an honest «رده‌بندی» round), 104 finished fixtures (72 group with
+  // numeric roundName + 32 knockout with NAMED roundName 'Round of
+  // 32'..'Final' — the existing roundFa would have rendered «هفته ۳۲» and
+  // raw Latin 'Final' → extended with the named-round map), stats
+  // .categories=0 (the honest scorers empty, facup precedent),
+  // transfers.data=null (the cups' honest hide), titleHistory ABSENT (the
+  // seasons tab renders; the «قهرمانان» tab honestly absent, cycle-121
+  // contract). THE headline gap: allAvailableSeasons are PLAIN YEARS
+  // ('2026','2022',… 23 of them) — the strict SEASON_PARAM_RE filtered
+  // every one out, so a plain-year season contract rides this entry:
+  // plainYearSeasons:true + seasonParamOk() (season.ts) accept '2026'
+  // ONLY where the flag proves it; slash seasons stay the portal default
+  // and the global race/players surfaces stay strict. leagueColor
+  // #06062D; ESPN slug probed live: fifa.world → 200 with the completed
+  // final. faName rides the ALREADY-shipped mapping «جام جهانی»
+  // (COMPETITION_FA "world cup", pre-382). The 48 national sides resolve
+  // through teamFa → COUNTRY_FA (40 pre-existing) + 8 new keys. The
+  // historical 2022 feed probed live: 8 groups, 64 matches, final
+  // Argentina 3-3 France (winner Argentina) — the deep-link proof target.
+  // globalMerge: false — the 376 one-flag semantic; a plain-year feed
+  // must never enter the slash-season allSeasons intersection anyway.
+  { key: "worldcup",   fotmobId: 77,          ccode3: "INT",  faName: "جام جهانی",          enName: "FIFA World Cup",   espnSlug: "fifa.world",       priority: 31, globalMerge: false, plainYearSeasons: true },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -1911,6 +1952,22 @@ const COUNTRY_FA: Record<string, string> = {
   // cycle-159: Iceland leaked through player careers (senior + U17/U19/U21
   // + «Iceland Under 20» — the D5 career sweep found it unmapped)
   "iceland": "آیسلند",
+  // cycle-382: the World Cup's 48-side roster — 40 of the national names
+  // already resolve through the map above; these eight rode the WC
+  // bracket/tables/fixtures as raw Latin (probed live: the unique-name set
+  // across the 2026 feed's 13 sub-tables + 6 bracket rounds + 104
+  // fixtures). They join COUNTRY_FA (not TEAM_FA) — the national-teams
+  // map — so player-page country rows for the same nations heal with the
+  // same entry (the cycle-86 convention). "turkiye" is the bare upstream
+  // spelling (the diaeresis variant "türkiye" already rides this map).
+  "cape verde": "کیپ‌ورد", "curacao": "کوراسائو", "haiti": "هائیتی",
+  "jordan": "اردن", "new zealand": "نیوزیلند", "panama": "پاناما",
+  "south africa": "آفریقای جنوبی", "turkiye": "ترکیه",
+  // cycle-382 (titles sweep): the WC title history rides raw.seasons back
+  // to 1930 — the 1934/1962 runner-up is the DEFUNCT «Czechoslovakia»,
+  // unmapped by design until now; one entry heals both rows (Czechia's
+  // modern keys already ride this map).
+  "czechoslovakia": "چکسلواکی",
 };
 
 export function countryFa(name: string | undefined | null): string {

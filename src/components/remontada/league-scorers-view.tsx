@@ -19,7 +19,7 @@ import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
 import { PlayerPhoto } from "@/components/remontada/player-photo";
 import { faDigits, faDecimal, timeAgoFa } from "@/lib/format";
-import { SEASON_PARAM_RE } from "@/lib/season";
+import { seasonParamOk } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
 interface LeagueScorersData {
@@ -389,18 +389,20 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
   const [season, setSeason] = useState<string | null>(null);
   const [seeded, setSeeded] = useState(false);
 
-  // cycle-180: read the deep-linked season once on mount — strict
-  // SEASON_PARAM_RE shape (the same guard the API route applies); anything
-  // else is ignored and the current season loads. Gated on `seeded` so a
-  // deep link performs exactly ONE fetch with the right season.
+  // cycle-180: read the deep-linked season once on mount — strict season
+  // shape (the same guard the API route applies; cycle-382 adds the
+  // plain-year "2022" shape for the per-league plainYearSeasons flag);
+  // anything else is ignored and the current season loads. Gated on
+  // `seeded` so a deep link performs exactly ONE fetch with the right season.
   useEffect(() => {
     if (seeded) return;
     setSeeded(true);
     try {
       const raw = new URLSearchParams(window.location.search).get("season");
-      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
+      const plainOk = LEAGUES.find((l) => l.key === leagueKey)?.plainYearSeasons === true;
+      if (raw && seasonParamOk(raw, plainOk)) setSeason(raw);
     } catch { /* no window — ignore */ }
-  }, [seeded]);
+  }, [seeded, leagueKey]);
 
   useEffect(() => {
     if (!seeded) return; // cycle-180: wait for the URL seed pass

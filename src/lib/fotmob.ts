@@ -9,7 +9,7 @@ import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime, marketVal
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
-import { SEASON_PARAM_RE } from "./season";
+import { SEASON_PARAM_RE, SEASON_PLAIN_RE } from "./season";
 import { playerFa } from "./player-names-fa";
 export { SEASON_PARAM_RE };
 
@@ -1617,6 +1617,12 @@ const STANDINGS_LEGEND_FA: Record<string, string> = {
   // cycle-136: Persian Gulf Pro League (league 523) — probed tKeys
   "tr_afcchampionsleague": "لیگ قهرمانان آسیا",
   "tr_afcccup": "لیگ قهرمانان آسیا ۲",
+  // cycle-382: the World Cup group tables (probed live: two legend rows,
+  // tKeys "qualification_next_stage" green + "possible_qualification_
+  // next_stage" yellow — the 48-team format's group-stage qualification
+  // strips; unknown tKeys keep dropping, the honest convention)
+  "qualification_next_stage": "صعود به مرحلهٔ بعد",
+  "possible_qualification_next_stage": "صعودِ احتمالی به مرحلهٔ بعد",
 };
 
 interface FotMobLeague {
@@ -1660,7 +1666,11 @@ interface FotMobLeague {
   // selectedSeason = the season the payload ACTUALLY serves (the composite
   // table block never echoes it) — the honesty marker for echo-less feeds.
   overview?: { selectedSeason?: string; season?: string };
-  playoff?: { rounds?: FMBracketRoundRaw[] };
+  // cycle-382: the World Cup's third-place playoff rides OUTSIDE rounds —
+  // a single matchup-shaped dict (homeTeam/awayTeam/matches present, both
+  // seasons probed live). Parsed by getLeagueBracket as a trailing
+  // «رده‌بندی» round when both names are real strings.
+  playoff?: { rounds?: FMBracketRoundRaw[]; bronzeFinal?: FMBracketMatchupRaw };
   // cycle-121 probed (UA Chrome/124, 2026-10-29): top-level seasons = the
   // league's FULL title history — one entry per completed season, newest
   // first: {seasonName, winner {id, name, seasonName, winner:true},
@@ -4149,6 +4159,17 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // leagueName is just the league's English name) — the standard
       // Persian-sports label for the merged standings
       "super league": "جدول کلی",
+      // cycle-382: the World Cup composite feeds spell the groups «Grp. A»
+      // (probed live: 12 four-team sub-tables 'Grp. A'..'Grp. L' + the
+      // 12-row third-place ranking 'Best 3rd placed teams') — the ACL Two
+      // "group a".."group h" keys never match the "Grp." prefix, so every
+      // label would have leaked raw Latin. Latin group letters in the
+      // Persian label are the standard Persian sports convention (the 157
+      // «گروه A» line).
+      "grp. a": "گروه A", "grp. b": "گروه B", "grp. c": "گروه C", "grp. d": "گروه D",
+      "grp. e": "گروه E", "grp. f": "گروه F", "grp. g": "گروه G", "grp. h": "گروه H",
+      "grp. i": "گروه I", "grp. j": "گروه J", "grp. k": "گروه K", "grp. l": "گروه L",
+      "best 3rd placed teams": "بهترین تیم‌های سوم",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];
@@ -5402,8 +5423,14 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       || raw.overview?.selectedSeason
       || season
       || undefined;
+    // cycle-382: plain-year seasons ("2026" — the World Cup's 23-season
+    // archive) pass the filter ONLY for catalog leagues carrying
+    // plainYearSeasons:true; every other feed keeps the strict slash-only
+    // list byte-identical (the cycle-132 window contract).
     const allSeasons = Array.isArray(raw.allAvailableSeasons)
-      ? raw.allAvailableSeasons.filter((s) => SEASON_PARAM_RE.test(s)).slice(0, 12)
+      ? raw.allAvailableSeasons
+          .filter((s) => SEASON_PARAM_RE.test(s) || (lg.plainYearSeasons === true && SEASON_PLAIN_RE.test(s)))
+          .slice(0, 12)
       : undefined;
     // cycle-92: curated upstream season boards (same leagueRaw, zero extra hit)
     const boards = extractLeagueBoards(raw);
@@ -6029,10 +6056,34 @@ export interface LeagueStats {
 
 /** Round label → Persian. "Regular season - 8" / "8" → «هفته ۸».
     fix cycle-59: exported + also used by normalizeFixture and the match API
-    route so week labels never leak Latin digits («هفته ۹» not «هفته 9»). */
+    route so week labels never leak Latin digits («هفته ۹» not «هفته 9»).
+    cycle-382: NAMED tournament rounds — the World Cup fixtures carry
+    roundName "Round of 32".."Final" (probed live; Coppa Italia/DFB Pokal
+    serve the same shape) and the trailing-digit fallback rendered them as
+    «هفته ۳۲»/«هفته ۱۶» while "Quarter-Finals"/"Bronze Final" leaked raw
+    Latin. The map keys off the lowercase upstream label and keeps the
+    portal's bracket convention («یک‌شانزدهم نهایی» = Round of 32, 16
+    matches — the same line BRACKET_STAGE_FA draws for stage "1/16").
+    Domestic-league labels never hit the map — byte-identical output. */
+const ROUND_NAME_FA: Record<string, string> = {
+  "round of 64": "یک‌سی‌ودوم نهایی",
+  "round of 32": "یک‌شانزدهم نهایی",
+  "round of 16": "یک‌هشتم نهایی",
+  "quarter-finals": "یک‌چهارم نهایی",
+  "quarterfinals": "یک‌چهارم نهایی",
+  "quarter-final": "یک‌چهارم نهایی",
+  "semi-finals": "نیمه‌نهایی",
+  "semifinals": "نیمه‌نهایی",
+  "semi-final": "نیمه‌نهایی",
+  "3rd place final": "بازی رده‌بندی",
+  "bronze final": "بازی رده‌بندی",
+  "final": "فینال",
+};
 export function roundFa(round: string | undefined): string | undefined {
   if (!round) return undefined;
   const raw = String(round);
+  const named = ROUND_NAME_FA[raw.toLowerCase().trim()];
+  if (named) return named;
   if (/^\d+$/.test(raw)) return `هفته ${faDigits(raw)}`;
   const m = /(\d+)\s*$/.exec(raw);
   if (m) return `هفته ${faDigits(m[1])}`;
@@ -6277,6 +6328,10 @@ interface FMBracketMatchupRaw {
   awayTeam?: string; awayTeamId?: number; awayTeamShortName?: string;
   aggregatedResult?: { homeScore?: number; awayScore?: number } | null;
   aggregatedWinner?: number | null;
+  // cycle-382: the World Cup slash-shape matchups carry the winner as the
+  // bare team id (`winner: 6724`) instead of aggregatedWinner — mapped as
+  // the winnerId fallback; pre-382 feeds never set it (byte-identical).
+  winner?: number | null;
   drawDate?: string;
   hasTwoPossibleMatchups?: boolean;
   matches?: FMBracketMatchRaw[];
@@ -6332,6 +6387,12 @@ const BRACKET_STAGE_FA: Record<string, string> = {
   "1/4": "یک‌چهارم نهایی",
   "1/2": "نیمه‌نهایی",
   "final": "فینال",
+  // cycle-382: the World Cup's third-place playoff rides the playoff
+  // payload as a SEPARATE bronzeFinal dict (probed live: 2026 France 4-6
+  // England, 2022 Croatia 2-1 Morocco) — parsed into its own trailing
+  // round with this stage key; a raw "bronze" would leak Latin (the 378
+  // K1 class).
+  "bronze": "بازی رده‌بندی",
 };
 
 const bracketTeam = (id?: number, name?: string, short?: string) => ({
@@ -6347,12 +6408,15 @@ const bracketTeam = (id?: number, name?: string, short?: string) => ({
  */
 export async function getLeagueBracket(leagueKey: string, season?: string): Promise<LeagueBracketData | null> {
   const { lg, raw } = await getLeagueRaw(leagueKey, season);
-  const roundsRaw = raw.playoff?.rounds || [];
-  const rounds: BracketRound[] = [];
-  for (const r of roundsRaw) {
-    const stage = String(r?.stage || "");
+  // cycle-382: the round body factored into mapRound so the World Cup's
+  // SEPARATE bronzeFinal dict (a single matchup-shaped object OUTSIDE
+  // playoff.rounds — probed live: 2026 France 4-6 England, 2022 Croatia
+  // 2-1 Morocco) reuses the exact same matchup/leg mapping instead of a
+  // copy; every pre-382 payload keeps its byte-identical rounds (the
+  // bronze append only fires when both team names are real strings).
+  const mapRound = (stage: string, matchupList: FMBracketMatchupRaw[] | undefined): BracketRound | null => {
     const matchups: BracketMatchup[] = [];
-    for (const m of r?.matchups || []) {
+    for (const m of matchupList || []) {
       if (!m) continue;
       const legs: BracketLeg[] = (m.matches || [])
         .filter((x) => x?.home?.name && x?.away?.name)
@@ -6380,14 +6444,26 @@ export async function getLeagueBracket(leagueKey: string, season?: string): Prom
         away: bracketTeam(m.awayTeamId, m.awayTeam, m.awayTeamShortName),
         aggHome: m.aggregatedResult?.homeScore ?? null,
         aggAway: m.aggregatedResult?.awayScore ?? null,
-        winnerId: m.aggregatedWinner ?? null,
+        winnerId: m.aggregatedWinner ?? m.winner ?? null,
         ...(m.drawDate ? { drawDate: m.drawDate } : {}),
         legs,
       });
     }
-    if (matchups.length > 0) {
-      rounds.push({ stage, stageFa: BRACKET_STAGE_FA[stage] || stage, matchups });
-    }
+    if (matchups.length === 0) return null;
+    return { stage, stageFa: BRACKET_STAGE_FA[stage] || stage, matchups };
+  };
+  const rounds: BracketRound[] = [];
+  for (const r of raw.playoff?.rounds || []) {
+    const round = mapRound(String(r?.stage || ""), r?.matchups);
+    if (round) rounds.push(round);
+  }
+  // cycle-382: the bronze dict appends as its own trailing «رده‌بندی»
+  // round — guard: both names must be non-empty strings (TBD/absent
+  // bronze payloads never enter; every pre-382 cup feed is untouched).
+  const bronze = raw.playoff?.bronzeFinal;
+  if (bronze && typeof bronze.homeTeam === "string" && bronze.homeTeam && typeof bronze.awayTeam === "string" && bronze.awayTeam) {
+    const round = mapRound("bronze", [bronze]);
+    if (round) rounds.push(round);
   }
   if (rounds.length === 0) return null;
   const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;

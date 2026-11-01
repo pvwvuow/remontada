@@ -10,7 +10,8 @@
 // VCALENDAR, an unavailable league to the shared JSON error shapes.
 // ------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
-import { getLeagueCalendar, LeagueUnavailableError, LEAGUES, SEASON_PARAM_RE } from "@/lib/fotmob";
+import { getLeagueCalendar, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";
+import { seasonParamOk } from "@/lib/season";
 import { SITE_URL } from "@/lib/site";
 
 export const dynamic = "force-dynamic";
@@ -61,11 +62,13 @@ function foldLine(line: string): string {
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("league") || "pl";
-  if (!LEAGUES.some((l) => l.key === key)) {
+  const lg = LEAGUES.find((l) => l.key === key);
+  if (!lg) {
     return NextResponse.json({ ok: false, error: `Unknown league key: ${key}` }, { status: 400 });
   }
+  // cycle-382: plain-year seasons ride the per-league plainYearSeasons flag.
   const season = req.nextUrl.searchParams.get("season") || undefined;
-  if (season && !SEASON_PARAM_RE.test(season)) {
+  if (season && !seasonParamOk(season, lg.plainYearSeasons === true)) {
     return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
   }
   try {
