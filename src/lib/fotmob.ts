@@ -1878,6 +1878,17 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Fouls per match": { fa: "خطا در هر بازی", sub: "میانگین خطاهای فصل" },
     "Red cards": { fa: "کارت قرمز", sub: "اخراج‌های فصل — سطح تیم" },
     "Possession won final 3rd per match": { fa: "برد توپ در ثلث پایانی", sub: "پرس بلند و بازپس‌گیری جلو" },
+    // cycle-366: the 365 catalog covered 26 of the 31 team leaderboards —
+    // the defensive-volume family completes it (tackles/interceptions/
+    // clearances/long balls per match, probe 2026-11-02: 3/4 rich feeds
+    // carry each header, fmt=fraction frac=1). The 5th remaining header,
+    // "Distance per match", stays uncurated ON PURPOSE: fmt=meter (leader
+    // val ۱۱۹۴۲۲٫۸) would need a m→km unit conversion — a boardValue
+    // logic change, not a catalog entry — and a raw meter render is wrong.
+    "Tackles per match": { fa: "تکل در هر بازی", sub: "برندگی در تن‌به‌تن" },
+    "Interceptions per match": { fa: "قطع توپ در هر بازی", sub: "خواندن مسیر پاس حریف" },
+    "Clearances per match": { fa: "دفع توپ در هر بازی", sub: "پاک‌سازی محدودهٔ خطر" },
+    "Accurate long balls per match": { fa: "پاس بلند دقیق در هر بازی", sub: "بازی مستقیم و تغییر جهت حمله" },
   },
   player: {
     "FotMob rating": { fa: "امتیاز فوت‌ماب", sub: "میانگین نمره بازی‌ها" },
@@ -1915,6 +1926,39 @@ const LEAGUE_BOARD_FA: Partial<Record<"team" | "player", Record<string, { fa: st
     "Penalties won": { fa: "پنالتی گرفته‌شده", sub: "کسب پنالتی در بازی‌های فصل" },
     "Accurate long balls per 90": { fa: "پاس بلند دقیق در هر ۹۰ دقیقه", sub: "تغییر جهت حمله با پاس بلند" },
     "Recoveries per 90": { fa: "بردهای توپ در هر ۹۰ دقیقه", sub: "بازپس‌گیری مالکیت" },
+    // cycle-366: the 365 catalog covered 22 of the 46 player leaderboards —
+    // the direct-output family (assists, goals+assists, minutes), the per-90
+    // rate boards (goals/xG/xA/shots per 90), xGOT, player-level discipline
+    // (red/yellow cards, big chances missed, penalties conceded, fouls per
+    // 90), the goalkeeper family (saves per 90, conceded per 90, high
+    // claims, sweeper actions, penalty saves) and the sprint boards join
+    // (probe 2026-11-02: each header live on 3-4/4 rich feeds with
+    // fraction|number hints). Skipped ON PURPOSE: "Top scorer" (a 4/4
+    // duplicate of the آقای گل section — the no-repeat rule) and the
+    // meter-format distance boards ("Total distance", "Distance per 90") —
+    // same meter objection as the team side. Thin egypt/iraq feeds keep the
+    // 92 honest-skip.
+    "Assists": { fa: "پاس گل", sub: "دقیق‌ترین سازندگان فصل" },
+    "Goals + Assists": { fa: "گل + پاس گل", sub: "جمع مشارکت مستقیم در گل" },
+    "Minutes played": { fa: "دقایق بازی", sub: "بازیکنان پرکار فصل" },
+    "Goals per 90": { fa: "گل در هر ۹۰ دقیقه", sub: "بهره‌وری گل‌زنی" },
+    "Expected goals (xG) per 90": { fa: "گل انتظاری در هر ۹۰ دقیقه", sub: "نرخ کیفیت موقعیت‌ها" },
+    "Expected goals on target (xGOT)": { fa: "گل انتظاری روی چارچوب (xGOT)", sub: "کیفیت شوت‌های در چارچوب" },
+    "Shots per 90": { fa: "شوت در هر ۹۰ دقیقه", sub: "حجم شوت‌زنی فصل" },
+    "Expected assist (xA) per 90": { fa: "پاس منجر انتظاری در هر ۹۰ دقیقه", sub: "نرخ خلق موقعیت" },
+    "Big chances missed": { fa: "موقعیت طلایی از دست رفته", sub: "فرصت‌های ناتمام فصل — سطح بازیکن" },
+    "Penalties conceded": { fa: "پنالتی داده‌شده", sub: "خطای داخل محدودهٔ جریمه — سطح بازیکن" },
+    "Fouls committed per 90": { fa: "خطا در هر ۹۰ دقیقه", sub: "میانگین خطاها — سطح بازیکن" },
+    "Yellow cards": { fa: "کارت زرد", sub: "بی‌نظمی فصل — سطح بازیکن" },
+    "Red cards": { fa: "کارت قرمز", sub: "اخراج‌های فصل — سطح بازیکن" },
+    "Possession won final 3rd per 90": { fa: "برد توپ در ثلث پایانی", sub: "بازپس‌گیری در جبههٔ حمله" },
+    "Saves per 90": { fa: "مهار در هر ۹۰ دقیقه", sub: "دروازه‌بان‌ها؛ نرخ کار دروازه" },
+    "Goals conceded per 90": { fa: "گل خورده در هر ۹۰ دقیقه", sub: "دروازه‌بان‌ها؛ میانگین گل خورده" },
+    "High claims per 90": { fa: "توپ‌گیری هوایی در هر ۹۰ دقیقه", sub: "دروازه‌بان‌ها؛ گرفتن توپ‌های بلند" },
+    "Sweeper actions per 90": { fa: "اقدام سوییپر در هر ۹۰ دقیقه", sub: "دروازه‌بان‌ها؛ خروج‌های به‌موقع" },
+    "Penalty saves": { fa: "مهار پنالتی", sub: "دروازه‌بان‌ها؛ پنالتی‌های مهارشده" },
+    "Total sprints": { fa: "جمع اسپرینت", sub: "شتاب‌گیری‌های فصل" },
+    "Sprints per 90": { fa: "اسپرینت در هر ۹۰ دقیقه", sub: "نرخ شتاب‌گیری" },
   },
 };
 
