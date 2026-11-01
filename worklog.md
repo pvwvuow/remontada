@@ -4728,3 +4728,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=16611 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
 
 **نوبت گردشی بعدی: cycle-322 = آپدیت** (فرمول ((322 mod 5)+1)=۳) — پویش تازهٔ شکاف با پروب زنده الزامی است؛ پیلودهای بازیکن/تیم/مسابقه/لیگ اکنون تا عمق ۲ تک‌تک مقایسه شده‌اند (۳۱۰/۳۱۵/۳۲۰/۳۲۱) — نامزد بعدی باید از عمق ۳ یا پیلود تازه (teams.details فیلدهای دیده‌نشده، league payload deep) با پروب اثبات شود.
+
+### Task ID: cycle-322 — آپدیت (Place ورزشگاه در LD SportsTeam صفحهٔ تیم)
+
+**کشف شکاف:** سرشماری عمق-۳ تازه با پروب زنده (UA Chrome/124، scripts/gap-probe-322.py) روی هر پنج پیلود بالادستی (matchDetails/playerData/teams/leagues + پیلود مربی 78719) در برابر پوشش src: گروه‌های transfers.data تیمی (چرخه-۷۱/۲۶۰)، آب‌وهوا (چرخه-۱۰۰)، teamForm، داور/ظرفیت/چمن infoBox (چرخه-۱۱۵)، nextMatch (خواندِ unquoted — «بازی بعدی» بازیکن + FAQ تیم)، صدک/per90 فصل (چرخه-۸۲)، پیچ فصل/heatmap (چرخه-۸۷)، برد/مساوی/باخت مربی — **همگی از قبل درو شده‌اند**؛ چند مورد false-positive سرچهمرقی طبق درس ۳۲۰ (nextMatch و destructure). QAData در هر دو مسابقهٔ پروب‌شده خالی (بن‌بست صادقانه)؛ content.table فقط اشاره‌گر به gz (رد شد — درخواست جدید). **تنها شکاف واقعی:** LD SportsTeamِ خودساختهٔ ما هرگز Place ورزشگاه (name + PostalAddress + GeoCoordinates) را نداشت — همان که بالادستی در details.sportsTeamJSONLD.location می‌فرستد و دقیقاً شکارگاهِ اعلام‌شدهٔ یادداشت گردشی ۳۲۱.
+
+**پیاده‌سازی (افزودنی، ۲ فایل):** `getTeamLocationLd` در lib/fotmob.ts — Place از همان پیلود کش‌شدهٔ تیمی که FAQ می‌خواند (overview.venue.widget {name, city, location:[lat,lng]} → مختصات عددی فقط با هر دو finite) + یک slice باریکِ addressCountry از details.sportsTeamJSONLD.location.address (تنها فکت venue که widget ندارد — قرارداد slice باریک ۳۲۱)؛ بدون embed نثر انگلیسی — فقط اسم خاص و عدد (پیش‌نمونهٔ location مسابقهٔ ۳۱۷)؛ صفر درخواست جدید بالادستی (کش‌هیت — فراخوان FAQ همان صفحه آن را گرم می‌کند)؛ best-effort: پیلود بی‌ورزشگاه → null → فیلد ساده حذف. team/[id]/page.tsx: اسپرد شرطی «location» در teamLd بعد از memberOf.
+
+**اثبات زنده:** /team/8633 → Place «Estadio Bernabéu» + PostalAddress Spain/Madrid + GeoCoordinates 40.453068279/-3.688353896؛ /team/9825 → Emirates Stadium/England/London/51.555074614/-0.108457804؛ id نامعتبر → shell تمیز بدون LD؛ DOM 390×844 fresh-session هر دو تیم: h1 «رئال‌مادرید»/«آرسنال»، ۴ بلوک LD، overflowX=false، کنسول صفر.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=1/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**نوبت گردشی بعدی: cycle-323 = بررسی باگ** (فرمول ((323 mod 5)+1)=۴) — گشت‌زنی کامل صفحات + راستی‌آزمایی Place تازهٔ location در viewport 390×844؛ نامزد polish ثبت‌شده: تعامل UI با فیلد جدید location نیازی ندارد ولی اگر بررسی ۳۲۳ یافت کرد، فیکس ۳۲۴ انجامش می‌دهد.
