@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, TacklesPer90Entry, InterceptionsPer90Entry, ShotsPer90Entry, AccuratePassesPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, TacklesPer90Entry, InterceptionsPer90Entry, ShotsPer90Entry, AccuratePassesPer90Entry, RecoveriesPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -133,6 +133,14 @@ interface LeagueScorersData {
   // per 90" category hide the section). SEASON-AWARE: historical raws
   // serve their OWN file (the 124/175/185 class).
   accuratePassesPer90?: AccuratePassesPer90Entry[];
+  // cycle-336 additive: «بازیابی توپ در هر ۹۰» rides the same payload — the
+  // defense family's THIRD sibling (beside تکل ۳۲۷ and قطع توپ ۳۳۰), the
+  // ball-winning volume that completes the defense run; decimal pill WITH
+  // dir=ltr rendered toFixed(1) (probed precision ONE decimal — the
+  // 210/217/226 decimal convention), honest absence = [] (feeds without
+  // the "Recoveries per 90" category hide the section). SEASON-AWARE:
+  // historical raws serve their OWN file (the 124/175/185 class).
+  recoveriesPer90?: RecoveriesPer90Entry[];
   // cycle-230 additive: «پاس مورد انتظار» rides the same payload — the deep-
   // file family's FOURTEENTH sibling and the assist-side ANALYTICS twin of
   // the xg surface, rendered right after گل در هر ۹۰ so the analytics run
@@ -1715,6 +1723,68 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="interceptions-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-336: بازیابی توپ در هر ۹۰ — the defense family's THIRD
+          sibling (beside cycle-327's تکل در هر ۹۰ and cycle-330's
+          قطع توپ در هر ۹۰), byte-for-byte the 327/330/335 sibling
+          pattern: the SAME cached getStandings payload now carries the
+          recoveries-per-90 block. stats/{id}/[season/{sid}/]
+          ball_recovery.json — live-probed 2026-11-01: pl 340 rows
+          Tzolakis 12.9 / Trafford 11.9 / Raya 11.8, laliga 360
+          Dmitrović 11.1; the payload's fetchAllUrl is season-scoped and
+          the 2025/26 raw serves its OWN file (336 rows, Roefs 9.5 /
+          Pope 9.5 — season-aware). Decimal values kept VERBATIM — the
+          210/217/226/330/335 decimal convention; upstream precision ONE
+          decimal (probed) so the pill renders toFixed(1), dir=ltr — the
+          217 display rule. Honest absence when the feed has no
+          "Recoveries per 90" category → the section simply hides.
+          Placed right after قطع توپ در هر ۹۰ so the defense family stays
+          together. */}
+      {data && !loading && (data.recoveriesPer90 || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              {/* recovery motif: the ball looped back toward the boot */}
+              <circle cx="9" cy="14" r="5" />
+              <path d="M14.5 9.5c2-2 4.5-2.5 6-1" />
+              <path d="M20.5 8.5l-.3 2.4M20.5 8.5l-2.4.2" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">بازیابی توپ در هر ۹۰</h2>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">بازپس‌گیری</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.recoveriesPer90 || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.recoveriesPer90.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="recovery-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

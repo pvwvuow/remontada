@@ -914,6 +914,20 @@ export interface AccuratePassesPer90Entry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+// cycle-336: «بازیابی توپ در هر ۹۰» — the DEFENSE family's THIRD sibling,
+// the ball-winning volume beside the tackle/interception pair
+// (ball_recovery.json), byte-for-byte the 327/330/331/335 sibling shape.
+export interface RecoveriesPer90Entry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  recoveriesPer90: number;  // StatValue VERBATIM — per-90 decimal (12.9), the 210/217/226 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -1125,6 +1139,8 @@ export interface StandingsData {
   shotsPer90: ShotsPer90Entry[];
   /** cycle-335 additive: «پاس دقیق در هر ۹۰» — the passing family's first surface (accurate_pass.json). */
   accuratePassesPer90: AccuratePassesPer90Entry[];
+  /** cycle-336 additive: «بازیابی توپ در هر ۹۰» — the defense family's third sibling (ball_recovery.json). */
+  recoveriesPer90: RecoveriesPer90Entry[];
   /** cycle-230 additive: «پاس مورد انتظار» — the deep-file family's
    *  FOURTEENTH sibling and the assist-side ANALYTICS twin of the xg
    *  surface (→ expected assist 230). The "Expected assist (xA)" category
@@ -2782,6 +2798,56 @@ export async function getFullAccuratePassesPer90(leagueKey: string, season?: str
             team: teamFa(r.TeamName || undefined) || r.TeamName || "",
             teamId: r.TeamId ?? 0,
             accuratePassesPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/** cycle-336 additive: «بازیابی توپ در هر ۹۰» loader — the defense family's
+ *  THIRD sibling (beside cycle-327's تکل در هر ۹۰ and cycle-330's
+ *  قطع توپ در هر ۹۰). ball_recovery.json (live-probed 2026-11-01 UA
+ *  Chrome/124: pl 340 rows Tzolakis 12.9 / Trafford 11.9 / Raya 11.8,
+ *  laliga 360 Dmitrović 11.1; the payload's own fetchAllUrl is
+ *  season-scoped — season/36781 on 2026/27 — and historical raws serve
+ *  their OWN file, season/27110 on 2025/26 — Roefs 9.5 / Pope 9.5 —
+ *  season-aware like every sibling). Wide-file guard (the
+ *  210/222/226/327/330/331/335 class): every serving league probed ≥336
+ *  rows, so thin means "the fetch was dropped" and re-probes in 90s.
+ *  Feeds without the category degrade to [] and the honest category
+ *  fallback still feeds the merge. NOTE the upstream's own id-key typo
+ *  (ParticiantId) — the dual read every sibling carries. */
+export async function getFullRecoveriesPer90(leagueKey: string, season?: string): Promise<RecoveriesPer90Entry[]> {
+  try {
+    return await cached(
+      `fullRecoveriesPer90:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^recoveries per 90$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: RecoveriesPer90Entry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            recoveriesPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
             playerId: id,
           });
           if (out.length >= 10) break;
@@ -4513,6 +4579,31 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-336: «بازیابی توپ در هر ۹۰» — the DEFENSE family's THIRD
+    // sibling joining the SAME merge on the SAME cached payload (zero
+    // extra upstream per page-view — the 210/…/335 pattern). Category
+    // top-3 first, then the full ball_recovery.json file merged on top,
+    // deduped by player id, ranked by the DECIMAL value verbatim (never
+    // rounded — the 210/217/226 convention), top-10. Feeds without the
+    // category degrade honestly to []. Placed right after the passing
+    // merge so the defense family reads تکل → قطع توپ → بازیابی توپ.
+    const recoveriesEntries: RecoveriesPer90Entry[] = statCategory(raw, /^recoveries per 90$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, recoveriesPer90: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.recoveriesPer90 - a.recoveriesPer90 || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullRecoveries = await getFullRecoveriesPer90(leagueKey, requestedSeason);
+    const enrichedRecIds = new Set(
+      recoveriesEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedRecoveries = [...recoveriesEntries, ...fullRecoveries.filter((r) => r.playerId == null || !enrichedRecIds.has(r.playerId))]
+      .sort((a, b) => b.recoveriesPer90 - a.recoveriesPer90 || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-231: «سانس بزرگ خلق‌شده» — the FIFTEENTH sibling joins the SAME
     // merge on the SAME cached payload, the production-CREATION volume
     // surface beside the analytics twins. big_chances_created.json
@@ -5130,6 +5221,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       interceptionsPer90: mergedInterceptions,
       shotsPer90: mergedShots,
       accuratePassesPer90: mergedPasses,
+      recoveriesPer90: mergedRecoveries,
       bigChancesCreated: mergedBigChances,
       xgot: mergedXgot,
       chancesCreated: mergedChancesCreated,
@@ -5297,7 +5389,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // v32 rows lack it and would keep the new section hidden for up to a
     // full TTL generation. Whole key bumps (the 52/…/246 additive-shape
     // convention).
-    await cached(`standings:v36:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-336: v37 — the recoveries-per-90 block («بازیابی توپ در هر ۹۰»)
+    // joins the mapped payload as a REQUIRED field (the defense family's
+    // THIRD surface); old v36 rows lack it and would keep the new section
+    // hidden for up to a full TTL generation. Whole key bumps (the
+    // 52/…/246 additive-shape convention).
+    await cached(`standings:v37:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -5580,6 +5677,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // ttlMinutes generation (observed stuck at 3 on the verification
       // probe while the season-scoped key served 10).
       !(Array.isArray(mapped.accuratePassesPer90) && mapped.accuratePassesPer90.length > 0 && mapped.accuratePassesPer90.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-336: the standard thin-kept-for-a-generation guard closes for
+      // the recoveries-per-90 block too — the 327/330/331/335 incident
+      // class, kept from ever repeating (SSG cold build drops the file →
+      // 90s re-probe). Honest-empty feeds (no "Recoveries per 90"
+      // category) keep the normal TTL — the same convention as the
+      // siblings.
+      !(Array.isArray(mapped.recoveriesPer90) && mapped.recoveriesPer90.length > 0 && mapped.recoveriesPer90.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET
