@@ -17,10 +17,31 @@ export async function generateMetadata({ params }: { params: Promise<{ key: stri
   const { key } = await params;
   const lg = LEAGUES.find((l) => l.key === key);
   const name = lg?.faName || "لیگ";
+  // fix cycle-339: per-page openGraph+twitter — same shape as the topscorers
+  // page: the child object replaces the layout's wholesale, so og.png is
+  // re-included and siteName/locale/url return page-specific (og:url = this
+  // league page, not the site root).
+  const title = `${name} | جدول، برنامه و نتایج`;
+  const desc = `جدول رده‌بندی، برنامه بازی‌ها، نتایج اخیر و آقای گل ${name} — رمانتادا، مرجع فارسی فوتبال`;
   return {
-    title: `${name} | جدول، برنامه و نتایج`,
-    description: `جدول رده‌بندی، برنامه بازی‌ها، نتایج اخیر و آقای گل ${name} — رمانتادا، مرجع فارسی فوتبال`,
+    title,
+    description: desc,
     alternates: { canonical: `/league/${key}`, ...RSS_ALTERNATE },
+    openGraph: {
+      title: `${title} | رمانتادا`,
+      description: desc,
+      type: "website",
+      siteName: "رمانتادا",
+      locale: "fa_IR",
+      url: `${SITE_URL}/league/${key}`,
+      images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${title} | رمانتادا`,
+      description: desc,
+      images: ["/og.png"],
+    },
   };
 }
 
