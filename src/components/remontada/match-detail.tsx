@@ -1100,11 +1100,11 @@ function PlayerStatsTables({ playerStats, match }: { playerStats: NonNullable<De
 }
 
 // ---------- events timeline ----------
-function EventsTimeline({ events, match }: { events: DetailEvent[]; match: DetailMatch }) {
+function EventsTimeline({ events, match, predictedLineup, onOpenLineups }: { events: DetailEvent[]; match: DetailMatch; predictedLineup?: boolean; onOpenLineups?: () => void }) {
   if (events.length === 0) {
     // cycle 45 — honest empty states: an unstarted match has no events BY DESIGN,
     // «رویدادی ثبت نشده است» was misleading for that case
-    return (
+    const empty = (
       <p className="glass-card text-center text-steel text-sm py-10">
         {match.cancelled
           ? "این بازی لغو شده است."
@@ -1113,6 +1113,35 @@ function EventsTimeline({ events, match }: { events: DetailEvent[]; match: Detai
             : "بازی هنوز شروع نشده است؛ رویدادها پس از سوت شروع همین‌جا نمایش داده می‌شوند."}
       </p>
     );
+    // fix cycle-359 — small real polish (no-finding fix): the cycle-352
+    // predicted-XI banner lives inside the ترکیب tab, so a pre-match visitor
+    // on the default رویدادها tab never learns it exists (cycle-358 recorded
+    // it as a discoverability gap, not a bug). One hint card + a jump button,
+    // rendered ONLY for an unstarted, non-cancelled match whose payload
+    // carries the honest predicted flag (352). Every other case — started,
+    // finished, cancelled, pre-match without a predicted XI — returns the
+    // exact old markup: byte-for-byte additive.
+    if (!match.cancelled && !match.started && predictedLineup && onOpenLineups) {
+      return (
+        <>
+          {empty}
+          <div className="glass-card px-4 py-2.5 flex items-center justify-between gap-3" data-testid="match-events-predicted-hint">
+            <p className="text-[11px] leading-5 text-steel">
+              <span className="font-black text-gold">ترکیب پیش‌بینی‌شده ثبت شده است</span>
+              {" "}— پیش‌بینی فوت‌ماب از ترکیب دو تیم، پیش از سوت شروع.
+            </p>
+            <button
+              type="button"
+              onClick={onOpenLineups}
+              className="shrink-0 rounded-lg border border-glass-border-soft px-2.5 py-1.5 text-[11px] font-black text-primary hover:bg-white/[0.06] transition-colors press-fx"
+            >
+              دیدن ترکیب
+            </button>
+          </div>
+        </>
+      );
+    }
+    return empty;
   }
   return (
     <div className="glass-card overflow-hidden">
@@ -2429,6 +2458,9 @@ export function MatchDetail({ matchId }: { matchId: string }) {
 
   if (!data) return null;
   const m = data.match;
+  // fix cycle-359: the 352 honest predicted flag, computed once — the hint on
+  // the events tab renders only when a real predicted XI is in the payload.
+  const hasPredictedLineup = data.lineups != null && data.lineups.predicted === true && data.lineups.home != null;
 
   // NOTE: the SportsEvent JSON-LD is now server-rendered by /match/[id]/page.tsx
   // (cycle 18) — emitting it here too would create duplicate scripts.
@@ -2506,7 +2538,7 @@ export function MatchDetail({ matchId }: { matchId: string }) {
       )}
 
       {/* tabs */}
-      <nav className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1 overflow-x-auto" aria-label="بخش‌های مسابقه">
+      <nav id="match-tabs" className="flex items-center gap-1 border-b border-glass-border-soft -mx-1 px-1 overflow-x-auto scroll-mt-20" aria-label="بخش‌های مسابقه">
         {TAB_LABELS.map((t) => (
           <button
             key={t.key}
@@ -2527,7 +2559,17 @@ export function MatchDetail({ matchId }: { matchId: string }) {
           <div className="flex flex-col gap-4">
             {data.playerOfTheMatch && <PotmCard p={data.playerOfTheMatch} />}
             {data.shootout && <ShootoutCard shootout={data.shootout} match={m} />}
-            <EventsTimeline events={data.events} match={m} />
+            <EventsTimeline
+              events={data.events}
+              match={m}
+              predictedLineup={hasPredictedLineup}
+              onOpenLineups={() => {
+                setTab("lineups");
+                requestAnimationFrame(() => {
+                  document.getElementById("match-tabs")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                });
+              }}
+            />
           </div>
         )}
         {tab === "stats" && (
