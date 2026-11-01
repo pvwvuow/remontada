@@ -11,6 +11,7 @@ import {
   getMatchesByDate,
   findTeamInStandings,
   getTeamSeasonFromLeague,
+  getTeamOfficialColor,
   dateKeyToYYYYMMDD,
   type NormMatch,
   type NormFixture,
@@ -186,6 +187,11 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     return NextResponse.json({
       ok: true,
       team: { id: teamId, name: teamName.name, fa: teamName.fa, logo },
+      // cycle-350: the club's OFFICIAL color (overview.teamColors /
+      // details.teamColor, strict-hex guarded in lib, honest-absence) —
+      // rendered as the accent dot beside the team name, the team-page
+      // sibling of the league-page dot from cycle-346.
+      teamColor: await getTeamOfficialColor(teamId).catch(() => null),
       standings: row,
       season,
       live,

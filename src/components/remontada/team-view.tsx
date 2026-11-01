@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 interface TeamData {
   ok: boolean;
   team: { id: number; name: string; fa: string; logo: string };
+  teamColor?: string | null; // cycle-350: official club color (strict-hex, honest-absence)
   standings: TeamRowInfo | null;
   season?: TeamSeasonStats | null;
   live: NormMatch[];
@@ -1924,6 +1925,18 @@ export function TeamView({ teamId }: { teamId: number }) {
           </span>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 min-w-0">
+              {/* cycle-350: the club's OFFICIAL color — overview.teamColors /
+                  details.teamColor surfaced through /api/team (strict-hex
+                  guarded in lib), rendered as a live accent dot beside the
+                  team name; hidden when upstream lacks the field. The
+                  team-page sibling of the league-page dot (cycle-346). */}
+              {data.teamColor && (
+                <span
+                  aria-hidden
+                  className="inline-block w-2.5 h-2.5 rounded-full ring-1 ring-white/25 shrink-0"
+                  style={{ backgroundColor: data.teamColor }}
+                />
+              )}
               <h1 className="text-xl font-black truncate text-[#ecf3fa]">{data.team.fa || data.team.name}</h1>
               <FavoriteStar
                 team={{ id: teamId, fa: data.team.fa || data.team.name, en: data.team.name }}

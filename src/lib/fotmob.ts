@@ -8990,6 +8990,12 @@ interface FMStatBlock {
 interface FMTeamDataRaw {
   squad?: { squad?: { title?: string; members?: FMSquadMember[] }[] };
   transfers?: { allTransfers?: FMTeamTransferRaw[]; allRumours?: FMRumourRaw[] };
+  // cycle-350 probed (2026-11-01, UA Chrome/124): details.teamColor = the
+  // club's OFFICIAL color as a flat #RRGGBB string (Liverpool #911712) —
+  // rode every payload with 0 consumers on the team page (the 346 gap class).
+  // Read-only here — extractTeamOfficialColor guards strict hex. (details.name
+  // was already read via a cast in getTeamSquad — kept in the shape.)
+  details?: { name?: string; teamColor?: string | null };
   fixtures?: {
     allFixtures?: { fixtures?: FMTeamFixtureRaw[] };
     primaryTournamentId?: number | string;
@@ -9043,6 +9049,10 @@ interface FMTeamDataRaw {
     // 3 rows); null on smaller ones (probed 9865 LaLiga2) → section hidden
     // (honest absence, the cycle-260 rumours convention).
     newsSummary?: FMNewsSummaryRaw;
+    // cycle-350 probed (2026-11-01, UA Chrome/124): overview.teamColors =
+    // the club's OFFICIAL palette {lightMode, darkMode, fontDarkMode…}
+    // (Liverpool #911712 on both modes) — the sibling of details.teamColor.
+    teamColors?: { lightMode?: string | null; darkMode?: string | null };
   };
   stats?: {
     players?: FMStatBlock[];
@@ -9181,6 +9191,33 @@ const getTeamDataRaw = (teamId: number): Promise<FMTeamDataRaw> =>
     }
     return data;
   });
+
+// ---------------- cycle-350: the team's OFFICIAL club color ----------------
+// Probed live (2026-11-01, UA Chrome/124): every data/teams payload carries
+// it — overview.teamColors {lightMode, darkMode} and details.teamColor
+// (Liverpool #911712 on all three) — but nothing on the team page consumed
+// it (0 references in route/view; the same gap class as cycle-346's
+// details.leagueColor). Strict #RRGGBB guard: malformed upstream values
+// hide the accent instead of leaking into CSS. Reads the SAME cached raw
+// payload (teamDataRaw:v2) — zero extra upstream hit, raw cache shape
+// unchanged (no key bump; the mapping tier is what rides key bumps).
+export function extractTeamOfficialColor(raw: FMTeamDataRaw | null | undefined): string | null {
+  const c =
+    raw?.overview?.teamColors?.lightMode ||
+    raw?.overview?.teamColors?.darkMode ||
+    raw?.details?.teamColor ||
+    "";
+  return /^#[0-9a-fA-F]{6}$/.test(c) ? c : null;
+}
+
+export async function getTeamOfficialColor(teamId: number): Promise<string | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  try {
+    return extractTeamOfficialColor(await getTeamDataRaw(teamId));
+  } catch {
+    return null; // honest absence — the accent hides, the page never breaks
+  }
+}
 
 export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return null;
