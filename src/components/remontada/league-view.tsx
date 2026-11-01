@@ -878,6 +878,11 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
   // both splits — otherwise the control would lie about available data
   const hasSides = !!(data.home?.length && data.away?.length);
   const rows = mode === "home" && hasSides ? data.home! : mode === "away" && hasSides ? data.away! : data.rows;
+  // cycle-326: the «بعدی» column renders only when the displayed rows carry
+  // next-opponent data (current-season feeds; historical → column hides,
+  // colSpan adapts — never an empty ghost column). Side tables (خانه/بیرون)
+  // intentionally stay team-level-only: the next fixture is not per-side.
+  const hasNext = rows.some((r) => r.next);
   const modeLabel = hasSides && mode === "home" ? "جدول خانه" : hasSides && mode === "away" ? "جدول بیرون" : "جدول رده‌بندی";
   // cycle-141: composite league-phase feeds (AFC CL Elite — West/East) — the
   // lib flattens the regional sub-tables into `rows` and records the segment
@@ -925,6 +930,9 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
               <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
               <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
               <th className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
+              {hasNext && (
+                <th className="py-2 pe-2 ps-1 sm:pe-3 font-bold text-center" title="بازی بعدی">بعدی</th>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -935,7 +943,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                 <Fragment key={r.teamId}>
                 {groupHeader && (
                   <tr data-testid="standings-group-row" className="border-y border-[color:var(--glass-hairline)] bg-[#9ec3e50d]">
-                    <td colSpan={10} className="py-1.5 ps-3 text-[10px] sm:text-[11px] font-black text-[#b6cce3] tracking-wide">
+                    <td colSpan={hasNext ? 11 : 10} className="py-1.5 ps-3 text-[10px] sm:text-[11px] font-black text-[#b6cce3] tracking-wide">
                       {groupHeader}
                     </td>
                   </tr>
@@ -1008,6 +1016,32 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
                       {faDigits(r.pts)}
                     </span>
                   </td>
+                  {hasNext && (
+                    <td className="py-2 pe-2 ps-1 sm:pe-3 text-center">
+                      {r.next ? (
+                        <Link
+                          href={`/match/${r.next.matchId}`}
+                          prefetch={false}
+                          className="tap-hit-row inline-flex items-center gap-1.5 align-middle rounded-lg px-1 py-0.5 hover:bg-primary/10 transition-colors"
+                          title={`بازی بعدی: ${r.next.opponentFa} · ${tehranDateLong(r.next.utcTime)}`}
+                          aria-label={`بازی بعدی: ${r.next.opponentFa}`}
+                        >
+                          <img
+                            src={r.next.opponentLogo}
+                            alt=""
+                            width={18}
+                            height={18}
+                            loading="lazy"
+                            className="w-[18px] h-[18px] object-contain shrink-0"
+                            onError={(e) => {
+                              e.currentTarget.style.visibility = "hidden";
+                            }}
+                          />
+                          <span className="hidden sm:inline text-[10px] font-bold text-[#b4c8df] whitespace-nowrap">{r.next.opponentFa}</span>
+                        </Link>
+                      ) : null}
+                    </td>
+                  )}
                 </tr>
                 </Fragment>
               );

@@ -94,6 +94,21 @@ export interface StandingsRow {
   goalsFor: number; goalsAgainst: number; gd: number; pts: number;
   qualColor?: string;
   form?: ("W" | "D" | "L")[];   // last 5 league results, oldest → newest (from season fixtures)
+  // cycle-326 additive: the upstream «Next» column (table[0].nextOpponent —
+  // the sibling of the form column in the upstream's own dynamicTableHeaders
+  // ["Form", "Next"]). Present on CURRENT-season feeds (probed 2026-11-01,
+  // UA Chrome/124: PL 20/20, LaLiga 20/20, UCL 36/36); ABSENT on historical
+  // seasons (PL 2024/25 probe: 0/20) → cells honestly empty, no stale risk.
+  // Optional field → no cache-key bump (the 111/102 precedent): pre-326
+  // snapshots lack it, the cell renders empty, self-heals at the next TTL.
+  next?: {
+    opponentId: number;
+    opponentFa: string;    // teamFa hit else the honest raw name
+    opponentName: string;  // raw english name (UI title attr)
+    opponentLogo: string;  // fotmobTeamLogo(oppId) — the <img> pattern
+    matchId: string;       // → /match/{id}
+    utcTime: string;       // raw ISO kickoff (UI renders Persian)
+  };
   // cycle-90 additive: FotMob's xG table variant (same league payload, joined
   // by team id) — optional because only the big leagues + UCL carry it
   // (probed live 2026-10-28: PL/LaLiga/SerieA 20 rows, Bundesliga/Ligue1 18,
@@ -1513,7 +1528,16 @@ interface FotMobLeague {
     // UCL league phase: q1of8finals/q1of16finals; Bundesliga/Ligue1 add
     // relegationqual; laliga/seriea add europa_conference_league.
     legend?: FMTableLegendRow[];
-  } };
+  };
+  // cycle-326 probed (UA Chrome/124, 2026-11-01, live): the element ALSO
+  // carries nextOpponent — dict keyed by team id (string) → [oppId, oppName,
+  // matchId, oppObj{id,name,shortName}, selfObj, utcTime] — the upstream
+  // «Next» column, the sibling of Form in the upstream's own
+  // dynamicTableHeaders (["Form", "Next"]). Current-season feeds only
+  // (PL 20/20, LaLiga 20/20, UCL 36/36; the 2024/25 historical probe:
+  // none). Composite sub-tables may carry their own block (best-effort).
+  nextOpponent?: Record<string, unknown[]> | null;
+};
   // cycle-102: hasOngoingMatch typed (probed: boolean; null on payloads whose
   // fixtures block is absent — rare, since cycle-136 every configured league
   // serves a real fixtures block) — the matchday detector reads it for free
@@ -3533,6 +3557,47 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // row shape of `all` (probe: same keys + goalsScored) but attaching the
     // OVERALL form there would be misleading, so side rows carry no form
     const fmTable = raw.table?.[0]?.data?.table;
+    // cycle-326: the upstream «Next» column — table[0].nextOpponent, dict
+    // keyed by team id (string) → [oppId, oppName, matchId, oppObj, selfObj,
+    // utcTime] (ids arrive as STRINGS — Number()-guarded). The sibling of
+    // the form column in the upstream's own dynamicTableHeaders
+    // (["Form", "Next"]): form shipped in the 52-era build, Next was never
+    // consumed (repo-wide grep zero before this cycle). Guards: numeric
+    // team/opponent ids, non-empty name/matchId/utcTime, opponent fa via
+    // teamFa(shortName) with the honest raw fallback (the 92/107 contract).
+    const parseNext = (src: unknown): Map<number, NonNullable<StandingsRow["next"]>> => {
+      const m = new Map<number, NonNullable<StandingsRow["next"]>>();
+      const obj = src as Record<string, unknown[]> | null | undefined;
+      if (!obj || typeof obj !== "object") return m;
+      for (const [tid, arr] of Object.entries(obj)) {
+        if (!Array.isArray(arr) || arr.length < 6) continue;
+        const id = Number(tid);
+        const oppObj = (arr[3] || {}) as { id?: unknown; name?: unknown; shortName?: unknown };
+        const oppId = Number(oppObj.id ?? arr[0]);
+        const oppName = typeof oppObj.name === "string" ? oppObj.name.trim() : typeof arr[1] === "string" ? arr[1].trim() : "";
+        const oppShort = typeof oppObj.shortName === "string" ? oppObj.shortName.trim() : "";
+        const matchId = typeof arr[2] === "string" ? arr[2].trim() : "";
+        const utc = typeof arr[5] === "string" ? arr[5].trim() : "";
+        if (!Number.isFinite(id) || id <= 0 || !Number.isFinite(oppId) || oppId <= 0) continue;
+        if (!oppName || !matchId || !utc) continue;
+        m.set(id, {
+          opponentId: oppId,
+          opponentName: oppName,
+          opponentFa: teamFa(oppName, oppShort || undefined) || oppShort || oppName,
+          opponentLogo: fotmobTeamLogo(oppId),
+          matchId,
+          utcTime: utc,
+        });
+      }
+      return m;
+    };
+    const attachNext = (list: StandingsRow[], map: Map<number, NonNullable<StandingsRow["next"]>>) => {
+      for (const r of list) {
+        const nx = map.get(r.teamId);
+        if (nx) r.next = nx;
+      }
+    };
+    const nextMap = parseNext(raw.table?.[0]?.nextOpponent);
     const mapRow = (r: FotMobRow, withForm: boolean): StandingsRow => {
       const [gf, ga] = (r.scoresStr || "0-0").split("-").map((x) => parseInt(x, 10) || 0);
       const form = withForm ? formMap.get(r.id) : undefined;
@@ -3578,6 +3643,8 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       for (const sub of compositeSubs) {
         const mapped = ((sub?.table?.all || []) as FotMobRow[]).map((r) => mapRow(r, true));
         rows.push(...mapped);
+        // cycle-326: per-sub «Next» block when the composite feed carries one
+        attachNext(mapped, parseNext(sub?.nextOpponent));
         if (mapped.length > 0) {
           groups.push({
             fa: COMPOSITE_REGION_FA[(sub?.leagueName || "").toLowerCase()] || sub?.leagueName || "",
@@ -3587,6 +3654,9 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       }
     } else {
       rows.push(...(fmTable?.all || []).map((r) => mapRow(r, true)));
+      // cycle-326: the primary feed's «Next» block (current-season only —
+      // historical feeds carry none, the field stays unset, cells empty)
+      attachNext(rows, nextMap);
     }
     if (rows.length === 0) throw new Error("No standings data");
 
