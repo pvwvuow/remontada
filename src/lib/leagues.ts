@@ -493,6 +493,29 @@ export const LEAGUES: LeagueConfig[] = [
   // unchanged: per-league surfaces live, the two global merges untouched
   // (admission stays gated on the no-table path proving itself).
   { key: "coppaitalia", fotmobId: 141,        ccode3: "ITA",  faName: "جام حذفی ایتالیا",   enName: "Coppa Italia",     espnSlug: "ita.coppa_italia", priority: 29, globalMerge: false },
+  // cycle-381: FA Cup — the 30th competition, the FOURTH pure knockout
+  // domestic cup on the no-table path (third proof of genericity) and the
+  // portal's FOURTH live cup bracket. Feasibility first (live probes, UA
+  // Chrome/124): the R1 weekend day feeds (2026-11-06..09, 33+4+1+2
+  // matches) surfaced day-tournament id 953430 (ENG) which answers NULL as
+  // a league page — the real page id via the cycle-141 crack
+  // (matchDetails parentLeagueId = 132). Feed shape: table[0].data ABSENT
+  // (the 377/380 thinner shape), 17 slash allAvailableSeasons (2026/2027 →
+  // 2010/2011 — the cycle-132 window covered exactly), 145 title-history
+  // seasons (newest: 2025/2026 Man City over Chelsea; 2024/2025 Crystal
+  // Palace's famous upset second), stats.players EMPTY (the honest 0 —
+  // the «آقای گل» tab falls to its empty state), 40 season fixtures,
+  // transfers.data=null (the cups' honest hide) — and playoff SERVED with
+  // the numeric round shape stage:"1" (64 matchups, 40 named with legs —
+  // R1 proper: Oxford City–Leicester City) → the numeric stages now map
+  // honestly in BRACKET_STAGE_FA («دور اول» …; previously a raw ASCII
+  // "1" would have leaked into the bracket header — the 378 K1 class).
+  // leagueColor #02264C; ESPN slug probed live: eng.fa → 200 (the
+  // eng.fa_cup variant 400s). faName rides the ALREADY-shipped mapping
+  // «جام حذفی انگلیس» (COMPETITION_FA "fa cup" + the day-feed "fa cup|ENG"
+  // line, pre-381). globalMerge: false — the 376 one-flag semantic
+  // unchanged.
+  { key: "facup",      fotmobId: 132,         ccode3: "ENG",  faName: "جام حذفی انگلیس",    enName: "FA Cup",           espnSlug: "eng.fa",           priority: 30, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -666,6 +689,38 @@ const TEAM_FA: Record<string, string> = {
   "juve stabia": "یووه استابیا", "lr vicenza": "ویتشنزا", "mantova": "مانتوا",
   "padova": "پادوا", "potenza": "پوتنتزا", "ravenna": "راونا",
   "südtirol": "زودتیرول", "union brescia": "یونیون برشا", "virtus entella": "ویرتوس انتلا",
+  // ---- FA Cup (cycle-381) ----
+  // the 378 F2-class guard on the R1 probed unique-name set (117 names
+  // across the bracket's 64 matchups + 40 fixtures): 67 missing keys, all
+  // added — lower-league + non-league England; aliases the payload serves
+  // in both bare and spelled-out forms share one Persian name.
+  "afc fylde": "اف‌سی فایلد", "afc rushden & diamonds": "راشدن اند دایموندز",
+  "afc wimbledon": "ای‌اف‌سی ویمبلدون", "wimbledon": "ویمبلدون",
+  "aldershot town": "آلدرشات", "altrincham": "آلترینچام", "alvechurch": "آلواچرچ",
+  "barnet": "بارنت", "barrow": "بارو", "berkhamsted": "برکهامستد",
+  "boreham wood": "بورهام وود", "bromley": "بروملی",
+  "carlisle": "کارلایل", "carlisle united": "کارلایل",
+  "cheltenham": "چلتنهام", "cheltenham town": "چلتنهام",
+  "colchester": "کولچستر", "colchester united": "کولچستر",
+  "crawley": "کرولی", "crawley town": "کرولی", "cray wanderers": "کری ونجررز",
+  "crewe": "کرو", "crewe alexandra": "کرو", "dover": "دوور", "eastleigh": "ایستلی",
+  "fc halifax town": "هالیفاکس",
+  "forest green": "فارست گرین", "forest green rovers": "فارست گرین",
+  "guiseley": "گایزلی", "harborough town fc": "هاربرو تاون", "harrogate town": "هروگیت",
+  "hornchurch": "هورن‌چرچ", "huddersfield": "هادرزفیلد",
+  "kidderminster harriers": "کیدرمینستر",
+  "macclesfield": "مکلزفیلد", "macclesfield fc": "مکلزفیلد",
+  "mansfield": "منسفیلد", "mansfield town": "منسفیلد", "marine": "مارین",
+  "northampton": "نورث‌همپتون", "oldham": "اولدهام", "oxford city": "آکسفوردسیتی",
+  "plymouth": "پلیموث", "plymouth argyle": "پلیموث", "plymouth parkway": "پلیموث پارک‌وی",
+  "port vale": "پورت ویل", "rochdale": "روچدیل", "rotherham united": "راترهام",
+  "salisbury": "سالزبری", "scunthorpe": "اسکانتورپ", "sheff wed": "شفیلد ونزدی",
+  "sholing": "شولینگ", "shrewsbury": "شروزبری", "stafford rangers": "استافورد رنجرز",
+  "sutton united": "ساتون", "swindon": "سوییندون",
+  "tranmere": "ترنمر", "tranmere rovers": "ترنمر", "walsall": "والسال",
+  "wealdstone": "ولدستون", "wigan": "ویگان", "wimborne town": "ویمبورن",
+  "worcester": "ووستر", "wycombe": "وایکام",
+  "yeovil": "یوویل", "yeovil town": "یوویل", "york city": "یورکسیتی",
   // ---- Bundesliga ----
   "augsburg": "آگزبورگ", "bayern munich": "بایرن‌مونیخ", "bayern": "بایرن‌مونیخ",
   "union berlin": "یونیون‌برلین", "werder bremen": "وردربرمن", "sv werder bremen": "وردربرمن", "borussia dortmund": "بروسیادورتموند",

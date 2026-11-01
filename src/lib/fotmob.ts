@@ -6317,6 +6317,15 @@ export interface LeagueBracketData {
 
 const BRACKET_STAGE_FA: Record<string, string> = {
   "playoff": "پلی‌آف",
+  // cycle-381: the FA Cup serves NUMERIC round stages ("1" = R1 proper,
+  // probed live: 64 matchups, 40 named) — a raw "1" would leak ASCII into
+  // the bracket header (the 378 K1 class); the later FA Cup rounds will
+  // arrive as "2"/"3"/… and map by the same honest ordinal line.
+  "1": "دور اول",
+  "2": "دور دوم",
+  "3": "دور سوم",
+  "4": "دور چهارم",
+  "5": "دور پنجم",
   "1/32": "یک‌سی‌ودوم نهایی",
   "1/16": "یک‌شانزدهم نهایی",
   "1/8": "یک‌هشتم نهایی",
