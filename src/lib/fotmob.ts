@@ -6032,7 +6032,11 @@ interface FMPlayerDetails {
     // cycle-255: "coach" joined the union — playerData serves coaches too and
     // the coach page reads careerItems.coach.teamEntries[] (stints); the
     // player-side senior/youth/national-team reads are untouched.
-    careerItems?: Partial<Record<"senior" | "youth" | "national team" | "coach", { teamEntries?: FMCareerEntry[] | null } | null>> | null;
+    // cycle-325: seasonEntries joined the record — the parallel per-season
+    // numeric log (the numbers behind the teamEntries stint totals); the
+    // coach bucket stays stints-only (seasonEntries probed null/absent on
+    // live coach payloads — Mourinho probe 2026-11-01).
+    careerItems?: Partial<Record<"senior" | "youth" | "national team" | "coach", { teamEntries?: FMCareerEntry[] | null; seasonEntries?: FMCareerSeasonEntry[] | null } | null>> | null;
   } | null;
   trophies?: {
     playerTrophies?: {
@@ -6134,6 +6138,31 @@ interface FMPlayerDetails {
   } | null;
 }
 
+// cycle-325: one (season × team) row of the career season log — the numbers
+// behind the cycle-20 stint totals. Upstream serves the numerics as STRINGS
+// ("12") and the rating as a nested {rating: "8.52"} string (null on many
+// youth rows); tournamentStats[] is the per-tournament numeric split with
+// its own leagueName/leagueId (catalog-mappable like the cycle-201 chips).
+interface FMCareerSeasonEntry {
+  seasonName?: string;
+  appearances?: string;
+  goals?: string;
+  assists?: string;
+  rating?: { rating?: string | null } | null;
+  teamId?: number;
+  team?: string;
+  tournamentStats?: {
+    isFriendly?: boolean;
+    leagueId?: number;
+    leagueName?: string;
+    tournamentId?: number;
+    appearances?: string;
+    goals?: string;
+    assists?: string;
+    rating?: { rating?: string | null } | null;
+  }[] | null;
+}
+
 interface FMCareerEntry {
   teamId?: number; team?: string;
   startDate?: string; endDate?: string | null;
@@ -6155,6 +6184,36 @@ export interface PlayerCareerEntry {
   assists: number | null;
   transfer: string | null;   // persian transfer note or null
   kind: "senior" | "national" | "youth";  // cycle-22: declared (was pushed undeclared)
+}
+
+// cycle-325: «آمار فصل‌به‌فصل» — the season-by-season NUMBERS behind the
+// cycle-20 stint totals, from the parallel careerItems[kind].seasonEntries
+// sub-tree of the SAME cached raw payload (zero extra upstream fetch). This
+// does NOT duplicate the cycle-201 statSeasons block (registration NAMES
+// only, deliberately no numbers) nor the career stints (whole-stint totals,
+// no season rows): each row is one season at one team — totals + the
+// per-tournament numeric split. ALWAYS present after the v11 bump — empty
+// array when upstream lacks the block (honest absence, the section hides).
+export interface PlayerCareerSeasonTournament {
+  name: string;
+  nameFa?: string;    // leagueFaById hit (catalog faName/competitionFa) else raw
+  leagueKey?: string; // LEAGUES catalog hit → /league/{key} link (the 201 pattern)
+  apps: number | null;
+  goals: number | null;
+  assists: number | null;
+  rating: number | null;
+}
+export interface PlayerCareerSeason {
+  kind: "senior" | "national" | "youth";
+  season: string;    // upstream label «2026/2027», NT calendar-year «2026»
+  teamId: number;
+  team: string;      // english name
+  fa: string;        // persian name (teamFa map) or english fallback
+  apps: number | null;
+  goals: number | null;
+  assists: number | null;
+  rating: number | null;  // finite >0 only (null on most youth rows)
+  tournaments: PlayerCareerSeasonTournament[];
 }
 
 export interface PlayerTrophy {
@@ -6260,6 +6319,12 @@ export interface PlayerData {
   next: { id: string; utcTime: string; opponent: string; opponentId: number; opponentLogo: string; isHome: boolean; leagueFa: string } | null;
   career: PlayerCareerEntry[];       // senior + national-team stops, newest first
   careerYouth: PlayerCareerEntry[];  // youth/academy stops (hidden section when empty)
+  // cycle-325: per-season career numbers («آمار فصل‌به‌فصل») — senior +
+  // national + youth season rows, newest first per kind. REQUIRED after the
+  // v11 bump (the 52/86/87/96/135/159/197/201/321 convention) — a v10-cached
+  // snapshot would serve profiles WITHOUT the block from the persistent
+  // SQLite L2 across restarts for up to the 10-min TTL.
+  careerSeasons: PlayerCareerSeason[];
   trophies: PlayerTrophy[];          // honours (league/team + winning seasons)
   deepStats: PlayerDeepGroup[] | null; // cycle-82: «عملکرد فصل» grouped detailed season stats
   traits: PlayerTraits | null;         // cycle-82: percentile comparison vs positional peers
@@ -6774,6 +6839,78 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     ...normalizeCareerEntries(careerItems.senior?.teamEntries, "senior"),
     ...normalizeCareerEntries(careerItems["national team"]?.teamEntries, "national"),
   ];
+  // cycle-325: «آمار فصل‌به‌فصل» builder — reads the parallel
+  // careerItems[kind].seasonEntries sub-tree (the numbers behind the stint
+  // totals above) off the SAME cached raw payload (zero new upstream fetch).
+  // Guards: season + team + teamId non-empty (the 167 lesson), numerics via
+  // numOr (upstream strings), rating finite>0 only, per-(season,team)
+  // seen-set dedupe (the 197 lesson), tournament rows dedupe by
+  // (name,leagueId), caps 20 seasons per kind × 10 tournaments per row
+  // (upstream serves 15/5/1 on live probes — defensive only). Newest first
+  // within the kind (payload order is newest-first; sorted defensively).
+  const careerSeasons: PlayerCareerSeason[] = [];
+  const csKinds: { key: "senior" | "youth" | "national team"; kind: PlayerCareerSeason["kind"] }[] = [
+    { key: "senior", kind: "senior" },
+    { key: "national team", kind: "national" },
+    { key: "youth", kind: "youth" },
+  ];
+  const seenCs = new Set<string>();
+  for (const { key, kind } of csKinds) {
+    const csRows: PlayerCareerSeason[] = [];
+    const seenKind = new Set<string>();
+    for (const e of (careerItems[key]?.seasonEntries || []).slice(0, 20)) {
+      const seasonName = (e?.seasonName || "").trim();
+      const teamName = (e?.team || "").trim();
+      if (!seasonName || !teamName || !e?.teamId) continue;
+      const dk = `${seasonName}|${e.teamId}`;
+      if (seenKind.has(dk)) continue;
+      seenKind.add(dk);
+      const rawRating = e.rating?.rating;
+      const ratingNum = rawRating ? Number.parseFloat(rawRating) : NaN;
+      const tournaments: PlayerCareerSeasonTournament[] = [];
+      const seenT = new Set<string>();
+      for (const t of (e.tournamentStats || []).slice(0, 10)) {
+        const name = (t?.leagueName || "").trim();
+        if (!name) continue;
+        const tk = `${name.toLowerCase()}|${t.leagueId ?? ""}`;
+        if (seenT.has(tk)) continue;
+        seenT.add(tk);
+        const tid = typeof t.leagueId === "number" ? t.leagueId : undefined;
+        const cat = tid ? LEAGUES.find((l) => l.fotmobId === tid) : undefined;
+        const trRaw = t.rating?.rating;
+        const trNum = trRaw ? Number.parseFloat(trRaw) : NaN;
+        tournaments.push({
+          name,
+          nameFa: leagueFaById(tid, name),
+          ...(cat ? { leagueKey: cat.key } : {}),
+          apps: numOr(t.appearances),
+          goals: numOr(t.goals),
+          assists: numOr(t.assists),
+          rating: Number.isFinite(trNum) && trNum > 0 ? trNum : null,
+        });
+      }
+      csRows.push({
+        kind,
+        season: seasonName,
+        teamId: e.teamId,
+        team: teamName,
+        fa: teamFa(teamName) || teamName,
+        apps: numOr(e.appearances),
+        goals: numOr(e.goals),
+        assists: numOr(e.assists),
+        rating: Number.isFinite(ratingNum) && ratingNum > 0 ? ratingNum : null,
+        tournaments,
+      });
+    }
+    // newest first within the kind (payload serves newest-first; defensive)
+    csRows.sort((a, b) => b.season.localeCompare(a.season));
+    for (const row of csRows) {
+      const gk = `${kind}|${row.season}|${row.teamId}`;
+      if (seenCs.has(gk)) continue;
+      seenCs.add(gk);
+      careerSeasons.push(row);
+    }
+  }
   return {
     id,
     name: raw.name || "",
@@ -6795,6 +6932,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     next,
     career,
     careerYouth: normalizeCareerEntries(careerItems.youth?.teamEntries, "youth"),
+    careerSeasons,
     trophies: normalizeTrophies(raw.trophies),
     deepStats: buildDeepStats(raw),
     traits: buildTraits(raw),
@@ -7122,7 +7260,11 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // gained the optional birthDate/weightKg Person-LD facts; a v9-cached
   // snapshot would serve profiles WITHOUT them for up to the 10-min TTL
   // (same convention as cycle-52/86/87/96/135/159/197/201)
-  const payload = await cached(`player:v10:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-325: key bumped to v11 — normalized output gained the required
+  // careerSeasons rows («آمار فصل‌به‌فصل»); a v10-cached shape would serve
+  // profiles WITHOUT the block from the persistent SQLite L2 across restarts
+  // for up to the TTL (same convention as cycle-52/86/87/96/135/159/197/201/321)
+  const payload = await cached(`player:v11:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

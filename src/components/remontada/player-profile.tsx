@@ -632,6 +632,66 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
         </section>
       )}
 
+      {/* ---------- per-season career numbers («آمار فصل‌به‌فصل», cycle-325) ----------
+          the season-by-season NUMBERS behind the cycle-20 stint totals — the
+          cycle-201 block below stays registration-NAMES-only (no overlap):
+          each row = one season at one team, totals + per-tournament split */}
+      {p.careerSeasons.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label="آمار فصل‌به‌فصل" data-testid="player-careerseasons">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-sky-soft" aria-hidden>
+              <path d="M3 3v18h18" />
+              <path d="M7 15v-4M12 15V8M17 15v-7" />
+            </svg>
+            آمار فصل‌به‌فصل
+            <span className="ms-auto text-[10px] font-bold text-muted-foreground tabular-persian">{faDigits(p.careerSeasons.length)} فصل</span>
+          </header>
+          <ul className="glass-list">
+            {p.careerSeasons.map((s, i) => (
+              <li key={`${s.kind}-${s.season}-${s.teamId}-${i}`} className="px-3 sm:px-4 py-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[10px] font-black text-steel/80 tabular-persian w-[52px] shrink-0">{faDigits(s.season)}</span>
+                  {s.kind === "senior" ? (
+                    <Link href={`/team/${s.teamId}`} prefetch={false} className="tap-hit-row min-w-0 flex items-center gap-1.5" aria-label={s.fa}>
+                      <TeamLogo id={s.teamId} alt={s.fa} size={16} />
+                      <span className="text-[11px] font-bold truncate">{s.fa}</span>
+                    </Link>
+                  ) : (
+                    <span className="min-w-0 flex items-center gap-1.5">
+                      <TeamLogo id={s.teamId} alt={s.fa} size={16} />
+                      <span className="text-[11px] font-bold truncate">{s.fa}</span>
+                    </span>
+                  )}
+                  {s.kind === "national" && (
+                    <span className="text-[9px] font-black text-mint border border-mint/25 bg-mint/10 rounded px-1 py-px shrink-0">تیم ملی</span>
+                  )}
+                  <span className="ms-auto flex items-center gap-2 shrink-0 text-[10px] font-bold text-muted-foreground tabular-persian">
+                    {s.apps !== null && <span title="بازی">{faDigits(s.apps)}<span className="hidden sm:inline"> بازی</span></span>}
+                    {s.goals !== null && <span title="گل" className="text-mint font-black">{faDigits(s.goals)}<span className="hidden sm:inline"> گل</span></span>}
+                    {s.assists !== null && <span title="پاس گل">{faDigits(s.assists)}<span className="hidden sm:inline"> پاس</span></span>}
+                    {s.rating !== null && <span title="امتیاز" className="text-primary">{faDigits(s.rating.toFixed(2))}</span>}
+                  </span>
+                </div>
+                {s.tournaments.length > 1 && (
+                  <p className="mt-0.5 ms-[60px] flex flex-wrap gap-x-2.5 gap-y-0.5 text-[9.5px] text-muted-foreground tabular-persian">
+                    {s.tournaments.map((t, j) => (
+                      <span key={`${t.name}-${j}`}>
+                        {t.leagueKey ? (
+                          <Link href={`/league/${t.leagueKey}`} prefetch={false} className="hover:text-sky-soft">{t.nameFa || t.name}</Link>
+                        ) : (
+                          t.nameFa || t.name
+                        )}
+                        {" "}· {t.apps !== null ? faDigits(t.apps) : "؟"}ب {t.goals !== null ? faDigits(t.goals) : "؟"}گ{t.assists !== null ? ` ${faDigits(t.assists)}پ` : ""}
+                      </span>
+                    ))}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
       {/* ---------- per-season competition registrations (cycle-201) ---------- */}
       {p.statSeasons && p.statSeasons.length > 0 && (
         <section className="glass-card overflow-hidden" aria-label="رقابت‌های هر فصل" data-testid="player-statseasons">
