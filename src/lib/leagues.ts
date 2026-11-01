@@ -391,6 +391,28 @@ export const LEAGUES: LeagueConfig[] = [
   // "Premier League" — the catalog enName stays the canonical
   // "Egyptian Premier League" so the site never collides with pl.
   { key: "egypt",      fotmobId: 519,         ccode3: "EGY",  faName: "لیگ برتر مصر",       enName: "Egyptian Premier League",                       priority: 25 },
+  // cycle-362: Iraq Stars League — 26th competition, pre-registered in the
+  // cycle-361 card as the next coverage candidate (the counter-case of its
+  // own probe: thin stat surfaces). Live-probed 2026-11-01 (UA Chrome/124):
+  // flat 20-row 2026/2027 table (Al-Karma 27 pts top / Karbalaa 7 bottom,
+  // every row carries a real team id), fixtures.allMatches = 380 (full
+  // season — richer than Egypt's 190), transfers.data = 18, 17
+  // slash-format seasons 2026/2027→2010/2011 (allAvailableSeasons) — the
+  // engine caps allSeasons at 12 (2026/2027→2015/2016, identical to the
+  // race window) so joining the merge does NOT shrink the common window;
+  // the empty-scorers guard keeps perLeague at 21 (honest absence, the
+  // cycle-132 feed-contract comment). stats.players ABSENT → /topscorers/
+  // iraq renders the honest empty state and the race gains no Iraq row;
+  // hasTotw=false → the cycle-360 «تیم هفته» section stays hidden;
+  // historical depth is spotty upstream — 2024/2025 serves a full 20-row
+  // table (Al Shorta 87 champion) while 2025/2026, 2023/2024 and older
+  // return table=null → getStandings' optional chain (cycle-326 fmTable
+  // guard) yields rows=[] honest-empty pages, no throw. playoff=null →
+  // bracket tab honestly absent (cycle-56 contract). NO espnSlug (ESPN
+  // 400 for iraq.1/irq.1 — Gulf pattern). Upstream details.name is the
+  // generic "Stars League" — the catalog enName stays the canonical
+  // "Iraq Stars League" (no collision with any sibling).
+  { key: "iraq",       fotmobId: 524,         ccode3: "IRQ",  faName: "لیگ ستارگان عراق",   enName: "Iraq Stars League",                             priority: 26 },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -1411,6 +1433,27 @@ const TEAM_FA: Record<string, string> = {
   "asyut petroleum": "پترول اسیوط",
   "abo qir semad": "ابو قیر",
   "el gouna fc": "الجونه",
+  // cycle-362: Iraq Stars League (fotmobId 524) — the EXACT upstream row
+  // names of the live 524 table; four clubs were already mapped for the
+  // ACL/ACL2/gulf surfaces (al quwa al jawiya, al zawraa, al shorta,
+  // erbil) and are NOT repeated here. Persian forms are the standard
+  // press transliterations.
+  "al-karma": "الکرمه",
+  "al naft": "النفت",
+  "newroz": "نیوروز",
+  "al-jolan sc": "الجولان",
+  "al minaa": "المیناء",
+  "duhok": "دهوک",
+  "ghaz al-shamal sc": "غاز الشمال",
+  "al talaba": "الطلبه",
+  "diyala": "دیالی",
+  "zakho": "زاخو",
+  "al-gharraf": "الغراف",
+  "al-mosul": "الموصل",
+  "al karkh": "الکرخ",
+  "naft maysan": "نفت میسان",
+  "al kahrabaa": "الکهربا",
+  "karbalaa": "کربلا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
