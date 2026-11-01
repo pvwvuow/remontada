@@ -1320,7 +1320,13 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
             <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
             <path d="M9 14.5l2 2 4-4" />
           </svg>
-          دانلود تقویم فصل (ICS)
+          {/* cycle-314: on historical views the selected season only lived in
+              the href/filename — the label itself stayed static, so a user
+              saving the file saw which season it is only afterwards. The
+              honest-season-marker convention (cycle-199) now reaches the
+              link label too: «دانلود تقویم فصل (ICS) — ۲۰۲۴/۲۵». The current
+              season keeps the clean static label. */}
+          دانلود تقویم فصل (ICS){season ? ` — ${faSeasonShort(season)}` : ""}
         </a>
       </div>
 
