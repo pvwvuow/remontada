@@ -9,7 +9,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { PlayerProfile } from "@/components/remontada/player-profile";
-import { PlayerNotFoundError, getPlayerData, type PlayerData } from "@/lib/fotmob";
+import { PlayerNotFoundError, getPlayerData, getPlayerFaqLd, type PlayerData } from "@/lib/fotmob";
 import { RSS_ALTERNATE, SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 
@@ -86,11 +86,21 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       }
     : null;
 
+  // cycle-320: FAQPage on the player page — the playerData.meta.faqJSONLD gap
+  // (seen-but-unopened until the live probe; the 317 coach probe had hit a
+  // payload without the key). Persian rebuild from the SAME processed
+  // PlayerData the page already fetched (zero new upstream requests) — the
+  // 316/317 convention: no verbatim English LD. Only on the success branch;
+  // invalid-id/failed shells carry no structured data (same contract as the
+  // breadcrumb above and the metadata noindex).
+  const playerFaqLd: Record<string, unknown> | null = player ? getPlayerFaqLd(player) : null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={playerCrumbLd} />
+        <JsonLd data={playerFaqLd} />
         {!valid ? (
           <>
             {/* fix cycle-84: the invalid-id error shell had no h1 (cycle-83 patrol

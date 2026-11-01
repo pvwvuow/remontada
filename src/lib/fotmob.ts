@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa, countryFa } from "./leagues";
 import { cached } from "./cache";
-import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "./format";
+import { faDigits, jalaliShort, tehranDateLong, tehranTime, marketValueFa as marketValueFaStr } from "./format";
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
@@ -9066,6 +9066,109 @@ export async function getTeamFaqLd(teamId: number, teamDisplay: string): Promise
     }
   }
 
+  if (questions.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": questions.map((q) => ({
+      "@type": "Question",
+      "name": q.name,
+      "acceptedAnswer": { "@type": "Answer", "text": q.text },
+    })),
+  };
+}
+
+// ---------------- FotMob: player FAQPage structured data (cycle-320) ----------------
+// Probed live (2026-11-01, UA Chrome/124): playerData.meta.faqJSONLD is
+// NON-EMPTY for active players (7 template questions — age, height, birth,
+// preferred foot, transfer value, nationality, goals this season). The
+// coach probe in cycle-317 hit a payload without the key — that absence is
+// why the player page never grew a FAQPage. Same convention as cycle-316:
+// the upstream English LD is NOT embedded verbatim (a Persian site must not
+// serve English rich-results); the SAME facts are rebuilt in Persian from
+// the ALREADY-processed PlayerData fields (info.age/height/foot/country/
+// marketValue/contractEnd + season.stats) the page fetched anyway — zero
+// new upstream requests, pure function over the existing object. Every
+// question renders only when its data exists; an empty list → null (no LD).
+// Persian phrasing mirrors the profile chips exactly (faDigits age, «سانتی‌متر»
+// height, countryFa, marketValueFa «۵۱.۷ میلیون یورو»).
+export function getPlayerFaqLd(p: PlayerData): Record<string, unknown> | null {
+  const display = p?.nameFa || p?.name || "";
+  if (!display) return null;
+  const questions: { name: string; text: string }[] = [];
+  try {
+    // Q1 — age
+    const age = p.info?.age;
+    if (age != null && Number.isFinite(Number(age))) {
+      questions.push({
+        name: `${display} چند سال دارد؟`,
+        text: `${display} ${faDigits(Number(age))} سال دارد.`,
+      });
+    }
+
+    // Q2 — height ("176 cm" → «۱۷۶ سانتی‌متر», same transform as the profile chips)
+    const hRaw = p.info?.height ? String(p.info.height).replace(/cm/i, "").trim() : "";
+    if (hRaw && /\d/.test(hRaw)) {
+      questions.push({
+        name: `قد ${display} چقدر است؟`,
+        text: `قد ${display} ${faDigits(hRaw)} سانتی‌متر است.`,
+      });
+    }
+
+    // Q3 — preferred foot (info.foot is already Persian — «چپ»/«راست»)
+    const foot = p.info?.foot || "";
+    if (foot) {
+      questions.push({
+        name: `${display} با کدام پا بازی می‌کند؟`,
+        text: `پای ترجیحی ${display} ${foot} است.`,
+      });
+    }
+
+    // Q4 — nationality (countryFa maps the raw upstream English)
+    const country = p.info?.country || "";
+    if (country) {
+      questions.push({
+        name: `${display} اهل کجاست؟`,
+        text: `${display} اهل ${countryFa(country) || country} است.`,
+      });
+    }
+
+    // Q5 — market value (format.ts marketValueFa — aliased: fotmob.ts already
+    // declares its own numeric-signature marketValueFa at ~6501)
+    const mv = p.info?.marketValue || "";
+    if (mv) {
+      const mvFa = marketValueFaStr(mv);
+      if (mvFa) {
+        questions.push({
+          name: `ارزش بازار ${display} چقدر است؟`,
+          text: `ارزش بازار ${display} حدود ${mvFa} است.`,
+        });
+      }
+    }
+
+    // Q6 — goals this season (season.stats key "goals", display "15")
+    const goals = p.season?.stats?.find((s) => s?.key === "goals");
+    const g = goals?.display != null ? Number(String(goals.display).replace(/[^\d.]/g, "")) : NaN;
+    if (p.season && Number.isFinite(g) && p.season.leagueFa) {
+      questions.push({
+        name: `${display} این فصل چند گل زده است؟`,
+        text: `${display} در ${p.season.leagueFa} ${faDigits(g)} گل زده است.`,
+      });
+    }
+
+    // Q7 — contract end (info.contractEnd is already the Jalali Persian string,
+    // e.g. «۱۰ تیر ۱۴۰۷» — rendered as-is, the honest processed form)
+    const contract = p.info?.contractEnd || "";
+    if (contract) {
+      questions.push({
+        name: `قرارداد ${display} تا چه زمانی اعتبار دارد؟`,
+        text: `قرارداد ${display} تا ${contract} اعتبار دارد.`,
+      });
+    }
+  } catch {
+    // best-effort LD — any shape surprise degrades to whatever was collected,
+    // and an empty list degrades to no LD at all (same honesty pattern as 316)
+  }
   if (questions.length === 0) return null;
   return {
     "@context": "https://schema.org",
