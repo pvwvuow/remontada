@@ -160,12 +160,13 @@ export function timeAgoFa(iso: string): string {
   return tehranDateLong(iso);
 }
 
-/** "€51.7m" → «۵۱.۷ میلیون یورو» — player market value in Persian (cycle 45) */
+/** "€51.7m" → «۵۱٫۷ میلیون یورو» — player market value in Persian (cycle 45;
+ *  cycle-370: the decimal goes through faDecimal — «۵۱٫۷» not «۵۱.۷») */
 export function marketValueFa(v: string): string {
   if (!v) return "";
   const m = v.replace(/\s/g, "").match(/^€?([\d.,]+)(bn|b|m|k)?$/i);
   if (!m) return v;
-  const num = faDigits(m[1].replace(/,/g, ""));
+  const num = faDecimal(m[1].replace(/,/g, ""));
   const unit = (m[2] || "").toLowerCase();
   if (unit === "m") return `${num} میلیون یورو`;
   if (unit === "k") return `${num} هزار یورو`;

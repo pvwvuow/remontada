@@ -10,7 +10,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import type { PlayerRecentMatch, PlayerRecentSide, PlayerLogLeague } from "@/lib/fotmob";
-import { faDigits, jalaliShort } from "@/lib/format";
+import { faDecimal, faDigits, jalaliShort } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TeamLogo } from "./team-logo";
 
@@ -227,7 +227,7 @@ export function RecentMatchesSection({
                     </span>
                     <span className="sm:hidden flex items-center gap-1.5 shrink-0 text-[10px] tabular-persian">
                       {m.goals > 0 && <span className="font-black text-mint">⚽{faDigits(m.goals)}</span>}
-                      {m.rating && <span className="font-black text-chart-3">{faDigits(m.rating)}</span>}
+                      {m.rating && <span className="font-black text-chart-3">{faDecimal(m.rating)}</span>}
                     </span>
                     <span className="text-[9.5px] text-muted-foreground/80 tabular-persian shrink-0 w-14 text-end">
                       {jd.day} {jd.month}

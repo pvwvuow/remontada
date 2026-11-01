@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamNewsData, TeamNewsItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
 import { sourceStyle } from "@/components/remontada/news-view";
-import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
+import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
 import { fotmobTeamLogo } from "@/lib/leagues";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
@@ -296,8 +296,8 @@ function BigMatchCard({ title, m, tone }: { title: string; m: (TeamFormMatch & {
 
 function SeasonPanel({ s }: { s: TeamSeasonStats }) {
   const kpis = [
-    { l: "گل زده", v: faDigits(s.goalsFor), sub: `میانگین ${faDigits(s.avgFor.toFixed(1))} در بازی` },
-    { l: "گل خورده", v: faDigits(s.goalsAgainst), sub: `میانگین ${faDigits(s.avgAgainst.toFixed(1))} در بازی` },
+    { l: "گل زده", v: faDigits(s.goalsFor), sub: `میانگین ${faDecimal(s.avgFor.toFixed(1))} در بازی` },
+    { l: "گل خورده", v: faDigits(s.goalsAgainst), sub: `میانگین ${faDecimal(s.avgAgainst.toFixed(1))} در بازی` },
     { l: "کلین‌شیت", v: faDigits(s.cleanSheets), sub: s.played ? `${faDigits(Math.round((s.cleanSheets / s.played) * 100))}٪ بازی‌ها` : "—" },
     { l: "بدون گل", v: faDigits(s.failedToScore), sub: s.played ? `${faDigits(Math.round((s.failedToScore / s.played) * 100))}٪ بازی‌ها` : "—" },
   ];
@@ -556,7 +556,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
             )}
             title="میانگین امتیاز فصل"
           >
-            {faDigits(p.rating.toFixed(1))}
+            {faDecimal(p.rating.toFixed(1))}
           </span>
         )}
       </div>
@@ -1172,7 +1172,7 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
       </div>
       <div className="shrink-0 flex flex-col items-end gap-0.5">
         <p className="text-[14px] font-black tabular-persian leading-none" title="میانگین امتیاز در هر بازی">
-          {faDigits(t.ppg.toFixed(1))}
+          {faDecimal(t.ppg.toFixed(1))}
         </p>
         <span className="text-[9.5px] font-bold tabular-persian text-steel/80">
           {faDigits(t.winPct)}٪ برد · {faDigits(t.win)} ب · {faDigits(t.draw)} م · {faDigits(t.loss)} پ
@@ -1216,7 +1216,7 @@ const TOP_PLAYER_GROUPS: { key: keyof TeamTopPlayers; label: string; hint: strin
 
 function TopPlayerRowItem({ r, fmt }: { r: TeamTopPlayerRow; fmt: "fraction" | "number" }) {
   const valueText =
-    fmt === "fraction" ? faDigits(r.value.toFixed(Math.min(r.fractions, 2) || 2)) : faDigits(Math.round(r.value));
+    fmt === "fraction" ? faDecimal(r.value.toFixed(Math.min(r.fractions, 2) || 2)) : faDigits(Math.round(r.value));
   return (
     <li>
       <Link
@@ -1499,9 +1499,9 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
   const facts = [
     p.seasonGoals != null && p.seasonGoals > 0 ? `${faDigits(p.seasonGoals)} گل فصل` : null,
     p.seasonAssists != null && p.seasonAssists > 0 ? `${faDigits(p.seasonAssists)} پاس گل فصل` : null,
-    p.seasonRating != null ? `فصل ${faDigits(p.seasonRating.toFixed(2))}` : null,
-    p.distanceKm != null && p.distanceKm > 0 ? `${faDigits(p.distanceKm.toFixed(1))} کیلومتر` : null,
-    p.topSpeedKmh != null && p.topSpeedKmh > 0 ? `${faDigits(p.topSpeedKmh.toFixed(1))} کیلومتر/ساعت` : null,
+    p.seasonRating != null ? `فصل ${faDecimal(p.seasonRating.toFixed(2))}` : null,
+    p.distanceKm != null && p.distanceKm > 0 ? `${faDecimal(p.distanceKm.toFixed(1))} کیلومتر` : null,
+    p.topSpeedKmh != null && p.topSpeedKmh > 0 ? `${faDecimal(p.topSpeedKmh.toFixed(1))} کیلومتر/ساعت` : null,
     p.marketValueFa,
   ].filter(Boolean) as string[];
   const inner = (
@@ -1520,7 +1520,7 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
       <div className="flex flex-col items-end gap-1 shrink-0">
         {p.matchRating != null && (
           <span className="text-[14px] font-black tabular-persian text-[#e0efff] leading-none">
-            {faDigits(p.matchRating.toFixed(1))}
+            {faDecimal(p.matchRating.toFixed(1))}
           </span>
         )}
         {(p.motm || p.yellow || p.red) && (
@@ -1543,7 +1543,7 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
 function LastLineupSection({ data }: { data: TeamLastLineup }) {
   const meta = [
     data.coachName ? `سرمربی: ${data.coachName}` : null,
-    data.averageAge != null ? `میانگین سن: ${faDigits(data.averageAge.toFixed(1))} سال` : null,
+    data.averageAge != null ? `میانگین سن: ${faDecimal(data.averageAge.toFixed(1))} سال` : null,
     data.totalMarketValueFa ? `ارزش بازار ترکیب: ${data.totalMarketValueFa}` : null,
   ].filter(Boolean) as string[];
   return (

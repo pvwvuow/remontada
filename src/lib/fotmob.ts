@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa, countryFa } from "./leagues";
 import { cached } from "./cache";
-import { faDigits, jalaliShort, tehranDateLong, tehranTime, marketValueFa as marketValueFaStr } from "./format";
+import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime, marketValueFa as marketValueFaStr } from "./format";
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
@@ -7421,7 +7421,10 @@ const PLAYER_TRAITS_TITLE_FA: Record<string, string> = {
 
 /** ≤2-decimal Persian number, trailing zeros trimmed */
 function deepNumFa(n: number): string {
-  return faDigits((Math.round(n * 100) / 100).toString());
+  // cycle-370: the deep layer's numeric renderer goes through faDecimal —
+  // «۷٫۲۱» with the Persian decimal separator (bug-hunt-368 finding class),
+  // covering deepStatValueFa (percent/kph/meter/number) + marketNumFa.
+  return faDecimal((Math.round(n * 100) / 100).toString());
 }
 
 function deepStatValueFa(v: string, format?: string): string {

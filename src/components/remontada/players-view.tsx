@@ -37,7 +37,7 @@ import { PLAYER_NAME_FA } from "@/lib/player-names-fa";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { TeamLogo } from "@/components/remontada/team-logo";
 import { PlayerPhoto } from "@/components/remontada/player-photo";
-import { faDigits, timeAgoFa } from "@/lib/format";
+import { faDecimal, faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Metric = "goals" | "assists";
@@ -192,7 +192,7 @@ function PlayerCard({ p, rank, metric, big = false }: { p: Row; rank: number; me
     chips.push({ label: "گل+پاس", value: faDigits(p.gPlusA), cls: "bg-muted border-border text-muted-foreground", title: "مجموع گل و پاس گل" });
   }
   if (p.rating != null && p.rating > 0) {
-    chips.push({ label: "امتیاز", value: faDigits(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
+    chips.push({ label: "امتیاز", value: faDecimal(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
   }
 
   const inner = (
@@ -282,7 +282,7 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
     chips.push({ label: "سن", value: faDigits(p.age), cls: "bg-muted border-border text-muted-foreground", title: "سن" });
   }
   if (p.rating != null && p.rating > 0) {
-    chips.push({ label: "امتیاز", value: faDigits(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
+    chips.push({ label: "امتیاز", value: faDecimal(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
   }
   if (p.goals) {
     chips.push({ label: "گل", value: faDigits(p.goals), cls: "bg-primary/10 border-primary/25 text-primary", title: "گل فصل" });

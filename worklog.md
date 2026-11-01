@@ -5484,3 +5484,17 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc --noEmit 0 ← build 0 ← استارت رسمی (UP pid=10463، HTTP 200) ← رگرسیون ۲۸/۲۸ با BASE صریح ← DOM در 390×844 (scripts/cycle369-domproof.sh) **۱۴/۱۴**: پودیوم مسافت تیمی فولام ۱۱۹٫۴ / آرزنال ۱۱۸٫۱ / ایپسویچ ۱۱۷٫۴ کیلومتر؛ پودیوم بازیکنان گروس ۱۰۷٫۴ / آمپادو ۱۰۴٫۲ / جاستین ۱۰۱٫۷؛ صفر رقم نقطه‌دار لاتین در لینک‌های بورد؛ KPI «۲٫۷۴» (۲۴۱ گل / ۸۸ بازی ✓)؛ جدول xG تماماً ٫؛ /league/iraq غیبت محترمانهٔ 92 دست‌نخورده؛ scrollW=cw=390، page errors ۰، console errors ۰. دو FAIL میانیِ مسیر پروب بود (ترتیب pهای KpiCard: مقدار قبل از لیبل؛ وضعیت tab برای testid جدول xG) — اسکریپت اصلاح و بازاجرایی سبز شد. نکته: فرمت‌دهی در زمان رندر کلاینت است پس کش L2 standings اثری بر این فیکس ندارد (اثبات: پودیوم ٫ در همان اولین گذر پس از بوت).
 
 **نوبت گردشی بعدی: cycle-370 = آپدیت** (فرمول ((370 mod 5)+1)=۱) — نامزد: پذیرش faDecimal در league-scorers-view (۴۷ نقطه، بزرگ‌ترین دامنهٔ هم‌کلاس) یا شکاف تازهٔ پروب‌شده.
+
+## Task ID: cycle-370 — آپدیت: تکمیل پذیرش faDecimal در کل سطوح نمایش عددی — ~۳۵ نقطه در ۱۰ فایل + دو هلپر کتابخانه‌ای؛ league-scorers-view (۴۷) گذر اختصاصی bidi می‌ماند
+
+تاریخ: ۲۰۲۶-۱۱-۰۲ (۰۲:۱۵ بیدارباش)، حالت: درخت تمیز، origin=94e26f9 (کارت ۳۶۹). فرمول رسمی: ((370 mod 5)+1)=۱=آپدیت. گارد کمپین UI غایب (هشتمین تأیید). نامزد ثبت‌شدهٔ کارت ۳۶۹: پذیرش faDecimal در فایل‌های باقی‌مانده.
+
+**پیاده‌سازی (دو موج):** موج ۱ — نقاط toFixed در ۶ فایل (۲۴ نقطه): topscorers-view (xG/xA/xGOT badges)، coach-view (ppg)، players-view (rating chips ×۲)، player-profile (rating), team-view (۱۰: میانگین‌ها، ppg، بورد fraction، فصل/مسافت/سرعت، matchRating، میانگین سن)، match-detail (۷: اسکوآپ، rating pill، جلوی گل، rating کوچک، xG/امتیاز فصل، fmt جنریک). موج ۲ — کشف‌های اثبات DOM سطحی (tree-walker متن): **deepNumFa** در fotmob.ts (نقطهٔ واحد رندر لایهٔ دیپ: deepStatValueFa percent/kph/meter/number + marketNumFa/ارزش بازار) → faDecimal؛ **marketValueFa** رشته‌ای در format.ts («€51.7m» → «۵۱٫۷ میلیون یورو»)؛ **player-recent** (rating خام m.rating)؛ **player-profile** (StatBox display، عنوان شوت‌های xG، خلاصهٔ xG مجموع)؛ **match-detail** (PotmCard rating + s.display + ردیف‌های ترکیب p.rating)؛ **league-totw** (امتیازهای تیم هفته، رشته‌ای). استثناهای مستند: مختصات SVG (league-totw L138-140، player-profile L263) — نقطه، سینتکس positioning است نه نمایش.
+
+**درس چرخه:** اسکن `toFixed` برای یافتن رندرهای اعشاری کافی نیست — اعداد خام payload (m.rating/p.rating) و رشته‌های display از پیش‌ساخته‌شده هم مسیرند؛ اثبات DOM با TreeWalker متن + ردیابی ancestor هر یافته، دقیق‌ترین نقشهٔ پوشش را داد. کش L2 ماندگار گاهی رشته‌های پیش از فیکس را سرو می‌کرد (یافتهٔ «۸.۶» گذرا) — پاک شدنش با re-probe تأیید شد (خودترمیم مستند، نه باگ کد).
+
+**دامنهٔ باقی‌مانده (ثبت‌شده):** league-scorers-view با ۴۷ نقطه — فایلِ قراردادهای dir=ltr ممیزی‌شدهٔ چرخه‌های 210/217/226 (pillهای آپ‌استریم-آینه) — نیازمند گذر اختصاصی با مطالعهٔ bidi؛ نامزد طبیعی آپدیت بعدی.
+
+**پذیرش:** eslint 0/0 ← tsc --noEmit 0 ← build 0 ← استارت رسمی (UP pid=27964، HTTP 200) ← رگرسیون ۲۸/۲۸ با BASE صریح ← DOM در 390×844 (scripts/cycle370-domproof.sh) **۲۲/۲۲**: /topscorers بدون رقم نقطه‌دار و بج «xG ۱۱٫۰»؛ /team/9825 میانگین «۱٫۶» و صفر نقطه؛ /match/5749720 اولین pill «۸٫۷» و صفر نقطه؛ /player/737066 صفر نقطه؛ /league/pl پودیوم meter «آرسنال ۱۱۹٫۶ کیلومتر» با ٫ + صفر نقطه (شامل بخش تیم هفته)؛ scrollW=cw=390، page errors ۰، console errors ۰ همهٔ صفحات.
+
+**نوبت گردشی بعدی: cycle-371 = آپدیت** (فرمول ((371 mod 5)+1)=۲) — نامزد: گذر اختصاصی league-scorers-view (۴۷ نقطه، ممیزی dir=ltr).
