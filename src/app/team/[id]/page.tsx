@@ -56,6 +56,15 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
 
   // SportsTeam structured data — same cached index, same graceful contract
   let teamLd: Record<string, unknown> | null = null;
+  // update cycle-310: BreadcrumbList — the missing link of the trail pattern
+  // league/[key] and topscorers/[leagueKey] already ship (both emit BreadcrumbList
+  // with the same خانه → لیگ‌ها vocabulary). Team trail = خانه → لیگ‌ها →
+  // {leagueFa} → {teamFa}; every URL is a link the UI actually renders (the
+  // profile header links the league, the nav dock links home — the visible
+  // hierarchy the trail mirrors). Best-effort like SportsTeam: no entry → no
+  // LD; a team without a league hop just skips that ListItem, positions stay
+  // sequential. Never breaks the page.
+  let crumbLd: Record<string, unknown> | null = null;
   if (Number.isFinite(teamId) && teamId > 0 && /^\d{1,10}$/.test(id)) {
     try {
       const entry = (await getTeamIndex()).find((t) => t.teamId === teamId);
@@ -72,6 +81,20 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
             ? { "memberOf": { "@type": "SportsLeague", "name": entry.leagueFa } }
             : {}),
         };
+        // update cycle-310: same trail vocabulary as league/[key]/topscorers
+        const crumbItems: Record<string, unknown>[] = [
+          { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
+          { "@type": "ListItem", "position": 2, "name": "لیگ‌ها", "item": `${SITE_URL}/leagues` },
+        ];
+        if (entry.leagueKey && entry.leagueFa) {
+          crumbItems.push({ "@type": "ListItem", "position": 3, "name": entry.leagueFa, "item": `${SITE_URL}/league/${entry.leagueKey}` });
+        }
+        crumbItems.push({ "@type": "ListItem", "position": crumbItems.length + 1, "name": entry.fa || entry.name, "item": `${SITE_URL}/team/${entry.teamId}` });
+        crumbLd = {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          "itemListElement": crumbItems,
+        };
       }
     } catch {
       teamLd = null; // never break the page for structured data
@@ -83,6 +106,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={teamLd} />
+        <JsonLd data={crumbLd} />
         {/* fix cycle-89: the body guard accepted numeric ids of ANY length
             (Number("99999999999999999999") = 1e20 is finite and > 0) so a
             20-digit id SSR-rendered the bare TeamView skeleton with zero h1,
