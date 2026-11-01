@@ -966,6 +966,13 @@ export interface StandingsData {
    *  contract: v38-cached snapshots legitimately lack it (the 345 L2-SQLite
    *  rule — shape changes ride a cache-key bump, here v38→v39). */
   color?: string;
+  /** cycle-376 additive: pure knockout cups only (first cataloged: Copa del
+   *  Rey, id 138). rows=[] carries the honest marker so the UI can render
+   *  the cup empty state — a knockout competition never HAS a league-phase
+   *  table — while the same payload still serves scorers/boards/allSeasons.
+   *  Absent on every table feed (the field cannot appear on a cached
+   *  domestic row: no-table keys never entered the cache before 376). */
+  noTable?: boolean;
   scorers: ScorerEntry[];
   assists: AssistEntry[];
   /** cycle-210 additive: «آقای امتیاز» — the league's own FotMob-rating
@@ -4165,7 +4172,28 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // historical feeds carry none, the field stays unset, cells empty)
       attachNext(rows, nextMap);
     }
-    if (rows.length === 0) throw new Error("No standings data");
+    // cycle-376: pure knockout cups (the first cataloged one: Copa del Rey,
+    // fotmob id 138 — probed live UA Chrome/124, 2026-11-02) serve NO
+    // league-phase table at all — table[0].data.table is a dict WITHOUT the
+    // `all` key while the SAME payload carries the full cup shape: 39 stat
+    // categories with fetchAllUrl, 56 season fixtures and 122 title-history
+    // seasons. The old blanket throw made every such feed a permanent 503
+    // and hid its real data behind the standings-absent wall (scorers,
+    // boards and allSeasons all ride THIS payload). The throw now fires
+    // only when the feed is truly empty — a no-row payload that still
+    // carries any real cup block (stats players / fixtures / title seasons)
+    // continues with rows=[] + the additive noTable marker. Every downstream
+    // consumer is rows-safe by construction: team/player index loops and the
+    // race skip empty rows, the sitemap only reads scorers, the standings
+    // route's snapshot guard requires rows>0, and the LeagueView EmptyState
+    // guard lands in the same cycle (a noTable feed renders the honest cup
+    // empty state, never a zero-row table).
+    const hasCupShape =
+      (raw.stats?.players?.length || 0) > 0 ||
+      (raw.fixtures?.allMatches?.length || 0) > 0 ||
+      (raw.seasons?.length || 0) > 0;
+    if (rows.length === 0 && !hasCupShape) throw new Error("No standings data");
+    const noTable = rows.length === 0;
 
     // update cycle-111: zone legend («راهنمای سهمیه‌ها») — the upstream table
     // legend explains the per-row qualColor strips the portal has rendered
@@ -5397,6 +5425,11 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
         : undefined;
     return {
       leagueKey, leagueFa: lg.faName, season, rows,
+      // cycle-376 additive: pure knockout cups — rows=[] with the honest
+      // marker (the UI renders the cup empty state instead of a table).
+      // No cache-key bump (the 102/111 convention): cup keys were never
+      // cached (they always threw), and no other feed can produce the flag.
+      ...(noTable ? { noTable: true } : {}),
       ...(leagueColor ? { color: leagueColor } : {}),
       ...(groups.length > 0 ? { groups } : {}),
       ...(selectedSeason ? { selectedSeason } : {}),

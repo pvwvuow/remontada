@@ -413,6 +413,31 @@ export const LEAGUES: LeagueConfig[] = [
   // generic "Stars League" — the catalog enName stays the canonical
   // "Iraq Stars League" (no collision with any sibling).
   { key: "iraq",       fotmobId: 524,         ccode3: "IRQ",  faName: "لیگ ستارگان عراق",   enName: "Iraq Stars League",                             priority: 26 },
+  // cycle-376: Copa del Rey — the TWENTY-SEVENTH competition, the cups
+  // footprint's FIFTH live cup and the FIRST pure knockout domestic
+  // competition (no league-phase table at all). Live probe 2026-11-02 (UA
+  // Chrome/124): the real page id surfaced via the day feed (fotmob.com/
+  // leagues/138, ccode=ESP — matches served 2026-11-01..03), answering a
+  // full 2026/2027 cup feed: table[0].data.table WITHOUT the `all` key
+  // (a knockout cup's honest shape), 17 slash-format allAvailableSeasons
+  // (2026/2027 → 2010/2011 — the cycle-132 window covered exactly), 122
+  // title-history seasons (newest: 2025/2026 Real Sociedad over Atlético
+  // Madrid), 39 player stat categories EVERY one with fetchAllUrl (Top
+  // scorer → Goals conceded per 90), 56 season fixtures, playoff=null
+  // (bracket tab honestly hidden until rounds are drawn — the cycle-56
+  // contract) and transfers.data=null (the cups' honest transfers-hide).
+  // leagueColor #D2202B (OG card), ESPN slug probed live: esp.copa_del_rey
+  // → 200. The no-table shape is why getStandings grows the cycle-376
+  // no-table path (see fotmob.ts): the cup's scorers/boards/seasons ride
+  // the same standings payload and were unreachable while it threw.
+  // globalMerge: false — one flag, one semantic (per-league surfaces live,
+  // the two global merges untouched): the race's perLeague/season-intersect
+  // contract assumes table feeds, and the cup enters it only after the
+  // no-table path has proven itself across cycles (the UECL 140 precedent
+  // of admission by evidence, not taste). faName follows the ALREADY-SHIPPED
+  // home/player-filter mapping «جام حذفی اسپانیا» (COMPETITION_FA, shipped
+  // pre-376) so the day feed and the league page never disagree.
+  { key: "copadelrey", fotmobId: 138,         ccode3: "ESP",  faName: "جام حذفی اسپانیا",   enName: "Copa del Rey",     espnSlug: "esp.copa_del_rey", priority: 27, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the

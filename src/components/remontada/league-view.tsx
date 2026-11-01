@@ -1581,7 +1581,13 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         </div>
       ) : (
         <div className={cn("transition-opacity", loading && "opacity-50")}>
-          {tab === "standings" && (standings ? (
+          {/* cycle-376: the rows guard — a pure knockout cup (first cataloged:
+              Copa del Rey) fulfills with rows=[] + noTable, so the truthy
+              standings payload can no longer mean "render the table". Zero
+              rows now fall to the empty state, with the cup-specific honest
+              copy (a knockout competition never HAS a table) and a CTA that
+              opens the fixtures tab instead of dead-ending. */}
+          {tab === "standings" && (standings && standings.rows.length > 0 ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
               <div className="grid gap-4 min-w-0">
                 {/* cycle-114: honest notice when the table is served from the
@@ -1604,7 +1610,19 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               </div>
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
-          ) : <EmptyState icon="medal" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
+          ) : (
+            <EmptyState
+              icon="medal"
+              compact
+              title="جدولی برای این لیگ ثبت نشده است"
+              sub={standings?.noTable
+                ? "مسابقات حذفی جدول رده‌بندی ندارند؛ برنامه، نتایج، گلزنان و آمار از همین صفحه دنبال می‌شود."
+                : "رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود."}
+              action={standings?.noTable
+                ? { label: "مشاهده‌ی برنامه‌ی بازی‌ها", onClick: () => setTab("fixtures") }
+                : undefined}
+            />
+          ))}
           {tab === "stats" && (
             <div className="flex flex-col gap-4">
               {standings?.boards && standings.boards.length > 0 && (
