@@ -219,6 +219,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // 2024/25 historical raw serves its OWN file — season-aware); old
       // consumers never read this field (the 108 rule).
       tacklesPer90: st.tacklesPer90,
+      // cycle-330 additive: «قطع توپ در هر ۹۰» rides the SAME cached
+      // payload — the defense family's SECOND sibling (decimal per-90
+      // values verbatim; the 2024/25 historical raw serves its OWN file —
+      // season-aware); old consumers never read this field (the 108 rule).
+      interceptionsPer90: st.interceptionsPer90,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

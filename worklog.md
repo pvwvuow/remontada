@@ -4850,3 +4850,16 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **لنگرهای دوران (سریع):** خانه 200؛ /rss.xml 200؛ /team/8633 ‏LD «Place» (لنگر ۳۲۲)؛ /player/696679 «آمار فصل‌به‌فصل» (لنگر ۳۲۵) — همه روی بیلد c63c5c3. کارت ۳۲۹ هرگز از دست نرفت (روی origin بود).
 
 **نوبت گردشی دست‌نخورده: cycle-330 = آپدیت** — در همین نشست اجرا می‌شود (کارت جداگانه، سنت کارت هفتم).
+### Task ID: cycle-330 — آپدیت («قطع توپ در هر ۹۰» — دومین sibling خانوادهٔ دفاعی)
+
+**روش (پروب اول):** سرشماری زندهٔ کامل خانوادهٔ deep-file با پروب UA Chrome/124 (scripts/probe-330.py — درس ۳۲۵: مسیر درست `/api/data/leagues` است نه `/api/leagues` که ۴۰۴ HTML می‌دهد): pl ‏۴۶ دسته / ‏۲۰ USED / **۲۶ UNUSED**؛ laliga ‏۴۱ / ‏۲۰ / **۲۱**. منوی اعلام‌شدهٔ کارت ۳۲۷ زنده تأیید شد — دفاع هنوز ۶ دستهٔ مصرف‌نشده دارد. انتخاب: **Interceptions per 90 (interception.json)** — دومین sibling دفاعی کنار «تکل در هر ۹۰».
+
+**امکان‌سنجی زنده:** ‏pl ‏۲۷۸ ردیف (اول: Matteo Ruggeri / استون‌ویلا / ۴.۰)؛ laliga ‏۳۰۷ (Diego Llorente / رئال‌بتیس / ۳.۳)؛ رأی تاریخی ۲۰۲۴/۲۵ فایل خودش را سرو می‌کند (season/23685/interception.json ‏۳۰۱ ردیف، Bentancur 2.2) — season-aware مثل همهٔ siblingها.
+
+**پیاده‌سازی — additive ۳ فایل، byte-for-byte الگوی ۳۲۷، صفر درخواست جدید در هر page-view:** ‏`InterceptionsPer90Entry` + ‏StandingsData با فیلد REQUIRED → **standings cache v33→v34** (قرارداد ۲۴۶)؛ ‏`getFullInterceptionsPer90` (کلید `fullInterceptionsPer90:v1`، خوانش دوگانهٔ typo بالادستی ParticiantId، سقف ۱۰، گارد thin ۹۰ثانیه‌ای)؛ ادغام در getStandings (top-3 دسته + فایل کامل، dedupe با pid، رتبه بر مبنای اعشار verbatim) + نام‌های صادقانهٔ read-time؛ گارد thin-for-a-generation برای blocks تازه (پیش‌گستر ۳۲۷ verbatim)؛ ‏/api/topscorers ‏فیلد interceptionsPer90 (قاعدهٔ ۱۰۸)؛ ‏LeagueScorersView بخش «قطع توپ در هر ۹۰ · هوش دفاعی» بلافاصله بعد از «تکل در هر ۹۰» (testid `interceptions-row`، pill ‏toFixed(1) ‏dir=ltr، لینک /player).
+
+**حادثهٔ زندهٔ حل‌شده:** کلاس ۳۲۷ دقیقاً تکرار شد — بیلد SSG سرد فایل را انداخت و ‏v34 با ۳ ردیف top-3 پخت شد؛ گارد جدید ۹۰ ثانیه بعد re-probe کرد → **۱۰ ردیف پایدار** بدون ری‌استارت (خودترمیمی end-to-end ثابت شد).
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (58/58 صفحه) ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← DOM در 390×844: ‏/topscorers/pl — ترتیب «گل در هر ۹۰ → تکل در هر ۹۰ → قطع توپ در هر ۹۰» (خانوادهٔ دفاعی کنار هم)، ‏interceptions-row=10، اول «۰۱ | Matteo Ruggeri | استون‌ویلا | ۴.۰»، ‏۱۰ لینک /player، tackles-row=10 دست‌نخورده؛ ‏laliga — «۰۱ | Diego Llorente | رئال‌بتیس | ۳.۳» ‏۱۰ ردیف؛ API تاریخی ۲۰۲۴/۲۵ — ‏۱۰ ردیف، اول Bentancur / تاتنهام / ۲.۲ (فایل خودِ فصل)؛ overflowX=false هر سه؛ کنسول fresh-session و errors صفر.
+
+**نوبت گردشی بعدی: cycle-331 = آپدیت** (فرمول ((331 mod 5)+1)=۲).
