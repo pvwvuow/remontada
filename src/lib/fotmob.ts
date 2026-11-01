@@ -9111,6 +9111,62 @@ export async function getTeamFaqLd(teamId: number, teamDisplay: string): Promise
   };
 }
 
+// ---------------- FotMob: team SportsTeam location Place (cycle-322) ----------------
+// Probed live (2026-11-01, UA Chrome/124): a depth-3 key census of all five
+// upstream payloads (matchDetails/playerData/teams/leagues + the coach
+// payload, scripts/gap-probe-322.py) vs src coverage found exactly ONE
+// unharvested fact family: the stadium Place our self-built SportsTeam LD on
+// /team/[id] has never carried (name + PostalAddress + GeoCoordinates —
+// upstream ships it in details.sportsTeamJSONLD.location). The SAME facts
+// already sit in the SAME cached teams payload the FAQ builder reads —
+// overview.venue.widget {name, city, location:[lat,lng]} — plus one narrow
+// slice of details.sportsTeamJSONLD.location.address.addressCountry (the
+// only venue fact the widget lacks; same narrow-slice convention as
+// cycle-321's meta.personJSONLD.weight). No English prose is embedded:
+// proper nouns and numbers only, mirroring the cycle-317 match-location
+// precedent. Zero new upstream requests (getTeamDataRaw cache hit, the FAQ
+// call on the same page warms it). Best-effort like getTeamFaqLd: any
+// missing/invalid piece drops and a venue-less payload (national teams,
+// poisoned rows) degrades to null → the page LD simply omits the field.
+export async function getTeamLocationLd(teamId: number): Promise<Record<string, unknown> | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  let raw: Awaited<ReturnType<typeof getTeamDataRaw>>;
+  try {
+    raw = await getTeamDataRaw(teamId);
+  } catch {
+    return null;
+  }
+  const ov = (raw?.overview || {}) as {
+    venue?: {
+      widget?: { name?: string; city?: string; location?: unknown[] } | null;
+    } | null;
+  };
+  const w = ov.venue?.widget;
+  const name = typeof w?.name === "string" ? w.name.trim() : "";
+  const city = typeof w?.city === "string" ? w.city.trim() : "";
+  const loc = Array.isArray(w?.location) ? (w?.location as unknown[]) : [];
+  const lat = Number(loc[0]);
+  const lng = Number(loc[1]);
+  // narrow slice: addressCountry from the upstream SportsTeam LD (probed:
+  // "England" on club rows; venue-less payloads omit it — honest degrade)
+  const det = (raw as { details?: { sportsTeamJSONLD?: { location?: { address?: { addressCountry?: unknown } } } } })
+    ?.details?.sportsTeamJSONLD?.location?.address?.addressCountry;
+  const country = typeof det === "string" ? det.trim() : "";
+
+  const address: Record<string, unknown> = { "@type": "PostalAddress" };
+  if (country) address["addressCountry"] = country;
+  if (city) address["addressLocality"] = city;
+  const hasAddress = Boolean(country || city);
+  const hasGeo = Number.isFinite(lat) && Number.isFinite(lng);
+  if (!name && !hasAddress && !hasGeo) return null;
+
+  const place: Record<string, unknown> = { "@type": "Place" };
+  if (name) place["name"] = name;
+  if (hasAddress) place["address"] = address;
+  if (hasGeo) place["geo"] = { "@type": "GeoCoordinates", "latitude": lat, "longitude": lng };
+  return place;
+}
+
 // ---------------- FotMob: player FAQPage structured data (cycle-320) ----------------
 // Probed live (2026-11-01, UA Chrome/124): playerData.meta.faqJSONLD is
 // NON-EMPTY for active players (7 template questions — age, height, birth,

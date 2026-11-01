@@ -3,7 +3,7 @@ import { TeamView } from "@/components/remontada/team-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
-import { getTeamIndex, getTeamFaqLd } from "@/lib/fotmob";
+import { getTeamIndex, getTeamFaqLd, getTeamLocationLd } from "@/lib/fotmob";
 import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // ---- dynamic SEO (cycle 29) ------------------------------------------------
@@ -71,6 +71,12 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   // from the structured venue/nextMatch fields of the SAME cached payload —
   // zero new upstream requests, best-effort like every other LD block here.
   let faqLd: Record<string, unknown> | null = null;
+  // update cycle-322: stadium Place (name + PostalAddress + GeoCoordinates)
+  // harvested from the SAME cached teams payload (overview.venue.widget + a
+  // narrow addressCountry slice of details.sportsTeamJSONLD) — the one fact
+  // family the depth-3 gap census (cycle-322 probe) found unharvested. A
+  // venue-less payload degrades to null and the field is simply omitted.
+  let locationLd: Record<string, unknown> | null = null;
   if (Number.isFinite(teamId) && teamId > 0 && /^\d{1,10}$/.test(id)) {
     try {
       const entry = (await getTeamIndex()).find((t) => t.teamId === teamId);
@@ -87,6 +93,12 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
             ? { "memberOf": { "@type": "SportsLeague", "name": entry.leagueFa } }
             : {}),
         };
+        try {
+          locationLd = await getTeamLocationLd(teamId);
+        } catch {
+          locationLd = null; // best-effort like the other structured data
+        }
+        if (locationLd) teamLd = { ...teamLd, "location": locationLd };
         // update cycle-310: same trail vocabulary as league/[key]/topscorers
         const crumbItems: Record<string, unknown>[] = [
           { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
