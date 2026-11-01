@@ -16,6 +16,21 @@ import { TeamLogo } from "./team-logo";
 
 const SHOWN = 10;
 
+// cycle-356: knockout-round labels — EXACTLY the codes probed live
+// (7 players / 396 archive rows, 2026-11-01: 1/32 ×1, 1/16 ×9, 1/8 ×13,
+// 1/4 ×10, 1/2 ×11, final ×8, bronze ×2 = the third-place decider).
+// Any future upstream code renders NO badge (honest absence) until a
+// probe collects and maps it — no invented labels.
+const STAGE_FA: Record<string, string> = {
+  "1/32": "یک‌سی‌ودوم نهایی",
+  "1/16": "یک‌شانزدهم نهایی",
+  "1/8": "یک‌هشتم نهایی",
+  "1/4": "یک‌چهارم نهایی",
+  "1/2": "نیمه‌نهایی",
+  final: "فینال",
+  bronze: "بازی رده‌بندی",
+};
+
 function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
   const tone =
     r === "W"
@@ -185,6 +200,15 @@ export function RecentMatchesSection({
                       <span className="truncate text-[12px] font-bold group-hover:text-sky-soft transition-colors">
                         {m.isHome ? "میزبان" : "بیرون"} · {m.opponent}
                       </span>
+                      {m.stage && STAGE_FA[m.stage] && (
+                        <span
+                          data-testid="player-recent-stage"
+                          title="مرحلهٔ حذفی"
+                          className="text-[9px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0"
+                        >
+                          {STAGE_FA[m.stage]}
+                        </span>
+                      )}
                       {m.onBench && !m.played && (
                         <span className="text-[9px] font-bold text-muted-foreground border border-border rounded px-1 py-px shrink-0">روی نیمکت</span>
                       )}

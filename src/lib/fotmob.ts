@@ -6753,6 +6753,13 @@ interface FMPlayerDetails {
     yellowCards?: number; redCards?: number;
     ratingProps?: { rating?: string } | null;
     playerOfTheMatch?: boolean; onBench?: boolean; playedInMatch?: boolean;
+    // cycle-356 probed (UA Chrome/124, 2026-11-01, 7 players / 396 rows):
+    // knockout-round code of the row — null for league/group games, else a
+    // tiny closed set: "1/32" "1/16" "1/8" "1/4" "1/2" "final" "bronze"
+    // (bronze = the third-place decider; observed 1× on Toney and 1× on
+    // Mbappé). Passed through RAW — the UI maps known codes to Persian and
+    // hides unknown ones (honest absence, no invented labels).
+    stage?: string | null;
   }[] | null;
   // cycle-355 probed live (UA Chrome/124, 2026-11-01, Raphinha id 696679):
   // the archive's own filter contract — `teams[]` (career stops, each with
@@ -6991,6 +6998,10 @@ export interface PlayerRecentMatch {
   // along — just never kept). Powers the competition filter client-side;
   // null when the upstream row omits the field (honest absence).
   leagueId: number | null;
+  // cycle-356: raw knockout-round code of the row (see FMPlayerDetails);
+  // null for league/group rows. The UI maps the probed set to Persian and
+  // hides anything outside it.
+  stage: string | null;
 }
 export interface PlayerRecentSide { id: number; fa: string }
 
@@ -7522,6 +7533,9 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
       sideName: teamFa(m.teamName || undefined) || m.teamName || "",
       // cycle-355: kept for the archive competition filter (see logLeagues)
       leagueId: typeof m.leagueId === "number" ? m.leagueId : null,
+      // cycle-356: raw knockout-round code — Persian mapping stays in the
+      // UI (format layer), unknown codes render no badge at all
+      stage: typeof m.stage === "string" ? m.stage : null,
     });
     if (m.teamId && !recentTeams.some((t) => t.id === m.teamId)) {
       recentTeams.push({ id: m.teamId, fa: teamFa(m.teamName || undefined) || m.teamName || "" });
@@ -8057,7 +8071,11 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // gained its leagueId; a v11-cached shape would serve profiles WITHOUT
   // the chip set from the persistent SQLite L2 across restarts for up to
   // the TTL (same convention as cycle-52/86/87/96/135/159/197/201/325)
-  const payload = await cached(`player:v12:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-356: key bumped to v13 — every recent row gained the raw stage
+  // code (knockout-round badges); a v12-cached shape would serve rows
+  // WITHOUT the field from the persistent SQLite L2 across restarts for up
+  // to the TTL (same convention as cycle-52/86/87/96/135/159/197/201/325/355)
+  const payload = await cached(`player:v13:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
