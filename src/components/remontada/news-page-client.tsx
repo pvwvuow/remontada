@@ -4,7 +4,7 @@
 // Remontada — dedicated news page client (fetch + refresh + filters)
 // Filter chips by source (with counts) + league + chronological order
 // ------------------------------------------------------------------
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useReducer, useState } from "react";
 import type { ReactNode } from "react";
 import { NewsView, sourceStyle, type ClientNewsItem } from "@/components/remontada/news-view";
 import { faDigits, timeAgoFa } from "@/lib/format";
@@ -83,6 +83,20 @@ export function NewsPageClient() {
   useEffect(() => {
     fetchNews();
   }, [fetchNews]);
+
+  // cycle-309: the two freshness labels below («جدیدترین» and
+  // «به‌روزرسانی فید») froze at their mount-time age — a /news tab kept
+  // open kept showing «۱۰ دقیقه پیش» forever until a manual refresh.
+  // timeAgoFa() reads Date.now() at render time, so a 30s re-render tick
+  // keeps both ages honest without any refetch (label advances on its
+  // own; the «بروزرسانی» button still refetches actual new items). The
+  // interval starts post-hydration only, so SSR markup and the first
+  // client render stay identical — no hydration mismatch.
+  const [, bumpAgeTick] = useReducer((c: number) => c + 1, 0);
+  useEffect(() => {
+    const id = setInterval(bumpAgeTick, 30_000);
+    return () => clearInterval(id);
+  }, []);
 
   // ---- counts per source (chronologically stable feed) ----
   const sourceCounts = useMemo(() => {
