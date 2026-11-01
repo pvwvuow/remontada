@@ -1303,6 +1303,27 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         </div>
       )}
 
+      {/* cycle-312: «تقویم فصل (ICS)» — the whole selected season as a
+          downloadable RFC 5545 calendar (/api/league-calendar). Season-aware
+          like every tab fetch: the link carries the deep-linked/selected
+          season; the route degrades honestly (valid empty calendar or a JSON
+          error) when the payload is unavailable. */}
+      <div className="px-1">
+        <a
+          href={`/api/league-calendar?league=${leagueKey}${season ? `&season=${encodeURIComponent(season)}` : ""}`}
+          download
+          data-testid="league-ics-link"
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-soft hover:text-foreground transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+            <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+            <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            <path d="M9 14.5l2 2 4-4" />
+          </svg>
+          دانلود تقویم فصل (ICS)
+        </a>
+      </div>
+
       {/* current-week progress (hidden for cup/non-numeric rounds or missing data) */}
       {fixtures?.progress && <SeasonProgress progress={fixtures.progress} />}
 

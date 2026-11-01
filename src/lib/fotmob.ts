@@ -5325,6 +5325,61 @@ export async function getLeagueFixtures(leagueKey: string, season?: string): Pro
   };
 }
 
+// ---------------- cycle-312: full-season league calendar (ICS source) ----------------
+// Probed live (UA Chrome/124): FotMob's league details payload exposes a
+// «canSyncCalendar» capability (true for Premier League / LaLiga / Serie A at
+// probe time) — calendar sync exists upstream, but no REST surface serves it
+// to this site, so the gap is closed from the payload already cached:
+// getLeagueRaw's full-season allMatches (same producer, same payload-derived
+// TTL — zero new upstream requests). Persian names and round labels come from
+// the same normalizer the fixtures tab renders. Cancelled rows are dropped;
+// an unusable season degrades to an honest empty event list.
+export interface CalendarEvent {
+  id: string;
+  utcTime: string;
+  homeFa: string;
+  awayFa: string;
+  round?: string;
+  started: boolean;
+  finished: boolean;
+}
+
+export interface LeagueCalendarData {
+  leagueKey: string;
+  leagueFa: string;
+  season: string;
+  selectedSeason?: string;
+  events: CalendarEvent[];
+}
+
+export async function getLeagueCalendar(leagueKey: string, season?: string): Promise<LeagueCalendarData> {
+  const { lg, raw } = await getLeagueRaw(leagueKey, season);
+  const all = (raw.fixtures?.allMatches || []) as FotMobFixture[];
+  const events: CalendarEvent[] = all
+    .filter((f) => f?.id && f?.home && f?.away && f.status?.utcTime && !f.status?.cancelled)
+    .map((f) => {
+      const n = normalizeFixture(f);
+      return {
+        id: n.id,
+        utcTime: n.utcTime,
+        homeFa: n.home.fa || n.home.name,
+        awayFa: n.away.fa || n.away.name,
+        round: n.round,
+        started: n.started,
+        finished: n.finished,
+      };
+    })
+    .sort((a, b) => a.utcTime.localeCompare(b.utcTime));
+  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  return {
+    leagueKey,
+    leagueFa: lg.faName,
+    season: raw.details?.seasons?.find?.((s) => s.active)?.year || season || "",
+    ...(selectedSeason ? { selectedSeason } : {}),
+    events,
+  };
+}
+
 // ---------------- FotMob: cup knockout bracket (playoff) ----------------
 // cycle-56: raw shapes of the league payload's `playoff` key. Probed live:
 // UCL carries rounds (playoff, 1/8, 1/4, 1/2, final); each matchup holds the
