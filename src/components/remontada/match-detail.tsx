@@ -71,7 +71,9 @@ interface DetailData {
     firstHalf: DetailStatGroup[];
     secondHalf: DetailStatGroup[];
   } | null;
-  lineups: { home: LineupSide | null; away: LineupSide | null } | null;
+  // update cycle-352: predicted mirrors the route's honest lineupType flag —
+  // true only for pre-match predicted XIs ("predicted"), absent otherwise.
+  lineups: { home: LineupSide | null; away: LineupSide | null; predicted?: true } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
     refereeStats?: {
@@ -2575,6 +2577,21 @@ export function MatchDetail({ matchId }: { matchId: string }) {
         {tab === "lineups" &&
           (data.lineups ? (
             <div className="flex flex-col gap-4">
+              {/* update cycle-352: predicted-lineup honesty banner — pre-match
+                  fixtures carry upstream lineupType "predicted" (probed live on
+                  7 fixtures, 2026-11-01); without this flag the predicted XI
+                  masqueraded as the official one. Hidden on standard lineups
+                  (live/finished) and when the cached payload predates the
+                  field (self-heals in ≤25 s, the 257 convention). */}
+              {data.lineups.predicted && (
+                <p
+                  data-testid="match-lineup-predicted"
+                  className="glass-card px-4 py-2.5 text-[11px] leading-5 text-steel"
+                >
+                  <span className="font-black text-gold">ترکیب پیش‌بینی‌شده</span>
+                  {" "}— این ترکیب پیش از بازی، پیش‌بینی فوت‌ماب است و ترکیب رسمی معمولاً ۲۰ تا ۴۰ دقیقه پیش از سوت شروع جایگزین می‌شود.
+                </p>
+              )}
               <LineupsPitch lineups={data.lineups} match={m} />
               {/* cycle-116: «غایبان» — hidden when the payload lacks it */}
               <UnavailableCard lineups={data.lineups} match={m} />

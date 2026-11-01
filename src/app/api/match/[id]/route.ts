@@ -353,7 +353,11 @@ interface FMMatchDetails {
       } | null;
     };
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
-    lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
+    // update cycle-352: lineupType distinguishes the PRE-MATCH predicted XI
+    // ("predicted", probed live UA Chrome/124 on 7 fixtures 2026-11-01) from
+    // the official one ("standard", live/finished) — previously unconsumed,
+    // so predicted lineups masqueraded as official ones on the lineups tab.
+    lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam; lineupType?: string | null } | null;
     momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
     // update cycle-347: the mini-table POINTER (closes the cycle-192
     // documented set-aside) — only a url + the two team ids; the blob itself
@@ -776,7 +780,10 @@ export interface MatchDetailNormalized {
     firstHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
     secondHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
   } | null;
-  lineups: { home: LineupSide | null; away: LineupSide | null } | null;
+  // update cycle-352: predicted=true only when upstream says lineupType
+  // "predicted" (spread — official/standard payloads keep the exact old shape);
+  // absent → the UI renders no predicted banner (honest absence).
+  lineups: { home: LineupSide | null; away: LineupSide | null; predicted?: true } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
     // cycle-115 additive: referee & stadium facts («داور و ورزشگاه») — the
@@ -1492,7 +1499,14 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
         subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, nameFa: playerFa(s.name), shirt: s.shirtNumber || undefined })),
       };
     };
-    lineups = { home: build(lu.homeTeam), away: build(lu.awayTeam) };
+    lineups = {
+      home: build(lu.homeTeam),
+      away: build(lu.awayTeam),
+      // update cycle-352: surface the upstream lineupType honestly — pre-match
+      // fixtures carry "predicted" (probed live on 7 fixtures) and the UI must
+      // say so instead of masquerading the predicted XI as the official one.
+      ...(lu.lineupType === "predicted" ? { predicted: true as const } : {}),
+    };
   }
 
   // ---------------- info box ----------------
