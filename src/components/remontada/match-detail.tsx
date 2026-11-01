@@ -29,6 +29,8 @@ interface DetailMatch {
   finished: boolean;
   cancelled: boolean;
   live: boolean;
+  // update cycle-375: live VAR review pill (strict boolean from the API)
+  hasPendingVAR: boolean;
   minute?: string;
   statusText?: string;
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
@@ -529,6 +531,20 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.live && <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-red-500 me-1.5 align-middle" />}
             {status}
           </span>
+          {/* update cycle-375: live VAR review pill — the last unconsumed
+              matchDetails key (hasPendingVAR) becomes an honest transient
+              badge next to the status chip; hidden unless the feed says true
+              (the 116/257 honest-absence convention). Amber = the referee's
+              review, distinct from the red live dot. */}
+          {m.live && m.hasPendingVAR && (
+            <span
+              data-testid="var-pending"
+              className="inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg px-2.5 py-1 border border-amber-400/30 bg-amber-500/10 text-amber-300 tabular-persian whitespace-nowrap"
+            >
+              <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+              بررسی VAR در جریان است
+            </span>
+          )}
           {/* fix cycle-41: live kickoff countdown for upcoming matches (the
               short «رویدادی ثبت نشده» shell gets a useful heartbeat) */}
           {!m.started && !m.cancelled && !m.finished && <KickoffCountdown utcTime={m.utcTime} />}

@@ -254,6 +254,10 @@ interface FMTopScorerPlayer {
 }
 
 interface FMMatchDetails {
+  // update cycle-375: the one matchDetails key the 367-era key scans never
+  // consumed — a transient live flag (true only while a VAR review is
+  // pending). Optional upstream; normalized to a strict boolean below.
+  hasPendingVAR?: boolean;
   general?: {
     matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
     leagueName?: string; leagueRoundName?: string; countryCode?: string;
@@ -736,6 +740,10 @@ export interface MatchDetailNormalized {
     finished: boolean;
     cancelled: boolean;
     live: boolean;
+    // update cycle-375: live VAR review pill («بررسی VAR در جریان است») —
+    // strict boolean; the UI hides it unless the feed explicitly says true
+    // (honest absence, the 116/257 convention)
+    hasPendingVAR: boolean;
     minute?: string;
     statusText?: string;
     home: { id: number; name: string; fa: string; logo: string; score: number | null };
@@ -2094,6 +2102,7 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
       finished,
       cancelled,
       live,
+      hasPendingVAR: raw.hasPendingVAR === true,
       minute,
       statusText: hs.reason?.long || undefined,
       home,
