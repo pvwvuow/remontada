@@ -13,6 +13,7 @@ import type { Metadata } from "next";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { CoachView } from "@/components/remontada/coach-view";
 import { EmptyState } from "@/components/remontada/empty-state";
+import { JsonLd } from "@/components/remontada/json-ld";
 import { CoachNotFoundError, getCoachData, type CoachData } from "@/lib/fotmob";
 import { RSS_ALTERNATE, SITE_URL } from "@/lib/site";
 
@@ -45,13 +46,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         siteName: "رمانتادا",
         locale: "fa_IR",
         url: `${SITE_URL}/coach/${id}`,
-        images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+        // update cycle-342: the person's own dynamic share card (runtime
+        // next/og render — the /api/og/person family serves players and
+        // coaches; coach id-space rides the same person endpoint).
+        images: [{ url: `/api/og/person/${id}?k=coach`, width: 1200, height: 630, alt: `رمانتادا — ${display}` }],
       },
       twitter: {
         card: "summary_large_image",
         title: `${display} — پروفایل مربی | رمانتادا`,
         description: desc,
-        images: ["/og.png"],
+        images: [`/api/og/person/${id}?k=coach`],
       },
     };
   } catch {
@@ -82,10 +86,28 @@ export default async function CoachPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  // update cycle-342: BreadcrumbList — the coach page was the LAST main
+  // page family without the trail (league/topscorers/team/match/player/news
+  // all ship it: 310/311). Two-item trail (خانه → پروفایل مربی), the news
+  // page pattern (the leaf URL is fixed; the display name rides the same
+  // coach data the page already fetched). Success branch only — the shells
+  // carry no structured data, same contract as the metadata noindex.
+  const coachCrumbLd: Record<string, unknown> | null = coach
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
+          { "@type": "ListItem", "position": 2, "name": "پروفایل مربی", "item": `${SITE_URL}/coach/${id}` },
+        ],
+      }
+    : null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
+        <JsonLd data={coachCrumbLd} />
         {!valid ? (
           <>
             {/* same sr-only Persian h1 pattern as the cycle-84 player shell —

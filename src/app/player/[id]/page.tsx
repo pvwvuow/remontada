@@ -44,7 +44,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         siteName: "رمانتادا",
         locale: "fa_IR",
         url: `${SITE_URL}/player/${id}`,
-        images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+        // update cycle-342: the person's own dynamic share card (runtime
+        // next/og render — name + team + brand, the cycle-341 design) instead
+        // of the generic static og.png; headshots stay rejected (306).
+        images: [{ url: `/api/og/person/${id}?k=player`, width: 1200, height: 630, alt: `رمانتادا — ${display}` }],
       },
       // update cycle-340: twitter alignment — og was page-specific since 306
       // but twitter:title still fell back to the layout default (the exact
@@ -53,7 +56,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
         card: "summary_large_image",
         title: `${display} — پروفایل بازیکن | رمانتادا`,
         description: desc,
-        images: ["/og.png"],
+        images: [`/api/og/person/${id}?k=player`],
       },
     };
   } catch {
