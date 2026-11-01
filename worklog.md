@@ -4658,3 +4658,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=10865 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
 
 **نوبت گردشی بعدی: cycle-317 = آپدیت** (فرمول ((317 mod 5)+1)=۳) — پویش تازه لازم؛ نامزد ثبت‌شده: matchDetails.seo (کلید دیده‌شده ولی باز نشده) با پروب زنده، و coach-level faqJSONLD (اگر پیلوب مربی داشته باشد).
+
+### Task ID: cycle-317 — آپدیت (enrichment LD SportsEvent صفحهٔ مسابقه از matchDetails.seo)
+
+**پویش تازهٔ شکاف (الزام کارت ۳۱۶):** هر دو نامزد ثبت‌شده پروب زنده شدند (UA Chrome/124) — پیلود مربی (playerData?id=78719 مورینیو از اسکواد ۸۶۳۳) faqJSONLD ندارد (کلید غایب — مردود مستند). matchDetails.seo — کلید دیده‌شدهٔ ۳۱۶ — باز شد: eventJSONLD کامل SportsEvent بالادستی با شکل پایدار در ۳ مسابقه از ۲ رقابت (۵۷۹۵۵۰۱ لیورپول-آرسنال، ۵۷۹۵۴۹۶ ویلا-فولام، ۶۱۰۶۴۰۴ UCL آکاتناس). LD انگلیسی خام embed نشد (سنت ۳۱۶ — با SportsEvent فارسیِ موجود تکرار می‌شد)؛ فقط فیلدهای ساختاریافته‌ای که در LD فعلی غایب بودند برداشت شد: location.geo (lat/lng)، PostalAddress کامل (addressCountry+addressLocality)، endDate و eventAttendanceMode. seo.path (اسلاگ) رد شد: تغییر canonical additive نیست.
+
+**اجرا (۲ فایل، افزودنی):** lib/fotmob.ts — شکل seo در FMLdDetails؛ هاروست best-effort در getMatchLdData (geo فقط با هر دو مختصات متناهی، endDate فقط با تاریخ قابل‌پارس، attendanceMode فقط با URL schema.org، country رشته‌ای) + چهار فیلد اختیاری روی MatchLdData؛ همان فراخوانی کش‌شدهٔ matchld:{id} — صفر درخواست بالادستی جدید. match/[id]/page.tsx — بلوک location ارتقا یافت (نام اختیاری، GeoCoordinates، PostalAddress وقتی کشور یا شهر هست؛ رشتهٔ سادهٔ شهر برای ردیف‌های بی‌کشور)، endDate و eventAttendanceMode شرطی. ردیف‌های کش قدیمی (TTL ۶۰ث) یا پیلود بی‌seo دقیقاً LD قبل از ۳۱۷ را می‌سازند.
+
+**اثبات زنده:** SSR /match/5795501 → GeoCoordinates (53.4308, -2.9608 آنفیلد) + PostalAddress England/Liverpool + endDate 18:30Z (شروع 16:30+۲h) + OfflineEventAttendanceMode؛ /match/5795496 → Villa Park/Birmingham/England؛ /match/6106404 → Greece/Athína؛ شناسهٔ ۲۰ رقمی → بدون LD و بدون کرش (کاهش صادقانه). DOM 390×844 fresh-session: h1 «لیورپول در برابر آرسنال — پریمیرلیگ انگلیس»، ۳ بلوک LD سالم (WebSite لایوت + SportsEvent + BreadcrumbList)، overflowX=false، کنسول صفر.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=11743 try=1/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**نوبت گردشی بعدی: cycle-318 = بررسی باگ** (فرمول ((318 mod 5)+1)=۴) — گشت‌زنی صفحات + راستی‌آزمایی 390×844؛ خروجی‌های ۳۱۵-۳۱۷ (پنل فصل کامل، FAQPage تیم، LD مسابقهٔ enriched) در دامنهٔ گشت باشند.

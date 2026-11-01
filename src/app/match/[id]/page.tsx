@@ -87,10 +87,37 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
           { "@type": "SportsTeam", "name": m.homeName, "alternateName": m.homeFa || m.homeName },
           { "@type": "SportsTeam", "name": m.awayName, "alternateName": m.awayFa || m.awayName },
         ],
-        ...(m.stadium
-          ? { "location": { "@type": "Place", "name": m.stadium, ...(m.city ? { "address": m.city } : {}) } }
+        // update cycle-317: location enriched with the structured facts of the
+        // SAME cached payload's seo.eventJSONLD (probed live UA Chrome/124,
+        // PL×2 + UCL×1): GeoCoordinates, a full PostalAddress (country +
+        // city), plus the event's endDate and attendanceMode. The upstream
+        // English LD itself is NOT embedded verbatim (cycle-316 precedent —
+        // it would duplicate the Persian SportsEvent above). All optional —
+        // old cached rows (60s TTL) or seo-less payloads emit exactly the
+        // pre-317 LD. Same getMatchLdData call: zero new upstream requests.
+        ...(m.stadium || m.venueGeo
+          ? {
+              "location": {
+                "@type": "Place",
+                ...(m.stadium ? { "name": m.stadium } : {}),
+                ...(m.venueGeo
+                  ? { "geo": { "@type": "GeoCoordinates", "latitude": m.venueGeo.lat, "longitude": m.venueGeo.lng } }
+                  : {}),
+                ...(m.venueCountry || m.city
+                  ? {
+                      "address": {
+                        "@type": "PostalAddress",
+                        ...(m.venueCountry ? { "addressCountry": m.venueCountry } : {}),
+                        ...(m.city ? { "addressLocality": m.city } : {}),
+                      },
+                    }
+                  : {}),
+              },
+            }
           : {}),
         ...(m.utcTime ? { "startDate": m.utcTime } : {}),
+        ...(m.endDate ? { "endDate": m.endDate } : {}),
+        ...(m.attendanceMode ? { "eventAttendanceMode": m.attendanceMode } : {}),
         ...(m.leagueName ? { "superEvent": { "@type": "SportsEvent", "name": m.leagueName } } : {}),
       };
       const crumbItems: Record<string, unknown>[] = [

@@ -5844,6 +5844,14 @@ export interface MatchLdData {
   // before this cycle (60s TTL) simply skip the league ListItem.
   leagueKey?: string;
   leagueFa?: string;
+  // update cycle-317: structured facts harvested from the SAME matchDetails
+  // payload's seo.eventJSONLD (probed live UA Chrome/124 across PL×2 + UCL×1:
+  // stable shape). All optional — older cached rows (60s TTL) and payloads
+  // without the seo block simply skip the enrichment on the page side.
+  venueGeo?: { lat: number; lng: number };
+  venueCountry?: string;
+  endDate?: string;
+  attendanceMode?: string;
 }
 
 interface FMLdDetails {
@@ -5862,6 +5870,22 @@ interface FMLdDetails {
   content?: {
     matchFacts?: { infoBox?: Record<string, unknown> };
   };
+  // update cycle-317: the seo block (cycle-316 probe note — key seen, never
+  // opened) carries upstream's own SportsEvent LD. The English LD is NOT
+  // embedded verbatim (cycle-316 precedent: it would duplicate the Persian
+  // SportsEvent this page already ships) — only its structured facts are
+  // harvested below to enrich that existing LD.
+  seo?: {
+    eventJSONLD?: {
+      endDate?: string;
+      eventAttendanceMode?: string;
+      location?: {
+        latitude?: number;
+        longitude?: number;
+        address?: { addressCountry?: string; addressLocality?: string } | null;
+      } | null;
+    } | null;
+  } | null;
 }
 
 /** sentinel cached for unknown/dead match ids so 404 spam does not hit FotMob */
@@ -5884,6 +5908,19 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
     if (!home?.name || !away?.name) return LD_NOT_FOUND;
     const infoBox = raw.content?.matchFacts?.infoBox || {};
     const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
+    // update cycle-317: enrich from the same payload's seo.eventJSONLD —
+    // geo (only with BOTH finite coordinates), the address country, a
+    // parseable endDate, and the attendance mode (only schema.org URLs).
+    // Everything best-effort/optional: a payload without seo degrades to
+    // exactly the pre-317 LD, and the SAME cached call feeds it (zero new
+    // upstream requests).
+    const evLd = raw.seo?.eventJSONLD || null;
+    const lat = typeof evLd?.location?.latitude === "number" ? evLd.location.latitude : NaN;
+    const lng = typeof evLd?.location?.longitude === "number" ? evLd.location.longitude : NaN;
+    const geo = Number.isFinite(lat) && Number.isFinite(lng) ? { lat, lng } : undefined;
+    const country = typeof evLd?.location?.address?.addressCountry === "string" ? evLd.location.address.addressCountry : undefined;
+    const endDate = typeof evLd?.endDate === "string" && evLd.endDate && !Number.isNaN(new Date(evLd.endDate).getTime()) ? evLd.endDate : undefined;
+    const att = typeof evLd?.eventAttendanceMode === "string" && evLd.eventAttendanceMode.startsWith("https://schema.org/") ? evLd.eventAttendanceMode : undefined;
     // update cycle-311: resolve the league hop from the same ids the league
     // pages key on (parent first — a cup match points at its parent league)
     const lgCfg = LEAGUES.find((l) => l.fotmobId === (g?.parentLeagueId || g?.leagueId));
@@ -5905,6 +5942,11 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
       // update cycle-311: league hop (absent in old cached rows → skipped)
       leagueKey: lgCfg?.key,
       leagueFa: lgCfg?.faName,
+      // update cycle-317: seo.eventJSONLD harvest (absent in old cached rows → skipped)
+      venueGeo: geo,
+      venueCountry: country,
+      endDate,
+      attendanceMode: att,
     };
   });
   if (!payload || typeof payload !== "object") return null;
