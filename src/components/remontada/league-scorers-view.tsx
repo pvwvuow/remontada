@@ -5,6 +5,11 @@
 // Full ranked list of one league with rich badges (assists / G+A / xG
 // / rating / minutes-per-goal). Phase 3 theme: glass scoring-chart
 // poster — leader hero tile + pill-ranked rows (studio look).
+// cycle-371: every decimal pill renders the Persian decimal separator
+// ٫ (U+066B) via faDecimal — the portal-wide 369/370 convention reaches
+// the dir=ltr mirror file; per-board toFixed precision is unchanged
+// (the ASCII dot between Persian numerals was the 368 finding's last
+// holdout).
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -13,7 +18,7 @@ import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
 import { PlayerPhoto } from "@/components/remontada/player-photo";
-import { faDigits, timeAgoFa } from "@/lib/format";
+import { faDigits, faDecimal, timeAgoFa } from "@/lib/format";
 import { SEASON_PARAM_RE } from "@/lib/season";
 import { cn } from "@/lib/utils";
 
@@ -307,16 +312,16 @@ function ScorerBadges({ s }: { s: ScorerEntry }) {
     badges.push({ label: `${faDigits(s.gPlusA)} گل+پاس`, cls: "bg-primary/10 border-primary/25 text-primary", title: "مجموع گل و پاس گل" });
   }
   if (s.rating != null && s.rating > 0) {
-    badges.push({ label: `ریتینگ ${faDigits(s.rating.toFixed(1))}`, cls: "bg-chart-3/10 border-chart-3/25 text-chart-3", title: "میانگین امتیاز فوت‌ماب" });
+    badges.push({ label: `ریتینگ ${faDecimal(s.rating.toFixed(1))}`, cls: "bg-chart-3/10 border-chart-3/25 text-chart-3", title: "میانگین امتیاز فوت‌ماب" });
   }
   if (s.xg != null && s.xg > 0) {
-    badges.push({ label: `xG ${faDigits(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
+    badges.push({ label: `xG ${faDecimal(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
   }
   // cycle-230 additive: the xA badge — the assist-side twin of the xG badge
   // (season-total from the "Expected assist (xA)" category, matched by
   // player id; one decimal, the 226 display convention)
   if (s.xa != null && s.xa > 0) {
-    badges.push({ label: `xA ${faDigits(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
+    badges.push({ label: `xA ${faDecimal(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
   }
   // cycle-231 additive: the big-chances badge — the creation-volume twin
   // (season-total from the "Big chances created" category, matched by
@@ -329,7 +334,7 @@ function ScorerBadges({ s }: { s: ScorerEntry }) {
   // category, matched by player id; one decimal, the 226/230 display
   // convention)
   if (s.xgot != null && s.xgot > 0) {
-    badges.push({ label: `xGOT ${faDigits(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
+    badges.push({ label: `xGOT ${faDecimal(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
   }
   if (s.chancesCreated != null && s.chancesCreated > 0) {
     badges.push({ label: `${faDigits(s.chancesCreated)} فرصت‌سازی`, cls: "bg-muted border-border text-muted-foreground", title: "فرصت‌های خلق‌شده" });
@@ -781,7 +786,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.rating.toFixed(2))}
+                    {faDecimal(r.rating.toFixed(2))}
                   </span>
                 </>
               );
@@ -811,7 +816,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           (laliga 389 / ucl 479 rows), persiangulf honestly absent (no xG
           category). Decimal values kept VERBATIM — the family's FIFTH
           non-integer member (the 210/217/221/222 decimal convention — 12.2
-          renders «۱۲.۲»); upstream precision is EXACTLY one decimal (probed:
+          renders «۱۲٫۲»); upstream precision is EXACTLY one decimal (probed:
           all 389 laliga rows) so the pill renders toFixed(1), dir=ltr — the
           217 display rule. SEASON-AWARE (the 124/175/185 class, NOT the 132
           one): historical views serve their OWN files (the 2020/21 laliga
@@ -846,7 +851,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.xg.toFixed(1))}
+                    {faDecimal(r.xg.toFixed(1))}
                   </span>
                 </>
               );
@@ -883,7 +888,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           BECAUSE of that) → pg renders its FIRST-EVER team block;
           mas's first feed category serves too (its THIRD team-surface
           after 240/245). 1-decimal values → the 241 toFixed(1) dir=ltr
-          convention verbatim (4.0 renders «۴.۰», no appended sign).
+          convention verbatim (4.0 renders «۴٫۰», no appended sign).
           Upstream Rank keeps COMPETITION ties verbatim — the merge
           re-ranks POSITIONALLY. SEASON-AWARE: the 2020/21 laliga raw
           serves its OWN file (Barcelona 2.2 / the 1.8 Atletico+Real
@@ -921,7 +926,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.teamGoalsPerMatch.toFixed(1))}
+                    {faDecimal(r.teamGoalsPerMatch.toFixed(1))}
                   </span>
                 </>
               );
@@ -1033,7 +1038,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           persiangulf AND mas honestly absent (no "Expected goals" team
           category). Decimal 1-fraction (probed maxdec=1 on every serving
           file) → the 210/217/226/230/232 VERBATIM-decimal convention:
-          the pill renders toFixed(1), dir=ltr (34.8 renders «۳۴.۸”).
+          the pill renders toFixed(1), dir=ltr (34.8 renders «۳۴٫۸»).
           SEASON-AWARE: the 2020/21 laliga raw serves its OWN file
           (Barcelona 74.3 / Real Madrid 62.3 — frozen, the 202 anchor
           pattern). The honest-name contract rides the EXISTING teamFa
@@ -1068,7 +1073,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.teamXg.toFixed(1))}
+                    {faDecimal(r.teamXg.toFixed(1))}
                   </span>
                 </>
               );
@@ -1174,7 +1179,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           carries FOUR team categories and possession is not one).
           PERCENT 1-fraction (probed maxdec=1, StatFormat percent) → the
           221 percent convention VERBATIM: the pill renders toFixed(1)
-          dir=ltr (69.4 renders «۶۹.۴») with NO appended percent sign.
+          dir=ltr (69.4 renders «۶۹٫۴») with NO appended percent sign.
           SEASON-AWARE: the 2020/21 laliga raw serves its OWN file
           (Barcelona 65.8 / Sevilla 61.2 — frozen, the 202 anchor
           pattern). The honest-name contract rides the EXISTING teamFa
@@ -1209,7 +1214,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.teamPossession.toFixed(1))}
+                    {faDecimal(r.teamPossession.toFixed(1))}
                   </span>
                 </>
               );
@@ -1381,7 +1386,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           category — the Gulf's 5 player cats). Decimal values kept
           VERBATIM — the family's EIGHTH non-integer member (the
           210/217/221/222/226/227/230 decimal convention — 12.8 renders
-          «۱۲.۸»); upstream precision is EXACTLY one decimal (probed
+          «۱۲٫۸»); upstream precision is EXACTLY one decimal (probed
           decimal-counts=[1] on every serving file AND the historical raw)
           so the pill renders toFixed(1), dir=ltr — the 217 display rule.
           SEASON-AWARE (the 124/175/185/226/227/230/231 class): historical
@@ -1421,7 +1426,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.xgot.toFixed(1))}
+                    {faDecimal(r.xgot.toFixed(1))}
                   </span>
                 </>
               );
@@ -1489,7 +1494,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.goalsPer90.toFixed(2))}
+                    {faDecimal(r.goalsPer90.toFixed(2))}
                   </span>
                 </>
               );
@@ -1549,7 +1554,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.shotsPer90.toFixed(1))}
+                    {faDecimal(r.shotsPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1609,7 +1614,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.accuratePassesPer90.toFixed(1))}
+                    {faDecimal(r.accuratePassesPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1670,7 +1675,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.longBallsPer90.toFixed(1))}
+                    {faDecimal(r.longBallsPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1727,7 +1732,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.tacklesPer90.toFixed(1))}
+                    {faDecimal(r.tacklesPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1785,7 +1790,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.interceptionsPer90.toFixed(1))}
+                    {faDecimal(r.interceptionsPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1847,7 +1852,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.recoveriesPer90.toFixed(1))}
+                    {faDecimal(r.recoveriesPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -1880,7 +1885,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           ligue1 422 Thauvin 3.8 rows), persiangulf AND mas honestly absent
           (no xA category). Decimal values kept VERBATIM — the family's
           SEVENTH non-integer member (the 210/217/221/222/226/227 decimal
-          convention — 13.4 renders «۱۳.۴»); upstream precision is EXACTLY
+          convention — 13.4 renders «۱۳٫۴»); upstream precision is EXACTLY
           one decimal (probed maxdec=1 on every serving file) so the pill
           renders toFixed(1), dir=ltr — the 217 display rule. SEASON-AWARE
           (the 124/175/185/226/227 class): historical views serve their OWN
@@ -1917,7 +1922,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.xa.toFixed(1))}
+                    {faDecimal(r.xa.toFixed(1))}
                   </span>
                 </>
               );
@@ -2223,7 +2228,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           persiangulf honestly absent (no keeper category at all);
           2025/26 frozen anchor Joan García 77.9 / Soria 75.6 / Escandell
           72.5). Percent values with one decimal kept VERBATIM (the
-          210/217 decimal convention — 82.5 renders «۸۲.۵»), so the value
+          210/217 decimal convention — 82.5 renders «۸۲٫۵»), so the value
           pill is Persian digits WITH dir=ltr (the decimal contract, same
           as امتیازها and گل‌های پیشگیری‌شده). The file's ucl competition
           tie-ranks (1,2,3,3,5,6) are honest upstream data but the served
@@ -2258,7 +2263,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.savePercentage.toFixed(1))}
+                    {faDecimal(r.savePercentage.toFixed(1))}
                   </span>
                 </>
               );
@@ -2289,7 +2294,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
           (no keeper category at all); 2025/26 frozen anchor Aarón Escandell
           4.1 / Dmitrović 3.6 / Ryan 3.5). Per-90 decimal values with one
           decimal kept VERBATIM (the 210/217/221 decimal convention — 4.3
-          renders «۴.۳»), so the value pill is Persian digits WITH dir=ltr
+          renders «۴٫۳»), so the value pill is Persian digits WITH dir=ltr
           (the decimal contract, same as امتیازها / گل‌های پیشگیری‌شده /
           درصد سیو). The file's ucl competition tie-ranks (1,1,3,4,5,5,7,
           8,8,10) are honest upstream data but the served top-10 re-ranks
@@ -2323,7 +2328,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.savesPer90.toFixed(1))}
+                    {faDecimal(r.savesPer90.toFixed(1))}
                   </span>
                 </>
               );
@@ -2436,7 +2441,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                     {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
                   </span>
                   <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
-                    {faDigits(r.goalsPrevented.toFixed(1))}
+                    {faDecimal(r.goalsPrevented.toFixed(1))}
                   </span>
                 </>
               );
