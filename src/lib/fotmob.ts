@@ -6693,6 +6693,16 @@ interface FMPlayerDetails {
       startDate?: string | null; endDate?: string | null;
       matches?: number; wins?: number; draws?: number; losses?: number;
     } | null;
+    // cycle-345 probed live (UA Chrome/124, coach 30889): per-tenure bench
+    // records. Dates ride {utcTime} objects here (activeCareerEntry's are
+    // null anyway) and winPercentage/pointsPerGame come precomputed.
+    historicalCareerEntries?: {
+      teamId?: number; teamName?: string;
+      startDate?: { utcTime?: string } | null;
+      endDate?: { utcTime?: string } | null;
+      matches?: number; wins?: number; draws?: number; losses?: number;
+      winPercentage?: number; pointsPerGame?: number;
+    }[] | null;
   } | null;
   // cycle-86 probed: explicit false for non-captains, absent on some payloads
   isCaptain?: boolean;
@@ -10734,7 +10744,26 @@ export interface CoachData {
     matches: number; wins: number; draws: number; losses: number;
   } | null;
   career: CoachStint[];
+  // cycle-345: per-tenure bench record («کارنامه‌ی نیمکت‌های قبلی») — the
+  // coachStats.historicalCareerEntries block the payload always carried but
+  // the site never surfaced. Past benches only: the active bench has its own
+  // dedicated record card, so zero duplication.
+  tenures: CoachTenure[];
   trophies: { teamName: string; leagueName: string; seasonsWon: string[]; runnerUp: number }[];
+}
+
+export interface CoachTenure {
+  teamId: number;
+  fa: string;
+  logo: string;
+  from: string; // start year ("" unknown)
+  to: string;   // end year ("" unknown)
+  matches: number;
+  wins: number;
+  draws: number;
+  losses: number;
+  winPct: number | null; // whole-number win percentage (upstream, else W/D/L math)
+  ppg: number | null;    // points per game, 2 decimals (upstream, else computed)
 }
 
 function coachInfoRow(raw: FMPlayerDetails, translationKey: string): { text: string | null; num: number | null } {
@@ -10759,7 +10788,7 @@ function coachInfoRow(raw: FMPlayerDetails, translationKey: string): { text: str
  */
 export async function getCoachData(id: string): Promise<CoachData> {
   if (!/^\d{3,12}$/.test(id)) throw new CoachNotFoundError(`bad coach id: ${id}`);
-  const payload = await cached(`coach:v2:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
+  const payload = await cached(`coach:v4:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id || raw.isCoach !== true) return PLAYER_NOT_FOUND;
@@ -10794,6 +10823,48 @@ export async function getCoachData(id: string): Promise<CoachData> {
         active: !!e.active,
       }));
 
+    // cycle-345: per-tenure bench records from coachStats.historicalCareerEntries
+    // — every past bench with its real W/D/L, win percentage and points-per-game
+    // (data the payload always carried but nothing surfaced). Probed live on
+    // 30889: upstream ALSO lists the ONGOING stint inside historical (Chelsea,
+    // endDate null) — entries without an endDate are dropped so the current
+    // bench stays the exclusive property of the record card above (zero
+    // duplication). winPct/ppg prefer the upstream values, falling back to
+    // W/D/L math when upstream omits them.
+    const tenures: CoachTenure[] = (raw.coachStats?.historicalCareerEntries || [])
+      .filter((e) => e && e.teamId && e.teamName && Number(e.matches || 0) > 0 && e.endDate?.utcTime)
+      .map((e) => {
+        const m = Number(e.matches || 0);
+        const w = Number(e.wins || 0);
+        const d = Number(e.draws || 0);
+        const l = Number(e.losses || 0);
+        const winPct =
+          typeof e.winPercentage === "number" && Number.isFinite(e.winPercentage)
+            ? Math.round(e.winPercentage)
+            : m > 0
+              ? Math.round((w / m) * 100)
+              : null;
+        const ppg =
+          typeof e.pointsPerGame === "number" && Number.isFinite(e.pointsPerGame)
+            ? Math.round(e.pointsPerGame * 100) / 100
+            : m > 0
+              ? Math.round(((3 * w + d) / m) * 100) / 100
+              : null;
+        return {
+          teamId: Number(e.teamId),
+          fa: teamFa(String(e.teamName)) || String(e.teamName),
+          logo: fotmobTeamLogo(Number(e.teamId)),
+          from: e.startDate?.utcTime ? String(e.startDate.utcTime).slice(0, 4) : "",
+          to: e.endDate?.utcTime ? String(e.endDate.utcTime).slice(0, 4) : "",
+          matches: m,
+          wins: w,
+          draws: d,
+          losses: l,
+          winPct,
+          ppg,
+        };
+      });
+
     // shared trophies block — the player-honours normalization, reused
     const trophies: CoachData["trophies"] = [];
     for (const pt of raw.trophies?.playerTrophies || []) {
@@ -10818,6 +10889,7 @@ export async function getCoachData(id: string): Promise<CoachData> {
       countryEn: country.text,
       team,
       career,
+      tenures,
       trophies: trophies.slice(0, 12),
     };
   });

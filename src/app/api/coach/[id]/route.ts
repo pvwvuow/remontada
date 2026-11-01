@@ -1,6 +1,7 @@
 // ------------------------------------------------------------------
 // Remontada — /api/coach/[id]
-// Coach profile (current bench record + stints + honours) from FotMob
+// Coach profile (current bench record + stints + per-tenure bench history
+// [cycle-345] + honours) from FotMob
 // playerData (the coach id-space rides the player endpoint — cycle-255
 // probe: Xabi Alonso 30889). Guards mirror /api/player/[id]: unknown or
 // non-coach ids → real 404; upstream/network failures → 502.

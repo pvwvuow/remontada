@@ -192,6 +192,73 @@ export function CoachView({ c }: { c: CoachData }) {
         </section>
       )}
 
+      {/* ---------- per-tenure bench records (cycle-345 «کارنامه‌ی نیمکت‌های قبلی») ----------
+          Past benches only — the active bench's numbers already live in the
+          dedicated record card above, so nothing renders twice. Rows carry the
+          real W/D/L, the win-rate bar and points-per-game; years stay in the
+          «سوابق هدایت» list directly above. Sections hide when the payload
+          lacks the block (first-time coaches). */}
+      {c.tenures.length > 0 && (
+        <section className="glass-card overflow-hidden" aria-label="کارنامه نیمکت‌های قبلی" data-testid="coach-tenures">
+          <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center gap-2 text-[12px] font-black">
+            <span className="font-black text-[12px] text-[#ecf3fa]">کارنامه نیمکت‌های قبلی</span>
+            <span className="ms-auto text-[10px] font-bold text-steel/85 tabular-persian">
+              {faDigits(c.tenures.length)} نیمکت
+            </span>
+          </header>
+          <div className="glass-list">
+            {c.tenures.map((t, i) => (
+              <Link
+                key={`${t.teamId}-${i}`}
+                href={`/team/${t.teamId}`}
+                className="group flex items-center gap-3 px-4 py-2.5 glass-row-hover transition-colors"
+                prefetch={false}
+              >
+                <TeamLogo id={t.teamId} alt="" size={22} />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-bold text-[#e6f0fb] truncate" dir="auto">
+                    {t.fa}
+                  </p>
+                  <p className="text-[9.5px] text-steel/85 tabular-persian mt-0.5">
+                    {faDigits(t.matches)} بازی
+                    {" · "}
+                    <span className="text-emerald-300">{faDigits(t.wins)} برد</span>
+                    {" · "}
+                    {faDigits(t.draws)} مساوی
+                    {" · "}
+                    <span className="text-rose-300">{faDigits(t.losses)} باخت</span>
+                  </p>
+                </div>
+                <div className="shrink-0 flex flex-col items-end gap-1.5 w-[92px]">
+                  {t.winPct != null && (
+                    <div
+                      className="w-full flex items-center gap-1.5"
+                      role="img"
+                      aria-label={`درصد برد در ${t.fa}: ${faDigits(t.winPct)} درصد`}
+                    >
+                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.07] overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-400/70"
+                          style={{ width: `${Math.min(100, Math.max(0, t.winPct))}%` }}
+                        />
+                      </div>
+                      <span className="text-[9.5px] font-black text-emerald-300 tabular-persian">
+                        {faDigits(t.winPct)}٪
+                      </span>
+                    </div>
+                  )}
+                  {t.ppg != null && (
+                    <span className="text-[9px] font-bold text-steel/85 tabular-persian">
+                      {faDigits(t.ppg.toFixed(2))} امتیاز در بازی
+                    </span>
+                  )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
       {/* ---------- honours ---------- */}
       {c.trophies.length > 0 && (
         <section className="glass-card overflow-hidden" aria-label="افتخارات" data-testid="coach-trophies">
