@@ -86,7 +86,7 @@ function FixtureRow({ f, showResult, showDate }: { f: NormFixture; showResult: b
       <div className="flex flex-col items-center min-w-[86px]">
         {showResult ? (
           <span className="font-black text-sm tabular-persian text-[#e0efff] bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] rounded-lg px-2.5 py-0.5">
-            {f.home.score ?? "—"} : {f.away.score ?? "—"}
+            {faDigits(f.home.score ?? "—")} : {faDigits(f.away.score ?? "—")}
           </span>
         ) : (
           <span className="text-[11px] font-black text-foreground/80 tabular-persian">

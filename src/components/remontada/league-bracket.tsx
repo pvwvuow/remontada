@@ -21,7 +21,7 @@ function LegRow({ leg, isFinal }: { leg: BracketLeg; isFinal: boolean }) {
       </span>
       <span className={cn("flex flex-col items-center min-w-[58px] shrink-0")}>
         <span className={cn("font-black text-[12.5px] tabular-persian rounded-md px-2 py-0.5 border", leg.finished ? "text-[#e0efff] bg-[#a9cdf611] border-[color:var(--glass-border-soft)]" : "text-foreground/70 bg-white/[0.03] border-[color:var(--glass-border-soft)]")}>
-          {leg.home.score ?? "—"} : {leg.away.score ?? "—"}
+          {faDigits(leg.home.score ?? "—")} : {faDigits(leg.away.score ?? "—")}
         </span>
       </span>
       <span className={cn("flex items-center gap-1.5 min-w-0 font-semibold text-[12px]", homeWin && "text-muted-foreground/80", awayWin && "text-[#eaf4ff]")}>

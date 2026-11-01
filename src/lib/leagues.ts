@@ -631,6 +631,10 @@ const TEAM_FA: Record<string, string> = {
   "dortmund": "دورتموند", "eintracht frankfurt": "اینتراخت‌فرانکفورت", "frankfurt": "فرانکفورت",
   "freiburg": "فرایبورگ", "hamburger sv": "هامبورگ", "hamburg": "هامبورگ",
   "heidenheim": "هایدنهایم", "hoffenheim": "هوفنهایم", "fc cologne": "کلن",
+  // cycle-379 (bug-hunt 378 finding F2): the dfbpokal R16 tie at BOTH matchup
+  // and leg level leaked Latin «Darmstadt» — the display name upstream is the
+  // bare «Darmstadt» (short SVD), so the key is the bare spelling.
+  "darmstadt": "دارمشتات", "sv darmstadt 98": "دارمشتات",
   "köln": "کلن", "koln": "کلن", "rb leipzig": "لایپزیش", "leipzig": "لایپزیش",
   "bayer leverkusen": "لورکوزن", "leverkusen": "لورکوزن", "mainz": "ماینتس",
   "st. pauli": "سنت‌پائولی", "vfb stuttgart": "اشتوتگارت", "stuttgart": "اشتوتگارت",
