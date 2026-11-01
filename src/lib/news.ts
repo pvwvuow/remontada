@@ -4,9 +4,9 @@
 // The producer is the EXACT code that lived in src/app/api/news/route.ts
 // (cycles 57–138), moved here so TWO routes can share ONE cached
 // instance: /api/news (the page feed) and /api/search (the cycle-202
-// «خبرها» index). Cache key `news:v2` (bumped from v1 by fix cycle-294:
-// the v1 row was poisoned by an empty-outage snapshot — an empty feed
-// used to be cached as a fresh 15-min success), same 15-min TTL, same
+// «خبرها» index). Cache key `news:v3` (v1→v2 by fix cycle-294 to shed the
+// poisoned empty-outage row; v2→v3 by update cycle-305 for the fetchedAt
+// payload shape — see loadNewsFeed below), same 15-min TTL, same
 // translation stage — zero behavior change for the feed route.
 //
 // cycle-202: the header search never covered the news page — 16
@@ -199,7 +199,7 @@ async function loadNews(): Promise<NewsItem[]> {
   // fix cycle-304 (this cycle's patrol finding): Sky's rss/12040 is the
   // ALL-sports Sky Sports News wire — boxing (Canelo) and horse-racing
   // (Breeders' Cup) items were landing on a football-only portal; since
-  // /news and /rss.xml share this same cached instance (news:v2), both
+  // /news and /rss.xml share this same cached instance (news:v3), both
   // leaked identically. Keep a Sky item only when its link lives under
   // skysports.com/football/ — the /watch/video desk (source of the racing
   // leak) and the other-sport sections are dropped. BBC (feeds.bbci.co.uk/
@@ -231,7 +231,7 @@ async function loadNews(): Promise<NewsItem[]> {
   // be cached as a fresh 15-min "good" answer and lock every consumer
   // (page snapshot, /api/news, warm search fold) out of real data for the
   // whole window. Throwing instead routes the failure through cached()'s
-  // cycle-42 stale-while-error: the last known non-empty news:v2 snapshot
+  // cycle-42 stale-while-error: the last known non-empty news:v3 snapshot
   // is served WITHOUT being re-cached as fresh, and a true cold start
   // surfaces the honest 502 to the client.
   if (deduped.length === 0) {
@@ -242,12 +242,37 @@ async function loadNews(): Promise<NewsItem[]> {
   return deduped;
 }
 
-/** the shared producer — /api/news and searchNews both ride this entry */
-export function getNewsFeed(): Promise<NewsItem[]> {
-  // fix cycle-294: key bumped v1 -> v2 to shed the empty-outage row that
-  // was already sitting in L2 (an L2 fresh hit bypasses the producer, so
-  // the throw guard alone could not clear a poisoned row)
-  return cached("news:v2", 15 * 60_000, loadNews);
+/** update cycle-305: the cached payload now carries its own birth timestamp,
+ *  so consumers can show a real feed age instead of guessing from item dates */
+export interface NewsFeed {
+  items: NewsItem[];
+  fetchedAt: string; // ISO — set once per producer run: the moment upstream
+  // was actually re-fetched. Because cached() falls back to the last
+  // snapshot on error (cycle-42 stale-while-error), this timestamp honestly
+  // reports the feed's true age even while serving stale data.
+}
+
+function loadNewsFeed(): Promise<NewsFeed> {
+  // update cycle-305: key bumped v2 -> v3 — the cached value shape changed
+  // from a bare NewsItem[] to {items, fetchedAt}; old v2 rows are shape-
+  // incompatible, the bump sheds them cleanly (same move as fix cycle-294,
+  // which bumped v1 -> v2 to shed the empty-outage row).
+  return cached("news:v3", 15 * 60_000, async (): Promise<NewsFeed> => ({
+    items: await loadNews(),
+    fetchedAt: new Date().toISOString(),
+  }));
+}
+
+/** the shared producer — /api/news and searchNews both ride this entry;
+ *  signature unchanged for every existing caller (cycle-305 additive rule) */
+export async function getNewsFeed(): Promise<NewsItem[]> {
+  return (await loadNewsFeed()).items;
+}
+
+/** update cycle-305: full-payload accessor — /api/news forwards the honest
+ *  fetchedAt and the /news client view renders «به‌روزرسانی فید» from it */
+export async function getNewsFeedMeta(): Promise<NewsFeed> {
+  return loadNewsFeed();
 }
 
 // ---------------- cycle-202: news joins the header search ----------------
@@ -262,7 +287,7 @@ export interface NewsSearchResult {
   hl?: { fa: [number, number] | null; en: [number, number] | null };
 }
 
-/** cycle-202: WARM-ONLY fold of the news:v2 feed — search must NEVER
+/** cycle-202: WARM-ONLY fold of the news:v3 feed — search must NEVER
  *  trigger the ~20s cold producer inside a keystroke request, so an
  *  absent/expired cache answers [] (honest absence; the section hides).
  *  Normalized on BOTH titles (the Persian one the portal displays and
@@ -270,10 +295,11 @@ export interface NewsSearchResult {
 export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult[]> {
   const nq = normalizeQuery(q);
   if (nq.length < 2) return [];
-  const hit = await cacheGetDeep<NewsItem[]>("news:v2");
+  // update cycle-305: the cached row is now {items, fetchedAt} — read .items
+  const hit = await cacheGetDeep<NewsFeed>("news:v3");
   if (!hit || hit.stale) return [];
   const scored: { it: NewsItem; score: number }[] = [];
-  for (const it of hit.value) {
+  for (const it of hit.value.items) {
     const faHay = normalizeQuery(it.titleFa || "");
     const enHay = normalizeQuery(it.title || "");
     let score = -1;

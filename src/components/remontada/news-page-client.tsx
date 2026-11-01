@@ -55,6 +55,7 @@ function CountBadge({ n, active }: { n: number; active: boolean }) {
 
 export function NewsPageClient() {
   const [items, setItems] = useState<ClientNewsItem[]>([]);
+  const [fetchedAt, setFetchedAt] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [source, setSource] = useState<string>(ALL);
   const [league, setLeague] = useState<string>(ALL);
@@ -65,7 +66,13 @@ export function NewsPageClient() {
     try {
       const res = await fetch("/api/news", { cache: "no-store" });
       const json = await res.json();
-      if (json.ok) setItems(json.items || []);
+      if (json.ok) {
+        setItems(json.items || []);
+        // update cycle-305: the API's fetchedAt is the feed's real birth
+        // time (producer run) — the status line renders «به‌روزرسانی فید»
+        // from it, the /news sibling of the cycle-43 freshness labels.
+        setFetchedAt(typeof json.fetchedAt === "string" ? json.fetchedAt : "");
+      }
     } catch {
       // keep old
     } finally {
@@ -191,6 +198,16 @@ export function NewsPageClient() {
         {newestItem && !loading && (
           <span className="whitespace-nowrap">
             جدیدترین: {timeAgoFa(newestItem.publishedAt)}
+          </span>
+        )}
+        {/* update cycle-305: feed-freshness label — the last honest missing
+            spot of the cycle-43 pattern (topscorers/league/team carry their
+            data age; /news never showed when its feed was actually fetched).
+            Value = the producer run time, so a stale-while-error window shows
+            the TRUE growing age, never a fake fresh label. */}
+        {fetchedAt && !loading && (
+          <span className="whitespace-nowrap tabular-persian">
+            به‌روزرسانی فید: {timeAgoFa(fetchedAt)}
           </span>
         )}
       </div>

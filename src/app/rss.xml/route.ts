@@ -5,7 +5,7 @@
 // fold, LD ItemList) but NO distribution surface: no rss/atom/feed
 // route existed anywhere in the app (probed cycle-295). This closes
 // that gap with the standard feed readers expect, reusing the SAME
-// 15-min cached producer (getNewsFeed → news:v2, whose cycle-294
+// 15-min cached producer (getNewsFeed → news:v3, whose cycle-294
 // empty-outage guard this feed inherits for free: an upstream cold
 // outage surfaces as the honest 502 here too, never an empty channel).
 //
