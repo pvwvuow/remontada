@@ -4922,3 +4922,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **یادداشت عملیاتی برای کاربر:** بعد از اولین استقرار واقعی روی Vercel، canonical ها خودبه‌خود به دامنهٔ همان استقرار می‌روند (بدون هیچ تغییری)؛ اگر دامنهٔ سفارشی دارید همان یک خط NEXT_PUBLIC_SITE_URL در .env کافی است. تا آن زمان خروجی محلی/پیش‌فرض دست‌نخورده است.
 
 **نوبت گردشی بعدی: cycle-335 = آپدیت** (فرمول ((335 mod 5)+1)=۱).
+
+### Task ID: PROTOCOL-recovery (2026-11-01 15:15) — نهمین بازیافت کانتینر
+
+**علائم (امضای کامل شناخته‌شده):** سلامت **500**؛ HEAD محلی سقوط به **52169b7** (کامیت عصر ۴۴ — ۲۹۰ چرخه عقب!)؛ درخت «کثیف» فقط-mode-change (۱۳۷ فایل، ۰ insertions)؛ اسکریپت start بیرونی حذف؛ sync بیرونی گیت تازگی از دست رفته (count=0)؛ توکن ۴۰ بایتی سالم ولی مود ۷۵۵. origin/main جلو: **5af4fd4** (کارت ۳۳۳+۳۳۴ سالم).
+
+**اجرا (طبق canonical scripts/protocol-recovery.sh):** کلون تازه از origin/main با توکن remote-token.txt → HEAD=5af4fd4 ✓ → تعویض دایرکتوری (کهنه → remontada.stale-<ts>) → بازنشانی اسکریپت‌های بیرونی start/sync/cycle17 از کپی‌های canonical مخزن + chmod 600 توکن → ‏bun install --frozen-lockfile (۸۲۷ بسته) → ‏DATABASE_URL صریح (file:./dev.db) → ‏prisma db push + generate → ‏bun run build (**58/58**، 12s) → استارت فقط با scripts/start-remontada.sh (**try=2/200**, pid=1683) → رگرسیون BASE=http://localhost:3000 صریح **28/28**.
+
+**گیت تازگی:** ‏grep -c "FRESHNESS GATE" بیرونی = **1** ✓ (از کپی مخزن بازنشانی شد).
+
+**لنگرهای دوره روی کلون تازه — همگی سبز:** ۲۹۵ لنگر «فید RSS» در /news؛ ۳۰۴ ‏/rss.xml=200 با صفر boxing/racing؛ ۳۰۱ اولین shortcut مانیفست «جستجو»؛ ۳۰۰ ‏SearchAction در LD خانه؛ ۳۲۲ ‏Place LD در /team/8633؛ ۳۲۵ «آمار فصل‌به‌فصل» در /player/696679؛ SportsEvent در /match/5795501؛ لنگر ۳۲۹ — ‏/league/pl ‏۱۷/۱۷ + home «جدول لیگ‌ها» ‏۱۱/۱۱ th scope="col" (جمع ۲۸/۲۸) در 390×844.
+
+**دست‌نخورده:** آخرین کارت = cycle-334 → نوبت گردشی طبق فرمول: **cycle-335 = آپدیت** (((335 mod 5)+1)=۱) — در همین نشست با کارت جداگانه.
