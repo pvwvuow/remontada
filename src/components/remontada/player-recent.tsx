@@ -9,7 +9,7 @@
 // ------------------------------------------------------------------
 import Link from "next/link";
 import { useState } from "react";
-import type { PlayerRecentMatch, PlayerRecentSide } from "@/lib/fotmob";
+import type { PlayerRecentMatch, PlayerRecentSide, PlayerLogLeague } from "@/lib/fotmob";
 import { faDigits, jalaliShort } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { TeamLogo } from "./team-logo";
@@ -39,20 +39,45 @@ function ResultBadge({ r }: { r: "W" | "D" | "L" }) {
 export function RecentMatchesSection({
   recent,
   teams,
+  logLeagues,
 }: {
   recent: PlayerRecentMatch[];
   teams: PlayerRecentSide[];
+  logLeagues: PlayerLogLeague[];
 }) {
   const [team, setTeam] = useState<number | null>(null);
   const [all, setAll] = useState(false);
+  // cycle-355: the competition filter («فیلتر مسابقات») — composes with the
+  // side filter as AND. Picking a side resets it so a hidden league can
+  // never strand the list at an empty state (every visible chip is backed
+  // by ≥1 row of the current side view).
+  const [league, setLeague] = useState<number | null>(null);
 
-  const filtered = team ? recent.filter((m) => m.sideId === team) : recent;
+  const teamRows = team ? recent.filter((m) => m.sideId === team) : recent;
+  const filtered = league ? teamRows.filter((m) => m.leagueId === league) : teamRows;
   const visible = all ? filtered : filtered.slice(0, SHOWN);
   const multiSide = teams.length > 1;
 
+  // league chips: the server set (upstream matchFilters.leagues ∩ rows)
+  // keeps name + order; counts are recomputed against the CURRENT side
+  // view so a chip never shows a number the list can't back. The row only
+  // renders when the current view spans >1 competition (a single-league
+  // archive needs no filter).
+  const viewLeagueIds = new Set(
+    teamRows.map((m) => m.leagueId).filter((id): id is number => id !== null)
+  );
+  const leagueChips = logLeagues.filter((l) => viewLeagueIds.has(l.leagueId));
+  const showLeagueRow = viewLeagueIds.size > 1;
+
   const pick = (id: number | null) => {
     setTeam(id);
+    setLeague(null); // side switch resets the competition filter (AND safety)
     setAll(false); // a fresh filter starts collapsed again
+  };
+
+  const pickLeague = (id: number | null) => {
+    setLeague(id);
+    setAll(false);
   };
 
   return (
@@ -100,6 +125,38 @@ export function RecentMatchesSection({
                   <span className="tabular-persian">
                     ({faDigits(recent.filter((m) => m.sideId === t.id).length)})
                   </span>
+                </button>
+              ))}
+            </div>
+          )}
+          {showLeagueRow && (
+            /* cycle-355: the competition filter row — same tap-hit-row
+               geometry as the side row above (the meet-exactly convention).
+               Chips come from the server logLeagues set (upstream
+               matchFilters.leagues ∩ archive rows); counts live against the
+               current side view. */
+            <div className="flex flex-wrap gap-x-1.5 gap-y-2 px-3 sm:px-4 pt-2.5 pb-1" role="tablist" aria-label="فیلتر مسابقات آرشیو" data-testid="player-recent-leagues">
+              <button
+                type="button"
+                onClick={() => pickLeague(null)}
+                className={cn(
+                  "tap-hit-row rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
+                  league === null ? "border-chart-3/40 bg-chart-3/10 text-chart-3" : "border-border bg-white/[0.03] text-muted-foreground hover:text-foreground"
+                )}
+              >
+                همهٔ مسابقه‌ها <span className="tabular-persian">({faDigits(teamRows.length)})</span>
+              </button>
+              {leagueChips.map((l) => (
+                <button
+                  key={l.leagueId}
+                  type="button"
+                  onClick={() => pickLeague(l.leagueId)}
+                  className={cn(
+                    "tap-hit-row rounded-md border px-2 py-0.5 text-[10px] font-black transition-colors cursor-pointer",
+                    league === l.leagueId ? "border-chart-3/40 bg-chart-3/10 text-chart-3" : "border-border bg-white/[0.03] text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  {l.fa} <span className="tabular-persian">({faDigits(teamRows.filter((m) => m.leagueId === l.leagueId).length)})</span>
                 </button>
               ))}
             </div>

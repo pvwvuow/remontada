@@ -785,8 +785,9 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
       )}
 
       {/* ---------- recent matches (cycle-86: full archive island —
-          side filter club vs national + show-all toggle, SSR-friendly) ---------- */}
-      <RecentMatchesSection recent={p.recent} teams={p.recentTeams} />
+          side filter club vs national + show-all toggle, SSR-friendly;
+          cycle-355: + the competition filter row from logLeagues) ---------- */}
+      <RecentMatchesSection recent={p.recent} teams={p.recentTeams} logLeagues={p.logLeagues} />
 
       <p className="text-[10px] text-muted-foreground/80 text-center">
         آمار از FotMob — امتیازها و ارزش بازار تقریبی است و هر {faDigits(10)} دقیقه به‌روزرسانی می‌شود.

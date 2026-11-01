@@ -6754,6 +6754,18 @@ interface FMPlayerDetails {
     ratingProps?: { rating?: string } | null;
     playerOfTheMatch?: boolean; onBench?: boolean; playedInMatch?: boolean;
   }[] | null;
+  // cycle-355 probed live (UA Chrome/124, 2026-11-01, Raphinha id 696679):
+  // the archive's own filter contract — `teams[]` (career stops, each with
+  // its leagueIds[]) and `leagues[]` (reverse mapping leagueId → name +
+  // teamIds[]). Consumed ONLY as the authoritative league SET + display
+  // names for the new logLeagues block; the rows themselves keep the
+  // honesty guarantee (a chip exists only when rows carry that leagueId).
+  // Optional: coach payloads / older feeds answer without it → the
+  // row-derived fallback fills the same shape (never empty-by-construction).
+  matchFilters?: {
+    teams?: { teamId?: number; name?: string; leagueIds?: number[] }[] | null;
+    leagues?: { leagueId?: number; name?: string; teamIds?: number[] }[] | null;
+  } | null;
   // cycle-20: career path + trophies (both optional — many players lack them)
   careerHistory?: {
     // cycle-255: "coach" joined the union — playerData serves coaches too and
@@ -6975,8 +6987,24 @@ export interface PlayerRecentMatch {
   // national team) — powers the recent-matches side filter
   sideId: number;
   sideName: string;
+  // cycle-355: upstream row leagueId (matchDetails rows carried it all
+  // along — just never kept). Powers the competition filter client-side;
+  // null when the upstream row omits the field (honest absence).
+  leagueId: number | null;
 }
 export interface PlayerRecentSide { id: number; fa: string }
+
+// cycle-355: one «فیلتر مسابقات» chip of the recent-matches archive —
+// a competition present in the archive rows. `fa` resolves through the
+// same leagueFaById chain as every league label on the site (catalog →
+// competitionFa → raw upstream name); `count` is computed against ALL
+// archive rows (the island recomputes it against the active team filter
+// client-side, so chips never show a count the list can't back).
+export interface PlayerLogLeague {
+  leagueId: number;
+  fa: string;
+  count: number;
+}
 // cycle-87: season pitch data (shot map + touch heatmap) from firstSeasonStats
 export interface PlayerShot {
   min: number;
@@ -7038,6 +7066,13 @@ export interface PlayerData {
   // cycle-86: sides appearing in `recent` (club + national), first-seen order;
   // single-element when the archive only covers the current club
   recentTeams: PlayerRecentSide[];
+  // cycle-355: competitions present in the archive (the «فیلتر مسابقات»
+  // chips), newest-name resolution identical to every other league label.
+  // Built from upstream matchFilters.leagues ∩ the rows' own leagueIds,
+  // sorted by row count desc; row-derived fallback when matchFilters is
+  // absent. REQUIRED after the v12 bump — a v11-cached shape would serve
+  // profiles WITHOUT the chip set (the 52/86/96/197/201/325 convention).
+  logLeagues: PlayerLogLeague[];
   // cycle-87: season shot map + touch heatmap (null → section hidden)
   pitch: PlayerPitch | null;
   // cycle-86: probed playerData.isCaptain (explicit false when not captain,
@@ -7485,11 +7520,36 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
       potm: !!m.playerOfTheMatch,
       sideId: m.teamId ?? 0,
       sideName: teamFa(m.teamName || undefined) || m.teamName || "",
+      // cycle-355: kept for the archive competition filter (see logLeagues)
+      leagueId: typeof m.leagueId === "number" ? m.leagueId : null,
     });
     if (m.teamId && !recentTeams.some((t) => t.id === m.teamId)) {
       recentTeams.push({ id: m.teamId, fa: teamFa(m.teamName || undefined) || m.teamName || "" });
     }
   }
+
+  // cycle-355: the archive competition set («فیلتر مسابقات»). The league
+  // list comes from upstream matchFilters.leagues (display-name source of
+  // truth) intersected with the leagueIds the rows REALLY carry; leagues
+  // without rows never become chips (the honesty contract — a chip must
+  // always be backed by a visible list). When matchFilters is absent the
+  // rows themselves fill the same set, so the block never lies empty.
+  const mfLeagues = raw.matchFilters?.leagues ?? [];
+  const logLeagueIds: number[] = [];
+  for (const m of recent) {
+    if (m.leagueId !== null && !logLeagueIds.includes(m.leagueId)) logLeagueIds.push(m.leagueId);
+  }
+  const logLeagues: PlayerLogLeague[] = logLeagueIds
+    .map((id) => {
+      const mfHit = mfLeagues.find((l) => l?.leagueId === id);
+      const row = recent.find((m) => m.leagueId === id);
+      return {
+        leagueId: id,
+        fa: leagueFaById(id, mfHit?.name || "") || row?.leagueFa || "",
+        count: recent.filter((m) => m.leagueId === id).length,
+      };
+    })
+    .sort((a, b) => b.count - a.count);
 
   // next match (opponent relative to the player's current team)
   let next: PlayerData["next"] = null;
@@ -7654,6 +7714,7 @@ function normalizePlayer(raw: FMPlayerDetails, id: string): PlayerData {
     season,
     recent,
     recentTeams,
+    logLeagues, // cycle-355: the archive competition filter set
     pitch: buildPitch(raw.firstSeasonStats),
     isCaptain: !!raw.isCaptain,
     next,
@@ -7991,7 +8052,12 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // careerSeasons rows («آمار فصل‌به‌فصل»); a v10-cached shape would serve
   // profiles WITHOUT the block from the persistent SQLite L2 across restarts
   // for up to the TTL (same convention as cycle-52/86/87/96/135/159/197/201/321)
-  const payload = await cached(`player:v11:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-355: key bumped to v12 — normalized output gained the required
+  // logLeagues block («فیلتر مسابقات» archive chips) and every recent row
+  // gained its leagueId; a v11-cached shape would serve profiles WITHOUT
+  // the chip set from the persistent SQLite L2 across restarts for up to
+  // the TTL (same convention as cycle-52/86/87/96/135/159/197/201/325)
+  const payload = await cached(`player:v12:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;

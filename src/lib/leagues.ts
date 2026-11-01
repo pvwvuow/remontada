@@ -481,6 +481,23 @@ const COMPETITION_FA: Record<string, string> = {
   // and competitionFa() has a startsWith fallback so future phases
   // (e.g. «MLS Next Pro - Eastern Conference - Semifinals») stay Persian
   "mls next pro - conference - finals": "لیگ نکست پرو آمریکا — فینال کنفرانس",
+  // cycle-355: the player archive competition-filter («فیلتر مسابقات»,
+  // matchFilters.leagues) surfaces these exact upstream names on players
+  // whose recent rows leave the site's own LEAGUES catalog. Probed live
+  // 2026-11-01 (UA Chrome/124, Raphinha id 696679) — only the names NOT
+  // already mapped above join here (champions league / copa del rey /
+  // club friendlies / friendlies existed: the 381/426/432/433 entries);
+  // the generic "Super Cup" (Portuguese super cup upstream spelling) and
+  // "FA Cup" (AMBIGUOUS_NAMES guard) stay on the honest Latin fallback.
+  "world cup": "جام جهانی",
+  "world cup qualification conmebol": "انتخابی جام جهانی (آمریکای جنوبی)",
+  "supercopa de españa": "سوپرکاپ اسپانیا",
+  "copa america": "کوپا آمریکا",
+  // "FA Cup" deliberately NOT added: it sits in AMBIGUOUS_NAMES (the guard
+  // above returns the raw name before any map lookup), so a map entry would
+  // be dead code — the honest Latin fallback stays.
+  "coupe de france": "جام حذفی فرانسه",
+  "taça de portugal": "جام حذفی پرتغال",
 };
 
 // Persian team-name mapping (FotMob English names → فارسی)
