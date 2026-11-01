@@ -4589,3 +4589,18 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **نوبت گردشی بعدی: cycle-312 = آپدیت** (فرمول ((312 mod 5)+1)=۳) — الگوی نان‌مسیر اکنون روی همهٔ خانواده‌های ایندکس‌پذیر است؛ نامزد بعدی باید با پویش تازه پیدا شود (پویش 310/311 نشان داد سطح match/team/player از دیتا کاملاً برداشت شده).
 
 ---
+### Task ID: cycle-312 — آپدیت (تقویم فصل لیگ — «دانلود تقویم فصل (ICS)» برای همهٔ فیکسچرها)
+
+**پویش تازه (الزام کارت ۳۱۱ — سطح match/team/player برداشت شده بود):** TOTW — پروب زنده: hasTotw=true در payload پریمیرلیگ ولی endpoint REST در همهٔ واریانت‌ها (/api/data/totw با/بدون season و totwRound و round و tab=totw + totwseasons) 404 → غیرقابل‌اجرا، ثبتِ رد مثل liveticker/highlightStories. faqJSONLD بالادستی len=0. جستجو از قبل ۵ بخش کامل، sitemap از قبل شامل coach (286)، جدول home/away واقعی (data.home/away). **انتخاب: canSyncCalendar=true** (پروب زندهٔ UA Chrome/124 برای PL/لالیگا/سری‌آ در details) — فوت‌موب خودش قابلیت همگام‌سازی تقویم را اعلام می‌کند ولی هیچ سطح REST برایش سرو نمی‌کند → شکاف واقعی؛ از payload کش‌شدهٔ همان fixtures تب بسته می‌شود.
+
+**اجرا (۳ فایل، همهٔ افزودنی):** lib/fotmob.ts — getLeagueCalendar روی getLeagueRaw (همان producer، همان TTL مشتق‌از-payload → صفر درخواست فوت‌ماب جدید)؛ همهٔ فیکسچرهای فصل، بدون canceled، نام‌های فارسی همان normalizeFixture، مرتب‌سازی صعودی. api/league-calendar/route.ts — RFC 5545 کامل: CRLF، فولدینگ ۷۵-اکتتی UTF-8-safe، TEXT-escape، UID/DTSTAMP/DTSTART-Z/DTEND(+۲ ساعت — بالادستی زمان پایان نمی‌دهد؛ پیش‌فرض صادقانه)، SUMMARY «{homeFa} در برابر {awayFa} (هفتهٔ N)»، URL=/match/{id}؛ گارد ۴۰۰ برای کلید/فصل نامعتبر؛ فصل بدون ردیف → VCALENDAR خالیِ معتبر؛ LeagueUnavailableError → 503. league-view.tsx — لینک «دانلود تقویم فصل (ICS)» زیر انتخابگر فصل، season-aware (href فصل انتخابی/دیپ‌لینک را حمل می‌کند)، testid=league-ics-link.
+
+**اثبات زنده:** /api/league-calendar?league=pl → 200، text/calendar، attachment filename="pl-2026-2027.ics"، ۳۸۰ VEVENT (فصل کامل 20×19)، ۳۵۵۵ CRLF، صفر خط بلندتر از ۷۵ اکتت، ۱۲۷ خط فولد‌شده، اولین DTSTART=20260821T190000Z، SUMMARY «آرسنال در برابر کاونتری (هفته ۱)»؛ فصل تاریخی 2025/2026 → filename="pl-2025-2026.ics" با ۳۸۰ رویداد؛ کلید/فصل بد → 400. DOM 390×844: لینک حاضر با href=/api/league-calendar?league=pl، overflowX=false، کنسول fresh-session ۰/۰.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی pid=4992 try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**کامیت:** «Update (cycle 312):» — push و تأیید ls-remote.
+
+**نوبت گردشی بعدی: cycle-313 = بررسی باگ** (فرمول ((313 mod 5)+1)=۴) — کاندیدای ثبت‌شده: راستی‌آزمایی لینک ICS با فصل انتخابی (href باید &season= بگیرد)، پاس‌دادن فایل به الگوی تقویم واقعی، و گشت‌زنی معمول 390×844.
+
+---
