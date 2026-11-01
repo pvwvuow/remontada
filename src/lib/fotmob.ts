@@ -886,6 +886,20 @@ export interface InterceptionsPer90Entry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+// cycle-331: «شوت در هر ۹۰» — the raw shot-VOLUME surface beside the xG
+// analytics twins (the 226/231 narrative): total_scoring_att.json,
+// byte-for-byte the 327/330 sibling shape.
+export interface ShotsPer90Entry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  shotsPer90: number;  // StatValue VERBATIM — per-90 decimal (8.3), the 210/217/226 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -1093,6 +1107,8 @@ export interface StandingsData {
   tacklesPer90: TacklesPer90Entry[];
   /** cycle-330 additive: «قطع توپ در هر ۹۰» — the defense family's second sibling (interception.json). */
   interceptionsPer90: InterceptionsPer90Entry[];
+  /** cycle-331 additive: «شوت در هر ۹۰» — the shot-volume surface (total_scoring_att.json). */
+  shotsPer90: ShotsPer90Entry[];
   /** cycle-230 additive: «پاس مورد انتظار» — the deep-file family's
    *  FOURTEENTH sibling and the assist-side ANALYTICS twin of the xg
    *  surface (→ expected assist 230). The "Expected assist (xA)" category
@@ -2663,6 +2679,54 @@ export async function getFullInterceptionsPer90(leagueKey: string, season?: stri
   }
 }
 
+/** cycle-331 additive: «شوت در هر ۹۰» loader — the raw shot-VOLUME surface
+ *  beside the xG analytics twins (the 226/231 narrative). total_scoring_att.json
+ *  (live-probed 2026-11-01 UA Chrome/124: pl 303 rows Gelhardt 8.3 / laliga
+ *  321 Yamal 5.9; the payload's own fetchAllUrl is season-scoped —
+ *  season/36781 on 2026/27 — and historical raws serve their OWN file,
+ *  season-aware like every sibling). Wide-file guard (the 210/222/226/327/330
+ *  class): every serving league probed ≥303 rows, so thin means "the fetch
+ *  was dropped" and re-probes in 90s. Feeds without the category degrade to
+ *  [] and the honest category fallback still feeds the merge. NOTE the
+ *  upstream's own id-key typo (ParticiantId) — the dual read every sibling
+ *  carries. */
+export async function getFullShotsPer90(leagueKey: string, season?: string): Promise<ShotsPer90Entry[]> {
+  try {
+    return await cached(
+      `fullShotsPer90:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^shots per 90$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: ShotsPer90Entry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            shotsPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
 /** cycle-231 additive: «سانس بزرگ خلق‌شده» loader — the FIFTEENTH sibling,
  *  the production-CREATION volume surface beside the analytics twins
  *  (getFullXg 226 / getFullXa 230). big_chances_created.json (live-probed
@@ -3626,6 +3690,11 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // per-league topscorers page (the 167 lesson). Decimal value untouched
     // (verbatim — the 210/217/226 convention).
     interceptionsPer90: (st.interceptionsPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-331 additive: shots-per-90 rows gain the same read-time honest
+    // names like the siblings — «شوت در هر ۹۰» renders on the per-league
+    // topscorers page (the 167 lesson). Decimal value untouched (verbatim —
+    // the 210/217/226 convention).
+    shotsPer90: (st.shotsPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
@@ -4327,6 +4396,30 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-331: «شوت در هر ۹۰» — the raw shot-VOLUME surface joining the
+    // SAME merge on the SAME cached payload (zero extra upstream per
+    // page-view — the 210/…/227/330 pattern). Category top-3 first, then
+    // the full total_scoring_att.json file merged on top, deduped by player
+    // id, ranked by the DECIMAL value verbatim (never rounded — the
+    // 210/217/226 convention), top-10. Feeds without the category degrade
+    // honestly to [].
+    const shotsEntries: ShotsPer90Entry[] = statCategory(raw, /^shots per 90$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, shotsPer90: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.shotsPer90 - a.shotsPer90 || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullShots = await getFullShotsPer90(leagueKey, requestedSeason);
+    const enrichedSIds = new Set(
+      shotsEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedShots = [...shotsEntries, ...fullShots.filter((r) => r.playerId == null || !enrichedSIds.has(r.playerId))]
+      .sort((a, b) => b.shotsPer90 - a.shotsPer90 || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-231: «سانس بزرگ خلق‌شده» — the FIFTEENTH sibling joins the SAME
     // merge on the SAME cached payload, the production-CREATION volume
     // surface beside the analytics twins. big_chances_created.json
@@ -4942,6 +5035,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       xa: mergedXa,
       tacklesPer90: mergedTackles,
       interceptionsPer90: mergedInterceptions,
+      shotsPer90: mergedShots,
       bigChancesCreated: mergedBigChances,
       xgot: mergedXgot,
       chancesCreated: mergedChancesCreated,
@@ -5109,7 +5203,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // v32 rows lack it and would keep the new section hidden for up to a
     // full TTL generation. Whole key bumps (the 52/…/246 additive-shape
     // convention).
-    await cached(`standings:v34:${leagueKey}:${season || "cur"}`, (mapped) =>
+    await cached(`standings:v35:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -5373,6 +5467,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // "Interceptions per 90" category) keep the normal TTL — the same
       // convention as the siblings.
       !(Array.isArray(mapped.interceptionsPer90) && mapped.interceptionsPer90.length > 0 && mapped.interceptionsPer90.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-331: the standard thin-kept-for-a-generation guard closes for
+      // the shots-per-90 block too — the 327/330 incident class, kept from
+      // ever repeating (SSG cold build drops the file → 90s re-probe, the
+      // assists-guard precedent verbatim). Honest-empty feeds (no "Shots
+      // per 90" category) keep the normal TTL — the same convention as the
+      // siblings.
+      !(Array.isArray(mapped.shotsPer90) && mapped.shotsPer90.length > 0 && mapped.shotsPer90.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

@@ -4863,3 +4863,16 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (58/58 صفحه) ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← DOM در 390×844: ‏/topscorers/pl — ترتیب «گل در هر ۹۰ → تکل در هر ۹۰ → قطع توپ در هر ۹۰» (خانوادهٔ دفاعی کنار هم)، ‏interceptions-row=10، اول «۰۱ | Matteo Ruggeri | استون‌ویلا | ۴.۰»، ‏۱۰ لینک /player، tackles-row=10 دست‌نخورده؛ ‏laliga — «۰۱ | Diego Llorente | رئال‌بتیس | ۳.۳» ‏۱۰ ردیف؛ API تاریخی ۲۰۲۴/۲۵ — ‏۱۰ ردیف، اول Bentancur / تاتنهام / ۲.۲ (فایل خودِ فصل)؛ overflowX=false هر سه؛ کنسول fresh-session و errors صفر.
 
 **نوبت گردشی بعدی: cycle-331 = آپدیت** (فرمول ((331 mod 5)+1)=۲).
+### Task ID: cycle-331 — آپدیت («شوت در هر ۹۰» — حجم خام شوت کنار دوقلوهای تحلیلی xG)
+
+**روش (پروب اول):** سه نامزد sibling از منو UNUSED سرشماری ۳۳۰ به‌صورت زنده پروب شدند (UA Chrome/124): شوت (total_scoring_att.json) / دریبل موفق (won_contest.json) / پاس دقیق (accurate_pass.json) — هر سه سرو می‌دهند؛ انتخاب: **شوت در هر ۹۰** — سطح حجم خام شوت در کنار دوقلوهای تحلیلی xG (روایت ۲۲۶/۲۳۱). صحت داده: ردیف‌های ۲-۵ pl همه باشگاه‌های واقعی PL (چلسی/ایپسوییچ/لیدز/آرسنال)؛ هدر دقیق پیلود «Shots per 90» با fetchAllUrl دورهٔ فصل (season/36781).
+
+**امکان‌سنجی زنده:** ‏pl ‏۳۰۳ ردیف (Joe Gelhardt / هال‌سیتی / ۸.۳)؛ laliga ‏۳۲۱ (Lamine Yamal / بارسلونا / ۵.۹)؛ رأی تاریخی فایل خودش (سازوکار season-aware مشترک همهٔ siblingها).
+
+**پیاده‌سازی — additive ۳ فایل، byte-for-byte الگوی ۳۲۷/۳۳۰، صفر درخواست جدید در هر page-view:** ‏`ShotsPer90Entry` + ‏StandingsData با فیلد REQUIRED → **standings cache v34→v35** (قرارداد ۲۴۶)؛ ‏`getFullShotsPer90` (کلید `fullShotsPer90:v1`، خوانش دوگانهٔ typo بالادستی ParticiantId، سقف ۱۰، گارد thin ۹۰ثانیه‌ای)؛ ادغام در getStandings (top-3 دسته + فایل کامل، dedupe با pid، اعشار verbatim) + نام‌های صادقانهٔ read-time؛ گارد thin-for-a-generation برای block تازه؛ ‏/api/topscorers ‏فیلد shotsPer90 (قاعدهٔ ۱۰۸)؛ ‏LeagueScorersView بخش «شوت در هر ۹۰ · حجم خطر» بلافاصله بعد از «گل در هر ۹۰» (testid `shots-row`، pill ‏toFixed(1) ‏dir=ltr، لینک /player) — جفت نرخ گل + حجم شوت کنار هم، خانوادهٔ دفاعی بعدشان.
+
+**حادثهٔ زندهٔ حل‌شده:** کلاس ۳۲۷/۳۳۰ باز تکرار شد — بیلد SSG سرد فایل را انداخت (۳ ردیف پخته)؛ گارد ۹۰ ثانیه بعد re-probe → **۱۰ ردیف پایدار بدون ری‌استارت** (خودترمیمی برای سومین بار end-to-end اثبات شد).
+
+**پذیرش:** eslint 0/0 ← tsc 0 ← build 0 (58/58) ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← DOM در 390×844: ‏/topscorers/pl — ترتیب «گل در هر ۹۰ → شوت در هر ۹۰ → تکل در هر ۹۰ → قطع توپ در هر ۹۰»، ‏shots-row=10، اول «۰۱ | جو گلهارت | هال‌سیتی | ۸.۳» (تسمیهٔ فارسی از نقشه)، ‏۱۰ لینک /player، ‏interceptions-row=10 دست‌نخورده؛ laliga — ‏۱۰ ردیف، اول Yamal / بارسلونا / ۵.۹؛ API تاریخی ۲۰۲۴/۲۵ — ‏۱۰ ردیف، اول Jhon Durán / استون‌ویلا / 4.5؛ overflowX=false همه؛ کنسول fresh-session و errors صفر.
+
+**نوبت گردشی بعدی: cycle-332 = بررسی باگ** (فرمول ((332 mod 5)+1)=۴).
