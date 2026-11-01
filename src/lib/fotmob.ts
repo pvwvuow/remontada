@@ -6317,6 +6317,8 @@ export interface LeagueBracketData {
 
 const BRACKET_STAGE_FA: Record<string, string> = {
   "playoff": "پلی‌آف",
+  "1/32": "یک‌سی‌ودوم نهایی",
+  "1/16": "یک‌شانزدهم نهایی",
   "1/8": "یک‌هشتم نهایی",
   "1/4": "یک‌چهارم نهایی",
   "1/2": "نیمه‌نهایی",

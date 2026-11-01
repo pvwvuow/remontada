@@ -1,6 +1,7 @@
 // ------------------------------------------------------------------
 // Remontada — League configuration & Persian name mappings
 // ------------------------------------------------------------------
+import { faDigits } from "./format";
 
 export interface LeagueConfig {
   key: string;          // internal key
@@ -464,6 +465,34 @@ export const LEAGUES: LeagueConfig[] = [
   // unchanged: per-league surfaces live, the two global merges untouched
   // (admission stays gated on the no-table path proving itself).
   { key: "dfbpokal",   fotmobId: 209,         ccode3: "GER",  faName: "جام حذفی آلمان",     enName: "DFB Pokal",        espnSlug: "ger.dfb_pokal",    priority: 28, globalMerge: false },
+  // cycle-380: Coppa Italia — the 29th competition, the THIRD pure knockout
+  // domestic cup riding the cycle-376 no-table path (second proof of its
+  // genericity: zero UI changes, one catalog entry) and the portal's THIRD
+  // live cup bracket. Feasibility first (live probes, UA Chrome/124): the
+  // day feeds (2026-12-02/03) surfaced the day-tournament id 938423 (ITA,
+  // Como–Cremonese / Juventus–Sassuolo) which answers NULL as a league page
+  // — the real page id surfaced via the cycle-141 crack (matchDetails
+  // content.matchFacts.infoBox.Tournament.parentLeagueId = 141). Feed
+  // shape: table[0].data itself ABSENT (the dfbpokal-thinner shape — every
+  // read is the optional chain), 17 slash-format allAvailableSeasons
+  // (2026/2027 → 2010/2011 — the cycle-132 window covered exactly), 78
+  // title-history seasons (newest: 2025/2026 Inter over Lazio), 37 player
+  // stat categories EVERY one with fetchAllUrl (74-row goals list, top:
+  // Pohjanpalo 3), 45 season fixtures (28 finished / 17 upcoming, first
+  // unplayed Inter–Genoa), transfers.data=null (the cups' honest hide) —
+  // and playoff SERVED: 6 rounds (1/32 → final) in the exact cycle-56
+  // parser shape → the bracket tab RENDERS, with the 1/2 + final rounds
+  // carrying spelled-out TBD slots «Winner QF/SF n» at BOTH matchup and leg
+  // level (mapped honestly by the cycle-380 teamFa guard below; the 1/4
+  // rounds use the cycle-144 slash shape). overview.selectedSeason =
+  // 2026/2027 (the 141 echo-less honesty marker). leagueColor #2EA736;
+  // ESPN slug probed live: ita.coppa_italia → 200. faName rides the
+  // ALREADY-shipped mapping «جام حذفی ایتالیا» (COMPETITION_FA "coppa
+  // italia", both spellings, pre-380) so the day feed and the league page
+  // never disagree. globalMerge: false — the cycle-376 one-flag semantic
+  // unchanged: per-league surfaces live, the two global merges untouched
+  // (admission stays gated on the no-table path proving itself).
+  { key: "coppaitalia", fotmobId: 141,        ccode3: "ITA",  faName: "جام حذفی ایتالیا",   enName: "Coppa Italia",     espnSlug: "ita.coppa_italia", priority: 29, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -625,6 +654,18 @@ const TEAM_FA: Record<string, string> = {
   "juventus": "یوونتوس", "lazio": "لاتزیو", "lecce": "لچه", "milan": "آث‌میلان",
   "napoli": "ناپولی", "parma": "پارما", "pisa": "پیزا", "roma": "رم", "as roma": "رم",
   "sassuolo": "ساسوولو", "torino": "تورینو", "udinese": "اودینزه",
+  // ---- Coppa Italia (cycle-380) ----
+  // the 378 F2-class guard: every name the live bracket + fixtures serve
+  // must find a mapping. Probed unique-name set across all 6 playoff rounds
+  // + 45 fixtures; the Serie A core rides the section above, these are the
+  // missing cup entrants (Serie B/C) + the two spelled-out matchup aliases
+  // ("AC Milan", "SSC Napoli") the bracket uses at tie level.
+  "ac milan": "آث‌میلان", "ssc napoli": "ناپولی",
+  "arezzo": "آرتزو", "ascoli": "اسکولی", "benevento": "بنونتو", "catania": "کاتانیا",
+  "catanzaro": "کاتانزارو", "cesena": "چزنا", "empoli": "امپولی",
+  "juve stabia": "یووه استابیا", "lr vicenza": "ویتشنزا", "mantova": "مانتوا",
+  "padova": "پادوا", "potenza": "پوتنتزا", "ravenna": "راونا",
+  "südtirol": "زودتیرول", "union brescia": "یونیون برشا", "virtus entella": "ویرتوس انتلا",
   // ---- Bundesliga ----
   "augsburg": "آگزبورگ", "bayern munich": "بایرن‌مونیخ", "bayern": "بایرن‌مونیخ",
   "union berlin": "یونیون‌برلین", "werder bremen": "وردربرمن", "sv werder bremen": "وردربرمن", "borussia dortmund": "بروسیادورتموند",
@@ -1749,6 +1790,15 @@ export function teamFa(...candidates: (string | undefined)[]): string {
     // cycle-86: national teams («Norway» → «نروژ») ride the country map —
     // probed via player recentMatches sides (club vs national team rows)
     if (COUNTRY_FA[key]) return COUNTRY_FA[key];
+    // cycle-380: cup-bracket undrawn slots ALSO arrive spelled out as
+    // «Winner QF 1» / «Winner SF 2» — Coppa Italia serves them at BOTH
+    // matchup and leg level for the 1/2 + final rounds (probed live;
+    // the 1/4 rounds use the cycle-144 slash shape instead). Map honestly
+    // instead of leaking Latin — same honesty class as the 159/144 guards.
+    const wq = /^winner (qf|sf) ([1-9])$/.exec(key);
+    if (wq) {
+      return `برنده ${wq[1] === "qf" ? "یک‌چهارم نهایی" : "نیمه‌نهایی"} ${faDigits(wq[2])}`;
+    }
   }
   // qualifier fallback: known base + Persian qualifier (U19 / women / reserve)
   // cycle-159: the base must also ride COUNTRY_FA — national youth sides
