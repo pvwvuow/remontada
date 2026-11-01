@@ -438,6 +438,32 @@ export const LEAGUES: LeagueConfig[] = [
   // home/player-filter mapping «جام حذفی اسپانیا» (COMPETITION_FA, shipped
   // pre-376) so the day feed and the league page never disagree.
   { key: "copadelrey", fotmobId: 138,         ccode3: "ESP",  faName: "جام حذفی اسپانیا",   enName: "Copa del Rey",     espnSlug: "esp.copa_del_rey", priority: 27, globalMerge: false },
+  // cycle-377: DFB Pokal — the TWENTY-EIGHTH competition, the cups
+  // footprint's SIXTH live cup and the SECOND pure knockout domestic cup to
+  // ride the cycle-376 no-table standings path (first proof of the path's
+  // genericity: zero lib/UI changes needed beyond the catalog entry). Live
+  // probe 2026-11-02 (UA Chrome/124): the day-tournament id 936417 (GER,
+  // 8+8 matches across 2026-10-27/28) answers NULL as a league page — the
+  // real page id surfaced via the cycle-141 crack (matchDetails
+  // content.matchFacts.infoBox.Tournament.parentLeagueId = 209, link
+  // /leagues/209/overview/dfb-pokal). Feed shape: table[0].data itself
+  // ABSENT (even thinner than Copa del Rey's keyless dict — every read is
+  // the optional chain), 17 slash-format allAvailableSeasons (2026/2027 →
+  // 2010/2011 — the cycle-132 window covered exactly), 83 title-history
+  // seasons (newest: 2025/2026 Bayern München), 40 player stat categories
+  // EVERY one with fetchAllUrl, 56 season fixtures, transfers.data=null
+  // (the cups' honest hide) — and playoff SERVED: rounds[{stage:"1/8",
+  // matchups[]}] in the exact cycle-56 parser shape → the bracket tab
+  // RENDERS (the portal's second live cup bracket after UCL; Copa del
+  // Rey's is honestly hidden until its draw). overview.selectedSeason
+  // = 2026/2027 (the 141 echo-less honesty marker). leagueColor #004941
+  // (OG card); ESPN slug probed live: ger.dfb_pokal → 200. faName rides
+  // the ALREADY-shipped mapping «جام حذفی آلمان» (COMPETITION_FA "dfb
+  // pokal", shipped pre-377) so the day feed and the league page never
+  // disagree. globalMerge: false — the cycle-376 one-flag semantic
+  // unchanged: per-league surfaces live, the two global merges untouched
+  // (admission stays gated on the no-table path proving itself).
+  { key: "dfbpokal",   fotmobId: 209,         ccode3: "GER",  faName: "جام حذفی آلمان",     enName: "DFB Pokal",        espnSlug: "ger.dfb_pokal",    priority: 28, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
