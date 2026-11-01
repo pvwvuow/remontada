@@ -106,22 +106,24 @@ function StandingsTable({ data, leagueKey }: { data: StandingsData; leagueKey: s
             discovered a horizontal scroll. Now: mobile keeps every visible
             column inside the glass card (min-w-0 + tightened paddings + a
             capped team cell so truncate engages), sm+ restores the roomy
-            520px layout. Same 10 columns, same DOM, no testid touched. */}
+            520px layout. Same 10 columns, same DOM, no testid touched. Cycle-329 polish: every header cell now carries
+            scope="col" — screen readers announce the column header for each
+            cell (WCAG 1.3.1 column association). */}
         <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[520px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="بازی">ب</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="برد">بر</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="مساوی">مس</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="باخت">با</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
-              <th className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]" title="امتیاز">امتیاز</th>
+              <th scope="col" className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th scope="col" className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="بازی">ب</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="برد">بر</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="مساوی">مس</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="باخت">با</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل زده">گز</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell" title="گل خورده">گخ</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="تفاضل گل">تف</th>
+              <th scope="col" className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]" title="امتیاز">امتیاز</th>
               {hasNext && (
-                <th className="py-2 pe-2 ps-1 sm:pe-3 font-bold text-center" title="بازی بعدی">بعدی</th>
+                <th scope="col" className="py-2 pe-2 ps-1 sm:pe-3 font-bold text-center" title="بازی بعدی">بعدی</th>
               )}
             </tr>
           </thead>

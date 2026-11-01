@@ -916,22 +916,23 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
             wrapper is ~364px); min-w-0 + tightened paddings + a capped team
             cell keep every VISIBLE column inside the card on phones, sm+
             restores the roomy layout. Same 10 columns in the DOM, no testid
-            touched. */}
+            touched. Cycle-329 polish: every header cell now carries scope="col" for
+            the WCAG 1.3.1 column announcement. */}
         <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[480px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">ب</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">بر</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">مس</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center">با</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
-              <th className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
+              <th scope="col" className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th scope="col" className="py-2 px-1 font-bold text-start max-w-[132px] sm:max-w-none">تیم</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center">ب</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center">بر</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center">مس</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center">با</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل زده">گز</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center hidden lg:table-cell" title="گل خورده">گخ</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center hidden sm:table-cell">تف</th>
+              <th scope="col" className="py-2 px-2 sm:px-2.5 font-black text-center text-[#d6e8fb]">امتیاز</th>
               {hasNext && (
-                <th className="py-2 pe-2 ps-1 sm:pe-3 font-bold text-center" title="بازی بعدی">بعدی</th>
+                <th scope="col" className="py-2 pe-2 ps-1 sm:pe-3 font-bold text-center" title="بازی بعدی">بعدی</th>
               )}
             </tr>
           </thead>
@@ -1105,16 +1106,17 @@ function XgTable({ rows }: { rows: StandingsRow[] }) {
             hard min-w-[420px] overflowed a 390px phone by ~56px, clipping the
             اختلاف (delta) pill; min-w-0 + tightened paddings + a capped team
             cell keep all SIX columns inside the card on phones, sm+ restores
-            the roomy layout. Same DOM, testid league-xg untouched. */}
+            the roomy layout. Same DOM, testid league-xg untouched. Cycle-329 polish: scope="col" on every header
+cell here too (WCAG 1.3.1 column announcement). */}
         <table className="w-full text-[12px] sm:text-[13px] min-w-0 sm:min-w-[420px]">
           <thead>
             <tr className="glass-thead text-[9px] sm:text-[10px] border-y border-[color:var(--glass-hairline)] text-[#b6cce3]">
-              <th className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
-              <th className="py-2 px-1 font-bold text-start max-w-[128px] sm:max-w-none">تیم</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار زده">xG</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار خورده">xGA</th>
-              <th className="py-2 px-1 sm:px-1.5 font-bold text-center" title="امتیاز مورد انتظار بر پایهٔ کیفیت موقعیت‌ها">امتیاز x</th>
-              <th className="py-2 px-2 sm:px-2.5 font-black text-center" title="امتیاز واقعی منهای امتیاز x — مثبت: بیش از عملکرد، منفی: کمتر از عملکرد">اختلاف</th>
+              <th scope="col" className="py-2 pe-1 ps-2.5 sm:ps-3 font-bold text-start w-8 sm:w-9">#</th>
+              <th scope="col" className="py-2 px-1 font-bold text-start max-w-[128px] sm:max-w-none">تیم</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار زده">xG</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="گل مورد انتظار خورده">xGA</th>
+              <th scope="col" className="py-2 px-1 sm:px-1.5 font-bold text-center" title="امتیاز مورد انتظار بر پایهٔ کیفیت موقعیت‌ها">امتیاز x</th>
+              <th scope="col" className="py-2 px-2 sm:px-2.5 font-black text-center" title="امتیاز واقعی منهای امتیاز x — مثبت: بیش از عملکرد، منفی: کمتر از عملکرد">اختلاف</th>
             </tr>
           </thead>
           <tbody>
