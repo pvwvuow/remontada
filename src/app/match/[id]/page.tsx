@@ -4,6 +4,7 @@ import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { getMatchLdData } from "@/lib/fotmob";
+import { fotmobTeamLogo } from "@/lib/leagues";
 import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // ---- dynamic SEO (cycle 29) ------------------------------------------------
@@ -32,11 +33,20 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
           ? "پخش زنده، آمار لحظه‌ای و ترکیب تیم‌ها."
           : "زمان شروع، پیش‌بازی و آمار دو تیم.";
     const desc = m.leagueName ? `${title} در ${m.leagueName} — ${state}` : `${title} — ${state}`;
+    // update cycle-306: the page-level openGraph object replaces the layout's
+    // (which carries og.png) — the match card was shared with NO preview.
+    // Primary image = the HOME team's real crest via the same teamlogo CDN
+    // family the search index renders (live-probed 200); the id is additive
+    // on MatchLdData (cycle-306) so a pre-existing 60s cached row without ids
+    // — or any hiccup — degrades to the site og.png card, never no image.
+    const ogImages = m.homeId
+      ? [{ url: fotmobTeamLogo(m.homeId), alt: `نشان ${home}` }]
+      : [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }];
     return {
       title,
       description: desc,
       alternates: { canonical: `/match/${id}`, ...RSS_ALTERNATE },
-      openGraph: { title: `${title} | رمانتادا`, description: desc },
+      openGraph: { title: `${title} | رمانتادا`, description: desc, images: ogImages },
     };
   } catch {
     // fix cycle-33: upstream hiccup → keep the empty shell unindexed

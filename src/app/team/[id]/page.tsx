@@ -33,7 +33,16 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title,
       description: desc,
       alternates: { canonical: `/team/${id}`, ...RSS_ALTERNATE },
-      openGraph: { title: `${name} — صفحه تیم | رمانتادا`, description: desc },
+      // update cycle-306: the page-level openGraph object replaces the
+      // layout's (which carries og.png) — without an images array here the
+      // team card was shared with NO preview at all. The index entry ships
+      // the real club crest (images.fotmob.com teamlogo CDN — live-probed
+      // 200 and the same URL family the search index already renders).
+      openGraph: {
+        title: `${name} — صفحه تیم | رمانتادا`,
+        description: desc,
+        images: [{ url: entry.logo, alt: `نشان ${name}` }],
+      },
     };
   } catch {
     // upstream hiccup → in-page error state; keep the empty shell unindexed

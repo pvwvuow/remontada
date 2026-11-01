@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     type: "website",
     siteName: "رمانتادا",
     locale: "fa_IR",
+    // update cycle-306: the page-level openGraph object replaces the
+    // layout's (which carries og.png) — restore the site-card parity
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
   },
 };
 

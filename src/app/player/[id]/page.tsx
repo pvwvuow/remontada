@@ -30,7 +30,18 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
       title: `${display} — پروفایل بازیکن`,
       description: desc,
       alternates: { canonical: `/player/${id}`, ...RSS_ALTERNATE },
-      openGraph: { title: `${display} — پروفایل بازیکن | رمانتادا`, description: desc, type: "profile" },
+      // update cycle-306: the page-level openGraph object replaces the
+      // layout's (which carries og.png) — the player card was shared with
+      // NO preview. Per-player headshots were probed and REJECTED (the
+      // images.fotmob.com playerimages path 403s for some ids — an og:image
+      // that 404/403s is worse than the honest site card), so the player
+      // card restores the site og.png parity instead.
+      openGraph: {
+        title: `${display} — پروفایل بازیکن | رمانتادا`,
+        description: desc,
+        type: "profile",
+        images: [{ url: "/og.png", width: 1200, height: 630, alt: "رمانتادا — نتایج زنده فوتبال" }],
+      },
     };
   } catch {
     // missing player / upstream hiccup — page itself handles the UX

@@ -5744,6 +5744,10 @@ export interface MatchLdData {
   leagueName?: string;
   stadium?: string;
   city?: string;
+  // update cycle-306: team ids for the og:image crest — additive/optional so
+  // older cached matchld:{id} rows (60s TTL) simply fall back to og.png
+  homeId?: number;
+  awayId?: number;
 }
 
 interface FMLdDetails {
@@ -5793,6 +5797,9 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
       leagueName: g?.leagueName || g?.parentLeagueName || undefined,
       stadium: st?.name || undefined,
       city: st?.city || undefined,
+      // update cycle-306: ids for the og:image crest (absent in old rows)
+      homeId: typeof home.id === "number" ? home.id : undefined,
+      awayId: typeof away.id === "number" ? away.id : undefined,
     };
   });
   if (!payload || typeof payload !== "object") return null;
