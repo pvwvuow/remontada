@@ -4908,3 +4908,17 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **صف فیکس برای ۳۳۴: [F1] دامنهٔ canonical** — بعد از تصمیم کاربر دربارهٔ دامنهٔ واقعی، فیکس حداقلی: زنجیرهٔ SITE_URL (متغیر محیطی کاربر ← VERCEL_PROJECT_PRODUCTION_URL/VERCEL_URL ← پیش‌فرض) + به‌روزرسانی .env؛ از حدس زدن دامنه پرهیز می‌شود.
 
 **نوبت گردشی بعدی: cycle-334 = فیکس** (فرمول ((334 mod 5)+1)=۵) — صف: F1؛ اگر کاربر دامنه نداد، زنجیرهٔ دفاعی VERCEL_* راه‌حل مستقل از دامنه است.
+
+### Task ID: cycle-334 — فیکس (یافتهٔ F1 گشت ۳۳۳ — زنجیرهٔ canonical مستقل از دامنه)
+
+**یافته (کارت ۳۳۳):** پیش‌فرض `https://remontada.vercel.app` در src/lib/site.ts به دپلوی ناموجود Vercel اشاره می‌کرد (DEPLOYMENT_NOT_FOUND) و ۱۰ فایل مصرف‌کننده (sitemap ۵۲۲ loc، robots، RSS، OG/canonical layout، JSON-LD صفحات، API تقویم) را به هیچ‌جا وصل می‌کرد. کاربر هنوز دامنهٔ واقعی نداده — پس طبق گزینهٔ «ب» کارت ۳۳۳: **فیکس مستقل از دامنه**.
+
+**فیکس (additive، الگوی read-time honest):** تابع خالص exported `resolveSiteUrl(env)` در site.ts با ترتیب: ۱) NEXT_PUBLIC_SITE_URL صریح (verbatim منهای اسلش انتهایی — رفتار pre-334 بایت‌به‌بایت)؛ ۲) VERCEL_PROJECT_PRODUCTION_URL فقط وقتی VERCEL_ENV=production (نرمال‌سازی https:// — پیش‌نمایش‌ها هرگز دامنهٔ زودگذر به canonical نمی‌ریزند)؛ ۳) VERCEL_URL همان گارد؛ ۴) پیش‌فرض تاریخی آخر — در سندباکس خروجی بایت‌به‌بایت مثل ۳۳۳. ‏SITE_URL = resolveSiteUrl(process.env) — امضای export ثابت، صفر تغییر در ۱۰ مصرف‌کننده.
+
+**اثبات واحد (scripts/test-site-url.ts — همراه کامیت):** ‏**۸/۸** — بدون env=پیش‌فرض (صفر رگرسیون محلی)؛ override خالی=پیش‌فرض (پاریتی `||` قبلی)؛ override صریح+اسلش؛ preview دامنه نمی‌ریزد؛ PRODUCTION URL نرمال‌شده؛ سقوط به VERCEL_URL؛ ‏PROJECT بر VERCEL_URL با حذف پروتکل/اسلش؛ override صریح بر تزریق Vercel.
+
+**پذیرش:** ‏bunx eslint src **0/0** ← rm -rf .next/types && bunx tsc --noEmit **0** ← bun run build **0** ← استارت رسمی try=2/200 ← رگرسیون BASE=http://localhost:3000 صریح **28/28** ← خروجی زنده بایت‌به‌بایت: sitemap ‏۵۲۲ loc همه remontada.vercel.app، خط Sitemap robots، urlTemplate ‏SearchAction خانه (لنگر ۳۰۰) بدون تغییر ← DOM در 390×844 روی سرور ری‌بیلدشده: overflowX=false، کنسول fresh-session و errors صفر.
+
+**یادداشت عملیاتی برای کاربر:** بعد از اولین استقرار واقعی روی Vercel، canonical ها خودبه‌خود به دامنهٔ همان استقرار می‌روند (بدون هیچ تغییری)؛ اگر دامنهٔ سفارشی دارید همان یک خط NEXT_PUBLIC_SITE_URL در .env کافی است. تا آن زمان خروجی محلی/پیش‌فرض دست‌نخورده است.
+
+**نوبت گردشی بعدی: cycle-335 = آپدیت** (فرمول ((335 mod 5)+1)=۱).
