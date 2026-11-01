@@ -928,6 +928,21 @@ export interface RecoveriesPer90Entry {
   playerId?: number;  // FotMob player id → links to /player/[id]
 }
 
+// cycle-337: «پاس بلند دقیق در هر ۹۰» — the PASSING family's SECOND sibling
+// (beside cycle-335's پاس دقیق), the long-range distribution surface
+// (accurate_long_balls.json), byte-for-byte the 327/330/331/335/336
+// sibling shape.
+export interface LongBallsPer90Entry {
+  rank: number;
+  name: string;
+  /** honest Persian name (playerFa) — raw English fallback, same rule as the siblings. */
+  nameFa?: string;
+  team: string;
+  teamId: number;
+  longBallsPer90: number;  // StatValue VERBATIM — per-90 decimal (6.8), the 210/217/226 convention, never rounded
+  playerId?: number;  // FotMob player id → links to /player/[id]
+}
+
 export interface StandingsData {
   leagueKey: string;
   leagueFa: string;
@@ -1141,6 +1156,8 @@ export interface StandingsData {
   accuratePassesPer90: AccuratePassesPer90Entry[];
   /** cycle-336 additive: «بازیابی توپ در هر ۹۰» — the defense family's third sibling (ball_recovery.json). */
   recoveriesPer90: RecoveriesPer90Entry[];
+  /** cycle-337 additive: «پاس بلند دقیق در هر ۹۰» — the passing family's second sibling (accurate_long_balls.json). */
+  longBallsPer90: LongBallsPer90Entry[];
   /** cycle-230 additive: «پاس مورد انتظار» — the deep-file family's
    *  FOURTEENTH sibling and the assist-side ANALYTICS twin of the xg
    *  surface (→ expected assist 230). The "Expected assist (xA)" category
@@ -2848,6 +2865,55 @@ export async function getFullRecoveriesPer90(leagueKey: string, season?: string)
             team: teamFa(r.TeamName || undefined) || r.TeamName || "",
             teamId: r.TeamId ?? 0,
             recoveriesPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
+            playerId: id,
+          });
+          if (out.length >= 10) break;
+        }
+        return out;
+      },
+    );
+  } catch {
+    return [];  // upstream hiccup / unavailable league — never break the merge
+  }
+}
+
+/** cycle-337 additive: «پاس بلند دقیق در هر ۹۰» loader — the PASSING family's
+ *  SECOND sibling (beside cycle-335's پاس دقیق در هر ۹۰).
+ *  accurate_long_balls.json (live-probed 2026-11-01 UA Chrome/124: pl 294
+ *  rows Xhaka 6.8 / Morita 5.1 / van Dijk 5.1, laliga 315 Rodri 6.8 /
+ *  Alexander-Arnold 6.8; the payload's own fetchAllUrl is season-scoped —
+ *  season/36781 on 2026/27 — and historical raws serve their OWN file,
+ *  season/27110 on 2025/26 — Rodri 5.4 / Andersen 5.2 — season-aware like
+ *  every sibling). Wide-file guard (the 210/…/336 class): every serving
+ *  league probed ≥294 rows, so thin means "the fetch was dropped" and
+ *  re-probes in 90s. Feeds without the category degrade to [] and the
+ *  honest category fallback still feeds the merge. NOTE the upstream's
+ *  own id-key typo (ParticiantId) — the dual read every sibling carries. */
+export async function getFullLongBallsPer90(leagueKey: string, season?: string): Promise<LongBallsPer90Entry[]> {
+  try {
+    return await cached(
+      `fullLongBallsPer90:v1:${leagueKey}:${season || "cur"}`,
+      (rows) => (rows.length >= FULL_LIST_HEALTHY_MIN ? 60 * 60_000 : 90_000),
+      async () => {
+        const { raw } = await getLeagueRaw(leagueKey, season);
+        const cat = raw.stats?.players?.find?.((p) => /^accurate long balls per 90$/i.test(p.header || ""));
+        const url = cat?.fetchAllUrl;
+        if (!url || !/^https:\/\/data\.fotmob\.com\//.test(url)) return [];
+        const data = await fetchDataFile<{ TopLists?: { StatList?: FMStatFullRow[] }[] }>(url);
+        const rows = data?.TopLists?.[0]?.StatList || [];
+        const out: LongBallsPer90Entry[] = [];
+        const seen = new Set<number>();
+        for (const r of rows) {
+          const id = r.ParticiantId ?? r.ParticipantId;
+          if (!r.ParticipantName || id == null || seen.has(id)) continue;
+          seen.add(id);
+          out.push({
+            rank: r.Rank ?? out.length + 1,  // upstream rank kept verbatim — the merge re-ranks positionally
+            name: r.ParticipantName,
+            nameFa: playerFa(r.ParticipantName),
+            team: teamFa(r.TeamName || undefined) || r.TeamName || "",
+            teamId: r.TeamId ?? 0,
+            longBallsPer90: r.StatValue ?? 0,  // decimal VERBATIM — the 210/217/226 convention, never rounded
             playerId: id,
           });
           if (out.length >= 10) break;
@@ -4604,6 +4670,32 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       .slice(0, 10)
       .map((e, i) => ({ ...e, rank: i + 1 }));
 
+    // cycle-337: «پاس بلند دقیق در هر ۹۰» — the PASSING family's SECOND
+    // sibling joining the SAME merge on the SAME cached payload (zero
+    // extra upstream per page-view — the 210/…/336 pattern). Category
+    // top-3 first, then the full accurate_long_balls.json file merged on
+    // top, deduped by player id, ranked by the DECIMAL value verbatim
+    // (never rounded — the 210/217/226 convention), top-10. Feeds without
+    // the category degrade honestly to []. Placed in the payload right
+    // after the recoveries merge; the view seats it beside پاس دقیق so
+    // the passing family reads پاس دقیق → پاس بلند.
+    const longBallsEntries: LongBallsPer90Entry[] = statCategory(raw, /^accurate long balls per 90$/i)
+      .map((p, i) => ({
+        rank: p.rank ?? i + 1, name: p.name, team: teamFa(p.teamName) || p.teamName || "",
+        teamId: p.teamId ?? 0, longBallsPer90: p.value ?? 0,
+        ...(p.id ? { playerId: p.id } : {}),
+      }))
+      .sort((a, b) => b.longBallsPer90 - a.longBallsPer90 || a.name.localeCompare(b.name))
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+    const fullLongBalls = await getFullLongBallsPer90(leagueKey, requestedSeason);
+    const enrichedLIds = new Set(
+      longBallsEntries.map((r) => r.playerId).filter((id): id is number => id != null),
+    );
+    const mergedLongBalls = [...longBallsEntries, ...fullLongBalls.filter((r) => r.playerId == null || !enrichedLIds.has(r.playerId))]
+      .sort((a, b) => b.longBallsPer90 - a.longBallsPer90 || a.name.localeCompare(b.name))
+      .slice(0, 10)
+      .map((e, i) => ({ ...e, rank: i + 1 }));
+
     // cycle-231: «سانس بزرگ خلق‌شده» — the FIFTEENTH sibling joins the SAME
     // merge on the SAME cached payload, the production-CREATION volume
     // surface beside the analytics twins. big_chances_created.json
@@ -5222,6 +5314,7 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       shotsPer90: mergedShots,
       accuratePassesPer90: mergedPasses,
       recoveriesPer90: mergedRecoveries,
+      longBallsPer90: mergedLongBalls,
       bigChancesCreated: mergedBigChances,
       xgot: mergedXgot,
       chancesCreated: mergedChancesCreated,
@@ -5394,7 +5487,12 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // THIRD surface); old v36 rows lack it and would keep the new section
     // hidden for up to a full TTL generation. Whole key bumps (the
     // 52/…/246 additive-shape convention).
-    await cached(`standings:v37:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-337: v38 — the accurate-long-balls-per-90 block («پاس بلند
+    // دقیق در هر ۹۰») joins the mapped payload as a REQUIRED field (the
+    // passing family's SECOND surface); old v37 rows lack it and would
+    // keep the new section hidden for up to a full TTL generation. Whole
+    // key bumps (the 52/…/246 additive-shape convention).
+    await cached(`standings:v38:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
@@ -5684,6 +5782,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // category) keep the normal TTL — the same convention as the
       // siblings.
       !(Array.isArray(mapped.recoveriesPer90) && mapped.recoveriesPer90.length > 0 && mapped.recoveriesPer90.length < FULL_LIST_HEALTHY_MIN) &&
+      // cycle-337: the standard thin-kept-for-a-generation guard closes for
+      // the accurate-long-balls-per-90 block too — the 327/330/331/335/336
+      // incident class, kept from ever repeating (SSG cold build drops the
+      // file → 90s re-probe). Honest-empty feeds (no "Accurate long balls
+      // per 90" category) keep the normal TTL — the same convention as the
+      // siblings.
+      !(Array.isArray(mapped.longBallsPer90) && mapped.longBallsPer90.length > 0 && mapped.longBallsPer90.length < FULL_LIST_HEALTHY_MIN) &&
       !(Array.isArray(mapped.cards?.yellow) && mapped.cards.yellow.length > 0 && mapped.cards.yellow.length < FULL_LIST_HEALTHY_MIN) &&
       !!mapped.cards
         ? typeof mapped.ttlMinutes === "number" ? mapped.ttlMinutes * 60_000 : LEAGUE_TTL_QUIET

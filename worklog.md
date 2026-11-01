@@ -4962,3 +4962,15 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **پذیرش:** ‏eslint src 0/0 ← ‏rm -rf .next/types && tsc --noEmit 0 (یک تکرار نام متغیر enrichedRIds با خواهر rating گرفته شد → ‏enrichedRecIds) ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← زنده: ‏pl ‏۱۰ ردیف (Tzolakis ‏۱۲.۹)، ‏laliga ‏۱۰ (Dmitrović ‏۱۱.۱)، تاریخی ۲۰۲۵/۲۶ ‏۱۰ (Pope/Roefs ‏۹.۵ — رتبه‌بندی positional tie صادق) ← DOM در 390×844: ‏recovery-row=۱۰، ترتیب «گل → شوت → پاس دقیق → تکل → قطع توپ → بازیابی توپ → سیو»، اول «۰۱ | Konstantinos Tzolakis | هال‌سیتی | ۱۲.۹» با ارقام فارسی، ‏۱۰ لینک /player، pill «۱۲.۹» ‏dir=ltr؛ ‏overflowX=false؛ کنسول fresh-session و errors صفر.
 
 **نوبت گردشی بعدی: cycle-337 = آپدیت** (فرمول ((337 mod 5)+1)=۳).
+
+### Task ID: cycle-337 — آپدیت («پاس بلند دقیق در هر ۹۰» — خواهر دوم خانوادهٔ پاس)
+
+**شرایط اجرا:** سلامت 200، درخت پاک، origin=fe3fef0 (کارت ۳۳۶ همین ضربان قبلی). بدون نشست موازی.
+
+**امکان‌سنجی (پروب زنده UA Chrome/124 — scripts/probe-337-longballs.py همراه کامیت):** کاندید دوم دیف ۳۳۶ با صفر تکرار («پاس بلند» ۰ برداشت در کل کدبیس): **«Accurate long balls per 90» → accurate_long_balls.json** — خواهر دوم خانوادهٔ پاس (کنار پاس دقیق ۳۳۵). فایل سالم: ‏PL فعلی (36781) **۲۹۴ ردیف** Xhaka ‏۶.۸ / Morita ‏۵.۱ / van Dijk ‏۵.۱؛ تاریخی ۲۰۲۵/۲۶ فایل خودش (27110) **۳۱۴ ردیف** Rodri ‏۵.۴ / Andersen ‏۵.۲؛ لالیگا (38843) **۳۱۵ ردیف** Rodri/TAA ‏۶.۸ → گارد wide-file (کلاس ۲۱۰/…/۳۳۶).
+
+**ویژگی (الگوی خواهر بایت‌به‌بایت):** ‏LongBallsPer90Entry + فیلد REQUIRED در StandingsData → کش standings **v37→v38** (قرارداد ۲۴۶)؛ ‏getFullLongBallsPer90 (کلید `fullLongBallsPer90:v1`، خوانش دوگانهٔ ParticiantId، سقف ۱۰، گارد wide، regex هدر `^accurate long balls per 90$`، ‏fetchAllUrl از خود پیلود)؛ ادغام getStandings (top-3 دسته + فایل کامل، dedupe با pid، اعشار verbatim)؛ نام صادقانهٔ read-time با playerFa؛ ‏/api/topscorers/[leagueKey] فیلد longBallsPer90 (قاعدهٔ ۱۰۸)؛ ‏LeagueScorersView بخش «پاس بلند دقیق در هر ۹۰ · توزیع بلند» بلافاصله بعد از «پاس دقیق در هر ۹۰» (خانوادهٔ پاس یکپارچه؛ testid `longballs-row`، pill ‏toFixed(1) ‏dir=ltr، ‏motif SVG قوس بلند، لینک /player). صفر درخواست بالادستی جدید در هر page-view. بند گارد thin-for-a-generation از ابتدا همراه ویژگی (درس ۳۳۵/۳۳۶) — و باز هم زنده امتحان گرفت: اولین cur fetch افتاد (۳ ردیف fallback) و بعد از پنجرهٔ ۹۰ ثانیه **۳→۱۰** ترمیم شد بدون ری‌استارت.
+
+**پذیرش:** ‏eslint src 0/0 ← ‏rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← زنده: ‏pl ‏۱۰ ردیف (Xhaka ‏۶.۸)، ‏laliga ‏۱۰ (Rodri/TAA ‏۶.۸)، تاریخی ۲۰۲۵/۲۶ ‏۱۰ (Rodri ‏۵.۴)، خواهرها دست‌نخورده (passes/recoveries/shots/tackles/interceptions=۱۰، ‏scorers=۲۰) ← DOM در 390×844: ‏longballs-row=۱۰، ترتیب «گل → شوت → پاس دقیق → پاس بلند → تکل → قطع توپ → بازیابی توپ → سیو»، اول «۰۱ | Granit Xhaka | ساندرلند | ۶.۸» با ارقام فارسی، ‏۱۰ لینک /player، ‏overflowX=false؛ کنسول fresh-session و errors صفر.
+
+**نوبت گردشی بعدی: cycle-338 = بررسی باگ** (فرمول ((338 mod 5)+1)=۴).
