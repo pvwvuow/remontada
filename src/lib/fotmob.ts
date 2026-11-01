@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa, countryFa } from "./leagues";
 import { cached } from "./cache";
-import { faDigits, jalaliShort } from "./format";
+import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "./format";
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
@@ -8947,6 +8947,93 @@ export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHi
   if (items.length === 0) return null;
   items.sort((a, b) => b.season.localeCompare(a.season));
   return { total: items.length, items: items.slice(0, SEASON_HISTORY_SHOWN) };
+}
+
+// ---------------- FotMob: team FAQPage structured data (cycle-316) ----------------
+// Probed live (2026-11-01, UA Chrome/124): details.faqJSONLD on the teams
+// payload is NON-EMPTY (4 template questions — next match, stadium location,
+// capacity, opened year) while the LEAGUE-level payload's was empty (rejected
+// in cycle-312). Embedding the upstream English LD verbatim would serve
+// English rich-results on a Persian page, so the SAME facts are rebuilt in
+// Persian from the structured fields of the SAME cached payload (zero new
+// upstream requests): overview.nextMatch (opponent + status.utcTime + home/
+// away) and overview.venue.widget {name, city} + venue.statPairs [Capacity,
+// Opened]. Every question renders only when its data exists; an empty list
+// → null (no LD). Best-effort: any shape surprise degrades to null.
+export async function getTeamFaqLd(teamId: number, teamDisplay: string): Promise<Record<string, unknown> | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return null;
+  let raw: Awaited<ReturnType<typeof getTeamDataRaw>>;
+  try {
+    raw = await getTeamDataRaw(teamId);
+  } catch {
+    return null;
+  }
+  const ov = (raw?.overview || {}) as {
+    nextMatch?: {
+      opponent?: { id?: number; name?: string } | null;
+      home?: { id?: number; name?: string } | null;
+      away?: { id?: number; name?: string } | null;
+      status?: { utcTime?: string } | null;
+    } | null;
+    venue?: {
+      widget?: { name?: string; city?: string } | null;
+      statPairs?: [string, string | number | null][];
+    } | null;
+  };
+  const team = teamDisplay || "";
+  const questions: { name: string; text: string }[] = [];
+
+  // Q1 — next match (only when both the kick-off time and the opponent exist)
+  const nm = ov.nextMatch;
+  const utc = nm?.status?.utcTime || "";
+  const oppName = nm?.opponent?.name || "";
+  if (utc && oppName && team) {
+    const oppFa = teamFa(oppName) || oppName;
+    const when = `${tehranTime(utc)} روز ${tehranDateLong(utc)}`;
+    const isHome = Number(nm?.home?.id) === teamId;
+    questions.push({
+      name: `مسابقهٔ بعدی ${team} کی است؟`,
+      text: `مسابقهٔ بعدی ${team} ساعت ${when} در برابر ${oppFa} است. ${isHome ? `${team} میزبان این بازی است.` : `${oppFa} میزبان این بازی است.`}`,
+    });
+  }
+
+  // Q2-Q4 — venue facts (name/city, Capacity, Opened from statPairs)
+  const venueName = ov.venue?.widget?.name || "";
+  const city = ov.venue?.widget?.city || "";
+  if (venueName && team) {
+    questions.push({
+      name: `ورزشگاه تیم ${team} کجاست؟`,
+      text: city
+        ? `ورزشگاه تیم ${team} ${venueName} نام دارد و در ${city} قرار دارد.`
+        : `ورزشگاه تیم ${team} ${venueName} نام دارد.`,
+    });
+    const pairs = ov.venue?.statPairs || [];
+    const cap = pairs.find((p) => p?.[0] === "Capacity")?.[1];
+    if (cap != null && Number.isFinite(Number(cap))) {
+      questions.push({
+        name: `ظرفیت ورزشگاه ${venueName} چقدر است؟`,
+        text: `ظرفیت ورزشگاه ${venueName} ${faDigits(String(cap))} نفر است.`,
+      });
+    }
+    const opened = pairs.find((p) => p?.[0] === "Opened")?.[1];
+    if (opened != null && Number.isFinite(Number(opened))) {
+      questions.push({
+        name: `ورزشگاه ${venueName} چه زمانی افتتاح شد؟`,
+        text: `ورزشگاه ${venueName} در سال ${faDigits(String(opened))} افتتاح شد.`,
+      });
+    }
+  }
+
+  if (questions.length === 0) return null;
+  return {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": questions.map((q) => ({
+      "@type": "Question",
+      "name": q.name,
+      "acceptedAnswer": { "@type": "Answer", "text": q.text },
+    })),
+  };
 }
 
 // ---------------- FotMob: team coach history (data/teams endpoint, cycle-91) ----------------

@@ -3,7 +3,7 @@ import { TeamView } from "@/components/remontada/team-view";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { BackToTop } from "@/components/remontada/back-to-top";
 import { JsonLd } from "@/components/remontada/json-ld";
-import { getTeamIndex } from "@/lib/fotmob";
+import { getTeamIndex, getTeamFaqLd } from "@/lib/fotmob";
 import { SITE_URL, RSS_ALTERNATE } from "@/lib/site";
 
 // ---- dynamic SEO (cycle 29) ------------------------------------------------
@@ -65,6 +65,12 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
   // LD; a team without a league hop just skips that ListItem, positions stay
   // sequential. Never breaks the page.
   let crumbLd: Record<string, unknown> | null = null;
+  // update cycle-316: FAQPage — the teams payload's details.faqJSONLD is
+  // non-empty for teams (unlike the empty league-level one rejected in 312)
+  // but its text is English; getTeamFaqLd rebuilds the same facts in Persian
+  // from the structured venue/nextMatch fields of the SAME cached payload —
+  // zero new upstream requests, best-effort like every other LD block here.
+  let faqLd: Record<string, unknown> | null = null;
   if (Number.isFinite(teamId) && teamId > 0 && /^\d{1,10}$/.test(id)) {
     try {
       const entry = (await getTeamIndex()).find((t) => t.teamId === teamId);
@@ -95,6 +101,11 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
           "@type": "BreadcrumbList",
           "itemListElement": crumbItems,
         };
+        try {
+          faqLd = await getTeamFaqLd(teamId, entry.fa || entry.name);
+        } catch {
+          faqLd = null; // best-effort like the other structured data
+        }
       }
     } catch {
       teamLd = null; // never break the page for structured data
@@ -107,6 +118,7 @@ export default async function TeamPage({ params }: { params: Promise<{ id: strin
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={teamLd} />
         <JsonLd data={crumbLd} />
+        <JsonLd data={faqLd} />
         {/* fix cycle-89: the body guard accepted numeric ids of ANY length
             (Number("99999999999999999999") = 1e20 is finite and > 0) so a
             20-digit id SSR-rendered the bare TeamView skeleton with zero h1,
