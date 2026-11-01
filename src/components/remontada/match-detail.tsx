@@ -156,6 +156,15 @@ interface DetailData {
   // /api/match/[id]; one row per market (1x2/bts/ou/dc) whose fact survived
   // the curated template map; rendered on the info tab, honest-hides otherwise
   poll?: { title: string; text: string }[] | null;
+  // update cycle-347: mini standings («جایگاه در جدول») — mirrors
+  // /api/match/[id]; the two sides' rank/record/points parsed from the
+  // competition's compressed XML table blob server-side. Rendered in the
+  // main flow, hidden when the league is uncovered or the join fails.
+  table?: {
+    leagueName: string;
+    home: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
+    away: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
+  } | null;
   // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
   // تیم») — mirrors /api/match/[id]; rendered on the h2h tab, hidden when
   // the payload lacks the block (cycle-111 legend convention)
@@ -1470,6 +1479,59 @@ function PollCard({ poll }: { poll: NonNullable<DetailData["poll"]> }) {
   );
 }
 
+// update cycle-347: mini standings («جایگاه در جدول») on the info tab —
+// closes the cycle-192 set-aside. One row per side (the rows come from the
+// competition's compressed XML table blob, parsed server-side), rank badge +
+// Persian team name + points, then the W/D/L/GF/GA record line. Display-only,
+// honest-hide when the league is uncovered or the blob join failed
+// (self-heals at the next 25 s cache generation).
+function TableIcon({ className }: { className?: string }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M4 5h16M4 12h10M4 19h13" />
+      <path d="M19 10v6" />
+    </svg>
+  );
+}
+type TableSide = NonNullable<DetailData["table"]>["home"];
+function TableRow({ side, name, rank, played, wins, draws, losses, goalsFor, goalsAgainst, points }: Exclude<TableSide, null> & { side: "home" | "away"; name: string }) {
+  if (rank == null) return null;
+  return (
+    <li className="px-4 py-3 text-[12px] leading-6">
+      <div className="flex items-center gap-2">
+        <span className="w-6 h-6 shrink-0 rounded-lg border border-glass-border-soft bg-white/5 text-[11px] font-black text-[#ecf3fa] flex items-center justify-center tabular-persian">
+          {faDigits(rank)}
+        </span>
+        <span className="font-black text-[12.5px] text-[#ecf3fa]">{name}</span>
+        <span className="ms-auto font-black text-mint text-[13px] tabular-persian">
+          {faDigits(points)} <span className="text-[9.5px] font-bold text-steel/80">امتیاز</span>
+        </span>
+      </div>
+      <p className="text-steel font-semibold text-[11px] mt-1 tabular-persian">
+        {faDigits(played)} بازی · {faDigits(wins)} برد · {faDigits(draws)} مساوی · {faDigits(losses)} باخت · گل {faDigits(goalsFor)}–{faDigits(goalsAgainst)}
+      </p>
+    </li>
+  );
+}
+function MiniTableCard({ table, match }: { table: NonNullable<DetailData["table"]>; match: DetailData["match"] }) {
+  if (!table.home && !table.away) return null;
+  return (
+    <div className="glass-card overflow-hidden" data-testid="match-table">
+      <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft flex items-center justify-between text-[11px]">
+        <span className="font-black text-[12px] text-[#ecf3fa] flex items-center gap-1.5">
+          <TableIcon className="text-chart-3" />
+          جایگاه در جدول
+        </span>
+        <span className="font-bold text-steel/80" dir="ltr">{table.leagueName}</span>
+      </header>
+      <ul className="glass-list divide-y divide-glass-border-soft">
+        {table.home && <TableRow side="home" name={match.home.fa} {...table.home} />}
+        {table.away && <TableRow side="away" name={match.away.fa} {...table.away} />}
+      </ul>
+    </div>
+  );
+}
+
 // ---------- info ----------
 function InfoPanel({ data }: { data: DetailData }) {
   const rows: { label: string; value?: string }[] = [
@@ -2456,6 +2518,10 @@ export function MatchDetail({ matchId }: { matchId: string }) {
                 (finished matches / unknown templates self-heal in ≤25s) */}
             {data.poll && data.poll.length > 0 && <PollCard poll={data.poll} />}
             {data.weather && <WeatherCard weather={data.weather} />}
+            {/* cycle-347: mini standings («جایگاه در جدول») — closes the
+                cycle-192 set-aside; hidden when the league is uncovered or
+                the blob join failed (self-heals in ≤25 s) */}
+            {data.table && <MiniTableCard table={data.table} match={data.match} />}
             <InfoPanel data={data} />
             {/* cycle-115: referee & stadium facts — hidden when the payload
                 lacks them (pre-115 cached entries self-heal in ≤25s) */}

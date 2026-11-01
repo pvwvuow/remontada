@@ -4,6 +4,7 @@
 // Normalized for Persian display
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
+import { gunzipSync } from "node:zlib";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
@@ -354,6 +355,16 @@ interface FMMatchDetails {
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
     lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
     momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
+    // update cycle-347: the mini-table POINTER (closes the cycle-192
+    // documented set-aside) — only a url + the two team ids; the blob itself
+    // is fetched+parsed separately (probed live UA Chrome/124:
+    // data.fotmob.com/tables.ext.47.fot.gz → 999 B gz / 3.1 KB XML,
+    // `<t id p w d l g c>` rows in rank order).
+    table?: {
+      url?: string;
+      teams?: (number | string)[];
+      leagueId?: number | string;
+    } | null;
     // update cycle-46: shotmap (per-shot locations, outcome, xG)
     shotmap?: { shots?: FMShot[] };
     // update cycle-47: per-player match stats (dict keyed by player id)
@@ -815,7 +826,22 @@ export interface MatchDetailNormalized {
   // market whose fact sentence survived the curated template map; null when
   // the match is finished (the poll is a pre-match artifact) or no fact
   // resolved (unknown templates drop honestly)
+  // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — one row per
+  // fact that survived template substitution; hidden when the match is
+  // finished (the poll is a pre-match artifact) or no fact survived.
   poll?: { title: string; text: string }[] | null;
+  // update cycle-347: mini standings context («جایگاه در جدول») — closes the
+  // cycle-192 documented set-aside: content.table is only a pointer to a
+  // compressed XML table blob, now fetched+parsed server-side (node:zlib,
+  // zero deps, strict data.fotmob.com host allowlist). Rows come in RANK
+  // order, pts = 3w+d (the blob carries no points column). Optional → honest
+  // absence (uncovered league, fetch hiccup, missing team row) self-heals at
+  // the next 25 s cache generation (the 116 convention).
+  table?: {
+    leagueName: string;
+    home: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
+    away: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
+  } | null;
   // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
   // تیم») — one entry per side, only finite stats carried (honest absence
   // per field); null when the payload lacks the block (some feeds do) or
@@ -1030,7 +1056,9 @@ const PLAYER_DEEP_LABEL_FA: Record<string, string> = {
   "Duels lost": "دوئل باخته",
 };
 
-function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized {
+// update cycle-347: async — the mini-standings block awaits the gz XML table
+// blob fetch (guarded, honest-absence on failure).
+async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDetailNormalized> {
   const g = raw.general || {};
   const hs = raw.header?.status || {};
   const teams = raw.header?.teams || [];
@@ -1902,6 +1930,90 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     if (h || a) topScorers = { home: h, away: a };
   }
 
+  // update cycle-347: mini standings («جایگاه در جدول») — the cycle-192
+  // set-aside, closed. One guarded fetch of the gz XML blob (strict
+  // https://data.fotmob.com/ host allowlist — the payload-trusted host),
+  // decompress + regex-parse `<t>` rows (rank order = array index + 1;
+  // attrs: id, p=points, w/d/l, g=goals for, c=conceded — probe-347:
+  // 40/40 green, p verified = points not played), locate BOTH sides by id.
+  // Any failure → honest absence.
+  let table: MatchDetailNormalized["table"] = null;
+  {
+    const tp = raw.content?.table;
+    const blobUrl = typeof tp?.url === "string" ? tp.url : "";
+    const wanted = Array.isArray(tp?.teams) ? tp!.teams!.map(Number) : [];
+    const homeId = Number(raw.general?.homeTeam?.id || 0);
+    const awayId = Number(raw.general?.awayTeam?.id || 0);
+    if (
+      /^https:\/\/data\.fotmob\.com\//.test(blobUrl) &&
+      homeId > 0 &&
+      awayId > 0 &&
+      wanted.includes(homeId) &&
+      wanted.includes(awayId)
+    ) {
+      try {
+        const res = await fetch(blobUrl, {
+          headers: { "User-Agent": UA },
+          signal: AbortSignal.timeout(12_000),
+          cache: "no-store",
+        });
+        if (res.ok) {
+          // node/undici auto-decompresses Content-Encoding: gzip responses,
+          // so the buffer may arrive as plain XML (probe-347 debug: gunzipSync
+          // threw «incorrect header check» on the transparently-decompressed
+          // blob) — magic-byte sniff (1f 8b) picks the right path.
+          const buf = Buffer.from(await res.arrayBuffer());
+          const xml = buf[0] === 0x1f && buf[1] === 0x8b
+            ? gunzipSync(buf).toString("utf8")
+            : buf.toString("utf8");
+          const rows = [...xml.matchAll(/<t\s+[^>]*>/g)]
+            .map((m) => {
+              // anchored (?:^|\s) — unanchored, `d="…"` matches INSIDE
+              // `id="8315"` (probe-347 debug: Athletic showed draws=8315,
+              // its own team id, poisoning played/points derived from it)
+              const at = (n: string) => new RegExp(`(?:^|\\s)${n}="([^"]*)"`).exec(m[0])?.[1] ?? "";
+              return {
+                id: Number(at("id")),
+                p: Number(at("p")),
+                w: Number(at("w")),
+                d: Number(at("d")),
+                l: Number(at("l")),
+                g: Number(at("g")),
+                c: Number(at("c")),
+              };
+            })
+            .filter((r) => Number.isFinite(r.id) && r.id > 0 && Number.isFinite(r.p) && r.p >= 0);
+          const mk = (id: number) => {
+            const idx = rows.findIndex((r) => r.id === id);
+            if (idx < 0) return null;
+            const r = rows[idx];
+            return {
+              rank: idx + 1,
+              // probe-347 finding: in the blob `p` is POINTS, not played
+              // (Barcelona p=30 = 10w*3+0d; Lazio p=25 = 8*3+1; hp mirrors
+              // home points) — played must be derived from w+d+l.
+              played: r.w + r.d + r.l,
+              wins: r.w,
+              draws: r.d,
+              losses: r.l,
+              goalsFor: r.g,
+              goalsAgainst: r.c,
+              points: r.w * 3 + r.d,
+            };
+          };
+          const leagueBlobName = /<table\b[^>]*\bname="([^"]*)"/.exec(xml)?.[1] ?? "";
+          const h = mk(homeId);
+          const a = mk(awayId);
+          if (leagueBlobName && (h || a)) {
+            table = { leagueName: leagueBlobName, home: h, away: a };
+          }
+        }
+      } catch {
+        // honest absence — the block hides (uncovered league / hiccup)
+      }
+    }
+  }
+
   return {
     match: {
       id: matchId,
@@ -1942,6 +2054,7 @@ function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized 
     reviews,
     previews,
     topPlayers,
+    table,
     // update cycle-205: the optaId → side crosswalk (internal — GET strips it
     // from the response once the touch map is assembled on top of it)
     touchSides,
@@ -1969,7 +2082,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
         throw new MatchNotFoundError("Data not found");
       }
       if (!raw?.general?.homeTeam) throw new Error("Empty match payload");
-      return normalize(raw, id);
+      return await normalize(raw, id);
     });
     // update cycle-205: the touch map rides its OWN cache entry — the
     // matchDetails producer runs at a 25 s cadence and must never trigger the
