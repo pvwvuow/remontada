@@ -5748,6 +5748,11 @@ export interface MatchLdData {
   // older cached matchld:{id} rows (60s TTL) simply fall back to og.png
   homeId?: number;
   awayId?: number;
+  // update cycle-311: league hop for the BreadcrumbList trail — resolved from
+  // the same general league ids via LEAGUES. additive/optional: rows cached
+  // before this cycle (60s TTL) simply skip the league ListItem.
+  leagueKey?: string;
+  leagueFa?: string;
 }
 
 interface FMLdDetails {
@@ -5756,6 +5761,9 @@ interface FMLdDetails {
     awayTeam?: { id?: number; name?: string };
     leagueName?: string;
     parentLeagueName?: string;
+    // update cycle-311: league ids for the BreadcrumbList trail hop
+    leagueId?: number;
+    parentLeagueId?: number;
   };
   header?: {
     status?: { utcTime?: string; finished?: boolean; cancelled?: boolean };
@@ -5785,6 +5793,9 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
     if (!home?.name || !away?.name) return LD_NOT_FOUND;
     const infoBox = raw.content?.matchFacts?.infoBox || {};
     const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
+    // update cycle-311: resolve the league hop from the same ids the league
+    // pages key on (parent first — a cup match points at its parent league)
+    const lgCfg = LEAGUES.find((l) => l.fotmobId === (g?.parentLeagueId || g?.leagueId));
     return {
       id,
       homeName: home.name,
@@ -5800,6 +5811,9 @@ export async function getMatchLdData(id: string): Promise<MatchLdData | null> {
       // update cycle-306: ids for the og:image crest (absent in old rows)
       homeId: typeof home.id === "number" ? home.id : undefined,
       awayId: typeof away.id === "number" ? away.id : undefined,
+      // update cycle-311: league hop (absent in old cached rows → skipped)
+      leagueKey: lgCfg?.key,
+      leagueFa: lgCfg?.faName,
     };
   });
   if (!payload || typeof payload !== "object") return null;

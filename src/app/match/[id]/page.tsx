@@ -62,6 +62,14 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   // the initial HTML so crawlers without JS see structured data too.
   // Failure must never break the page: any problem → ld stays null.
   let ld: Record<string, unknown> | null = null;
+  // update cycle-311: BreadcrumbList — same trail vocabulary league/[key] and
+  // topscorers/[leagueKey] ship (خانه → لیگ‌ها), then the match's league hop
+  // (resolved inside getMatchLdData from the upstream league ids) and the
+  // SportsEvent name as the leaf. Older cached rows without leagueKey skip
+  // the hop; positions stay sequential. Best-effort like SportsEvent: any
+  // problem → null, never breaks the page. One upstream call feeds both LDs
+  // (same 60s cache key — no extra FotMob request).
+  let crumbLd: Record<string, unknown> | null = null;
   try {
     const m = await getMatchLdData(id);
     if (m) {
@@ -85,9 +93,28 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
         ...(m.utcTime ? { "startDate": m.utcTime } : {}),
         ...(m.leagueName ? { "superEvent": { "@type": "SportsEvent", "name": m.leagueName } } : {}),
       };
+      const crumbItems: Record<string, unknown>[] = [
+        { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
+        { "@type": "ListItem", "position": 2, "name": "لیگ‌ها", "item": `${SITE_URL}/leagues` },
+      ];
+      if (m.leagueKey && m.leagueFa) {
+        crumbItems.push({ "@type": "ListItem", "position": 3, "name": m.leagueFa, "item": `${SITE_URL}/league/${m.leagueKey}` });
+      }
+      crumbItems.push({
+        "@type": "ListItem",
+        "position": crumbItems.length + 1,
+        "name": `${m.homeFa || m.homeName} در برابر ${m.awayFa || m.awayName}`,
+        "item": `${SITE_URL}/match/${m.id}`,
+      });
+      crumbLd = {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": crumbItems,
+      };
     }
   } catch {
     ld = null; // never break the page for structured data
+    crumbLd = null;
   }
 
   return (
@@ -95,6 +122,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={ld} />
+        <JsonLd data={crumbLd} />
         {/* fix cycle-89: the page body had no id guard at all — a numeric id
             outside the API's \d{3,12} contract (e.g. 20 digits) SSR-rendered
             the bare MatchDetail client skeleton with zero h1, while the

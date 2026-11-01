@@ -10,7 +10,8 @@ import { notFound } from "next/navigation";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
 import { PlayerProfile } from "@/components/remontada/player-profile";
 import { PlayerNotFoundError, getPlayerData, type PlayerData } from "@/lib/fotmob";
-import { RSS_ALTERNATE } from "@/lib/site";
+import { RSS_ALTERNATE, SITE_URL } from "@/lib/site";
+import { JsonLd } from "@/components/remontada/json-ld";
 
 export const dynamic = "force-dynamic";
 
@@ -67,10 +68,29 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
     }
   }
 
+  // update cycle-311: BreadcrumbList — خانه → بازیکنان → player; completes the
+  // trail pattern across the main page families (league/topscorers ship it,
+  // cycle-310 added team). The leaf uses the same honest display name rule as
+  // the h1/metadata (cycle-107: mapped Persian, else raw English). Only on the
+  // success branch — error/invalid shells carry no structured data (same as
+  // the metadata's noindex contract).
+  const playerCrumbLd: Record<string, unknown> | null = player
+    ? {
+        "@context": "https://schema.org",
+        "@type": "BreadcrumbList",
+        "itemListElement": [
+          { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
+          { "@type": "ListItem", "position": 2, "name": "بازیکنان", "item": `${SITE_URL}/players` },
+          { "@type": "ListItem", "position": 3, "name": player.nameFa || player.name, "item": `${SITE_URL}/player/${id}` },
+        ],
+      }
+    : null;
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
+        <JsonLd data={playerCrumbLd} />
         {!valid ? (
           <>
             {/* fix cycle-84: the invalid-id error shell had no h1 (cycle-83 patrol

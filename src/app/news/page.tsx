@@ -41,10 +41,24 @@ export default async function NewsPage() {
       }
     : null;
 
+  // update cycle-311: BreadcrumbList — خانه → اخبار; completes the trail
+  // pattern across the main page families (league/topscorers ship it,
+  // cycle-310 added team, this cycle match/player/news). Static trail — the
+  // page URL is fixed, no data dependency.
+  const newsCrumbLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "خانه", "item": SITE_URL },
+      { "@type": "ListItem", "position": 2, "name": "اخبار فوتبال", "item": `${SITE_URL}/news` },
+    ],
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
       <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
+        <JsonLd data={newsCrumbLd} />
         <JsonLd data={itemListLd} />
         <div className="mb-4 px-1 flex items-center justify-between">
           <div>
