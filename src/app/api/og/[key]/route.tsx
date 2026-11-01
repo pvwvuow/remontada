@@ -11,6 +11,13 @@
 // runtime fs read works in dev, prod and standalone alike).
 // Unknown keys → hard 404 (dynamicParams=false), the same contract as
 // the topscorers page.
+// Cache: since cycle-344 this route serves the SAME weekly Cache-Control
+// as /api/og/person/[id] — before that it fell back to Next's prerender
+// default (public, max-age=0, must-revalidate), a policy mismatch between
+// the two sibling OG routes flagged as a documented observation by the
+// cycle-343 bug-hunt. Card content is code-defined constants, so it only
+// changes on redeploy; a week of browser/CDN caching is the accepted
+// trade-off, the same one the person route already makes.
 // ------------------------------------------------------------------
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
@@ -146,6 +153,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ key: st
     {
       width: 1200,
       height: 630,
+      // weekly caching, byte-identical policy to /api/og/person/[id]
+      headers: { "Cache-Control": "public, max-age=604800, stale-while-revalidate=86400" },
       fonts: [
         { name: "Vazirmatn", data: regular, weight: 400, style: "normal" },
         { name: "Vazirmatn", data: bold, weight: 700, style: "normal" },
