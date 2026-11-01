@@ -1057,13 +1057,19 @@ function TeamStatsSection({ data }: { data: TeamStatsData }) {
 // short season («۲۵/۲۶», gold when the season ended as champions), the
 // middle shows the competition + ب/م/پ line (same abbreviations as the
 // season splits), the right column the points + «رتبهٔ N از M».
+// cycle-357: when the row's own league has a page on the site (upstream
+// templateId → catalog key), the whole row becomes a deep link into that
+// league's historical season archive — /league/<key>?season=<row season> —
+// the same season param the league page's own selector/feeds consume
+// (probed: upstream serves even a 2010/2011 PL season with its table).
+// Rows of leagues without a site page stay the exact old plain markup.
 function TeamSeasonRankRow({ r }: { r: TeamSeasonRank }) {
   // «قهرمان لیگ» only for a FINISHED title season — the live season (fotmob
   // already carries it as position 1 after a few rounds) keeps the honest
   // «رتبهٔ N از M» wording.
   const champion = r.position === 1 && !r.live;
-  return (
-    <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">
+  const content = (
+    <>
       <span
         className={cn(
           "shrink-0 w-9 h-9 rounded-lg grid place-items-center text-[9.5px] font-black tabular-persian border",
@@ -1089,8 +1095,26 @@ function TeamSeasonRankRow({ r }: { r: TeamSeasonRank }) {
           </span>
         )}
       </div>
-    </li>
+    </>
   );
+  // cycle-357: linked rows keep the exact old markup (the Link adds only the
+  // hover cue + tap zone); rows without a site page render the plain <li>.
+  if (r.leagueKey) {
+    return (
+      <li>
+        <Link
+          href={`/league/${r.leagueKey}?season=${encodeURIComponent(r.season)}`}
+          prefetch={false}
+          data-testid="team-history-link"
+          className="glass-card px-3 py-2.5 flex items-center gap-2.5 tap-hit-row hover:border-sky-soft/30 transition-colors group"
+        >
+          {content}
+          <span aria-hidden className="text-[10px] text-muted-foreground/70 group-hover:text-sky-soft transition-colors shrink-0">←</span>
+        </Link>
+      </li>
+    );
+  }
+  return <li className="glass-card px-3 py-2.5 flex items-center gap-2.5">{content}</li>;
 }
 
 function TeamHistorySection({ data }: { data: TeamSeasonHistory }) {

@@ -9217,6 +9217,13 @@ interface FMHistoryRankRaw {
   tournamentName?: string;
   seasonName?: string;
   shortSeasonName?: string;
+  // cycle-357 probed (UA Chrome/124, 2026-11-01, Liverpool 8650): the rank
+  // rows carry templateId = the FotMob LEAGUE id of that season's campaign
+  // (17/17 rows "Premier League" → 47; a Championship year would carry 48,
+  // the catalog key "championship"). Unconsumed until this cycle — it is
+  // the join key that deep-links each history row into the league page's
+  // own historical season archive (/league/<key>?season=...).
+  templateId?: number;
   position?: number;
   numberOfTeams?: number;
   stats?: { points?: number; wins?: number; draws?: number; loss?: number };
@@ -9944,6 +9951,11 @@ export interface TeamSeasonRank {
   draws: number;
   losses: number;
   live?: boolean; // seasonName === inferred current season → in progress
+  // cycle-357: the row's league resolved through the site catalog via the
+  // upstream templateId (the FotMob league id of that season's campaign).
+  // Present only when the league has a page on the site — rows of other
+  // competitions stay plain text (honest fallback, no dead-end links).
+  leagueKey?: string | null;
 }
 
 export interface TeamSeasonHistory {
@@ -10007,6 +10019,9 @@ export async function getTeamSeasonHistory(teamId: number): Promise<TeamSeasonHi
       draws: num(s.draws),
       losses: num(s.loss),
       ...(season === cur ? { live: true } : {}),
+      // cycle-357: catalog key of the row's own league (upstream templateId)
+      // — the deep link into /league/<key>?season=<row season>
+      leagueKey: LEAGUES.find((l) => l.fotmobId === Number(r?.templateId))?.key ?? null,
     });
   }
   if (items.length === 0) return null;
