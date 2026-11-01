@@ -440,7 +440,7 @@ export function StandingsView({ data, loading, leagueKey, onLeagueChange, onRetr
         </div>
       ) : (
         <EmptyState
-          icon="trophy"
+          icon="medal"
           title="دریافت جدول ناموفق بود"
           sub="ارتباط با منبع داده برقرار نشد؛ یک بار دیگر امتحان کنید."
           action={onRetry ? { label: "تلاش دوباره", onClick: onRetry } : undefined}

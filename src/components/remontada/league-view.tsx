@@ -1597,7 +1597,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               </div>
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
-          ) : <EmptyState icon="trophy" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
+          ) : <EmptyState icon="medal" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
           {tab === "stats" && (
             <div className="flex flex-col gap-4">
               {standings?.boards && standings.boards.length > 0 && (
