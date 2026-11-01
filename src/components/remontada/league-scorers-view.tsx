@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, TacklesPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -97,6 +97,15 @@ interface LeagueScorersData {
   // laliga = Messi 0.89, frozen). PERSIANGULF SERVES — 93 rows, the first
   // deep sibling besides minutes to reach the Persian Gulf.
   goalsPer90?: GoalsPer90Entry[];
+  // cycle-327 additive: «تکل در هر ۹۰» rides the same payload — the deep-
+  // file family's next sibling and the FIRST DEFENSE surface (the portal
+  // had zero defensive tables), rendered right after گل در هر ۹۰; decimal
+  // pill WITH dir=ltr rendered toFixed(1) (upstream precision ONE decimal
+  // probed — the 210/217/226 decimal convention), honest absence = []
+  // (feeds without the "Tackles per 90" category hide the section).
+  // SEASON-AWARE (the 124/175/185 class): the 2024/25 historical raw
+  // serves its OWN file (Wieffer 5.2, frozen).
+  tacklesPer90?: TacklesPer90Entry[];
   // cycle-230 additive: «پاس مورد انتظار» rides the same payload — the deep-
   // file family's FOURTEENTH sibling and the assist-side ANALYTICS twin of
   // the xg surface, rendered right after گل در هر ۹۰ so the analytics run
@@ -1444,6 +1453,63 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="gp90-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-327: تکل در هر ۹۰ — sister-page consistency (the
+          210/…/245 pattern one surface over): the SAME cached getStandings
+          payload now carries the tackles-per-90 block (the deep-file
+          family's next sibling and the FIRST DEFENSE surface — the portal
+          had zero defensive tables). stats/{id}/season/{sid}/
+          total_tackle.json — live-probed 2026-11-01: pl 311 rows Sangaré
+          4.2, laliga 336 Moscardo 5.2; the 2024/25 historical raw serves
+          its OWN file (Wieffer 5.2 — season-aware). Decimal values kept
+          VERBATIM — the 210/217/221/222/226/227 decimal convention;
+          upstream precision ONE decimal (probed) so the pill renders
+          toFixed(1), dir=ltr — the 217 display rule. Honest absence when
+          the feed has no "Tackles per 90" category → the section simply
+          hides. Placed right after گل در هر ۹۰ (the rate surfaces) so the
+          defense family starts fresh. */}
+      {data && !loading && (data.tacklesPer90 || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              <path d="M12 3l7 3v5c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6z" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">تکل در هر ۹۰</h2>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">جنگاوری دفاعی</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.tacklesPer90 || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.tacklesPer90.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="tackles-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}

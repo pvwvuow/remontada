@@ -4798,3 +4798,19 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
 
 **نوبت گردشی بعدی: cycle-327 = آپدیت** (فرمول ((327 mod 5)+1)=۳) — پویش خانواده‌های تازه ادامه دارد؛ پس از ۳۲۶، بلاک‌های بی‌مصرفِ surface جدول همگی مصرف شدند.
+
+---
+
+### Task ID: cycle-327 — آپدیت («تکل در هر ۹۰» — اولین سطح دفاعی، پانزده‌وسومین sibling خانوادهٔ deep-file)
+
+**یافتن شکاف (پروب زندهٔ الزامی کارت ۳۲۶):** سرشماری خانوادهٔ دسته‌های آماری (stats.players[]) که هرگز به‌عنوان خانواده شمرده نشده بود: PL ۴۶ دسته، لالیگا ۴۱ — در برابر ۱۷ بلاک embedded در StandingsData → **۲۹ دستهٔ بی‌مصرف** (دفاعی صفر مطلق، پاسی، فیزیکی PL-only، شوت حجمی، پنالتی برد/خورده، GK-اضافی). انتخاب: **«تکل در هر ۹۰»** — اولین sibling خانوادهٔ دفاعی. پروب: total_tackle.json (گزیپ، همان fetchDataFile) — pl ۳۱۱ ردیف سانگاره ۴.۲، لالیگا ۳۳۶ موسکاردو ۵.۲، فصل تاریخی 2024/25 فایل خودش (ویفر ۵.۲ — فصل-آگاه)؛ quirk آپستریم ParticiantId همان خواندن دوگانهٔ siblings.
+
+**پیاده‌سازی (افزودنی، ۳ فایل، الگوی دقیق ۲۱۰/…/۲۴۶):** TacklesPer90Entry + getFullTacklesPer90 (کلید fullTacklesPer90:v1، گارد thin 90s، سقف ۱۰) + embed در getStandings (statCategory top-۳ + ادغام فایل کامل، dedupe pid، رتبه بر decimal verbatim) + freshenHonestNames + **بامپ کش standings:v32→v33** (فیلد REQUIRED — قرارداد 246). route /api/topscorers: tacklesPer90 (قانون 108). UI: سکشن «تکل در هر ۹۰» بعد از «گل در هر ۹۰» (تستید tackles-row، pill toFixed(1) با dir=ltr — دقت یک‌دهدهی پروب‌شده، لینک /player/{pid}).
+
+**حادثهٔ زندهٔ حل‌شده (کلاس 210/215/127):** بیلد سرد SSG فایل را انداخت → ۳ ردیف category-only برای یک نسل کامل TTL پخته شد (fetch مستقل ۳۱۱ ردیف در ۲۴۸ms!). ریشه‌یابی سه‌لایه: تابع مستقل = ۱۰ ردیف ✓ → گارد end-to-end مفقود در ttl standings → گارد cycle-327 اضافه شد (thin-but-nonempty → 90s re-probe، قرارداد assists-guard) → پاکسازی L2 (۲۶ ردیف v33/thin) + restart → **۱۰ ردیف پایدار**.
+
+**اثبات زنده (390×844):** /topscorers/pl — «تکل در هر ۹۰ · جنگاوری دفاعی» ۱۰ ردیف، اول «۰۱ | مامادو سانگاره | برنتفورد | ۴.۲»، ۱۰ لینک بازیکن، pills «۴.۲|۴.۲|۴.۰|۳.۹|۳.۹»؛ تاریخی 2024/25 — «Mats Wieffer | برایتون | ۵.۲»؛ لالیگا — «Gabriel Moscardo | اسپانیول | ۵.۲»؛ overflowX=false هر سه؛ کنسول fresh-session صفر.
+
+**زنجیرهٔ پذیرش سبز:** eslint 0/0 ← rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE=http://localhost:3000 28/28.
+
+**نوبت گردشی بعدی: cycle-328 = بررسی باگ** (فرمول ((328 mod 5)+1)=۴).

@@ -213,6 +213,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // leagues serve incl. uel — the STANDARD guard class); old consumers
       // never read this field (the 108 rule).
       teamCorners: st.teamCorners,
+      // cycle-327 additive: «تکل در هر ۹۰» rides the SAME cached payload —
+      // the deep-file family's next sibling and the FIRST DEFENSE surface
+      // (decimal per-90 values verbatim — the 210/217/226 convention; the
+      // 2024/25 historical raw serves its OWN file — season-aware); old
+      // consumers never read this field (the 108 rule).
+      tacklesPer90: st.tacklesPer90,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).
