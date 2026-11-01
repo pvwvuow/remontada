@@ -229,6 +229,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
       // per-90 values verbatim; season-aware like every sibling); old
       // consumers never read this field (the 108 rule).
       shotsPer90: st.shotsPer90,
+      // cycle-335 additive: «پاس دقیق در هر ۹۰» rides the SAME cached payload —
+      // the passing family's first surface (decimal per-90 values verbatim;
+      // season-aware like every sibling); old consumers never read this field
+      // (the 108 rule).
+      accuratePassesPer90: st.accuratePassesPer90,
       // cycle-179 additive: cards ride the SAME cached payload (yellow/red,
       // per-kind honest absence — mas has no yellow category). Zero extra
       // upstream calls; old consumers never read this field (the 108 rule).

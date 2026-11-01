@@ -4934,3 +4934,17 @@ HEAD نهایی کمپین: `a47e040` (ui-cycle-30). کارت‌های ui-cycle-
 **لنگرهای دوره روی کلون تازه — همگی سبز:** ۲۹۵ لنگر «فید RSS» در /news؛ ۳۰۴ ‏/rss.xml=200 با صفر boxing/racing؛ ۳۰۱ اولین shortcut مانیفست «جستجو»؛ ۳۰۰ ‏SearchAction در LD خانه؛ ۳۲۲ ‏Place LD در /team/8633؛ ۳۲۵ «آمار فصل‌به‌فصل» در /player/696679؛ SportsEvent در /match/5795501؛ لنگر ۳۲۹ — ‏/league/pl ‏۱۷/۱۷ + home «جدول لیگ‌ها» ‏۱۱/۱۱ th scope="col" (جمع ۲۸/۲۸) در 390×844.
 
 **دست‌نخورده:** آخرین کارت = cycle-334 → نوبت گردشی طبق فرمول: **cycle-335 = آپدیت** (((335 mod 5)+1)=۱) — در همین نشست با کارت جداگانه.
+
+### Task ID: cycle-335 — آپدیت («پاس دقیق در هر ۹۰» — اولین سطح خانوادهٔ پاس) — اجرا به‌صورت merge-completion
+
+**شرایط ویژهٔ اجرا:** بعد از نهمین بازیافت کانتینر (کارت recovery موازی 48dd40c با امضای سنگین‌ترین پاک‌سازی)، نشست ۱۵:۱۵ کار ۳۳۵ را شروع کرد و نیمه‌کاره رها نمود (درخت کثیف ۱۷۰-خطی: fotmob.ts + league-scorers-view.tsx + route.ts). اجرای گردشی ۱۵:۳۰ طبق بند ۱ (درخت کثیف ولی پایدار بین دو خواندن → تکمیل/راستی‌آزمایی/کامیت/پوش، از صفر شروع نشد، بازنویسی نشد) کار را **ادغام و تکمیل** کرد.
+
+**ویژگی (کار نشست موازی، راستی‌آزمایی کامل شده):** «پاس دقیق در هر ۹۰ · ساخت بازی» — اولین سطح خانوادهٔ پاس، دقیقاً الگوی خواهر ۳۲۷/۳۳۰/۳۳۱: ‏AccuratePassesPer90Entry + فیلد REQUIRED در StandingsData → standings cache **v35→v36** (قرارداد ۲۴۶)؛ ‏getFullAccuratePassesPer90 (کلید `fullAccuratePassesPer90:v1`، خوانش دوگانهٔ ParticiantId، سقف ۱۰، گارد thin ۹۰ثانیه‌ای، regex هدر `^accurate passes per 90$` و fetchAllUrl از خود پیلود)؛ ادغام getStandings (top-3 دسته + فایل کامل، dedupe با pid، اعشار verbatim)؛ نام صادقانهٔ read-time با playerFa؛ ‏/api/topscorers فیلد accuratePassesPer90 (قاعدهٔ ۱۰۸)؛ ‏LeagueScorersView بخش «پاس دقیق در هر ۹۰» بلافاصله بعد از «شوت در هر ۹۰» (زنجیرهٔ حمله کامل: گل → حجم → توزیع؛ testid `passes-row`، pill ‏toFixed(1) ‏dir=ltr، لینک /player). صفر درخواست بالادستی جدید در هر page-view.
+
+**تکمیل merge توسط این اجرا — بند گارد گم‌شده:** زنجیرهٔ گارد thin-for-a-generation در کش standings بند accuratePassesPer90 را **نداشت** (۳۲۷/۳۳۰/۳۳۱ دارند). پروب زندهٔ تأیید کلاس را گرفت: اولین fetch cur بعد از recovery فایل را انداخت → fallback ۳-ردیفه پخت → بدون بند، پیلود «سالم» قلمداد و ۳ ردیف برای یک کل ttlMinutes می‌ماند (cur گیر ۳ در پروب من؛ مسیر فصل‌دار ۱۰ می‌داد). بند verbatim الگوی ۳۲۷ اضافه شد و **دو بار زنده end-to-end اثبات شد**: ‏pl بعد از ری‌بیلد ۱۰ شد؛ ‏laliga ۳→۱۰ بعد از پنجرهٔ ۹۰ ثانیه بدون ری‌استارت.
+
+**پروب بالادستی مستقل (scripts/probe-335-passes.py — همراه کامیت، UA Chrome/124 + هندل gzip):** ‏fetchAllUrl خودِ پیلود = ‏data.fotmob.com/stats/47/season/36781/accurate_pass.json → **۳۴۰ ردیف**، اول: ‏Rúben Dias ‏۸۳.۳ / ‏van Hecke ‏۸۲.۱ / ‏van de Ven ‏۷۹.۸ — دقیقاً = خروجی API (verbatim). تاریخی ۲۰۲۴/۲۵ فایل خودش (۳۱۰+ ردیف، ‏Dias ‏۸۵.۹). ‏false-positive پروب خودم ثبت شد: کلید `value` صفر زد — فیلد واقعی `accuratePassesPer90` است.
+
+**پذیرش:** ‏eslint 0/0 ← ‏rm -rf .next/types && tsc --noEmit 0 ← build 0 ← استارت رسمی try=2/200 ← رگرسیون BASE صریح **28/28** ← خروجی زنده: ‏cur ‏۱۰ ردیف (Dias ‏۸۳.۳)، خواهرها دست‌نخورده (shots/tackles/interceptions=۱۰، scorers=۲۰) ← DOM در 390×844: ‏passes-row=۱۰، ترتیب «گل در هر ۹۰ → شوت در هر ۹۰ → پاس دقیق در هر ۹۰ → تکل در هر ۹۰ → قطع توپ در هر ۹۰» ‏sortedOk=true، اول «۰۱ | Rúben Dias | منچسترسیتی | ۸۳.۳» با ارقام فارسی، ‏۲۲۲ لینک /player؛ ‏laliga ‏۱۰ ردیف (Rodri ‏۱۰۵.۹)؛ تاریخی ۲۰۲۴/۲۵ ‏۱۰ ردیف (Dias ‏۸۵.۹)؛ ‏overflowX=false؛ کنسول fresh-session و errors صفر.
+
+**نوبت گردشی بعدی: cycle-336 = آپدیت** (فرمول ((336 mod 5)+1)=۲).

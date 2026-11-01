@@ -8,7 +8,7 @@
 // ------------------------------------------------------------------
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, TacklesPer90Entry, InterceptionsPer90Entry, ShotsPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
+import type { ScorerEntry, AssistEntry, LeagueCardEntry, RatingEntry, CleanSheetEntry, GPlusAEntry, GoalsPreventedEntry, MinutesEntry, SavePercentageEntry, SavesPer90Entry, PenaltySavesEntry, XgEntry, GoalsPer90Entry, TacklesPer90Entry, InterceptionsPer90Entry, ShotsPer90Entry, AccuratePassesPer90Entry, XaEntry, BigChancesCreatedEntry, XgotEntry, ChancesCreatedEntry, BigChancesMissedEntry, TeamXgEntry, TeamCleanSheetEntry, TeamPossessionEntry, TeamYellowCardEntry, TeamRedCardEntry, TeamGoalsPerMatchEntry, TeamCornerEntry } from "@/lib/fotmob";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassLeagueHeader, pad2 } from "@/components/remontada/glass-stats";
@@ -124,6 +124,15 @@ interface LeagueScorersData {
   // category hide the section). SEASON-AWARE: historical raws serve their
   // OWN file (the 124/175/185 class).
   shotsPer90?: ShotsPer90Entry[];
+  // cycle-335 additive: «پاس دقیق در هر ۹۰» rides the same payload — the
+  // PASSING family's first surface, the distribution/buildup volume that
+  // finishes the attack chain (گل → شوت → پاس), rendered right after شوت در
+  // هر ۹۰ and before the defense family; decimal pill WITH dir=ltr rendered
+  // toFixed(1) (probed precision ONE decimal — the 210/217/226 decimal
+  // convention), honest absence = [] (feeds without the "Accurate passes
+  // per 90" category hide the section). SEASON-AWARE: historical raws
+  // serve their OWN file (the 124/175/185 class).
+  accuratePassesPer90?: AccuratePassesPer90Entry[];
   // cycle-230 additive: «پاس مورد انتظار» rides the same payload — the deep-
   // file family's FOURTEENTH sibling and the assist-side ANALYTICS twin of
   // the xg surface, rendered right after گل در هر ۹۰ so the analytics run
@@ -1531,6 +1540,66 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
               const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
               return (
                 <li key={`${r.name}-${i}`} data-testid="shots-row">
+                  {r.playerId ? (
+                    <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
+                      {inner}
+                    </Link>
+                  ) : (
+                    <div className={cls}>{inner}</div>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      )}
+
+      {/* cycle-335: پاس دقیق در هر ۹۰ — the PASSING family's first surface
+          (the cycle-330 census's UNUSED menu), byte-for-byte the 327/330/331
+          sibling pattern: the SAME cached getStandings payload now carries
+          the accurate-passes-per-90 block. stats/{id}/[season/{sid}/]
+          accurate_pass.json — live-probed 2026-11-01: pl 340 rows Rúben
+          Dias 83.3, laliga 360 Rodri 105.9; the payload's fetchAllUrl is
+          season-scoped and the 2024/25 raw serves its OWN file (318 rows,
+          Dias 85.9 / Cairney 82.2 — season-aware). Decimal values kept
+          VERBATIM — the 210/217/226/330/331 decimal convention; upstream
+          precision ONE decimal (probed) so the pill renders toFixed(1),
+          dir=ltr — the 217 display rule. Honest absence when the feed has
+          no "Accurate passes per 90" category → the section simply hides.
+          Placed right after شوت در هر ۹۰ so the attack chain finishes
+          (goal → volume → distribution); the defense family follows. */}
+      {data && !loading && (data.accuratePassesPer90 || []).length > 0 && (
+        <div className="glass-card overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-2.5 border-b border-[color:var(--glass-hairline)]">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" className="text-chart-3" aria-hidden>
+              {/* passing motif: a through-ball arc with its arrowhead */}
+              <path d="M4 18c3.5-1 6.5-3.5 8.5-7.5" />
+              <path d="M13.5 9.5l6-3" />
+              <path d="M19.5 6.5l-2.6-.4M19.5 6.5l-.4 2.6" />
+            </svg>
+            <h2 className="text-[12.5px] font-black text-[#dceafd]">پاس دقیق در هر ۹۰</h2>
+            <span className="ms-auto text-[10px] text-steel tabular-persian">ساخت بازی</span>
+          </div>
+          <ol className="px-2 pb-2.5 flex flex-col">
+            {(data.accuratePassesPer90 || []).map((r, i) => {
+              const rank = r.rank ?? i + 1;
+              const inner = (
+                <>
+                  <span className="w-7 h-7 rounded-md bg-[#a9cdf611] text-[#dceafd] flex items-center justify-center text-[10.5px] font-bold shrink-0 tabular-persian">
+                    {faDigits(pad2(rank))}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[12.5px] font-bold text-[#e5eefb] truncate">{r.nameFa || r.name}</span>
+                    {r.team && <span className="block text-[9.5px] text-[#92adc9] truncate">{r.team}</span>}
+                  </span>
+                  <span dir="ltr" className="shrink-0 min-w-[46px] text-center rounded-md bg-[#a9cdf611] px-2 py-1 text-[13px] font-semibold text-[#e0efff] tabular-persian">
+                    {faDigits(r.accuratePassesPer90.toFixed(1))}
+                  </span>
+                </>
+              );
+              const cls = "flex items-center gap-2.5 px-2 py-2.5 rounded-lg glass-row-hover w-full min-w-0 text-start";
+              return (
+                <li key={`${r.name}-${i}`} data-testid="passes-row">
                   {r.playerId ? (
                     <Link href={`/player/${r.playerId}`} prefetch={false} className={cls} title={r.nameFa && r.nameFa !== r.name ? r.name : `پروفایل ${r.name}`}>
                       {inner}
