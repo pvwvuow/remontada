@@ -305,6 +305,31 @@ export default function Home() {
             )}
             {/* upcoming fixtures of favorited teams (cycle-20, renders nothing without favorites) */}
             <FavoriteFixtures />
+            {/* update cycle-422: «دانلود تقویم این روز (ICS)» — the whole
+                matchday as an RFC 5545 file (/api/day-calendar?date=, the
+                day-level rung of the ICS ladder: 312 league → 420 team →
+                421 fixture → 422 matchday). Visible ⇔ the day feed loaded
+                (the link-visible ⇔ source-data-present contract, hidden
+                while loading or on error); the href rides the SAME ?date=
+                deep-link language the carousel's URL contract uses (297),
+                so the file always matches the day the view shows. */}
+            {!matchesLoading && !matchesError && (
+              <div className="px-1 mb-3" data-testid="home-day-ics-row">
+                <a
+                  href={`/api/day-calendar?date=${offsetDateISO(offset)}`}
+                  download
+                  data-testid="home-day-ics-link"
+                  className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-soft hover:text-foreground transition-colors"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+                    <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+                    <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+                    <path d="M9 14.5l2 2 4-4" />
+                  </svg>
+                  دانلود تقویم این روز (ICS)
+                </a>
+              </div>
+            )}
             <MatchesView
               groups={groups}
               loading={matchesLoading}
