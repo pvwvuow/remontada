@@ -4,10 +4,12 @@
 // The producer is the EXACT code that lived in src/app/api/news/route.ts
 // (cycles 57–138), moved here so TWO routes can share ONE cached
 // instance: /api/news (the page feed) and /api/search (the cycle-202
-// «خبرها» index). Cache key `news:v3` (v1→v2 by fix cycle-294 to shed the
+// «خبرها» index). Cache key `news:v4` (v1→v2 by fix cycle-294 to shed the
 // poisoned empty-outage row; v2→v3 by update cycle-305 for the fetchedAt
-// payload shape — see loadNewsFeed below), same 15-min TTL, same
-// translation stage — zero behavior change for the feed route.
+// payload shape — see loadNewsFeed below; v3→v4 by fix cycle-414 to shed
+// the live row carrying defective mixed-script titles — see
+// defectiveFaTitle below), same 15-min TTL, same translation stage for
+// every honest row — zero behavior change for the feed route.
 //
 // cycle-202: the header search never covered the news page — 16
 // Persian-translated headlines sat behind /api/news with no path from
@@ -119,6 +121,31 @@ const TRANSLATE_BUDGET_MS = 10_000;
 // «ترجمهٔ خودی» stage. One call for any array of football strings, the same
 // 10s hard budget and JSON-array protocol; per-slot null on ANY failure so
 // every caller keeps its honest original.
+//
+// fix cycle-414 (the live-defect class this cycle's own probe caught): the
+// LLM stage can return a DEFECTIVE mixed-script title — a Persian-dominant
+// string that still carries an embedded Latin run where a name was split
+// mid-word across alphabets. 4 of the 16 live rows on the poisoned news:v3
+// row were exactly this («آستون villa», «فerguson», «مikel آرتا»,
+// «فان دیjk»). The portal's honesty rule (the cycle-104 convention: a
+// dubious transliteration is worse than the honest English name) applies to
+// whole headlines too: such rows are REJECTED inside translateBatch (so
+// BOTH consumers — the feed's translateTitles and the /api/team-news
+// digest — inherit the guard) and the caller keeps the English original,
+// the same display state as a failed translation. Validation is
+// deterministic and free: no second LLM round-trip (a retry budget would
+// push the cold producer past the regression's 25s curl wall — the
+// twice-documented 134/135 transient class). A tiny case-sensitive acronym
+// whitelist keeps genuinely Latin football tokens (VAR, xG) acceptable.
+// Exported for scripts/cycle414-guard-test.ts — the unit half of the
+// cycle-414 evidence (the domproof half asserts the live invariant).
+const FA_TITLE_LATIN_WHITELIST = /\b(VAR|xG)\b/g;
+
+export function defectiveFaTitle(s: string): boolean {
+  if (!/[\u0600-\u06FF]/.test(s)) return false; // pure Latin → the honest fallback itself, not a defect
+  return /[A-Za-z]{2,}/.test(s.replace(FA_TITLE_LATIN_WHITELIST, ""));
+}
+
 export async function translateBatch(titles: string[]): Promise<(string | null)[]> {
   const out: (string | null)[] = titles.map(() => null);
   if (titles.length === 0) return out; // nothing to translate — skip the LLM entirely
@@ -161,7 +188,9 @@ export async function translateBatch(titles: string[]): Promise<(string | null)[
     const arr = JSON.parse(jsonMatch[0]) as unknown[];
     if (!Array.isArray(arr) || arr.length !== titles.length) throw new Error("bad translation array");
     arr.forEach((v, i) => {
-      if (typeof v === "string" && v) out[i] = v;
+      // cycle-414: the mixed-script hygiene guard — a defective Persian
+      // title is dropped (slot stays null → the caller's honest English)
+      if (typeof v === "string" && v && !defectiveFaTitle(v)) out[i] = v;
     });
   } catch {
     // keep the null slots on any failure (translation timeout included)
@@ -199,7 +228,7 @@ async function loadNews(): Promise<NewsItem[]> {
   // fix cycle-304 (this cycle's patrol finding): Sky's rss/12040 is the
   // ALL-sports Sky Sports News wire — boxing (Canelo) and horse-racing
   // (Breeders' Cup) items were landing on a football-only portal; since
-  // /news and /rss.xml share this same cached instance (news:v3), both
+  // /news and /rss.xml share this same cached instance (news:v4), both
   // leaked identically. Keep a Sky item only when its link lives under
   // skysports.com/football/ — the /watch/video desk (source of the racing
   // leak) and the other-sport sections are dropped. BBC (feeds.bbci.co.uk/
@@ -231,7 +260,7 @@ async function loadNews(): Promise<NewsItem[]> {
   // be cached as a fresh 15-min "good" answer and lock every consumer
   // (page snapshot, /api/news, warm search fold) out of real data for the
   // whole window. Throwing instead routes the failure through cached()'s
-  // cycle-42 stale-while-error: the last known non-empty news:v3 snapshot
+  // cycle-42 stale-while-error: the last known non-empty news:v4 snapshot
   // is served WITHOUT being re-cached as fresh, and a true cold start
   // surfaces the honest 502 to the client.
   if (deduped.length === 0) {
@@ -257,7 +286,11 @@ function loadNewsFeed(): Promise<NewsFeed> {
   // from a bare NewsItem[] to {items, fetchedAt}; old v2 rows are shape-
   // incompatible, the bump sheds them cleanly (same move as fix cycle-294,
   // which bumped v1 -> v2 to shed the empty-outage row).
-  return cached("news:v3", 15 * 60_000, async (): Promise<NewsFeed> => ({
+  // fix cycle-414: key bumped v3 -> v4 — the producer's translate stage
+  // gained the mixed-script hygiene guard, so the live v3 row (4 of 16
+  // defective titles) must be shed: same move as 294 (v1→v2, "shed the
+  // poisoned row") — here the row content, not the shape, is the poison.
+  return cached("news:v4", 15 * 60_000, async (): Promise<NewsFeed> => ({
     items: await loadNews(),
     fetchedAt: new Date().toISOString(),
   }));
@@ -325,7 +358,7 @@ function scoreFeed(
   return scored;
 }
 
-/** cycle-202: WARM-ONLY fold of the news:v3 feed — search must NEVER
+/** cycle-202: WARM-ONLY fold of the news:v4 feed — search must NEVER
  *  trigger the ~20s cold producer inside a keystroke request, so an
  *  absent/expired cache answers [] (honest absence; the section hides).
  *  Normalized on BOTH titles (the Persian one the portal displays and
@@ -334,7 +367,8 @@ export async function searchNews(q: string, limit = 3): Promise<NewsSearchResult
   const nq = normalizeQuery(q);
   if (nq.length < 2) return [];
   // update cycle-305: the cached row is now {items, fetchedAt} — read .items
-  const hit = await cacheGetDeep<NewsFeed>("news:v3");
+  // (fix cycle-414: the key rides the producer's bump — news:v4)
+  const hit = await cacheGetDeep<NewsFeed>("news:v4");
   if (!hit || hit.stale) return [];
 
   // strict pass — byte-identical behavior to the pre-307 matcher

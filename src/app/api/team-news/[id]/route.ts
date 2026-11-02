@@ -5,7 +5,8 @@
 // the squad/transfers/rumours feeds (shared `teamDataRaw:{id}` payload —
 // zero extra upstream). Titles upgrade to Persian via the EXACT /api/news
 // translate stage (translateBatch — 10s budget, English fallback), cached
-// per team for an hour (`teamNewsFa:{id}`) so the lazy card is instant on
+// per team for an hour (`teamNewsFaV2:{id}` — the V2 bump is fix cycle-414's
+// poisoned-row shed after the translateBatch hygiene guard) so the lazy card is instant on
 // repeat visits. news: null with ok: true when the source has no digest so
 // the UI can hide the section (same contract as /api/team-rumours).
 // ------------------------------------------------------------------
@@ -30,7 +31,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     if (!news) {
       return NextResponse.json({ ok: true, news: null });
     }
-    const enriched = await cached(`teamNewsFa:${teamId}`, 60 * 60_000, async () => {
+    // fix cycle-414: key bumped teamNewsFa:{id} -> teamNewsFaV2:{id} — the
+    // shared translateBatch gained the mixed-script hygiene guard, so the
+    // pre-guard 1h rows (products of the UNGUARDED LLM stage) must be shed
+    // or a poisoned digest row would outlive the fix for up to an hour
+    // (the 294/414 poisoned-row move).
+    const enriched = await cached(`teamNewsFaV2:${teamId}`, 60 * 60_000, async () => {
       const fa = await translateBatch(news.items.map((n) => n.title.replace(/"/g, "'")));
       return news.items.map((n, i) => ({ ...n, titleFa: fa[i] || n.title }));
     });

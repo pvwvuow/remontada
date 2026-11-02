@@ -6,7 +6,8 @@ export const dynamic = "force-dynamic";
 // cycle-202: the producer (RSS/ESPN fetchers + the batched Persian
 // translation stage) moved to src/lib/news.ts so /api/search can fold
 // the SAME cached instance («خبرها» search index) — this route keeps
-// the exact contract: same cache key (news:v3 since update cycle-305),
+// the exact contract: same cache key (news:v4 since fix cycle-414 —
+// the 414 mixed-script hygiene guard rides translateBatch inside),
 // same 15-min TTL, same response shape { ok, items, fetchedAt }.
 // update cycle-305: fetchedAt now comes from the cached payload itself
 // (the producer's real fetch time) instead of the route-call instant —
