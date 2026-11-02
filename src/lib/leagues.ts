@@ -2276,6 +2276,47 @@ const TEAM_FA: Record<string, string> = {
   "stirling albion": "استیرلینگ آلبیون",
   "stirling university fc": "استیرلینگ یونیورسیتی",
   "troon juniors": "ترون جونیورز",
+
+  // cycle-441: harvest batch 8 — the machine continues on the 441 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 1943 distinct = the
+  // documented 440 post-census, totalRows 3948 — zero window drift;
+  // scripts/cycle441-batch8-verify.py byte-identity gate, live UA Chrome/124):
+  // this batch takes ALL 18 count-3 single-country names of the PERU tranche
+  // (every one from Liga 1 — the live ±7 window's biggest single-country pool,
+  // exactly as the 440 card's rotation line predicted: PER 18 > ROU 16 >
+  // COL 13 > RUS 12; no (W) women's sides, no exclusions), 54 live leak rows
+  // covered. Transliteration: the Spanish-block conventions — دپورتیوو
+  // (دپورتیوو گارسیلاسو, the táchira precedent), اتلتیکو (اتلتیکو گراو، الیانزا
+  // اتلتیکو — the ناسیونال/مینیرو/بائلارس precedents), اسپورتینگ (اسپورتینگ
+  // کریستال — the براگا/کوویلیا/خیخون precedents), the Spanish «de» as د
+  // (یونیورسیتاریو د دپورته‌س — the راسینگ د فرول precedent), prefix/suffix
+  // discipline: ADC/CD/FBC/CUSCO-FC dropped (خوان پابلوی دوم، موکگوا، ملگار،
+  // کوسکو — the 436 prefix rule + the bare-city rsd-alcalá render), FC
+  // Cajamarca → کاخامارکا bare vs CD UT Cajamarca → یوتی کاخامارکا (the UT
+  // letter brand kept per the ام‌وای‌اف‌سی/آر‌بی letter-identity rule — one
+  // club each, distinct renders, no collision), ADT as the letter brand
+  // (ای‌دی‌تی تارما — the club's universal initials), الیانزا as the new
+  // Alianza anchor (الیانزا لیما، الیانزا اتلتیکو). Loud-pool rule: the
+  // documented 1943 census shrinks by this batch in the open (the B4 ±25 band
+  // re-anchors with the next census, never silently).
+  "adc juan pablo ii": "خوان پابلوی دوم",
+  "alianza atlético": "الیانزا اتلتیکو",
+  "alianza lima": "الیانزا لیما",
+  "asociación deportiva tarma": "ای‌دی‌تی تارما",
+  "atlético grau": "اتلتیکو گراو",
+  "cd ut cajamarca": "یوتی کاخامارکا",
+  "cienciano": "سینسینو",
+  "club deportivo moquegua": "موکگوا",
+  "comerciantes unidos": "کامرسیانته‌س یونیدوس",
+  "cusco fc": "کوسکو",
+  "deportivo garcilaso": "دپورتیوو گارسیلاسو",
+  "fbc melgar": "ملگار",
+  "fc cajamarca": "کاخامارکا",
+  "los chankas": "لوس چانکاس",
+  "sport boys": "اسپورت بویز",
+  "sport huancayo": "اسپورت هوانکایو",
+  "sporting cristal": "اسپورتینگ کریستال",
+  "universitario de deportes": "یونیورسیتاریو د دپورته‌س",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
