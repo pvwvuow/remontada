@@ -13,105 +13,105 @@
    "matches": 104,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 109
+   "teamLeakRows": 107
   },
   {
    "offset": "20261027",
    "matches": 218,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 220
+   "teamLeakRows": 206
   },
   {
    "offset": "20261028",
    "matches": 242,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 238
+   "teamLeakRows": 222
   },
   {
    "offset": "20261029",
    "matches": 136,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 148
+   "teamLeakRows": 143
   },
   {
    "offset": "20261030",
    "matches": 169,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 192
+   "teamLeakRows": 184
   },
   {
    "offset": "20261031",
    "matches": 723,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 926
+   "teamLeakRows": 879
   },
   {
    "offset": "20261101",
    "matches": 501,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 657
+   "teamLeakRows": 640
   },
   {
    "offset": "20261102",
    "matches": 154,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 191
+   "teamLeakRows": 187
   },
   {
    "offset": "20261103",
    "matches": 163,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 132
+   "teamLeakRows": 118
   },
   {
    "offset": "20261104",
    "matches": 118,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 123
+   "teamLeakRows": 111
   },
   {
    "offset": "20261105",
    "matches": 90,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 65
+   "teamLeakRows": 60
   },
   {
    "offset": "20261106",
    "matches": 175,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 193
+   "teamLeakRows": 189
   },
   {
    "offset": "20261107",
    "matches": 642,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 795
+   "teamLeakRows": 755
   },
   {
    "offset": "20261108",
    "matches": 511,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 605
+   "teamLeakRows": 579
   },
   {
    "offset": "20261109",
    "matches": 43,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 57
+   "teamLeakRows": 55
   }
  ],
  "competitionLeaks": {},
@@ -161,429 +161,6 @@
    "ccode": "",
    "raw": "Olimpia"
   },
-  "Curzon": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5949267",
-   "date": "20261027",
-   "league": "Northern Premier Division",
-   "ccode": "",
-   "raw": "Curzon"
-  },
-  "Mamelodi Sundowns FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022602",
-   "date": "20261027",
-   "league": "League Cup - 1st Round",
-   "ccode": "",
-   "raw": "Mamelodi Sundowns FC"
-  },
-  "Kaizer Chiefs": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022604",
-   "date": "20261027",
-   "league": "League Cup - 1st Round",
-   "ccode": "",
-   "raw": "Kaizer Chiefs"
-  },
-  "Musselburgh Athletic": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000017010",
-   "date": "20261027",
-   "league": "Lowland League East",
-   "ccode": "",
-   "raw": "Musselburgh Athletic"
-  },
-  "Bonnyrigg Rose": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000017013",
-   "date": "20261027",
-   "league": "Lowland League East",
-   "ccode": "",
-   "raw": "Bonnyrigg Rose"
-  },
-  "Kifisia FC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6176260",
-   "date": "20261027",
-   "league": "Cup Group Stage",
-   "ccode": "",
-   "raw": "Kifisia FC"
-  },
-  "Bucaramanga": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000014180",
-   "date": "20261027",
-   "league": "Primera A",
-   "ccode": "",
-   "raw": "Bucaramanga"
-  },
-  "Academia Puerto Cabello": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022588",
-   "date": "20261027",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Academia Puerto Cabello"
-  },
-  "Caracas": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000022588",
-   "date": "20261027",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Caracas"
-  },
-  "Deportivo Táchira": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022589",
-   "date": "20261027",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Deportivo Táchira"
-  },
-  "Monagas SC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000022589",
-   "date": "20261027",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Monagas SC"
-  },
-  "Hamilton Academical": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5794547",
-   "date": "20261027",
-   "league": "League One",
-   "ccode": "",
-   "raw": "Hamilton Academical"
-  },
-  "Veraguas United": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5954363",
-   "date": "20261027",
-   "league": "LPF Apertura",
-   "ccode": "",
-   "raw": "Veraguas United"
-  },
-  "Union Cocle": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5954363",
-   "date": "20261027",
-   "league": "LPF Apertura",
-   "ccode": "",
-   "raw": "Union Cocle"
-  },
-  "Bohemians 1905": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6420179",
-   "date": "20261028",
-   "league": "Cup",
-   "ccode": "",
-   "raw": "Bohemians 1905"
-  },
-  "Berwick Rangers": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000017014",
-   "date": "20261028",
-   "league": "Lowland League East",
-   "ccode": "",
-   "raw": "Berwick Rangers"
-  },
-  "Hill of Beath Hawthorn": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000017016",
-   "date": "20261028",
-   "league": "Lowland League East",
-   "ccode": "",
-   "raw": "Hill of Beath Hawthorn"
-  },
-  "Johnstone Burgh": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000016753",
-   "date": "20261028",
-   "league": "Lowland League West",
-   "ccode": "",
-   "raw": "Johnstone Burgh"
-  },
-  "Pollok": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000016753",
-   "date": "20261028",
-   "league": "Lowland League West",
-   "ccode": "",
-   "raw": "Pollok"
-  },
-  "Trenčín": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5772151",
-   "date": "20261028",
-   "league": "1. Liga",
-   "ccode": "",
-   "raw": "Trenčín"
-  },
-  "Carabobo FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022578",
-   "date": "20261028",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Carabobo FC"
-  },
-  "Deportivo La Guaira": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000022578",
-   "date": "20261028",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Deportivo La Guaira"
-  },
-  "Metropolitanos FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000022579",
-   "date": "20261028",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Metropolitanos FC"
-  },
-  "Portuguesa FC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000022579",
-   "date": "20261028",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Portuguesa FC"
-  },
-  "CD Marathón": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6281887",
-   "date": "20261028",
-   "league": "CONCACAF Central American Cup Play-In",
-   "ccode": "",
-   "raw": "CD Marathón"
-  },
-  "Luqueño": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "6393693",
-   "date": "20261028",
-   "league": "Cup",
-   "ccode": "",
-   "raw": "Luqueño"
-  },
-  "Recoleta": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6393693",
-   "date": "20261028",
-   "league": "Cup",
-   "ccode": "",
-   "raw": "Recoleta"
-  },
-  "Farnborough": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5907651",
-   "date": "20261028",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Farnborough"
-  },
-  "Stellenbosch FC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000022605",
-   "date": "20261028",
-   "league": "League Cup - 1st Round",
-   "ccode": "",
-   "raw": "Stellenbosch FC"
-  },
-  "Vasco da Gama": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5103685",
-   "date": "20261029",
-   "league": "Série A",
-   "ccode": "",
-   "raw": "Vasco da Gama"
-  },
-  "CD Olimpia": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "6281883",
-   "date": "20261029",
-   "league": "CONCACAF Central American Cup",
-   "ccode": "",
-   "raw": "CD Olimpia"
-  },
-  "C.S. Cartaginés": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6281883",
-   "date": "20261029",
-   "league": "CONCACAF Central American Cup",
-   "ccode": "",
-   "raw": "C.S. Cartaginés"
-  },
-  "Deportivo Saprissa": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "6281886",
-   "date": "20261029",
-   "league": "CONCACAF Central American Cup Play-In",
-   "ccode": "",
-   "raw": "Deportivo Saprissa"
-  },
-  "Firpo": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6281886",
-   "date": "20261029",
-   "league": "CONCACAF Central American Cup Play-In",
-   "ccode": "",
-   "raw": "Firpo"
-  },
-  "ASO Chlef": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5989869",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "ASO Chlef"
-  },
-  "ES Sétif": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989869",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "ES Sétif"
-  },
-  "JS Kabylie": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5989866",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "JS Kabylie"
-  },
-  "JS El Biar": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989866",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "JS El Biar"
-  },
-  "MC Oran": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5989865",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "MC Oran"
-  },
-  "Olympique Akbou": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989865",
-   "date": "20261030",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "Olympique Akbou"
-  },
-  "FC Motagua": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "6281882",
-   "date": "20261030",
-   "league": "CONCACAF Central American Cup",
-   "ccode": "",
-   "raw": "FC Motagua"
-  },
-  "Brisbane Roar FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000017569",
-   "date": "20261030",
-   "league": "A-League",
-   "ccode": "",
-   "raw": "Brisbane Roar FC"
-  },
-  "USM Khenchela": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989867",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "USM Khenchela"
-  },
-  "CR Temouchent": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5989883",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "CR Temouchent"
-  },
-  "CS Constantine": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5989864",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "CS Constantine"
-  },
-  "USM Alger": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989864",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "USM Alger"
-  },
-  "ES Ben Aknoun": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989879",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "ES Ben Aknoun"
-  },
   "MB Rouissat": {
    "count": 4,
    "side": "home",
@@ -592,69 +169,6 @@
    "league": "Ligue 1",
    "ccode": "",
    "raw": "MB Rouissat"
-  },
-  "CR Bélouizdad": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989878",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "CR Bélouizdad"
-  },
-  "JS Saoura": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5989880",
-   "date": "20261031",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "JS Saoura"
-  },
-  "Montrose": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5794576",
-   "date": "20261031",
-   "league": "League One",
-   "ccode": "",
-   "raw": "Montrose"
-  },
-  "Spartans FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5794750",
-   "date": "20261031",
-   "league": "League Two",
-   "ccode": "",
-   "raw": "Spartans FC"
-  },
-  "Partick Thistle": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5794356",
-   "date": "20261031",
-   "league": "Championship",
-   "ccode": "",
-   "raw": "Partick Thistle"
-  },
-  "Al Bukayriyah": {
-   "count": 3,
-   "side": "home",
-   "sampleId": "1000018487",
-   "date": "20261026",
-   "league": "Saudi First Division",
-   "ccode": "",
-   "raw": "Al Bukayriyah"
-  },
-  "Hajer": {
-   "count": 3,
-   "side": "away",
-   "sampleId": "1000018487",
-   "date": "20261026",
-   "league": "Saudi First Division",
-   "ccode": "",
-   "raw": "Hajer"
   },
   "Al-Orobah FC": {
    "count": 3,
@@ -18791,15 +18305,6 @@
    "ccode": "",
    "raw": "Glasgow City (W)"
   },
-  "Partick Thistle (W)": {
-   "count": 1,
-   "side": "away",
-   "sampleId": "1000022095",
-   "date": "20261101",
-   "league": "SWPL Cup",
-   "ccode": "",
-   "raw": "Partick Thistle (W)"
-  },
   "Albirex Niigata Ladies (W)": {
    "count": 1,
    "side": "home",
@@ -19411,15 +18916,6 @@
    "league": "FA Cup",
    "ccode": "",
    "raw": "Slavoj Boleraz"
-  },
-  "Spartans FC (W)": {
-   "count": 1,
-   "side": "away",
-   "sampleId": "1000016499",
-   "date": "20261104",
-   "league": "SWPL 1",
-   "ccode": "",
-   "raw": "Spartans FC (W)"
   },
   "CD Tarancon": {
    "count": 1,
@@ -20063,7 +19559,7 @@
  },
  "summary": {
   "compLeakDistinct": 0,
-  "teamLeakDistinct": 2216,
-  "teamLeakRows": 4651
+  "teamLeakDistinct": 2160,
+  "teamLeakRows": 4435
  }
 }
