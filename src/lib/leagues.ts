@@ -2221,6 +2221,61 @@ const TEAM_FA: Record<string, string> = {
   "ventforet kofu": "ونت‌فورت کوفو",
   "yokohama fc": "یوکوهاما اف‌سی",
   "zweigen kanazawa": "زوایگن کانازاوا",
+
+  // cycle-440: harvest batch 7 — the machine continues on the 440 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 1973 distinct = the
+  // documented 437 post-census, totalRows 3948 — zero window drift;
+  // scripts/cycle440-batch7-verify.py byte-identity gate, live UA Chrome/124):
+  // this batch takes ALL 30 count-3 single-country names of the SCOTLAND
+  // tranche (Challenge Cup 13 + FA Cup 1 + Lowland League East/West 16 — the
+  // live ±7 window's biggest single-country pool; no (W) women's sides, no
+  // exclusions), 90 live leak rows covered. The 437/439 rotation line named
+  // NOR 124 as the next pool, but the live window re-rank (the 435 lesson:
+  // rows drift, the window decides) shows NOR at 11 — SCO 30 is the honest
+  // pick. Transliteration: تاون/یونایتد/سیتی suffix-keeping per the batch-4/5
+  // discipline (فورمارترین یونایتد، ادینبرو سیتی، الجین سیتی، برخین سیتی),
+  // Rangers/Hearts/Rovers/Albion/Athletic per the standing renders (کو
+  // رنجرز/کلتی هارتس/آلبیون روورز/استیرلینگ آلبیون/انان اتلتیک — the
+  // stafford-rangers + heart-of-midlothian + burton-albion + wigan-athletic
+  // precedents), FC/SC suffix dropped (استیرلینگ یونیورسیتی، رنفرو، گرتنا
+  // ۲۰۰۸ — the kyoto-sanga + 436 prefix discipline; the year kept in Persian
+  // digits like the 57 existing digit-bearing values), Queen of the South →
+  // کویین اوف ساوت (the کویینز پارک رنجرز reading), and the two NEW Scottish
+  // suffix anchors: Thistle → تیسل (لارگس تیسل، اینورنس کالدونین تیسل) and
+  // Juniors → جونیورز (ترون جونیورز، کامناک جونیورز — the Scottish junior
+  // football identity term), Bo'ness → بونس (the apostrophe is silent).
+  // Loud-pool rule: the documented 1973 census shrinks by this batch in the
+  // open (the B4 ±25 band re-anchors with the next census, never silently).
+  "airdrieonians": "ایردریونینز",
+  "albion rovers": "آلبیون روورز",
+  "annan athletic": "انان اتلتیک",
+  "bo'ness united": "بونس یونایتد",
+  "brechin city": "برخین سیتی",
+  "broxburn athletic": "بروکسبرن اتلتیک",
+  "caledonian braves": "کالدونیان بریوز",
+  "civil service strollers": "سیویل سرویس استرولرز",
+  "clyde": "کلاید",
+  "cove rangers": "کو رنجرز",
+  "cumnock juniors": "کامناک جونیورز",
+  "east kilbride": "ایست کیلبراید",
+  "east stirlingshire": "ایست استیرلینگشایر",
+  "edinburgh city": "ادینبرو سیتی",
+  "elgin city": "الجین سیتی",
+  "formartine united": "فورمارترین یونایتد",
+  "gala fairydean rovers": "گالا فیریدین روورز",
+  "greenock morton": "گرینوک مورتون",
+  "gretna fc 2008": "گرتنا ۲۰۰۸",
+  "inverness caledonian thistle": "اینورنس کالدونین تیسل",
+  "kelty hearts": "کلتی هارتس",
+  "largs thistle": "لارگس تیسل",
+  "linlithgow rose": "لینلیتگو روز",
+  "newton stewart": "نیوتن استوارت",
+  "peterhead": "پیترهد",
+  "queen of the south": "کویین اوف ساوت",
+  "renfrew fc": "رنفرو",
+  "stirling albion": "استیرلینگ آلبیون",
+  "stirling university fc": "استیرلینگ یونیورسیتی",
+  "troon juniors": "ترون جونیورز",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

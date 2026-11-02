@@ -3,6 +3,10 @@
 # The 413/418/423/427/428/432 precedent: findings ONLY (fixes belong to the
 # next cycle). Zero src/ changes expected → but the full official chain still
 # runs (build + official start) so the patrol proves the CURRENT commit deploys.
+# cycle-440 re-anchor (the loud-pool rule — the batch that moves the pool
+# re-anchors in the open): B4 1973 → 1943 (harvest batch 7, the documented −30
+# Scotland tranche, zero distinct drift) + B10 NEW: four batch-7 witnesses
+# Persian in the live ±7 feed — the patrol now runs 46 checks.
 # Evolves the 432/433 harness (scripts/cycle432-patrol.sh) with ONE delta:
 #   C12 NEW (a/b/c): the 434 mount-gate hold ASSERTED as a permanent patrol
 #      check — until now it lived only in the cycle-specific domproof. a: the
@@ -23,7 +27,8 @@
 #      → 2160 (post-431) → 2108 (post-432 batch 3, the documented −49) →
 #      2053 (post-435 batch 4, the documented −55, zero distinct drift) →
 #      2013 (post-436 batch 5, the documented −40, zero distinct drift) →
-#      1973 (post-437 batch 6, the documented −40, zero distinct drift) — as a
+#      1973 (post-437 batch 6, the documented −40, zero distinct drift) →
+#      1943 (post-440 batch 7, the documented −30, zero distinct drift) — as a
 #      ±25 DRIFT BAND around it (the loud-pool rule: the constant moves WITH
 #      the census, never silently — the cycle that moves the pool re-anchors
 #      it here in the open; window-edge drift stays single-digit, a mapping
@@ -171,27 +176,31 @@ W4 = ["دارلینگتون", "ووکینگ", "ساوت‌پورت", "براکل
 W5 = ["زامورا", "کوردوبا", "کارتاخنا", "رکراتیوو اوئلوا"]
 # cycle-437: B9 — batch-6 witnesses (the Japan J2/J3 tranche)
 W6 = ["وگالتا سندای", "جوبیلو ایواتا", "یوکوهاما اف‌سی", "توکوشیما وورتیس"]
+# cycle-440: B10 — batch-7 witnesses (the Scotland Challenge Cup/Lowland tranche)
+W7 = ["کلاید", "ایردریونینز", "آلبیون روورز", "کویین اوف ساوت"]
 miss1 = [w for w in W1 if w not in fa_set]
 miss2 = [w for w in W2 if w not in fa_set]
 miss4 = [w for w in W4 if w not in fa_set]
 miss5 = [w for w in W5 if w not in fa_set]
 miss6 = [w for w in W6 if w not in fa_set]
+miss7 = [w for w in W7 if w not in fa_set]
 b1 = 1 if len(leaks) == 0 else 0
 b2 = 1 if kn == "جام حذفی هلند" else 0
 b3 = 1 if pl == "پریمیرلیگ انگلیس" else 0
-b4 = 1 if abs(len(team_names) - 1973) <= 25 else 0
+b4 = 1 if abs(len(team_names) - 1943) <= 25 else 0
 T4 = "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲"
 b5 = 1 if (len(prows) == 0 and trophy4 == T4) else 0
 b6 = 1 if (not miss1 and not miss2) else 0
 b7 = 1 if not miss4 else 0
 b8 = 1 if not miss5 else 0
 b9 = 1 if not miss6 else 0
+b10 = 1 if not miss7 else 0
 print("B-SUMMARY "
       f"compLeaks={len(leaks)} teamRows={team_rows} teamDistinct={len(team_names)} "
       f"knvb={kn!r} catalog={pl!r} ukr={uk!r} "
       f"playerLeakRows={len(prows)} teamLeakRows={len(trows)} "
-      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} trophy4={trophy4!r}")
-print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9))
+      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} trophy4={trophy4!r}")
+print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10))
 if leaks: print("B-LEAKS:", json.dumps({f"{k[0]}|{k[1]}": v for k, v in list(leaks.items())[:6]}, ensure_ascii=False))
 if prows: print("B-PLAYER-LEAKS:", json.dumps(prows[:10], ensure_ascii=False))
 if trows: print("B-TEAM-LEAKS:", json.dumps(trows[:10], ensure_ascii=False))
@@ -199,18 +208,19 @@ PY
 )
 echo "$RES"
 S=$(echo "$RES" | grep "B-ASSERTS" | tail -1)
-for i in 1 2 3 4 5 6 7 8 9; do
+for i in 1 2 3 4 5 6 7 8 9 10; do
   V=$(echo "$S" | grep -oE "b$i=[01]" | cut -d= -f2)
   case $i in
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
     3) LBL="catalog byte-stability hold (5795503)" ;;
-    4) LBL="team raw pool within the ±25 drift band of the documented 1973 census (re-anchored 437, loud-pool rule)" ;;
+    4) LBL="team raw pool within the ±25 drift band of the documented 1943 census (re-anchored 440, loud-pool rule)" ;;
     5) LBL="the 429 trophy hold: zero player raw-fallback rows + trophies[4] byte-exact" ;;
     6) LBL="harvest batch-1+batch-2 witnesses all Persian in the live ±7 feed" ;;
     7) LBL="harvest batch-4 witnesses (England non-league tranche) all Persian in the live ±7 feed" ;;
     8) LBL="harvest batch-5 witnesses (Spain Copa del Rey/Federaciones tranche) all Persian in the live ±7 feed" ;;
     9) LBL="harvest batch-6 witnesses (Japan J2/J3 tranche) all Persian in the live ±7 feed" ;;
+    10) LBL="harvest batch-7 witnesses (Scotland Challenge Cup/Lowland tranche) all Persian in the live ±7 feed" ;;
   esac
   ck "B$i $LBL" "${V:-0}"
 done
