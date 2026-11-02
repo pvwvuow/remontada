@@ -15,7 +15,7 @@ export default function NotFound() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5 flex items-center justify-center">
+      <main id="main-content" className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5 flex items-center justify-center">
         <div className="w-full rounded-2xl border border-dashed border-glass-border-soft bg-white/[0.02] px-6 py-14 text-center">
           <div className="mx-auto w-14 h-14 rounded-2xl bg-white/[0.04] border border-glass-border-soft flex items-center justify-center mb-4">
             <svg

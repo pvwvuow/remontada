@@ -29,7 +29,7 @@ export default function SearchPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-5 py-5">
+      <main id="main-content" className="flex-1 w-full max-w-2xl mx-auto px-3 sm:px-5 py-5">
         {/* useSearchParams lives in the client — the Suspense boundary is
             the Next contract for reading the URL in a prerendered tree */}
         <Suspense

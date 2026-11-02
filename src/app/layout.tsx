@@ -132,6 +132,23 @@ export default function RootLayout({
   return (
     <html lang="fa" dir="rtl" suppressHydrationWarning>
       <body className={`${vazir.variable} antialiased bg-background text-foreground font-sans`}>
+        {/* cycle-439: the a11y skip link — the first keyboard-focusable element
+            on EVERY page (the 438 bug-hunt probe found the site had none). At
+            rest it is parked above the viewport via fixed + -translate-y-16
+            (invisible but fully in the a11y tree); on keyboard focus it slides
+            down as a primary chip at the RTL reading start (top-right) and
+            jumps straight past the shared header to the page's
+            <main id="main-content">. Position/transform hiding (NOT sr-only +
+            variant ordering) is deliberate: no dependency on Tailwind's
+            sr-only/not-sr-only cascade order, and fixed keeps the reveal
+            working at any scroll position. Static markup, no time-derived
+            text — zero interaction with the 434 mount-gate. */}
+        <a
+          href="#main-content"
+          className="fixed top-2 right-2 z-[60] -translate-y-16 rounded-lg bg-primary px-4 py-2 text-sm font-black text-primary-foreground shadow-lg transition-transform focus:translate-y-0 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+        >
+          پرش به محتوا
+        </a>
         <JsonLd data={SITE_LD} />
         <FantasyBackdrop />
         {children}

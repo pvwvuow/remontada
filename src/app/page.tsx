@@ -289,7 +289,7 @@ export default function Home() {
       </SiteHeader>
 
       {/* ---------- content ---------- */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
+      <main id="main-content" className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
         {/* h1 lives in the content since the shared header renders a <p> logo */}
         <h1 className="sr-only">رمانتادا — نتایج زنده فوتبال، جدول لیگ‌ها و اخبار</h1>
         {tab === "matches" && (

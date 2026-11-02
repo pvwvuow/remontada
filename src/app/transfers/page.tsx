@@ -38,7 +38,7 @@ export default function TransfersPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
+      <main id="main-content" className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
         <TransfersPageClient />
       </main>
       <BackToTop />

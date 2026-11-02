@@ -46,7 +46,7 @@ export default function LeaguesPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
+      <main id="main-content" className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={itemListLd} />
         <div className="mb-4 px-1">
           <h1 className="text-lg font-black">لیگ‌ها و جام‌ها</h1>

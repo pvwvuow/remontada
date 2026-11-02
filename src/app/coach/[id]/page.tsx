@@ -106,7 +106,7 @@ export default async function CoachPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="min-h-screen flex flex-col">
       <SiteHeader />
-      <main className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
+      <main id="main-content" className="flex-1 w-full max-w-3xl mx-auto px-3 sm:px-5 py-5">
         <JsonLd data={coachCrumbLd} />
         {!valid ? (
           <>
