@@ -32,7 +32,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalAssist, GlobalScorersData } from "@/lib/fotmob";
 import { SEASON_PARAM_RE } from "@/lib/season";
-import { LEAGUES } from "@/lib/leagues";
+import { LEAGUES, teamFa } from "@/lib/leagues";
 import { PLAYER_NAME_FA } from "@/lib/player-names-fa";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { TeamLogo } from "@/components/remontada/team-logo";
@@ -313,7 +313,9 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
             {name}
           </p>
           <p className="text-[9px] text-steel/80 truncate mt-0.5" dir="auto">
-            {p.nationality || "—"}
+            {/* cycle-394 (the 393 F2 render-wire flip): same nationality class
+                as the team-page squad row — country map, honest fallback */}
+            {teamFa(p.nationality) || "—"}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-wrap justify-center">

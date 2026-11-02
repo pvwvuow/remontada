@@ -9,7 +9,8 @@ import Link from "next/link";
 import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamNewsData, TeamNewsItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
 import { sourceStyle } from "@/components/remontada/news-view";
 import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
-import { fotmobTeamLogo } from "@/lib/leagues";
+import { fotmobTeamLogo, teamFa } from "@/lib/leagues";
+import { playerFa } from "@/lib/player-names-fa";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -522,7 +523,10 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12.5px] font-bold truncate text-[#e6f0fb] flex items-center gap-1.5">
-          {p.name}
+          {/* cycle-394 (the 393 bug-hunt F2 flip): the render wire the squad
+              section never got — mapped names ride playerFa, unmapped keep the
+              honest raw fallback (the 96/104 contract) */}
+          {playerFa(p.name)}
           {p.injured && (
             <span className="text-[9px] font-black text-red-400 bg-red-400/10 border border-red-400/30 rounded-md px-1 py-px shrink-0">
               مصدوم
@@ -530,7 +534,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
           )}
         </p>
         <p className="text-[9.5px] text-steel/80 tabular-persian truncate">
-          {[p.nationality, p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
+          {[teamFa(p.nationality), p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
             .filter(Boolean)
             .join(" · ")}
         </p>
@@ -593,7 +597,7 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
               {squad.coach.fa || squad.coach.name}
             </Link>
             <p className="text-[9.5px] text-steel/80 tabular-persian shrink-0">
-              {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
+              {[teamFa(squad.coach.nationality), squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
                 .filter(Boolean)
                 .join(" · ")}
             </p>

@@ -9199,6 +9199,11 @@ export function dateKeyToYYYYMMDD(offsetFromToday: number): string {
 export interface TeamSquadPlayer {
   id: number;
   name: string;
+  /** cycle-394 (the 393 bug-hunt F2 flip): honest Persian name (playerFa) —
+   * the squad API players carried NO nameFa at all (the 388 squad=83 class),
+   * so even fully-mapped names rendered raw Latin. Additive for consumers;
+   * raw English fallback, same rule as the transfers feed. */
+  nameFa?: string;
   shirt?: number;
   age?: number;
   nationality?: string;
@@ -9595,6 +9600,9 @@ export async function getTeamSquad(teamId: number): Promise<TeamSquad | null> {
       .map((m) => ({
         id: m.id as number,
         name: m.name as string,
+        // cycle-394 (the 393 F2 flip): the wire the squad render never got —
+        // additive nameFa alongside the untouched raw name contract
+        nameFa: playerFa(m.name as string),
         ...(m.shirtNumber != null ? { shirt: m.shirtNumber } : {}),
         ...(m.age != null ? { age: m.age } : {}),
         ...(m.cname ? { nationality: m.cname } : {}),

@@ -1775,6 +1775,16 @@ const TEAM_FA: Record<string, string> = {
   // cycle-390: the one unmapped side name on the NT fixture rows (Iran 6711
   // probe: every side mapped but «Gambia»).
   "gambia": "گامبیا",
+
+  // cycle-394 (the 393 bug-hunt F1 flip): Argentina 6706 NT fixture rows served
+  // the OPPONENT fa raw — teamFa had no key for these four confederate sides
+  // (live-probed: recent[0..2].away.fa = Benin/Burkina Faso/Bolivia,
+  // upcoming[1].away.fa = Costa Rica; the other six probed NTs were clean).
+  // TEAM_FA-first per the 393 card — teamFa checks this map before COUNTRY_FA.
+  "benin": "بنین",
+  "burkina faso": "بورکینافاسو",
+  "bolivia": "بولیوی",
+  "costa rica": "کاستاریکا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -2297,6 +2307,13 @@ const COUNTRY_FA: Record<string, string> = {
   "philippines": "فیلیپین", "singapore": "سنگاپور", "syria": "سوریه",
   "tajikistan": "تاجیکستان", "thailand": "تایلند", "turkmenistan": "ترکمنستان",
   "vietnam": "ویتنام", "yemen": "یمن",
+
+  // cycle-394 (the 393 F2 render-wire flip, nationality completion): squad rows
+  // now wire nationality through teamFa — a 3-flagship-squad probe (8650/10261/
+  // 101610) showed these two were the ONLY live nationality values missing from
+  // this map (25 of 27 already rode cycle-86+); unmapped values keep the honest
+  // Latin passthrough.
+  "congo": "کنگو", "northern ireland": "ایرلند شمالی",
 };
 
 export function countryFa(name: string | undefined | null): string {
