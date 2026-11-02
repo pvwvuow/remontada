@@ -1,0 +1,423 @@
+{
+ "totals": {
+  "league_items": 506,
+  "team_items": 95
+ },
+ "raw_unique_count": 50,
+ "raw_names": {
+  "Yann Gboho": {
+   "teams": [
+    "pl",
+    "ligue1"
+   ],
+   "kinds": [
+    "in",
+    "out"
+   ]
+  },
+  "Djylian N'Guessan": {
+   "teams": [
+    "pl",
+    "ligue1"
+   ],
+   "kinds": [
+    "in",
+    "in"
+   ]
+  },
+  "Tudor Mendel-Idowu": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Joe Whitworth": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Tim Iroegbunam": {
+   "teams": [
+    "pl",
+    "team:hull"
+   ],
+   "kinds": [
+    "internal",
+    "in"
+   ]
+  },
+  "Landon Emenalo": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Shumaira Mheuka": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Charlie Tasker": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Bradley Burrowes": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Triston Rowe": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "George Abbott": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Damola Ajayi": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Dane Scarlett": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Raphael Borges Rodrigues": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Morato": {
+   "teams": [
+    "pl"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Beto": {
+   "teams": [
+    "pl",
+    "seriea"
+   ],
+   "kinds": [
+    "out",
+    "in"
+   ]
+  },
+  "Carlos Sanchez": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Xavi Grande": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Carlos Álvarez": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Milud Nordin": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Rafa Núñez": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Guille Fernández": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Oso": {
+   "teams": [
+    "laliga",
+    "ligue1"
+   ],
+   "kinds": [
+    "out",
+    "in"
+   ]
+  },
+  "Kareem Tunde": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Oscar Naasei Oppong": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "in"
+   ]
+  },
+  "Gnangoro Bouare": {
+   "teams": [
+    "laliga"
+   ],
+   "kinds": [
+    "internal"
+   ]
+  },
+  "Patric": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Miloš Jović": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Alejandro Cichero": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Saad El Haddad": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Junior Ligue": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Federico Cassa": {
+   "teams": [
+    "seriea",
+    "seriea"
+   ],
+   "kinds": [
+    "out",
+    "internal"
+   ]
+  },
+  "Pote": {
+   "teams": [
+    "seriea"
+   ],
+   "kinds": [
+    "in"
+   ]
+  },
+  "Joyeux Bungi": {
+   "teams": [
+    "bundesliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Arthur": {
+   "teams": [
+    "bundesliga"
+   ],
+   "kinds": [
+    "internal"
+   ]
+  },
+  "Rayan Philippe": {
+   "teams": [
+    "bundesliga"
+   ],
+   "kinds": [
+    "internal"
+   ]
+  },
+  "Christian Gomis": {
+   "teams": [
+    "bundesliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Filimon Gerezgiher": {
+   "teams": [
+    "bundesliga"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "João Almeida": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "in"
+   ]
+  },
+  "Milan Robin": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Brad-Hamilton Mantsounga": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Giovani Versini": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "in"
+   ]
+  },
+  "Lasso Coulibaly": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Jonathan Do Marcolino": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Mathis Saka": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Junior Kadile": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "in"
+   ]
+  },
+  "Ange Lago": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Amar Fatah": {
+   "teams": [
+    "ligue1"
+   ],
+   "kinds": [
+    "out"
+   ]
+  },
+  "Mehdi Zare Mohazabieh": {
+   "teams": [
+    "persiangulf",
+    "persiangulf"
+   ],
+   "kinds": [
+    "in",
+    "in"
+   ]
+  },
+  "Hidemasa Morita": {
+   "teams": [
+    "team:hull"
+   ],
+   "kinds": [
+    "in"
+   ]
+  }
+ }
+}
