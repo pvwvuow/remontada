@@ -13,14 +13,14 @@
    "matches": 104,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 119
+   "teamLeakRows": 109
   },
   {
    "offset": "20261027",
    "matches": 218,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 250
+   "teamLeakRows": 220
   },
   {
    "offset": "20261028",
@@ -34,56 +34,56 @@
    "matches": 136,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 151
+   "teamLeakRows": 148
   },
   {
    "offset": "20261030",
    "matches": 169,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 194
+   "teamLeakRows": 192
   },
   {
    "offset": "20261031",
    "matches": 723,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 961
+   "teamLeakRows": 926
   },
   {
    "offset": "20261101",
    "matches": 501,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 663
+   "teamLeakRows": 657
   },
   {
    "offset": "20261102",
    "matches": 154,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 195
+   "teamLeakRows": 191
   },
   {
    "offset": "20261103",
    "matches": 163,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 157
+   "teamLeakRows": 132
   },
   {
    "offset": "20261104",
    "matches": 118,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 126
+   "teamLeakRows": 123
   },
   {
    "offset": "20261105",
    "matches": 90,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 68
+   "teamLeakRows": 65
   },
   {
    "offset": "20261106",
@@ -97,21 +97,21 @@
    "matches": 642,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 829
+   "teamLeakRows": 795
   },
   {
    "offset": "20261108",
    "matches": 511,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 613
+   "teamLeakRows": 605
   },
   {
    "offset": "20261109",
    "matches": 43,
    "compLeakGroups": 0,
    "compLeakMatches": 0,
-   "teamLeakRows": 61
+   "teamLeakRows": 57
   }
  ],
  "competitionLeaks": {},
@@ -143,60 +143,6 @@
    "ccode": "",
    "raw": "Santa Fe"
   },
-  "MC Alger": {
-   "count": 6,
-   "side": "away",
-   "sampleId": "5989856",
-   "date": "20261027",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "MC Alger"
-  },
-  "Atlético-MG": {
-   "count": 5,
-   "side": "away",
-   "sampleId": "5103674",
-   "date": "20261026",
-   "league": "Série A",
-   "ccode": "",
-   "raw": "Atlético-MG"
-  },
-  "LD Alajuelense": {
-   "count": 5,
-   "side": "home",
-   "sampleId": "5833813",
-   "date": "20261026",
-   "league": "Primera Division Apertura",
-   "ccode": "",
-   "raw": "LD Alajuelense"
-  },
-  "Chelmsford": {
-   "count": 5,
-   "side": "away",
-   "sampleId": "5907645",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Chelmsford"
-  },
-  "Ebbsfleet United": {
-   "count": 5,
-   "side": "away",
-   "sampleId": "5907647",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Ebbsfleet United"
-  },
-  "US Biskra": {
-   "count": 5,
-   "side": "home",
-   "sampleId": "5989856",
-   "date": "20261027",
-   "league": "Ligue 1",
-   "ccode": "",
-   "raw": "US Biskra"
-  },
   "Universidad Católica": {
    "count": 5,
    "side": "home",
@@ -214,312 +160,6 @@
    "league": "Copa Libertadores Femenina",
    "ccode": "",
    "raw": "Olimpia"
-  },
-  "CD Jaguares": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000014198",
-   "date": "20261026",
-   "league": "Primera A",
-   "ccode": "",
-   "raw": "CD Jaguares"
-  },
-  "Deportivo Pasto": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000014199",
-   "date": "20261026",
-   "league": "Primera A",
-   "ccode": "",
-   "raw": "Deportivo Pasto"
-  },
-  "Burgos CF": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5868505",
-   "date": "20261026",
-   "league": "LaLiga2",
-   "ccode": "",
-   "raw": "Burgos CF"
-  },
-  "Municipal Pérez Zeledón": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5833813",
-   "date": "20261026",
-   "league": "Primera Division Apertura",
-   "ccode": "",
-   "raw": "Municipal Pérez Zeledón"
-  },
-  "Sepsi OSK": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5853535",
-   "date": "20261026",
-   "league": "Superliga",
-   "ccode": "",
-   "raw": "Sepsi OSK"
-  },
-  "Universidad de Chile": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000013244",
-   "date": "20261026",
-   "league": "Primera División",
-   "ccode": "",
-   "raw": "Universidad de Chile"
-  },
-  "Muang Thong United": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000018179",
-   "date": "20261026",
-   "league": "Thai League 2",
-   "ccode": "",
-   "raw": "Muang Thong United"
-  },
-  "Police Tero FC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000018179",
-   "date": "20261026",
-   "league": "Thai League 2",
-   "ccode": "",
-   "raw": "Police Tero FC"
-  },
-  "Hampton & Richmond": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5907641",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Hampton & Richmond"
-  },
-  "Braintree Town": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5907642",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Braintree Town"
-  },
-  "Farnham Town": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5907643",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Farnham Town"
-  },
-  "Truro City": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5907649",
-   "date": "20261027",
-   "league": "National League South",
-   "ccode": "",
-   "raw": "Truro City"
-  },
-  "Anstey Nomads": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5953491",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Anstey Nomads"
-  },
-  "Bishop's Stortford": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953493",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Bishop's Stortford"
-  },
-  "Stamford AFC": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5953493",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Stamford AFC"
-  },
-  "Bromsgrove Sporting": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953494",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Bromsgrove Sporting"
-  },
-  "Kettering Town FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953497",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Kettering Town FC"
-  },
-  "Peterborough Sports": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953499",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Peterborough Sports"
-  },
-  "Redditch United": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5953500",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Redditch United"
-  },
-  "Real Bedford": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953501",
-   "date": "20261027",
-   "league": "Southern Premier Division Central",
-   "ccode": "",
-   "raw": "Real Bedford"
-  },
-  "Tamworth": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5906530",
-   "date": "20261027",
-   "league": "National League",
-   "ccode": "",
-   "raw": "Tamworth"
-  },
-  "Uxbridge": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5953953",
-   "date": "20261027",
-   "league": "Southern Premier Division South",
-   "ccode": "",
-   "raw": "Uxbridge"
-  },
-  "Bracknell Town": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953955",
-   "date": "20261027",
-   "league": "Southern Premier Division South",
-   "ccode": "",
-   "raw": "Bracknell Town"
-  },
-  "Poole Town FC": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953961",
-   "date": "20261027",
-   "league": "Southern Premier Division South",
-   "ccode": "",
-   "raw": "Poole Town FC"
-  },
-  "Chertsey Town": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5953961",
-   "date": "20261027",
-   "league": "Southern Premier Division South",
-   "ccode": "",
-   "raw": "Chertsey Town"
-  },
-  "Hanwell Town": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5953958",
-   "date": "20261027",
-   "league": "Southern Premier Division South",
-   "ccode": "",
-   "raw": "Hanwell Town"
-  },
-  "Brentwood Town": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5948091",
-   "date": "20261027",
-   "league": "Isthmian Premier Division",
-   "ccode": "",
-   "raw": "Brentwood Town"
-  },
-  "Eastbourne Borough": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5948084",
-   "date": "20261027",
-   "league": "Isthmian Premier Division",
-   "ccode": "",
-   "raw": "Eastbourne Borough"
-  },
-  "St Albans": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5948085",
-   "date": "20261027",
-   "league": "Isthmian Premier Division",
-   "ccode": "",
-   "raw": "St Albans"
-  },
-  "Burgess Hill Town": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5948085",
-   "date": "20261027",
-   "league": "Isthmian Premier Division",
-   "ccode": "",
-   "raw": "Burgess Hill Town"
-  },
-  "Stanway Rovers": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "5948086",
-   "date": "20261027",
-   "league": "Isthmian Premier Division",
-   "ccode": "",
-   "raw": "Stanway Rovers"
-  },
-  "Cumbernauld Colts": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "1000016746",
-   "date": "20261027",
-   "league": "Lowland League West",
-   "ccode": "",
-   "raw": "Cumbernauld Colts"
-  },
-  "Clydebank": {
-   "count": 4,
-   "side": "home",
-   "sampleId": "1000016748",
-   "date": "20261027",
-   "league": "Lowland League West",
-   "ccode": "",
-   "raw": "Clydebank"
-  },
-  "Leek Town": {
-   "count": 4,
-   "side": "away",
-   "sampleId": "5949302",
-   "date": "20261027",
-   "league": "Northern Premier Division",
-   "ccode": "",
-   "raw": "Leek Town"
   },
   "Curzon": {
    "count": 4,
@@ -20423,7 +20063,7 @@
  },
  "summary": {
   "compLeakDistinct": 0,
-  "teamLeakDistinct": 2256,
-  "teamLeakRows": 4818
+  "teamLeakDistinct": 2216,
+  "teamLeakRows": 4651
  }
 }
