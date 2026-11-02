@@ -1906,6 +1906,76 @@ const TEAM_FA: Record<string, string> = {
   "muang thong united": "موانگ‌تونگ یونایتد",
   "police tero fc": "پولیس تیرو",
   "universidad de chile": "یونیورسیداد شیلی",
+  // cycle-431: harvest batch 2 — the machine continues on the 431 census
+  // (scripts/cycle430-harvest.py re-run, live UA Chrome/124): the pool read
+  // 2216 distinct after batch 1 (byte-exact −40/−167) and this batch takes
+  // the 54 next single-country names (214 live leak rows, byte-verified
+  // keys): the whole Algeria Ligue 1 cluster (the JS=شباب / CR=شباب /
+  // USM=اتحاد / MC=مولودیه prefix conventions — شباب قابلی، مولودیه وهران،
+  // اتحاد الجزائر، شباب بلوزداد…), the Venezuela/Colombia Primera cluster,
+  // the CONCACAF Central American Cup sides (HON/CRC/SLV), Panama LPF,
+  // the Paraguay short literals (لوکینیو/رکولتا — single-country in the
+  // window), South Africa PSL (کایزر چیفس/ماملودی ساندوانز), the Scottish
+  // Lowland/League clusters (پارتیک تیسل، همیلتون آکادمیکال…), and the
+  // established singles (واسکو دوگاما، بریسبن رور، بوهمیانس ۱۹۰۵، هجر…).
+  // The 389 rule again rules the skip line: «Alianza FC» (PAN/COL/INT — a
+  // third country surfaced this window), «Libertad», «Santa Fe», «Olimpia»,
+  // «Universidad Católica» stay honest-raw pending id-keyed infrastructure;
+  // «MB Rouissat» skipped on uncertain identity (no established form probed).
+  "js kabylie": "شباب قابلی",
+  "mc oran": "مولودیه وهران",
+  "usm alger": "اتحاد الجزائر",
+  "cr bélouizdad": "شباب بلوزداد",
+  "js saoura": "شباب ساوره",
+  "cs constantine": "قسنطینه",
+  "usm khenchela": "اتحاد خنشله",
+  "cr temouchent": "شباب تموشنت",
+  "js el biar": "شباب البیار",
+  "es sétif": "ستیف",
+  "es ben aknoun": "بن اکنون",
+  "aso chlef": "المپیک شلف",
+  "olympique akbou": "المپیک آکبو",
+  "bucaramanga": "بوکارامانگا",
+  "academia puerto cabello": "آکادمیا پورتو کابلو",
+  "caracas": "کاراکاس",
+  "deportivo táchira": "دپورتیوو تاچیرا",
+  "monagas sc": "موناگاس",
+  "carabobo fc": "کارابوبو",
+  "deportivo la guaira": "دپورتیوو لا گوایرا",
+  "metropolitanos fc": "متروپولیتانوس",
+  "portuguesa fc": "پورتوگسا",
+  "cd marathón": "ماراتن",
+  "cd olimpia": "المپیا",
+  "fc motagua": "موتاگوا",
+  "c.s. cartaginés": "کارتاگینس",
+  "deportivo saprissa": "دپورتیوو ساپریسا",
+  "firpo": "فیرپو",
+  "veraguas united": "وراگواس یونایتد",
+  "union cocle": "یونین کوکله",
+  "luqueño": "لوکینیو",
+  "recoleta": "رکولتا",
+  "mamelodi sundowns fc": "ماملودی ساندوانز",
+  "kaizer chiefs": "کایزر چیفس",
+  "stellenbosch fc": "استلنبوش",
+  "musselburgh athletic": "ماسلبرو اتلتیک",
+  "bonnyrigg rose": "بونریگ روز",
+  "hamilton academical": "همیلتون آکادمیکال",
+  "berwick rangers": "برویک رنجرز",
+  "hill of beath hawthorn": "هیل اوف بیث هاثورن",
+  "johnstone burgh": "جانستون بورو",
+  "pollok": "پولوک",
+  "montrose": "مونتروز",
+  "spartans fc": "اسپارتانز",
+  "partick thistle": "پارتیک تیسل",
+  "curzon": "کورزون",
+  "farnborough": "فارنبرو",
+  "bohemians 1905": "بوهمیانس ۱۹۰۵",
+  "trenčín": "ترنتشین",
+  "kifisia fc": "کیفیسیا",
+  "vasco da gama": "واسکو دوگاما",
+  "brisbane roar fc": "بریسبن رور",
+  "al bukayriyah": "البکیریه",
+  "hajer": "هجر",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
