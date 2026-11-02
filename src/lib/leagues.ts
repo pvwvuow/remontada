@@ -629,6 +629,12 @@ const COMPETITION_FA: Record<string, string> = {
   // the tid-10199 spelling also joins the ARCHIVE_TID_FA map in fotmob.ts.
   "conmebol world cup qualifiers": "مقدماتی جام جهانی — کونمبول",
   "world cup conmebol qualification": "مقدماتی جام جهانی — کونمبول",
+  // cycle-390: the bare global «asian cup» — the team-fixtures rows carry NO
+  // ccode, so the 385 CC-qualified keys never reach them (probed: Iran's 2027
+  // Asian Cup row served the raw literal); «Asian» self-identifies the one
+  // football competition the name can mean, and the 387 group family then
+  // composes «— گروه C» from the suffix.
+  "asian cup": "جام ملت‌های آسیا",
   "fa cup": "جام حذفی انگلیس",
   "copa del rey": "جام حذفی اسپانیا",
   "copa italia": "جام حذفی ایتالیا",
@@ -1766,6 +1772,9 @@ const TEAM_FA: Record<string, string> = {
   // the fuller live spelling the /coach/{id} career serves (389 probe) — the
   // 388 card's «Red Bull Akademie» rides inside this upstream string.
   "red bull akademie under 18 (fc salzburg under 18)": "آکادمی ردبول زیر ۱۸ سالزبرگ",
+  // cycle-390: the one unmapped side name on the NT fixture rows (Iran 6711
+  // probe: every side mapped but «Gambia»).
+  "gambia": "گامبیا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
