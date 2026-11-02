@@ -1836,7 +1836,7 @@ export type LeagueBoardFmt = "fraction" | "percent" | "number" | "currency" | "k
 export interface LeagueBoardRow {
   rank: number;
   name: string;
-  nameFa?: string; // cycle-107: player rows only — honest Persian display name
+  nameFa?: string; // cycle-107 player rows / cycle-406 team rows too — teamFa, honest raw fallback
   teamFa?: string; // player rows: their club (fa when known)
   teamId?: number;
   value: number;
@@ -2060,6 +2060,13 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
             : {
                 rank: rows.length + 1,
                 name: String(r.name),
+                // cycle-406: team-kind board rows gain the additive fa name —
+                // they rendered RAW on the league stats tab («برترین‌های رسمی
+                // فصل» team boards showed «Aston Villa»/«Paris Saint-Germain»
+                // while the player rows rode playerFa since cycle-107). teamFa
+                // keeps the honest per-entry raw fallback; the raw name byte
+                // contract stays side by side (the 395-402 additive pattern).
+                nameFa: teamFa(String(r.name)) || String(r.name),
                 ...(id != null && id > 0 ? { teamId: id } : {}),
                 value,
               };
@@ -5668,7 +5675,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // cycle-405: v39→v40 — the PLAYER_NAME_FA sweep batch bakes nameFa inside
     // this cache; bump so stale raw-name rows become unreachable instantly
     // (the coach v4→v5 lesson — a derivation change jumps the key).
-    await cached(`standings:v40:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-406: v40→v41 — team-kind board rows now carry nameFa (baked into
+    // this cache); bump so stale raw-name boards become unreachable instantly
+    // (the same derivation-change lesson as the 405 v39→v40 bump).
+    await cached(`standings:v41:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would
