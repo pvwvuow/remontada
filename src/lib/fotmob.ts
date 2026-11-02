@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa, countryFa } from "./leagues";
 import { cached } from "./cache";
-import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime, marketValueFa as marketValueFaStr } from "./format";
+import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime, marketValueFa as marketValueFaStr, timeAgoFa } from "./format";
 // cycle-99: canonical definition lives in @/lib/season (client-safe,
 // dependency-free) so the league page's deep-link seeding guards the SAME
 // regex without pulling this server graph into the client bundle.
@@ -6537,6 +6537,12 @@ interface FMTransferRaw {
   toClubId?: number;
   fee?: { feeText?: string; value?: number } | null;
   transferType?: { text?: string };
+  // cycle-415: the GLOBAL wire (data/transfers) rows carry these three
+  // extra fields the league feed lacks — additive optional, existing
+  // league consumers untouched (the 395 convention).
+  marketValue?: number;
+  fromClubColors?: { lightMode?: string };
+  toClubColors?: { lightMode?: string };
   contractExtension?: boolean;
   onLoan?: boolean;
 }
@@ -6632,6 +6638,122 @@ export async function getLeagueTransfers(leagueKey: string): Promise<LeagueTrans
   if (items.length === 0) return null;
   const season = raw.table?.[0]?.data?.selectedSeason || "";
   return { leagueKey, leagueFa: lg.faName, season, items };
+}
+
+// ---------------- FotMob: GLOBAL transfers wire («تازه‌ترین انتقال‌ها», cycle-415) ----------------
+// Probed live (2026-11-02, UA Chrome/124): https://www.fotmob.com/api/data/
+// transfers?date=YYYYMMDD — the portal-wide wire the cycle-57 league tab and
+// the team-page feed never touched: {transfers[...], hits, maxFee,
+// maxMarketValue, minAge, minDate}. Row = {name, playerId, position{label,
+// key}, transferDate, fromClub(FullName|Id|Colors), toClub(...),
+// fee{feeText, localizedFeeText, value}, amountEuroEstimated, marketValue,
+// transferType{text}, onLoan, contractExtension} — the same fee/type fields
+// the league feed's transferFeeFa already speaks.
+// Feasibility probes (the آپدیت rule): `page=1` and `date=20240801` both came
+// back BYTE-IDENTICAL to the base call (the wire is a fixed recent window,
+// transferDate desc) — only fee/value filters (minFee=50000000 → 38 rows,
+// hits=38) really filter. So v1 serves the honest latest-50 window with NO
+// fabricated pagination/season dimension; the filter bar is a future cycle.
+// The free-agent row (toClubId 2 «Free agent») is a non-club destination —
+// it gets the honest «بدون باشگاه» slot and no team link in the UI.
+const TRANSFER_POS_FA: Record<string, string> = {
+  GK: "دروازه‌بان",
+  RB: "دفاع راست",
+  RWB: "دفاع کنار راست",
+  CB: "دفاع میانی",
+  LB: "دفاع چپ",
+  LWB: "دفاع کنار چپ",
+  DM: "هافبک دفاعی",
+  CM: "هافبک میانی",
+  AM: "هافبک هجومی",
+  RM: "هافبک راست",
+  LM: "هافبک چپ",
+  RW: "وینگر راست",
+  LW: "وینگر چپ",
+  ST: "مهاجم",
+};
+
+export interface GlobalTransferSide {
+  id: number; // 2 = Free agent (the UI suppresses the team link)
+  name: string; // raw upstream (honest)
+  nameFa: string; // teamFa attempt — honest fallback to the raw name
+  color: string | null; // sanitized lightMode hex (#rrggbb) or null
+}
+
+export interface GlobalTransferItem {
+  playerId: number;
+  name: string; // raw English (honest base + the title tooltip)
+  nameFa: string; // playerFa — honest fallback returns the raw name itself
+  posLabel: string; // raw upstream label ("AM")
+  posFa?: string; // additive map hit (omitted when unmapped — the 395 convention)
+  transferDate: string; // ISO
+  agoFa: string; // timeAgoFa — a wire of fresh moves reads relative
+  dateFa: string; // Jalali short
+  from: GlobalTransferSide;
+  to: GlobalTransferSide;
+  feeFa: string; // transferFeeFa — the shared fee/type vocabulary
+  marketValueFa?: string; // additive when marketValue > 0
+}
+
+export interface GlobalTransfers {
+  total: number; // rows served (the wire's own latest-50 window)
+  fetchedAt: string; // ISO — the producer's birth, the 305 convention
+  items: GlobalTransferItem[];
+}
+
+/** The global transfers wire — the missing portal-level surface of the
+ *  «انتقال‌ها» backlog (league level = cycle-57 tab, team level = the team
+ *  feed; this closes the third and last level). Rides NO shared cache with
+ *  the other feeds: one 15-min key `globalTransfers:v1`, the news cadence.
+ *  Throws on upstream failure/empty so cached()'s cycle-42
+ *  stale-while-error serves the last snapshot and a cold start surfaces the
+ *  honest 502 — the cycle-294 outage-is-not-success rule. */
+export async function getGlobalTransfers(): Promise<GlobalTransfers> {
+  return cached("globalTransfers:v1", 15 * 60_000, async (): Promise<GlobalTransfers> => {
+    const raw = await fetchJson<{ transfers?: FMTransferRaw[] }>(
+      `https://www.fotmob.com/api/data/transfers?date=${todayInTehran()}`
+    );
+    const list = raw.transfers || [];
+    if (list.length === 0) throw new Error("[transfers] upstream wire returned 0 rows");
+    const hex = (c?: { lightMode?: string }): string | null => {
+      const s = String(c?.lightMode || "");
+      return /^#[0-9a-fA-F]{6}$/.test(s) ? s : null;
+    };
+    const side = (id: number, short?: string, full?: string, colors?: { lightMode?: string }): GlobalTransferSide => {
+      const name = full || short || "";
+      // upstream id 2 = «Free agent» — not a club; the honest Persian slot
+      const free = id === 2;
+      return {
+        id,
+        name,
+        nameFa: free ? "بدون باشگاه" : teamFa(full, short) || name,
+        color: hex(colors),
+      };
+    };
+    const items: GlobalTransferItem[] = [];
+    for (const t of list) {
+      if (!t?.name || !t?.fromClub || !t?.toClub) continue;
+      const posLabel = String(t.position?.label || "");
+      const mv = Number(t.marketValue);
+      const j = t.transferDate ? jalaliShort(t.transferDate) : null;
+      items.push({
+        playerId: Number(t.playerId || 0),
+        name: t.name,
+        nameFa: playerFa(t.name),
+        posLabel,
+        ...(TRANSFER_POS_FA[posLabel] ? { posFa: TRANSFER_POS_FA[posLabel] } : {}),
+        transferDate: String(t.transferDate || ""),
+        agoFa: t.transferDate ? timeAgoFa(t.transferDate) : "",
+        dateFa: j && j.day && j.month ? `${j.day} ${j.month} ${j.year}` : "",
+        from: side(Number(t.fromClubId || 0), t.fromClub, t.fromClubFullName, t.fromClubColors),
+        to: side(Number(t.toClubId || 0), t.toClub, t.toClubFullName, t.toClubColors),
+        feeFa: transferFeeFa(t),
+        ...(Number.isFinite(mv) && mv > 0 ? { marketValueFa: euroFa(mv) } : {}),
+      });
+    }
+    if (items.length === 0) throw new Error("[transfers] upstream wire returned no usable rows");
+    return { total: items.length, fetchedAt: new Date().toISOString(), items };
+  });
 }
 
 // ---------------- FotMob: team page (via league payload + daily feed) ----------------

@@ -35,10 +35,19 @@ const NAV_ITEMS = [
   { href: "/leagues", label: "لیگ‌ها", icon: "trophy" },
   { href: "/topscorers", label: "گلزنان", icon: "goal" },
   { href: "/players", label: "بازیکنان", icon: "players" },
+  { href: "/transfers", label: "انتقال‌ها", icon: "transfer" },
   { href: "/news", label: "اخبار", icon: "news" },
 ] as const;
 
-function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news" | "players"; size?: number }) {
+function NavIcon({ name, size = 13 }: { name: "live" | "trophy" | "goal" | "news" | "players" | "transfer"; size?: number }) {
+  if (name === "transfer") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M4 8h13M14 4.5L17.5 8 14 11.5" />
+        <path d="M20 16H7M10 12.5L6.5 16l3.5 3.5" />
+      </svg>
+    );
+  }
   if (name === "live") {
     return (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden>
@@ -174,6 +183,8 @@ export function SiteFooter() {
           <Link href="/topscorers" className="tap-hit-row hover:text-primary transition-colors">گلزنان</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/players" className="tap-hit-row hover:text-primary transition-colors">بازیکنان</Link>
+          <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
+          <Link href="/transfers" className="tap-hit-row hover:text-primary transition-colors">انتقال‌ها</Link>
           <span aria-hidden className="fx-arcane-text text-[8px]">✦</span>
           <Link href="/news" className="tap-hit-row hover:text-primary transition-colors">اخبار</Link>
         </div>
