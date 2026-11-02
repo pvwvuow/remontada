@@ -310,7 +310,7 @@ function ScorersCard({ data }: { data: StandingsData }) {
         <div className="glass-scorer-hero p-3 flex items-center gap-3">
           <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={46} rounded="rounded-xl" />
           <div className="min-w-0 flex-1">
-            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">صدرنشین لیگ</p>
+            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (
               <Link
                 href={`/player/${top.playerId}`}

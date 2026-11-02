@@ -24,7 +24,7 @@
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
 import { getStandings, LeagueUnavailableError } from "@/lib/fotmob";
-import { seasonParamOk } from "@/lib/season";
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { LEAGUES } from "@/lib/leagues";
 
 export const dynamic = "force-dynamic";
@@ -40,10 +40,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ leagueKe
 
   // cycle-180 additive: the cycle-55 season contract, byte-for-byte the
   // standings route's guard — strict "YYYY/YYYY" shape, anything else → 400.
-  // cycle-382: plain-year shapes ("2022") ride the per-league
-  // plainYearSeasons flag (the World Cup's own scorers page).
   const season = new URL(req.url).searchParams.get("season") || undefined;
-  if (season && !seasonParamOk(season, LEAGUES.find((l) => l.key === leagueKey)?.plainYearSeasons === true)) {
+  if (season && !SEASON_PARAM_RE.test(season)) {
     return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
   }
 

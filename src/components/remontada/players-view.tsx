@@ -32,12 +32,12 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import type { GlobalScorer, GlobalAssist, GlobalScorersData } from "@/lib/fotmob";
 import { SEASON_PARAM_RE } from "@/lib/season";
-import { LEAGUES, teamFa } from "@/lib/leagues";
+import { LEAGUES } from "@/lib/leagues";
 import { PLAYER_NAME_FA } from "@/lib/player-names-fa";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { TeamLogo } from "@/components/remontada/team-logo";
 import { PlayerPhoto } from "@/components/remontada/player-photo";
-import { faDecimal, faDigits, timeAgoFa } from "@/lib/format";
+import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Metric = "goals" | "assists";
@@ -192,7 +192,7 @@ function PlayerCard({ p, rank, metric, big = false }: { p: Row; rank: number; me
     chips.push({ label: "گل+پاس", value: faDigits(p.gPlusA), cls: "bg-muted border-border text-muted-foreground", title: "مجموع گل و پاس گل" });
   }
   if (p.rating != null && p.rating > 0) {
-    chips.push({ label: "امتیاز", value: faDecimal(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
+    chips.push({ label: "امتیاز", value: faDigits(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
   }
 
   const inner = (
@@ -257,9 +257,7 @@ interface SquadGroup {
 }
 interface SquadData {
   teamName?: string;
-  // cycle-397: fa rides the API already (coachFa, cycle-259) — the type
-  // catches up so the header renders Persian first (the 396 F1 flip).
-  coach: { id: number; name: string; fa?: string | null; age?: number; nationality?: string } | null;
+  coach: { id: number; name: string; age?: number; nationality?: string } | null;
   groups: SquadGroup[];
 }
 interface TeamRow {
@@ -284,7 +282,7 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
     chips.push({ label: "سن", value: faDigits(p.age), cls: "bg-muted border-border text-muted-foreground", title: "سن" });
   }
   if (p.rating != null && p.rating > 0) {
-    chips.push({ label: "امتیاز", value: faDecimal(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
+    chips.push({ label: "امتیاز", value: faDigits(p.rating.toFixed(1)), cls: "bg-gold/10 border-gold/25 text-gold", title: "میانگین امتیاز فصل" });
   }
   if (p.goals) {
     chips.push({ label: "گل", value: faDigits(p.goals), cls: "bg-primary/10 border-primary/25 text-primary", title: "گل فصل" });
@@ -315,9 +313,7 @@ function SquadPlayerCard({ p }: { p: SquadPlayer }) {
             {name}
           </p>
           <p className="text-[9px] text-steel/80 truncate mt-0.5" dir="auto">
-            {/* cycle-394 (the 393 F2 render-wire flip): same nationality class
-                as the team-page squad row — country map, honest fallback */}
-            {teamFa(p.nationality) || "—"}
+            {p.nationality || "—"}
           </p>
         </div>
         <div className="flex items-center gap-1 flex-wrap justify-center">
@@ -766,7 +762,7 @@ export function PlayersView() {
                     </p>
                     <p className="text-[9.5px] text-steel/80 mt-0.5 tabular-persian">
                       {faDigits(totalPlayers)} بازیکن
-                      {squad.coach ? ` · سرمربی: ${squad.coach.fa || squad.coach.name}` : ""}
+                      {squad.coach ? ` · سرمربی: ${squad.coach.name}` : ""}
                     </p>
                   </div>
                 </div>

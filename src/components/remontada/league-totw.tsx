@@ -12,7 +12,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { fotmobTeamLogo } from "@/lib/leagues";
-import { faDecimal, faDigits } from "@/lib/format";
+import { faDigits } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 interface TotwPlayer {
@@ -132,7 +132,7 @@ export function LeagueTotwSection({ leagueKey, season }: { leagueKey: string; se
             href={`/player/${p.playerId}`}
             prefetch={false}
             data-testid="league-totw-player"
-            title={`${p.fa || p.latin}${p.teamFa ? ` — ${p.teamFa}` : ""}${p.rating ? ` — امتیاز ${faDecimal(p.rating)}` : ""}`}
+            title={`${p.fa || p.latin}${p.teamFa ? ` — ${p.teamFa}` : ""}${p.rating ? ` — امتیاز ${faDigits(p.rating)}` : ""}`}
             className="absolute flex flex-col items-center justify-center gap-0.5 group"
             style={{
               left: `${((p.x - p.w / 2) * 100).toFixed(2)}%`,
@@ -162,7 +162,7 @@ export function LeagueTotwSection({ leagueKey, season }: { leagueKey: string; se
                   p.isTop ? "border-gold/40 bg-gold/10 text-gold" : "border-border bg-white/[0.06] text-chart-3"
                 )}
               >
-                {faDecimal(p.rating)}
+                {faDigits(p.rating)}
               </span>
             )}
           </Link>

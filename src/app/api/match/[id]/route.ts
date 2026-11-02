@@ -4,13 +4,8 @@
 // Normalized for Persian display
 // ------------------------------------------------------------------
 import { NextResponse } from "next/server";
-import { gunzipSync } from "node:zlib";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
-import { buildShootout } from "@/lib/shootout";
-import { roundFa, unavailableReturnFa, marketValueFa } from "@/lib/fotmob";
-import { playerFa } from "@/lib/player-names-fa";
-import { faDecimal } from "@/lib/format";
 
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36";
@@ -47,9 +42,6 @@ interface FMEvent {
   isPenaltyShootoutEvent?: boolean;
   swap?: { name: string; id?: string }[] | null;  // [in, out]
   injuryTimeInMin?: number;
-  assistInput?: string | null;
-  assistPlayerId?: number | null;
-  assistStr?: string | null;
 }
 interface FMStatRow {
   title: string;
@@ -64,44 +56,6 @@ interface FMStatGroup {
   key?: string;
   stats?: FMStatRow[];
 }
-// update cycle-47: one raw entry of content.playerStats (dict keyed by player
-// id); `stats` is an array of sections whose labels are English titles. Players
-// who never stepped on the pitch carry an empty stats array.
-interface FMPlayerEntry {
-  name?: string;
-  id?: number;
-  // update cycle-205: the Opta crosswalk id — the heatmap feed keys players
-  // "p{optaId}", NOT by the FotMob id (live-verified: Raphinha id=696679 →
-  // optaId="219961", heatmap keys p121145/p165809/p219961… all Opta space;
-  // playerData?id=219961 → null). Present on every content.playerStats entry.
-  optaId?: string;
-  teamId?: number;
-  teamName?: string;
-  isGoalkeeper?: boolean;
-  shirtNumber?: string;
-  usualPosition?: number;
-  stats?: FMPlayerStatSection[];
-  shotmap?: unknown[];
-}
-interface FMPlayerStatSection {
-  title?: string;
-  key?: string;
-  stats?: Record<string, { key?: string | null; stat?: { value?: number | null; total?: number | null; type?: string } } | undefined>;
-}
-// update cycle-46: one raw shot from content.shotmap.shots
-interface FMShot {
-  eventType?: string;
-  teamId?: number;
-  playerName?: string;
-  x?: number;
-  y?: number;
-  min?: number;
-  minAdded?: number | null;
-  isBlocked?: boolean;
-  isOnTarget?: boolean;
-  expectedGoals?: number;
-}
-
 interface FMStarter {
   id: number; name: string; shirtNumber?: string;
   positionId?: number; usualPlayingPositionId?: number;
@@ -113,151 +67,9 @@ interface FMLineupTeam {
   id: number; name: string; formation?: string | null;
   starters?: FMStarter[];
   subs?: FMStarter[];
-  coach?: { id?: number; name?: string; firstName?: string; lastName?: string } | null;
-  // cycle-116: lineup-tab «غایبان و آمار ترکیب» — the unavailable (injured /
-  // suspended / international duty) block + starter facts, unconsumed since
-  // the beginning (probed shapes over 4 matches, UA Chrome/124).
-  averageStarterAge?: number;
-  totalStarterMarketValue?: number;
-  unavailable?: {
-    id?: number; name?: string; firstName?: string; lastName?: string;
-    marketValue?: number;
-    unavailability?: { type?: string; expectedReturn?: string } | null;
-  }[] | null;
+  coach?: { name?: string; firstName?: string; lastName?: string } | null;
 }
-interface FMPotmStatValue { value?: number | null; total?: number | null; type?: string }
-interface FMPotmStatGroup {
-  title?: string;
-  key?: string;
-  stats?: Record<string, { key?: string | null; stat?: FMPotmStatValue } | undefined>;
-}
-interface FMPotm {
-  id?: number;
-  name?: string | { firstName?: string; lastName?: string; fullName?: string } | null;
-  rating?: { num?: string } | null;
-  teamName?: string;
-  teamId?: number;
-  minutesPlayed?: number;
-  role?: string;
-  isHomeTeam?: boolean;
-  stats?: FMPotmStatGroup[];
-}
-// update cycle-110 probed (UA Chrome/124, 2026-10-29, 5 live matches):
-// matchFacts.insights carries pre-match story lines as localized templates
-// (localizedTextId + statValues[{value,name,type}] + team color). Curated
-// Persian templates live in MATCH_INSIGHT_FA; unknown ids are dropped.
-// update cycle-257 probed (UA Chrome/124, live sweep across 40 matches of
-// PL/Bundesliga/LaLiga/…, 2026-10-31): matchFacts.poll.oddspoll — the PRE-MATCH
-// poll widget («چه کسی پیروز می‌شود؟»). Facts[] = one row per market
-// (1x2 / bts / ou / dc), each carrying a TextTemplateId + StatValues where a
-// role string ("home_team"/"away_team") stands for the side name and bare
-// strings are numbers. 16 distinct TextTemplateIds probed; unknown ids drop.
-interface FMPollFact {
-  OddsType?: string;
-  DefaultLabel?: string;
-  TextLabelId?: string;
-  TextTemplateId?: string;
-  StatValues?: string[];
-  defaultText?: string;
-}
-interface FMInsightStatValue { value?: number | string | null; name?: string | null; type?: string }
-interface FMInsight {
-  type?: string; // "team" | "player"
-  teamId?: number;
-  playerId?: number;
-  priority?: number;
-  localizedTextId?: string;
-  statValues?: FMInsightStatValue[];
-  color?: string;
-}
-
-// update cycle-110: curated Persian renderings of the upstream insight
-// templates (probed live across 5 matches, UA Chrome/124, 2026-10-29 —
-// 11 distinct localizedTextIds). {N} placeholders fill from statValues in
-// order: entries with a `name` are entity refs (team → teamFa, otherwise
-// playerFa; honest fallback = raw upstream name), bare values → Persian
-// digits. Unknown localizedTextIds never render (honest drop).
-const MATCH_INSIGHT_FA: Record<string, string> = {
-  "h2h_winstreak": "{0} در {2} دیدار قبلی مقابل {1} پیروز شده است.",
-  "insights_goals_team": "در {1} بازی اخیر {0} گل به ثمر رسانده است.",
-  "insights_not_clean_sheet": "در {0} بازی متوالی دروازهٔ بسته نداشته است.",
-  "insights_not_won_team": "در {0} بازی اخیر به پیروزی نرسیده است.",
-  "insights_bad_form_team": "{0} بازی اخیر خود را با شکست پشت سر گذاشته است.",
-  "insights_goalless_team": "در {0} بازی متوالی گلی نزده است.",
-  "insights_clean_sheets": "بیشترین کلین‌شیت رقابت را در اختیار دارد ({0}).",
-  "insights_player_most_chances_for_team": "{0} بیشترین موقعیت طلایی را برای {1} ساخته است ({2}).",
-  "insights_player_most_shots_on_target_for_team": "{0} بیشترین شوت در چارچوب را به‌ازای هر بازی برای {1} دارد ({2}).",
-  "insights_player_chances_created_rank_in_competition": "{0} در ساختن موقعیت طلایی رتبهٔ {1} رقابت را دارد ({2}).",
-  "insights_player_goals_scored": "{0} آقای گل رقابت است ({1}).",
-};
-
-// update cycle-257: the pre-match poll — Persian renderings. Two curated
-// maps probed live (UA Chrome/124, 2026-10-31, 40-match sweep → 16 distinct
-// TextTemplateIds):
-//
-// · MATCH_POLL_TITLE_FA — the market question per OddsType (upstream
-//   DefaultLabel "Who will win?" / "Will both teams score?" / "Will there be
-//   more than 2.5 goals?" / "Double chance"). Unknown OddsType drops.
-// · MATCH_POLL_FA — the fact sentence per TextTemplateId; {N} fills from
-//   StatValues in order, where the role strings "home_team"/"away_team"
-//   resolve to the sides' Persian names and bare values pass through
-//   faDecimal (cycle-372: decimals carry the Persian separator ٫ — the
-//   portal-wide 369/370/371 convention; this was the last documented
-//   ASCII-dot holdout since cycle-257). Unknown
-//   TextTemplateIds never render (honest drop, MATCH_INSIGHT_FA rule).
-const MATCH_POLL_TITLE_FA: Record<string, string> = {
-  "1x2": "چه کسی پیروز می‌شود؟",
-  bts: "هر دو تیم گل می‌زنند؟",
-  ou: "بیش از ۲٫۵ گل؟",
-  dc: "شانس دوگانه",
-};
-const MATCH_POLL_FA: Record<string, string> = {
-  not_won_team: "{0} در {1} بازی اخیر خود به پیروزی نرسیده است.",
-  bad_form_team: "{0} در {1} بازی اخیر خود شکست خورده است.",
-  goalless_team: "{0} در {1} بازی اخیر خود گلی نزده است.",
-  draw_streak_team: "{0} در {1} بازی اخیر خود به تساوی نرسیده است.",
-  goalstreak_team_home: "{0} در {1} بازی خانگی اخیر خود گلزنی کرده است.",
-  goalstreak_team_away: "{0} در {1} بازی خارج از خانهٔ اخیر خود گلزنی کرده است.",
-  goals_team: "{0} در {2} بازی اخیر خود {1} گل به ثمر رسانده است.",
-  h2h_winstreak: "{0} در {2} دیدار اخیر مقابل {1} پیروز شده است.",
-  h2h_draw_streak_v2: "{0} و {1} در {2} دیدار اخیر مقابل یکدیگر به تساوی رسیده‌اند.",
-  h2h_no_draws_v2: "{2} دیدار اخیر {0} و {1} مقابل یکدیگر بدون تساوی بوده است.",
-  h2h_undefeated: "{0} در {2} دیدار اخیر مقابل {1} شکست‌ناپذیر بوده است ({3} برد، {4} تساوی).",
-  draw_streak_both: "{0} در {2} بازی اخیر و {1} در {3} بازی اخیر به تساوی نرسیده‌اند.",
-  goalstreak_team_both: "{0} در {1} بازی اخیر و {2} در {3} بازی اخیر گلزنی کرده است.",
-  goals_total_last_3_both: "{0} در {2} بازی اخیر {3} گل زده و {1} {4} گل زده است.",
-  average_goals_last3_both: "میانگین گل {0} در سه بازی اخیر {2} و میانگین گل {1} {3} است.",
-  team_form_both:
-    "فرم {0} در پنج بازی اخیر: {1} برد، {2} تساوی، {3} شکست — فرم {4}: {5} برد، {6} تساوی، {7} شکست.",
-};
-// update cycle-117 probed (UA Chrome/124, live sweep across MLS/Brazil/
-// Libertadores, 2026-10-29): matchFacts.topScorers — each side's LEAGUE
-// season top scorer + their season line. Shape uniform across the probe
-// pool {playerId, fullName, lastName, stats{...}} but the whole block is
-// ABSENT on some feeds (e.g. Brazilian Série A) → honest-hide upstream.
-interface FMTopScorerStats {
-  goals?: number;
-  goalAssist?: number;
-  expectedGoals?: number;
-  gamesPlayed?: number;
-  minsPlayedGoal?: number; // minutes per goal
-  ontargetScoringAtt?: number; // shots on target per match
-  motm?: number; // man-of-the-match awards this season
-  playerRating?: number; // season average FotMob rating
-  minsPlayed?: number;
-}
-interface FMTopScorerPlayer {
-  playerId?: number;
-  fullName?: string;
-  lastName?: string;
-  stats?: FMTopScorerStats;
-}
-
 interface FMMatchDetails {
-  // update cycle-375: the one matchDetails key the 367-era key scans never
-  // consumed — a transient live flag (true only while a VAR review is
-  // pending). Optional upstream; normalized to a strict boolean below.
-  hasPendingVAR?: boolean;
   general?: {
     matchId?: number; matchName?: string; leagueId?: number; parentLeagueId?: number;
     leagueName?: string; leagueRoundName?: string; countryCode?: string;
@@ -282,157 +94,16 @@ interface FMMatchDetails {
         { result?: number; resultString?: string }[],
         { result?: number; resultString?: string }[]
       ];
-      playerOfTheMatch?: FMPotm | null;
-      insights?: FMInsight[];
-      // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — present on
-      // upcoming AND live matches; absent on many finished feeds. Optional →
-      // the surface honest-hides (cycle-117 topScorers convention).
-      poll?: { oddspoll?: { Facts?: FMPollFact[] } | null } | null;
-      // update cycle-125: the official YouTube highlight video link +
-      // thumbnail (live-probed UA Chrome/124, 2026-10-29: present for FEATURED
-      // finished matches only — 2 of 3 sampled; absent/None otherwise → the
-      // surface honest-hides). Flat dict: {image, url, source}.
-      highlights?: {
-        image?: string;
-        url?: string;
-        source?: string;
-      } | null;
-      // update cycle-191: the post-match review feed («گزارش‌های بازی") —
-      // live-probed UA Chrome/124, 2026-10-30: Opta articles on SOME finished
-      // matches (5749721 → 1 entry, 5749727 → 8 entries = ONE article in 8
-      // languages via "_lang"-suffixed ids); absent on other finished matches
-      // (5765944) and on upcoming ones (5868120) → honest absence.
-      postReview?: {
-        id?: string;
-        title?: string;
-        description?: string;
-        image?: string;
-        source?: string;
-        shareUrl?: string;
-        lang?: string;
-        dateUpdated?: string;
-      }[] | null;
-      // update cycle-207: the pre-match preview feed («پیش‌نمای بازی») —
-      // live-probed UA Chrome/124, 2026-10-30: the same article shape as
-      // postReview, on editorially-covered matches BOTH upcoming (5795498,
-      // 5881208) and finished (5868105); absent on uncovered ones (5868115,
-      // 5749730) → honest absence. 8 languages per article, ids carry the
-      // "_lang" suffix; shareUrl under /news/ or /topnews/.
-      preReview?: {
-        id?: string;
-        title?: string;
-        description?: string;
-        image?: string;
-        source?: string;
-        shareUrl?: string;
-        lang?: string;
-        dateUpdated?: string;
-      }[] | null;
-      // update cycle-192: the top-5 rated players per side («برترین‌های بازی»)
-      // — live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries
-      // (playerId, name{fullName}, playerRatingRounded, playerRating, color,
-      // manOfTheMatch, teamId, positionLabel{label,key}); the upcoming
-      // 5868120 carries EMPTY arrays; content.table sits beside this block
-      // but is only a pointer to a data.fotmob.com XML blob (set aside).
-      topPlayers?: {
-        homeTopPlayers?: {
-          playerId?: number;
-          name?: { fullName?: string };
-          playerRatingRounded?: string;
-          manOfTheMatch?: boolean;
-          positionLabel?: { label?: string };
-        }[] | null;
-        awayTopPlayers?: {
-          playerId?: number;
-          name?: { fullName?: string };
-          playerRatingRounded?: string;
-          manOfTheMatch?: boolean;
-          positionLabel?: { label?: string };
-        }[] | null;
-      } | null;
-      // update cycle-117: the two sides' season top scorers («گلزنان فصل
-      // دو تیم») — unconsumed since the beginning (the per-match playerStats
-      // block consumed by cycle-47 is a DIFFERENT payload section)
-      topScorers?: {
-        homePlayer?: FMTopScorerPlayer | null;
-        awayPlayer?: FMTopScorerPlayer | null;
+      playerOfTheMatch?: {
+        id?: number;
+        name?: string | { firstName?: string; lastName?: string; fullName?: string } | null;
+        rating?: { num?: string } | null;
+        teamName?: string;
       } | null;
     };
     stats?: { Periods?: Record<string, { stats?: FMStatGroup[] }> };
-    // update cycle-352: lineupType distinguishes the PRE-MATCH predicted XI
-    // ("predicted", probed live UA Chrome/124 on 7 fixtures 2026-11-01) from
-    // the official one ("standard", live/finished) — previously unconsumed,
-    // so predicted lineups masqueraded as official ones on the lineups tab.
-    lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam; lineupType?: string | null } | null;
+    lineup?: { homeTeam?: FMLineupTeam; awayTeam?: FMLineupTeam } | null;
     momentum?: { main?: { data?: { minute?: number; value?: number }[] } } | null;
-    // update cycle-347: the mini-table POINTER (closes the cycle-192
-    // documented set-aside) — only a url + the two team ids; the blob itself
-    // is fetched+parsed separately (probed live UA Chrome/124:
-    // data.fotmob.com/tables.ext.47.fot.gz → 999 B gz / 3.1 KB XML,
-    // `<t id p w d l g c>` rows in rank order).
-    table?: {
-      url?: string;
-      teams?: (number | string)[];
-      leagueId?: number | string;
-    } | null;
-    // update cycle-46: shotmap (per-shot locations, outcome, xG)
-    shotmap?: { shots?: FMShot[] };
-    // update cycle-47: per-player match stats (dict keyed by player id)
-    playerStats?: Record<string, FMPlayerEntry>;
-    // update cycle-97 probed (UA Chrome/124, 2026-10-29): present for
-    // started/finished matches, null for upcoming ones; per side it carries
-    // total/firstHalf/secondHalf × left/center/right integer shares
-    // cycle-187 probed (UA Chrome/124, 2026-10-30, live samples: 5749727
-    // Sassuolo–Lazio, 5749721 Roma–Cagliari): the halves are NOT always
-    // present even when total is — every period block is read independently
-    // and only surfaced when its sum > 0 (honest per-period omission).
-    attackingZones?: {
-      home?: {
-        total?: { left?: number; center?: number; right?: number };
-        firstHalf?: { left?: number; center?: number; right?: number };
-        secondHalf?: { left?: number; center?: number; right?: number };
-      } | null;
-      away?: {
-        total?: { left?: number; center?: number; right?: number };
-        firstHalf?: { left?: number; center?: number; right?: number };
-        secondHalf?: { left?: number; center?: number; right?: number };
-      } | null;
-    } | null;
-    // update cycle-100 probed (UA Chrome/124, 2026-10-29, 28-sample live
-    // sweep): content.weather is ALWAYS present — 0 nulls — for started,
-    // finished AND upcoming matches (upcoming carries apiUsed:"forecast",
-    // started/finished "current"). Flat object, never an array:
-    // {temperature, windSpeed, windDirectionCardinal, iconCode,
-    // relativeHumidity, precipChance?, precipitation, snow, cloudCover,
-    // description, apiUsed, lastUpdated, localizedKey, defaultTitle}.
-    // update cycle-101 probed: the COMPLETE localizedKey vocabulary (12 keys)
-    // was read from FotMob's own i18n bundle in their match-page HTML —
-    // weather_condition_{clear, sunny, partly_cloudy, cloudy, foggy,
-    // light_rain, heavy_rain, rain, thunderstorms, stormy, snowy, windy}.
-    // windUnit verdict (cycle-101): FotMob's own surfaces NEVER display wind
-    // — their match widget renders temperature + icon only ("11°C"), 0 "km/h"
-    // occurrences in the rendered page, all 21 "m/s" hits are URL false
-    // positives (hreflang/links) → the windSpeed unit is permanently
-    // unassertable from FotMob itself; temperature IS Celsius (their widget).
-    // precipitation/snow verdict (cycle-102): their i18n bundle carries ONLY
-    // the 12 condition keys — no unit strings at all, and the widget shows
-    // neither value → same permanent honest omission as wind.
-    weather?: {
-      temperature?: number;
-      windSpeed?: number;
-      windDirectionCardinal?: string;
-      iconCode?: number;
-      relativeHumidity?: number;
-      precipChance?: number;
-      precipitation?: number;
-      snow?: number;
-      cloudCover?: number;
-      description?: string;
-      apiUsed?: string;
-      lastUpdated?: string;
-      localizedKey?: string;
-      defaultTitle?: string;
-    } | null;
   };
 }
 
@@ -449,27 +120,6 @@ const EVENT_FA: Record<string, string> = {
   Injury: "مصدمیت",
 };
 
-// update cycle-100: Persian weather condition labels keyed by the upstream
-// localizedKey. update cycle-101: the map was completed 5 → 12 — the FULL
-// vocabulary read from FotMob's own i18n bundle in their match-page HTML
-// (live-fetched, UA Chrome/124), so every key FotMob can emit now renders in
-// Persian; the defaultTitle (English) fallback remains as the honest guard
-// for any future key FotMob adds (same convention as the cycle-96 names).
-const WEATHER_FA: Record<string, string> = {
-  weather_condition_clear: "صاف",
-  weather_condition_sunny: "آفتابی",
-  weather_condition_partly_cloudy: "تا حدی ابری",
-  weather_condition_cloudy: "ابری",
-  weather_condition_foggy: "مه‌آلود",
-  weather_condition_light_rain: "باران سبک",
-  weather_condition_heavy_rain: "باران سنگین",
-  weather_condition_rain: "بارانی",
-  weather_condition_thunderstorms: "رعدوبرق",
-  weather_condition_stormy: "طوفانی",
-  weather_condition_snowy: "برفی",
-  weather_condition_windy: "پرباد",
-};
-
 const STAT_FA: Record<string, string> = {
   ballpossession: "مالکیت توپ",
   ballpossesion: "مالکیت توپ",
@@ -482,7 +132,6 @@ const STAT_FA: Record<string, string> = {
   expected_goals_set_play: "xG ضربات ایستگاهی",
   expected_goals_non_penalty: "xG بدون پنالتی",
   expected_goals_on_target: "xG روی در چارچوب",
-  expected_goals_on_target_variant: "xGOT (روی در چارچوب)",
   total_shots: "شوت‌های کل",
   shotsofftarget: "شوت خارج از چارچوب",
   blocked_shots: "شوت بلاک‌شده",
@@ -502,20 +151,6 @@ const STAT_FA: Record<string, string> = {
   offsides: "آفساید",
   "matchstats.headers.tackles": "تکل",
   interceptions: "قطع توپ",
-  rating_title: "امتیاز فوت‌ماب",
-  minutes_played: "دقیقه بازی",
-  goals: "گل",
-  assists: "پاس گل",
-  expected_assists: "پاس گل مورد انتظار (xA)",
-  xg_and_xa: "xG + xA",
-  chances_created: "موقعیت خلق‌شده",
-  shot_accuracy: "دقت شوت",
-  defensive_actions: "اکشن دفاعی",
-  touches: "لمس توپ",
-  recoveries: "برگرداندن توپ",
-  dribbled_past: "دریبل‌شده",
-  was_fouled: "خطا گرفته",
-  duel_lost: "دوئل باخته",
   shot_blocks: "بلاک (دفاع)",
   clearances: "دفع توپ",
   keeper_saves: "مهار دروازه‌بان",
@@ -550,27 +185,13 @@ function fmtMinute(e: FMEvent): string {
   return `${base}′`;
 }
 
-// cycle-172: safe player-id coercion for the timeline family — upstream sends
-// numbers on event player refs but STRING ids on substitution swap refs
-// (live-probed 2026-10-30: swap: [{name, id: "1311977"}, …]). Anything that
-// is not a positive integer (missing, 0, junk) → undefined, so the UI falls
-// back to the plain honest name (the 167 dead-id rule).
-function posId(v: unknown): number | undefined {
-  const n = typeof v === "number" ? v : typeof v === "string" ? Number(v) : NaN;
-  return Number.isInteger(n) && n > 0 ? n : undefined;
-}
-
 // ---------------- lineup row clustering ----------------
-// cycle-106: chips/subs/coach carry nameFa — the honest Persian display name
-// (curated PLAYER_NAME_FA hit, else the raw upstream English name), same
-// contract as the cycle-104/105 name-map extensions; `name` stays upstream.
-interface Chip { id: number; name: string; nameFa: string; shirt?: string; rating?: number; _y?: number }
+interface Chip { id: number; name: string; shirt?: string; rating?: number; _y?: number }
 
 function toChip(p: FMStarter): Chip {
   return {
     id: p.id,
     name: p.name,
-    nameFa: playerFa(p.name),
     shirt: p.shirtNumber || undefined,
     rating: p.performance?.rating ?? undefined,
     _y: p.verticalLayout?.y ?? 0,
@@ -602,128 +223,8 @@ interface LineupSide {
   fa: string;
   formation?: string;
   coach?: string;
-  coachFa?: string; // cycle-106 honest map (present only when a coach name exists)
-  coachId?: number; // fix cycle-354: /coach/[id] link — honest absence when upstream omits the id
-  starterAge?: number;       // cycle-116 raw — the UI formats (میانگین سن)
-  totalMarketValue?: number; // cycle-116 raw EUR
-  totalMarketValueFa?: string; // cycle-116 display-ready «۲۵۶.۷ میلیون یورو» (marketValueFa server-side — the client bundle must NOT pull fotmob/db)
-  unavailable?: {            // cycle-116 «غایبان» — honest names (playerFa)
-    id?: number; name: string; nameFa?: string;
-    type?: string; typeFa?: string;
-    returnRaw?: string; returnFa?: string | null;
-  }[];
   rows: { players: Omit<Chip, "_y">[] }[];
-  subs: { id: number; name: string; nameFa: string; shirt?: string }[];
-}
-
-// ---------------- touch map (update cycle-205) ----------------
-// Probed live (UA Chrome/124, 2026-10-30): /api/data/heatmap/match/{id}/
-// heatmaps?heatmapUrl=https%3A%2F%2Fpub.fotmob.com%2Fprod%2Fdb%2Fapi%2Fheatmap
-// %2Fmatch%2F{id} answers HTTP 200 for STARTED/FINISHED matches of the big
-// leagues (5868105 Clásico → 30 players, 6275369 EFL Cup → 32, 5749723
-// Serie A → 32) and 404s for small leagues (6487504 Botola Pro) and for
-// everything else it cannot cover. Shape: {lastModified, players, template}
-// where players is a DICT keyed "p{playerId}" → a string of SVG shapes whose
-// touch dots are `<circle cx="…" cy="…" r="…"/>` in the 105 × 68 pitch space
-// (the same space the `template` SVG's viewBox declares). The block was ZERO
-// usage in src/ before this cycle (grep-verified) — the portal had no
-// per-match touch surface at all. Side attribution rides the ALREADY
-// normalized lineups (rows[].players[].id + subs[].id): a player key that
-// matches neither side is dropped honestly; a side with no points yields a
-// null side (the UI hides the card when BOTH are null).
-export interface TouchMapSide {
-  points: { x: number; y: number }[]; // raw pitch coords, 0..105 × 0..68
-  players: number;                    // distinct players contributing dots
-  touches: number;                    // = points.length
-}
-// update cycle-351: per-player drill-down of the SAME upstream feed — the
-// aggregate sides above stay byte-identical; players[] adds the granularity
-// FotMob's own match page shows per lineup row (probed live UA Chrome/124:
-// 22/22 heatmap keys join through the cycle-205 optaId crosswalk, and every
-// content.playerStats entry carries name + shirtNumber for the chips).
-export interface TouchMapPlayer {
-  optaId: string;
-  side: "home" | "away";
-  name: string;      // playerFa at normalize time (honest Persian, raw fallback)
-  shirt?: string;
-  points: { x: number; y: number }[];
-  touches: number;   // = points.length
-}
-export interface TouchMap {
-  home: TouchMapSide | null;
-  away: TouchMapSide | null;
-  // touches-desc, optaId tiebreak; optional so a stale pre-351 cached entry
-  // (TTL ≤ 1 h) still validates — the UI hides the drill-down when absent.
-  players?: TouchMapPlayer[];
-}
-interface FMHeatmapRaw {
-  players?: Record<string, string>;
-}
-
-const TOUCH_PITCH_W = 105;
-const TOUCH_PITCH_H = 68;
-const TOUCH_RE = /cx="(-?[\d.]+)" cy="(-?[\d.]+)"/g;
-
-async function buildTouchMap(
-  id: string,
-  touchSides: Record<string, "home" | "away">,
-  // cycle-351: optaId → display meta (name/shirt), same join as touchSides
-  touchMeta: Record<string, { name?: string; shirt?: string }> = {}
-): Promise<TouchMap | null> {
-  if (Object.keys(touchSides).length === 0) return null;
-  const hmUrl =
-    `https://www.fotmob.com/api/data/heatmap/match/${id}/heatmaps` +
-    `?heatmapUrl=${encodeURIComponent(`https://pub.fotmob.com/prod/db/api/heatmap/match/${id}`)}`;
-  const raw = await fetchJson<FMHeatmapRaw>(hmUrl, 9000);
-  const players = raw?.players || {};
-  const homePts: { x: number; y: number }[] = [];
-  const awayPts: { x: number; y: number }[] = [];
-  let homePlayers = 0;
-  let awayPlayers = 0;
-  const playerRows: TouchMapPlayer[] = []; // cycle-351: per-player drill-down
-  for (const [key, svg] of Object.entries(players)) {
-    const opta = key.replace(/^p/, "");
-    if (!opta) continue;
-    const side = touchSides[opta];
-    if (!side) continue;                               // honest drop — side unknown
-    const pts: { x: number; y: number }[] = [];
-    TOUCH_RE.lastIndex = 0;
-    let m: RegExpExecArray | null;
-    while ((m = TOUCH_RE.exec(svg))) {
-      const cx = Number(m[1]);
-      const cy = Number(m[2]);
-      if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
-      if (cx < -2 || cx > TOUCH_PITCH_W + 2 || cy < -2 || cy > TOUCH_PITCH_H + 2) continue;
-      pts.push({ x: Math.round(cx * 10) / 10, y: Math.round(cy * 10) / 10 });
-    }
-    if (pts.length === 0) continue;
-    const meta = touchMeta[opta];
-    playerRows.push({
-      optaId: opta,
-      side,
-      name: playerFa(meta?.name || key),
-      ...(meta?.shirt ? { shirt: meta.shirt } : {}),
-      points: pts,
-      touches: pts.length,
-    });
-    if (side === "home") {
-      homePts.push(...pts);
-      homePlayers++;
-    } else {
-      awayPts.push(...pts);
-      awayPlayers++;
-    }
-  }
-  if (homePts.length === 0 && awayPts.length === 0) return null;
-  return {
-    home: homePts.length > 0 ? { points: homePts, players: homePlayers, touches: homePts.length } : null,
-    away: awayPts.length > 0 ? { points: awayPts, players: awayPlayers, touches: awayPts.length } : null,
-    // touches-desc, optaId tiebreak — chip row order is stable and the
-    // busiest players lead
-    players: playerRows.sort(
-      (a, b) => b.touches - a.touches || a.optaId.localeCompare(b.optaId)
-    ),
-  };
+  subs: { id: number; name: string; shirt?: string }[];
 }
 
 // ---------------- normalizer ----------------
@@ -740,394 +241,42 @@ export interface MatchDetailNormalized {
     finished: boolean;
     cancelled: boolean;
     live: boolean;
-    // update cycle-375: live VAR review pill («بررسی VAR در جریان است») —
-    // strict boolean; the UI hides it unless the feed explicitly says true
-    // (honest absence, the 116/257 convention)
-    hasPendingVAR: boolean;
     minute?: string;
     statusText?: string;
     home: { id: number; name: string; fa: string; logo: string; score: number | null };
     away: { id: number; name: string; fa: string; logo: string; score: number | null };
   };
-  // cycle-172 additive: upstream player ids join the timeline family —
-  // player/assist/sub names become live /player links in the UI. Optional
-  // fields only; every legacy field byte-untouched. ids are omitted when
-  // upstream lacks them or the value is a dead id (≤0 — the 167 guard).
-  scorers: { side: "home" | "away"; player: string; playerFa: string; minute: string; ownGoal: boolean; penalty: boolean; assist?: string; assistFa?: string; playerId?: number; assistId?: number }[];
+  scorers: { side: "home" | "away"; player: string; minute: string; ownGoal: boolean; penalty: boolean }[];
   events: {
     type: string;
     typeFa: string;
     minute: string;
     side: "home" | "away" | "neutral";
     player?: string;
-    playerFa?: string;
-    playerId?: number;
     card?: string;
-    assistId?: number;
-    swapInId?: number;
-    swapOutId?: number;
     ownGoal: boolean;
     penalty: boolean;
     swapIn?: string;
-    swapInFa?: string;
     swapOut?: string;
-    swapOutFa?: string;
     homeScore: number | null;
     awayScore: number | null;
-    assist?: string;
-    assistFa?: string;
   }[];
   statGroups: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
-  // update cycle-190: per-period stats («آمار نیمه‌به‌نیمه») — the SAME
-  // stat-table normalization applied to the upstream Periods.FirstHalf /
-  // Periods.SecondHalf blocks (probed UA Chrome/124 2026-10-30 on
-  // 5749721/5749727: Periods = All/FirstHalf/SecondHalf, each carrying the
-  // same 7 group titles). statGroups stays the All period byte-identical
-  // (pre-190 consumers untouched); a period key is emitted ONLY when that
-  // period's upstream block yields ≥1 non-empty group (honest per-period
-  // omission — the 187 zones contract family). null when neither half has
-  // data (e.g. matches whose feed only fills All).
-  statPeriods?: {
-    firstHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
-    secondHalf: { title: string; rows: { key: string; title: string; home: string; away: string; graph: boolean; homeVal: number | null; awayVal: number | null }[] }[];
-  } | null;
-  // update cycle-352: predicted=true only when upstream says lineupType
-  // "predicted" (spread — official/standard payloads keep the exact old shape);
-  // absent → the UI renders no predicted banner (honest absence).
-  lineups: { home: LineupSide | null; away: LineupSide | null; predicted?: true } | null;
-  info: {
-    stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
-    // cycle-115 additive: referee & stadium facts («داور و ورزشگاه») — the
-    // infoBox Referee.stats block + Stadium capacity/surface, unconsumed since
-    // the beginning. Optional → pre-115 cached payloads self-heal at the next
-    // 25s cache generation (UI hides the card). Unknown stat types drop.
-    refereeStats?: {
-      matches?: number;
-      yellowPerMatch?: number; yellowAvg?: number; yellowVs?: "above" | "below" | "average";
-      red?: number; penalties?: number;
-      foulsPerMatch?: number; foulsAvg?: number; foulsVs?: "above" | "below" | "average";
-    } | null;
-    stadiumExtra?: { capacity?: number; surface?: string } | null;
-  };
+  lineups: { home: LineupSide | null; away: LineupSide | null } | null;
+  info: { stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string };
   form: { home: string[]; away: string[] } | null;
   momentum: { minute: number; value: number }[] | null;
-  // update cycle-205: the per-side touch map («نقشهٔ گرمای لمس») — assembled
-  // OUTSIDE this normalized object (its own cached producer, see GET) and
-  // spliced into the JSON response only; the field here documents the shape.
-  // null when the match never started, the side join failed, the league has
-  // no heatmap feed (404), or both sides came out empty — honest absence.
-  touchMap?: TouchMap | null;
-  // update cycle-205: optaId → side crosswalk for the touch-map join — the
-  // heatmap feed keys players by their Opta id («p{optaId}»), NOT the FotMob
-  // id; the crosswalk lives in content.playerStats (every entry carries
-  // optaId + teamId). Third-team/unknown teamIds are dropped (exact match
-  // only — stricter than the playerStats default-to-home grouping).
-  // INTERNAL ONLY — stripped from the JSON response in GET after the touch
-  // map is assembled.
-  touchSides?: Record<string, "home" | "away">;
-  // update cycle-351: optaId → {name, shirt} display meta for the per-player
-  // drill-down chips — built in the same crosswalk loop, INTERNAL ONLY too.
-  touchMeta?: Record<string, { name?: string; shirt?: string }>;
-  // update cycle-97: attacking zones («جهت حملات») — TOTAL split of each
-  // team's attacking output across the three pitch lanes; null when upstream
-  // lacks the block (upcoming matches) or both sides are all-zero.
-  // cycle-187 closes the v1 boundary cycle-97 declared («TOTAL split only in
-  // v1 — firstHalf/secondHalf stay unrendered»): the per-half splits join as
-  // OPTIONAL keys appended AFTER the legacy triple — the legacy shape
-  // {left,center,right} stays byte-identical and every pre-187 consumer that
-  // reads only left/center/right is untouched. A half key is emitted only
-  // when that half's shares sum > 0 upstream (honest per-period omission —
-  // probed: live matches mid-first-half carry no secondHalf data yet).
-  zones?: {
-    home: {
-      left: number; center: number; right: number;
-      firstHalf?: { left: number; center: number; right: number };
-      secondHalf?: { left: number; center: number; right: number };
-    };
-    away: {
-      left: number; center: number; right: number;
-      firstHalf?: { left: number; center: number; right: number };
-      secondHalf?: { left: number; center: number; right: number };
-    };
-  } | null;
-  // update cycle-100: match weather («وضعیت هوا») — ONLY the honestly
-  // displayable subset: condition (localizedKey→Persian, unknown→upstream
-  // defaultTitle), temperature (°C — verified from FotMob's own widget),
-  // relativeHumidity/cloudCover (inherent percentages) and precipChance
-  // (inherent percentage, forecast-only). windSpeed / precipitation / snow /
-  // iconCode are deliberately NOT normalized for display: windSpeed carries
-  // no displayable unit — cycle-101 probe verdict: FotMob never displays
-  // wind on any surface (widget = temperature + icon only; 0 km/h, all m/s
-  // hits URL false positives) → PERMANENT honest omission (closed, not
-  // deferred); precipitation/snow units unverified, iconCode never mapped.
-  // null when the block is missing or carries no displayable value
-  // (defensive — probe showed 0 nulls).
-  weather?: {
-    condition: string;
-    conditionSource: "localized" | "upstream";
-    temperature?: number;
-    humidity?: number;
-    cloudCover?: number;
-    precipChance?: number;
-    forecast: boolean;
-  } | null;
-  // update cycle-110: match insights («بینش‌ها») — upstream localized story
-  // templates rendered through the curated Persian map; entries with an
-  // unknown localizedTextId are dropped (honest convention, like the weather
-  // keys); empty when the payload has none (or all unmapped)
-  insights?: { text: string; color: string; kind: "team" | "player" | "h2h" }[] | null;
-  // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — one row per
-  // market whose fact sentence survived the curated template map; null when
-  // the match is finished (the poll is a pre-match artifact) or no fact
-  // resolved (unknown templates drop honestly)
-  // update cycle-257: the pre-match poll («نظرسنجی پیش‌بازی») — one row per
-  // fact that survived template substitution; hidden when the match is
-  // finished (the poll is a pre-match artifact) or no fact survived.
-  poll?: { title: string; text: string }[] | null;
-  // update cycle-347: mini standings context («جایگاه در جدول») — closes the
-  // cycle-192 documented set-aside: content.table is only a pointer to a
-  // compressed XML table blob, now fetched+parsed server-side (node:zlib,
-  // zero deps, strict data.fotmob.com host allowlist). Rows come in RANK
-  // order, pts = 3w+d (the blob carries no points column). Optional → honest
-  // absence (uncovered league, fetch hiccup, missing team row) self-heals at
-  // the next 25 s cache generation (the 116 convention).
-  table?: {
-    leagueName: string;
-    home: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
-    away: { rank: number; played: number; wins: number; draws: number; losses: number; goalsFor: number; goalsAgainst: number; points: number } | null;
-  } | null;
-  // update cycle-117: the two sides' season top scorers («گلزنان فصل دو
-  // تیم») — one entry per side, only finite stats carried (honest absence
-  // per field); null when the payload lacks the block (some feeds do) or
-  // neither side carries a displayable season line
-  topScorers?: {
-    home: TopScorerSide | null;
-    away: TopScorerSide | null;
-  } | null;
-  // fix cycle-45: shootout attempts were dropped entirely before — the
-  // decisive phase of knockout matches was invisible to the user
-  shootout?: {
-    home: number;
-    away: number;
-    attempts: { side: "home" | "away" | "neutral"; player?: string; playerFa?: string; playerId?: number; scored: boolean; noteFa: string }[];
-  } | null;
-  // update cycle-46: normalized shotmap (null when the match has no shot data)
-  shots?: {
-    side: "home" | "away";
-    minute: string;
-    player?: string;
-    playerFa?: string;
-    x: number;
-    y: number;
-    isGoal: boolean;
-    onTarget: boolean;
-    blocked: boolean;
-    post: boolean;
-    xg?: number;
-  }[] | null;
-  // update cycle-51: complete team xG («اسکوآپ تیم») — official FotMob xG stat
-  // row (key=expected_goals) with the per-shot sum as fallback; shot breakdown
-  // counts come from the shotmap. null when neither source has any xG data.
-  xg?: {
-    home: number | null;
-    away: number | null;
-    source: "stats" | "shotmap";
-    homeBreakdown: {
-      total: number; onTarget: number; blocked: number; post: number; goals: number;
-    } | null;
-    awayBreakdown: {
-      total: number; onTarget: number; blocked: number; post: number; goals: number;
-    } | null;
-  } | null;
-  // update cycle-47: per-player match stats, starters first then subs, each
-  // sorted by FotMob rating desc (players with no data are filtered out)
-  playerStats?: {
-    home: PlayerStatRow[];
-    away: PlayerStatRow[];
-  } | null;
-  playerOfTheMatch?: {
-    id?: number;
-    name: string;
-    nameFa: string; // cycle-106 honest map (falls back to the raw name)
-    rating?: string | null;
-    teamId?: number;
-    teamName?: string;
-    teamLogo?: string;
-    minutes?: number;
-    role?: string;
-    stats: { title: string; display: string }[];
-  } | null;
-  // update cycle-125: the official YouTube highlight video («ویدیوی خلاصهٔ
-  // بازی») — only https youtube.com/watch links normalize; the thumbnail is
-  // optional (card degrades to a text row when absent/foreign); null when
-  // upstream lacks the block (legend-111 honest absence)
-  highlights?: {
-    url: string;
-    image: string;
-    source: string;
-  } | null;
-  // update cycle-191: the post-match review feed («گزارش‌های بازی") —
-  // matchFacts.postReview deduped: the upstream array repeats ONE article in
-  // several languages (ids get a "_lang" suffix); entries group by the base
-  // id and the "en" entry wins each group, capped at 3 articles. The image
-  // is optional (row degrades to text); url is the fotmob news shareUrl.
-  reviews?: MatchReview[] | null;
-  // update cycle-207: the pre-match preview feed («پیش‌نمای بازی») — the
-  // chronological sibling of the 191 postReview; matchFacts.preReview
-  // deduped with the same _lang id-suffix mechanics. Fresh language
-  // contract: the "ar" entry wins each group (RTL, script-adjacent to the
-  // Persian UI), en fallback, else first-seen; the 191 reviews keep their
-  // frozen en-wins contract. null when nothing survives (honest absence).
-  previews?: MatchReview[] | null;
-  // update cycle-192: the top-5 rated players per side («برترین‌های بازی») —
-  // matchFacts.topPlayers normalized; null when both sides end up empty
-  // (honest absence — upcoming matches carry empty arrays upstream).
-  topPlayers?: MatchTopPlayerSides | null;
+  playerOfTheMatch?: { name: string; rating?: string | null } | null;
   fetchedAt: string;
 }
 
-export interface MatchTopPlayer {
-  id: number; // upstream playerId, guarded > 0 (the 167 convention)
-  name: string; // upstream fullName (honest Latin identity — the 189 contract)
-  nameFa: string; // playerFa at normalize time (match TTL is 25s — always fresh)
-  rating: string; // upstream playerRatingRounded ("8.7") — display string
-  motm: boolean; // upstream manOfTheMatch badge
-  pos: string; // upstream positionLabel.label ("RM") — "" when absent
-}
-
-export interface MatchTopPlayerSides {
-  home: MatchTopPlayer[];
-  away: MatchTopPlayer[];
-}
-
-export interface MatchReview {
-  title: string;
-  description: string;
-  image: string; // "" → the row renders text-only (onError-hide pattern)
-  source: string;
-  url: string; // https://www.fotmob.com/news/... (opens in a new tab)
-  date?: string; // upstream dateUpdated ISO
-  lang?: string; // fix cycle-349: upstream locale of the picked row (ar/en) —
-                 // previews render a «متن منبع» chip so Persian readers know
-                 // the text is upstream, not mistranslated site copy
-}
-
-// update cycle-117: one side's season top scorer for the h2h tab card.
-// Name rides playerFa with the honest-English fallback (Loftus-Cheek
-// contract); stats are the raw upstream numbers, each present only when
-// finite.
-export interface TopScorerSide {
-  playerId?: number; // >0 → /player/{id} link
-  name: string;
-  nameFa: string;
-  side: "home" | "away";
-  goals?: number;
-  assists?: number;      // goalAssist
-  xg?: number;           // season expectedGoals, 1 decimal
-  minsPerGoal?: number;  // minsPlayedGoal — «هر X دقیقه یک گل»
-  motm?: number;         // man-of-the-match awards this season
-  rating?: number;       // season average FotMob rating
-  games?: number;        // gamesPlayed
-}
-
-// update cycle-47: one normalized player row for the «بازیکن‌ها» tab
-export interface PlayerStatRow {
-  id: number;
-  name: string;
-  nameFa: string; // cycle-106 honest map (falls back to the raw name)
-  shirt?: string;
-  side: "home" | "away";
-  isGk: boolean;
-  starter: boolean;
-  rating?: number;
-  minutes?: number;
-  goals?: number;
-  assists?: number;
-  passesAcc?: number;
-  passesTotal?: number;
-  chances?: number;
-  defActions?: number;
-  // goalkeeper-specific (undefined for field players)
-  saves?: number;
-  conceded?: number;
-  goalsPrevented?: number;
-  // update cycle-206: the per-match deep sections («جزئیات بازیکن») — every
-  // content.playerStats.stats section BEYOND top_stats (probed UA Chrome/124,
-  // 2026-10-30: attack/defense/duels on 28 of 30 Clásico players; GKs carry
-  // top_stats only; the fraction rows are value/total pairs). Optional →
-  // pre-206 cached payloads self-heal at the next cache generation.
-  deep?: PlayerStatDeepSection[];
-}
-
-// update cycle-206: one expanded section of the per-match player deep stats
-export interface PlayerStatDeepRow {
-  label: string;        // honest upstream English label (title attr keeps it)
-  labelFa: string;      // curated Persian map hit, else the raw label
-  value: number | null;
-  total: number | null; // fractionWithPercentage rows only
-  pct: boolean;         // true → render «value از total» (value/total pair)
-}
-export interface PlayerStatDeepSection {
-  key: string;       // upstream section key (attack/defense/duels — generic)
-  titleFa: string;   // curated Persian section name, else the upstream title
-  rows: PlayerStatDeepRow[]; // ≥1 — valueless rows (e.g. Was fouled null) drop
-}
-
-// update cycle-206: Persian maps for the per-match deep stat sections — the
-// complete probed vocabulary (3 matches: Clásico 5868105, EFL Cup 6275369,
-// Serie A 5749723; 27 labels, 3 section keys). Unknown labels/sections fall
-// back to the honest upstream text (the injury-name contract, cycle-96).
-const PLAYER_DEEP_SECTION_FA: Record<string, string> = {
-  attack: "حمله",
-  defense: "دفاع",
-  duels: "دوئل‌ها",
-  goalkeeping: "دروازه‌بانی",
-};
-const PLAYER_DEEP_LABEL_FA: Record<string, string> = {
-  "Touches": "لمس توپ",
-  "Touches in opposition box": "لمس در محوطهٔ حریف",
-  "Successful dribbles": "دریبل موفق",
-  "Passes into final third": "پاس به ثلث پایانی",
-  "Line breaking passes": "پاس خط‌شکن",
-  "Accurate crosses": "ارسال دقیق",
-  "Accurate long balls": "پاس بلند دقیق",
-  "Corners": "کرنر",
-  "Dispossessed": "جدا شدن از توپ",
-  "Offsides": "آفساید",
-  "xG Non-penalty": "xG بدون پنالتی",
-  "Big chances missed": "فرصت طلایی از دست رفته",
-  "Defensive actions": "کار دفاعی",
-  "Tackles": "تکل",
-  "Blocks": "بلوکه",
-  "Clearances": "دفع",
-  "Headed clearance": "دفع با سر",
-  "Interceptions": "قطع توپ",
-  "Recoveries": "بازپس‌گیری",
-  "Dribbled past": "دریبل شدن",
-  "Last man tackle": "تکل آخرین مدافع",
-  "Ground duels won": "دوئل زمینی برده",
-  "Aerial duels won": "دوئل هوایی برده",
-  "Was fouled": "خطا خورده",
-  "Fouls committed": "خطا کرده",
-  "Duels won": "دوئل برده",
-  "Duels lost": "دوئل باخته",
-};
-
-// update cycle-347: async — the mini-standings block awaits the gz XML table
-// blob fetch (guarded, honest-absence on failure).
-async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDetailNormalized> {
+function normalize(raw: FMMatchDetails, matchId: string): MatchDetailNormalized {
   const g = raw.general || {};
   const hs = raw.header?.status || {};
   const teams = raw.header?.teams || [];
   const homeT = teams.find((t) => t.id === g.homeTeam?.id) || teams[0];
   const awayT = teams.find((t) => t.id === g.awayTeam?.id) || teams[1];
 
-  // reverted cycle-251: the kickoff-past axiom added here during this very
-  // cycle was withdrawn — the "four hours late" observation it was built on
-  // was a timezone misread (12:30Z kick-off read as 12:30 Tehran). No
-  // upstream lag evidence ever existed for the detail feed; the axiom would
-  // only have added risk (a postponed match before its cancelled flag lands
-  // would flip to live). Detail status keeps trusting the upstream booleans.
   const started = !!hs.started || !!g.started;
   const finished = !!hs.finished || !!g.finished;
   const cancelled = !!hs.cancelled;
@@ -1167,14 +316,8 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
   const rawEvents = raw.content?.matchFacts?.events?.events || [];
   const events: MatchDetailNormalized["events"] = [];
   const scorers: MatchDetailNormalized["scorers"] = [];
-  const shootoutRaw: FMEvent[] = [];
   for (const e of rawEvents) {
-    // fix cycle-45: collect shootout events instead of dropping them —
-    // buildShootout turns them into a dedicated normalized block
-    if (e.isPenaltyShootoutEvent) {
-      shootoutRaw.push(e);
-      continue;
-    }
+    if (e.isPenaltyShootoutEvent) continue;
     const side: "home" | "away" | "neutral" = e.isHome === true ? "home" : e.isHome === false ? "away" : "neutral";
     const isGoal = e.type === "Goal";
     events.push({
@@ -1183,245 +326,34 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
       minute: fmtMinute(e),
       side,
       player: e.player?.name || undefined,
-      ...(e.player?.name ? { playerFa: playerFa(e.player.name) } : {}),
-      playerId: posId(e.player?.id),
       card: e.card || undefined,
       ownGoal: !!e.ownGoal,
       penalty: e.type === "MissedPenalty" || (!!isGoal && !!e.isPenalty),
       swapIn: e.type === "Substitution" ? e.swap?.[0]?.name : undefined,
-      swapInFa: e.type === "Substitution" && e.swap?.[0]?.name ? playerFa(e.swap[0].name) : undefined,
-      swapInId: e.type === "Substitution" ? posId(e.swap?.[0]?.id) : undefined,
       swapOut: e.type === "Substitution" ? e.swap?.[1]?.name : undefined,
-      swapOutFa: e.type === "Substitution" && e.swap?.[1]?.name ? playerFa(e.swap[1].name) : undefined,
-      swapOutId: e.type === "Substitution" ? posId(e.swap?.[1]?.id) : undefined,
       homeScore: typeof e.homeScore === "number" ? e.homeScore : null,
       awayScore: typeof e.awayScore === "number" ? e.awayScore : null,
-      assist: isGoal && !e.ownGoal ? e.assistInput || undefined : undefined,
-      assistFa: isGoal && !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
-      assistId: isGoal && !e.ownGoal ? posId(e.assistPlayerId) : undefined,
     });
     if (isGoal) {
       if (side !== "neutral") {
         scorers.push({
           side,
           player: e.player?.name || "",
-          playerFa: playerFa(e.player?.name || ""),
-          playerId: posId(e.player?.id),
           minute: fmtMinute(e),
           ownGoal: !!e.ownGoal,
           penalty: !!e.isPenalty,
-          // own goals are credited to the attacking side but the defender scoring
-          // is shown by FotMob as the player — keep assist only for real goals
-          assist: (!e.ownGoal && e.assistInput) || undefined,
-          assistFa: !e.ownGoal && e.assistInput ? playerFa(e.assistInput) : undefined,
-          assistId: !e.ownGoal ? posId(e.assistPlayerId) : undefined,
         });
       }
     }
   }
   events.reverse(); // newest-first for timeline
 
-  // fix cycle-45: penalty shootout block (score + attempts), null on quiet path
-  const shootout = shootoutRaw.length > 0 ? buildShootout(shootoutRaw) : null;
-
-  // ---------------- shots (shotmap, update cycle-46) ----------------
-  // side comes from teamId vs the general home/away ids; x/y are 0..100 with
-  // x ≈ 100 = the shooting team's target goal
-  const rawShots = raw.content?.shotmap?.shots;
-  let shots: MatchDetailNormalized["shots"] = null;
-  if (Array.isArray(rawShots) && rawShots.length > 0) {
-    const homeId = g.homeTeam?.id;
-    const awayId = g.awayTeam?.id;
-    shots = rawShots
-      .filter((s) => typeof s?.x === "number" && typeof s?.y === "number")
-      .map((s) => ({
-        side: (awayId != null && s.teamId === awayId) ? ("away" as const) : ("home" as const),
-        minute: fmtMinute({ type: "Shot", time: s.min, addedTime: s.minAdded } as FMEvent),
-        player: s.playerName || undefined,
-        playerFa: s.playerName ? playerFa(s.playerName) : undefined,
-        x: s.x as number,
-        y: s.y as number,
-        isGoal: s.eventType === "Goal",
-        onTarget: !!s.isOnTarget,
-        blocked: !!s.isBlocked,
-        post: s.eventType === "Post",
-        xg: typeof s.expectedGoals === "number" ? Math.round(s.expectedGoals * 100) / 100 : undefined,
-      }));
-  }
-
-  // ---------------- team xG (update cycle-51) ----------------
-  // Official xG lives in a stats row (key=expected_goals, the dedicated
-  // "Expected goals (xG)" group repeats it); when that row is absent the sum of
-  // per-shot xG is used instead. Breakdown counts come from the shotmap.
-  const r2dp = (v: number) => Math.round(v * 100) / 100;
-  let xg: MatchDetailNormalized["xg"] = null;
-  {
-    const allGroups = raw.content?.stats?.Periods?.All?.stats;
-    const statRows: FMStatRow[] = (Array.isArray(allGroups) ? allGroups : []).flatMap(
-      (grp: FMStatGroup) => grp?.stats || []
-    );
-    const xgRow = statRows.find((s) => s?.key === "expected_goals" && s.type !== "title");
-    const oh = parseFloat(String(xgRow?.stats?.[0] ?? ""));
-    const oa = parseFloat(String(xgRow?.stats?.[1] ?? ""));
-    const officialHome = Number.isNaN(oh) ? null : oh;
-    const officialAway = Number.isNaN(oa) ? null : oa;
-    const breakdown = (side: "home" | "away") => {
-      const arr = (shots || []).filter((s) => s.side === side);
-      if (arr.length === 0) return null;
-      return {
-        total: arr.length,
-        onTarget: arr.filter((s) => s.onTarget).length,
-        blocked: arr.filter((s) => s.blocked).length,
-        post: arr.filter((s) => s.post).length,
-        goals: arr.filter((s) => s.isGoal).length,
-      };
-    };
-    const hasXgOn = (side: "home" | "away") => (shots || []).some((s) => s.side === side && s.xg != null);
-    const sumXg = (side: "home" | "away") =>
-      (shots || []).filter((s) => s.side === side).reduce((acc, s) => acc + (s.xg ?? 0), 0);
-    const homeVal = officialHome ?? (hasXgOn("home") ? r2dp(sumXg("home")) : null);
-    const awayVal = officialAway ?? (hasXgOn("away") ? r2dp(sumXg("away")) : null);
-    if (homeVal != null || awayVal != null) {
-      xg = {
-        home: homeVal,
-        away: awayVal,
-        source: officialHome != null || officialAway != null ? "stats" : "shotmap",
-        homeBreakdown: breakdown("home"),
-        awayBreakdown: breakdown("away"),
-      };
-    }
-  }
-
-  // ---------------- player stats (update cycle-47) ----------------
-  // content.playerStats is a dict keyed by player id; only players who actually
-  // played carry stat sections (unused subs/bench GKs have empty arrays).
-  // Starter/sub grouping is derived from content.lineup.*.starters ids; within
-  // each group players are sorted by FotMob rating desc, missing rating last.
-  const rawPS = raw.content?.playerStats;
-  let playerStats: MatchDetailNormalized["playerStats"] = null;
-  if (rawPS && typeof rawPS === "object") {
-    const homeId = g.homeTeam?.id;
-    const awayId = g.awayTeam?.id;
-    const starterIds = new Set<string>();
-    for (const lt of [raw.content?.lineup?.homeTeam, raw.content?.lineup?.awayTeam]) {
-      for (const st of lt?.starters || []) {
-        if (st?.id != null) starterIds.add(String(st.id));
-      }
-    }
-    const rows: PlayerStatRow[] = Object.values(rawPS)
-      .filter((p) => Array.isArray(p?.stats) && p.stats.length > 0 && typeof p.id === "number")
-      .map((p) => {
-        const top =
-          p.stats!.find((s) => (s?.key || "").toLowerCase() === "top_stats")?.stats || {};
-        const num = (label: string): number | undefined => {
-          const v = top[label]?.stat?.value;
-          return typeof v === "number" ? v : undefined;
-        };
-        const passes = top["Accurate passes"]?.stat;
-        const gp = num("Goals prevented");
-        // update cycle-206: the deep sections — every stats section beyond
-        // top_stats, generically mapped (a future «Goalkeeping» section on
-        // some feeds would ride the same path). Valueless rows drop (Was
-        // fouled comes null when untouched); pct rows keep value/total.
-        const deepSections: PlayerStatDeepSection[] = [];
-        for (const sec of p.stats || []) {
-          const sk = (sec?.key || "").toLowerCase();
-          if (!sk || sk === "top_stats") continue;
-          const secStats = (sec.stats && typeof sec.stats === "object" ? sec.stats : {}) as Record<
-            string,
-            { stat?: { value?: number | null; total?: number | null; type?: string } } | undefined
-          >;
-          const deepRows: PlayerStatDeepRow[] = Object.entries(secStats)
-            .map(([label, row]) => {
-              const st = row?.stat || {};
-              return {
-                label,
-                labelFa: PLAYER_DEEP_LABEL_FA[label] || label,
-                value: typeof st.value === "number" ? st.value : null,
-                total: typeof st.total === "number" ? st.total : null,
-                pct: st.type === "fractionWithPercentage",
-              };
-            })
-            .filter((r) => r.value != null || r.total != null);
-          if (deepRows.length > 0) {
-            deepSections.push({
-              key: sk,
-              titleFa: PLAYER_DEEP_SECTION_FA[sk] || sec.title || sk,
-              rows: deepRows,
-            });
-          }
-        }
-        return {
-          id: p.id as number,
-          name: p.name || "?",
-          nameFa: playerFa(p.name || "?"),
-          shirt: p.shirtNumber || undefined,
-          side: (awayId != null && p.teamId === awayId) ? ("away" as const) : ("home" as const),
-          isGk: !!p.isGoalkeeper,
-          starter: starterIds.has(String(p.id)),
-          rating: num("FotMob rating"),
-          minutes: num("Minutes played"),
-          goals: num("Goals"),
-          assists: num("Assists"),
-          passesAcc: typeof passes?.value === "number" ? passes.value : undefined,
-          passesTotal: typeof passes?.total === "number" ? passes.total : undefined,
-          chances: num("Chances created"),
-          defActions: num("Defensive actions"),
-          saves: num("Saves"),
-          conceded: num("Goals conceded"),
-          goalsPrevented: gp != null ? Math.round(gp * 10) / 10 : undefined,
-          ...(deepSections.length > 0 ? { deep: deepSections } : {}),
-        };
-      });
-    const order = (a: PlayerStatRow, b: PlayerStatRow) => {
-      if (a.starter !== b.starter) return a.starter ? -1 : 1;
-      const ra = a.rating ?? -1;
-      const rb = b.rating ?? -1;
-      if (rb !== ra) return rb - ra;
-      return (b.minutes ?? 0) - (a.minutes ?? 0);
-    };
-    const homeRows = rows.filter((r) => r.side === "home").sort(order);
-    const awayRows = rows.filter((r) => r.side === "away").sort(order);
-    if (homeRows.length > 0 || awayRows.length > 0) {
-      playerStats = { home: homeRows, away: awayRows };
-    }
-  }
-
-  // ---------------- touch-map crosswalk (update cycle-205) ----------------
-  // optaId → side from EVERY content.playerStats entry (even stats-empty
-  // ones — they still carry optaId + teamId). Exact teamId match only: an
-  // entry whose teamId matches neither side is dropped (honest), unlike the
-  // playerStats grouping above which defaults to home.
-  const touchSides: Record<string, "home" | "away"> = {};
-  // cycle-351: display meta rides the same exact-match join — playerStats
-  // carries name + shirtNumber on EVERY entry (even stats-empty ones), so
-  // the per-player chips need zero extra upstream data.
-  const touchMeta: Record<string, { name?: string; shirt?: string }> = {};
-  {
-    const hId = g.homeTeam?.id;
-    const aId = g.awayTeam?.id;
-    for (const e of Object.values(rawPS || {})) {
-      const oa = e?.optaId;
-      if (!oa || typeof oa !== "string" || !oa) continue;
-      if (hId != null && e.teamId === hId) touchSides[oa] = "home";
-      else if (aId != null && e.teamId === aId) touchSides[oa] = "away";
-      else continue;
-      touchMeta[oa] = {
-        name: typeof e.name === "string" && e.name ? e.name : undefined,
-        shirt: e.shirtNumber != null ? String(e.shirtNumber) : undefined,
-      };
-    }
-  }
-
   // ---------------- stats ----------------
   // Shape: Periods.All.stats = [ { title: groupName, stats: [ {row}, {titleRow}, ... ] }, ... ]
-  // cycle-190: the SAME mapping extracted into a helper and reused for the
-  // upstream Periods.FirstHalf / Periods.SecondHalf blocks (statPeriods) —
-  // the All output stays byte-identical (same helper, same order).
-  const mapStatGroups = (groups?: FMStatGroup[]): MatchDetailNormalized["statGroups"] => {
-    const out: MatchDetailNormalized["statGroups"] = [];
-    if (!groups) return out;
-    for (const grp of groups) {
+  const statGroups: MatchDetailNormalized["statGroups"] = [];
+  const allPeriod = raw.content?.stats?.Periods?.All;
+  if (allPeriod?.stats) {
+    for (const grp of allPeriod.stats) {
       const groupName = grp.title || "";
       const bucket: MatchDetailNormalized["statGroups"][number] = {
         title: STAT_GROUP_FA[groupName.toLowerCase()] || groupName,
@@ -1445,18 +377,9 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
           awayVal: v1,
         });
       }
-      if (bucket.rows.length > 0) out.push(bucket);
+      if (bucket.rows.length > 0) statGroups.push(bucket);
     }
-    return out;
-  };
-  const statGroups = mapStatGroups(raw.content?.stats?.Periods?.All?.stats);
-  // cycle-190: per-period stats — honest per-period omission (the 187
-  // zones family): a half key exists only when its upstream block yields
-  // ≥1 non-empty group; neither half → statPeriods stays null.
-  const fhGroups = mapStatGroups(raw.content?.stats?.Periods?.FirstHalf?.stats);
-  const shGroups = mapStatGroups(raw.content?.stats?.Periods?.SecondHalf?.stats);
-  const statPeriods: MatchDetailNormalized["statPeriods"] =
-    fhGroups.length > 0 || shGroups.length > 0 ? { firstHalf: fhGroups, secondHalf: shGroups } : null;
+  }
 
   // ---------------- lineups ----------------
   let lineups: MatchDetailNormalized["lineups"] = null;
@@ -1464,104 +387,27 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
   if (lu?.homeTeam?.starters?.length && lu?.awayTeam?.starters?.length) {
     const build = (t?: FMLineupTeam): LineupSide | null => {
       if (!t?.starters?.length) return null;
-      const coachName = t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined;
-      // cycle-116: «غایبان» — unavailable (injured / international duty / …)
-      // players with the raw expectedReturn string parsed through the cycle-96
-      // month/prefix maps (unavailableReturnFa). Names ride playerFa with the
-      // honest-English fallback (Loftus-Cheek contract). Unmapped unavailability
-      // TYPES drop their chip (honest convention, like weather keys/insights).
-      const UNAVAILABLE_TYPE_FA: Record<string, string> = {
-        injury: "مصدومیت",
-        internationalduty: "اعزام به تیم ملی",
-      };
-      const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
-      const unavailable = Array.isArray(t.unavailable)
-        ? t.unavailable
-            .map((u) => {
-              const nm = (u?.name || [u?.firstName, u?.lastName].filter(Boolean).join(" ") || "").trim();
-              if (!nm) return null;
-              const nfa = playerFa(nm);
-              const typ = (u?.unavailability?.type || "").toLowerCase();
-              const retRaw = u?.unavailability?.expectedReturn || undefined;
-              return {
-                ...(u?.id != null ? { id: u.id } : {}),
-                name: nm,
-                ...(nfa && nfa !== nm ? { nameFa: nfa } : {}),
-                ...(typ ? { type: typ, ...(UNAVAILABLE_TYPE_FA[typ] ? { typeFa: UNAVAILABLE_TYPE_FA[typ] } : {}) } : {}),
-                ...(retRaw ? { returnRaw: retRaw } : {}),
-                returnFa: unavailableReturnFa(retRaw),
-              };
-            })
-            .filter((u): u is NonNullable<typeof u> => u !== null)
-        : undefined;
       return {
         teamId: t.id,
         name: t.name,
         fa: teamFa(t.name) || t.name,
         formation: t.formation || undefined,
-        coach: coachName,
-        coachFa: coachName ? playerFa(coachName) : undefined,
-        ...(isNum(t.coach?.id) ? { coachId: t.coach.id } : {}), // fix cycle-354: coach page link
-        ...(isNum(t.averageStarterAge) ? { starterAge: t.averageStarterAge } : {}),
-        ...(isNum(t.totalStarterMarketValue)
-          ? { totalMarketValue: t.totalStarterMarketValue, totalMarketValueFa: marketValueFa(t.totalStarterMarketValue) }
-          : {}),
-        ...(unavailable?.length ? { unavailable } : {}),
+        coach: t.coach?.name || [t.coach?.firstName, t.coach?.lastName].filter(Boolean).join(" ") || undefined,
         rows: clusterRows(t.starters),
-        subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, nameFa: playerFa(s.name), shirt: s.shirtNumber || undefined })),
+        subs: (t.subs || []).slice(0, 12).map((s) => ({ id: s.id, name: s.name, shirt: s.shirtNumber || undefined })),
       };
     };
-    lineups = {
-      home: build(lu.homeTeam),
-      away: build(lu.awayTeam),
-      // update cycle-352: surface the upstream lineupType honestly — pre-match
-      // fixtures carry "predicted" (probed live on 7 fixtures) and the UI must
-      // say so instead of masquerading the predicted XI as the official one.
-      ...(lu.lineupType === "predicted" ? { predicted: true as const } : {}),
-    };
+    lineups = { home: build(lu.homeTeam), away: build(lu.awayTeam) };
   }
 
   // ---------------- info box ----------------
   const infoBox = raw.content?.matchFacts?.infoBox || {};
   const md = infoBox["Match Date"] as { utcTime?: string } | undefined;
-  const st = infoBox["Stadium"] as { name?: string; city?: string; capacity?: number; surface?: string } | undefined;
-  const rf = infoBox["Referee"] as { text?: string; stats?: { type?: string; value?: number; average?: number; averageType?: string }[] } | undefined;
+  const st = infoBox["Stadium"] as { name?: string; city?: string } | undefined;
+  const rf = infoBox["Referee"] as { text?: string } | undefined;
   const at = infoBox["Attendance"] as unknown;
   const tn = infoBox["Tournament"] as { leagueName?: string; roundName?: string } | undefined;
   const roundRaw = g.leagueRoundName || tn?.roundName || "";
-  // cycle-115: referee & stadium facts — the Referee.stats block (matches,
-  // yellow/foul per-match averages with their league-average comparison,
-  // red cards, penalties) + Stadium capacity/surface. Unknown stat types
-  // drop (honest convention, like weather keys/insights/legend tKeys);
-  // averageType outside the above/below enum falls back to "average" only
-  // when a league average exists at all.
-  const num = (v: unknown): number | undefined => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
-  const statOf = (t: string) => rf?.stats?.find((s) => s?.type === t);
-  const vsOf = (s?: { average?: number; averageType?: string }): "above" | "below" | "average" | undefined =>
-    s?.averageType === "above" || s?.averageType === "below" ? s.averageType : s?.average != null ? "average" : undefined;
-  const yc = statOf("yellowCards");
-  const fl = statOf("fouls");
-  const refereeStats =
-    rf?.stats?.length || rf?.text
-      ? {
-          ...(num(statOf("matches")?.value) != null ? { matches: num(statOf("matches")?.value) } : {}),
-          ...(num(yc?.value) != null ? { yellowPerMatch: num(yc?.value) } : {}),
-          ...(num(yc?.average) != null ? { yellowAvg: num(yc?.average) } : {}),
-          ...(vsOf(yc) ? { yellowVs: vsOf(yc) } : {}),
-          ...(num(statOf("redCards")?.value) != null ? { red: num(statOf("redCards")?.value) } : {}),
-          ...(num(statOf("penalties")?.value) != null ? { penalties: num(statOf("penalties")?.value) } : {}),
-          ...(num(fl?.value) != null ? { foulsPerMatch: num(fl?.value) } : {}),
-          ...(num(fl?.average) != null ? { foulsAvg: num(fl?.average) } : {}),
-          ...(vsOf(fl) ? { foulsVs: vsOf(fl) } : {}),
-        }
-      : undefined;
-  const stadiumExtra =
-    typeof st?.capacity === "number" || typeof st?.surface === "string"
-      ? {
-          ...(typeof st?.capacity === "number" ? { capacity: st.capacity } : {}),
-          ...(typeof st?.surface === "string" ? { surface: st.surface } : {}),
-        }
-      : undefined;
   const info: MatchDetailNormalized["info"] = {
     stadium: st?.name,
     city: st?.city,
@@ -1569,81 +415,8 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
     attendance: typeof at === "number" ? at.toLocaleString("en-US") : (typeof at === "string" ? at : undefined),
     date: md?.utcTime || utcTime,
     tournament: tn?.leagueName || leagueName,
-    round: roundFa(roundRaw || undefined),
-    refereeStats,
-    stadiumExtra,
+    round: roundRaw ? (/^\d+$/.test(roundRaw) ? `هفته ${roundRaw}` : roundRaw) : undefined,
   };
-
-  // ---------------- attacking zones (update cycle-97, halves cycle-187) ---
-  // cycle-187 closes the boundary cycle-97 declared in v1: firstHalf/
-  // secondHalf joins the normalization. Every value defensively coerced;
-  // a period key is emitted only when its shares sum > 0 (honest per-period
-  // omission); all-zero total → null → the stats tab hides the block
-  // (unchanged).
-  let zones: MatchDetailNormalized["zones"] = null;
-  const az = raw.content?.attackingZones;
-  type ZoneSides = NonNullable<MatchDetailNormalized["zones"]>;
-  const periodOf = (p?: { left?: number; center?: number; right?: number } | null) => ({
-    left: typeof p?.left === "number" ? p.left : 0,
-    center: typeof p?.center === "number" ? p.center : 0,
-    right: typeof p?.right === "number" ? p.right : 0,
-  });
-  const zoneOf = (s?: {
-    total?: { left?: number; center?: number; right?: number };
-    firstHalf?: { left?: number; center?: number; right?: number };
-    secondHalf?: { left?: number; center?: number; right?: number };
-  } | null): ZoneSides["home"] => {
-    // legacy triple first, in the legacy order — pre-187 consumers see the
-    // exact same key sequence; optional halves append after it
-    const z: ZoneSides["home"] = {
-      left: typeof s?.total?.left === "number" ? s.total.left : 0,
-      center: typeof s?.total?.center === "number" ? s.total.center : 0,
-      right: typeof s?.total?.right === "number" ? s.total.right : 0,
-    };
-    const h1 = periodOf(s?.firstHalf);
-    const h2 = periodOf(s?.secondHalf);
-    if (h1.left + h1.center + h1.right > 0) z.firstHalf = h1;
-    if (h2.left + h2.center + h2.right > 0) z.secondHalf = h2;
-    return z;
-  };
-  if (az?.home && az?.away) {
-    const zh = zoneOf(az.home);
-    const za = zoneOf(az.away);
-    if (zh.left + zh.center + zh.right > 0 || za.left + za.center + za.right > 0) {
-      zones = { home: zh, away: za };
-    }
-  }
-
-  // ---------------- weather (update cycle-100) ----------------
-  // Honest-subset normalization: every value defensively coerced; the card
-  // renders only when at least one displayable value exists.
-  let weather: MatchDetailNormalized["weather"] = null;
-  const w = raw.content?.weather;
-  if (w && typeof w === "object") {
-    const key = typeof w.localizedKey === "string" ? w.localizedKey : "";
-    const condFa = WEATHER_FA[key];
-    const condition =
-      condFa ||
-      (typeof w.defaultTitle === "string" && w.defaultTitle.trim()) ||
-      "";
-    const hasAny =
-      !!condition ||
-      typeof w.temperature === "number" ||
-      typeof w.relativeHumidity === "number" ||
-      typeof w.cloudCover === "number" ||
-      typeof w.precipChance === "number";
-    if (hasAny) {
-      weather = {
-        condition,
-        conditionSource: condFa ? "localized" : "upstream",
-        temperature: typeof w.temperature === "number" ? w.temperature : undefined,
-        humidity: typeof w.relativeHumidity === "number" ? w.relativeHumidity : undefined,
-        cloudCover: typeof w.cloudCover === "number" ? w.cloudCover : undefined,
-        precipChance: typeof w.precipChance === "number" ? w.precipChance : undefined,
-        forecast: w.apiUsed === "forecast",
-      };
-    }
-  }
 
   // ---------------- team form ----------------
   const tf = raw.content?.matchFacts?.teamForm;
@@ -1672,423 +445,6 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
     : null;
   const pomRating = pom?.rating?.num || null;
 
-  // rich best-player card: flatten the "Top stats" group into display rows
-  let pomStats: { title: string; display: string }[] = [];
-  if (pom?.stats?.length) {
-    const grp =
-      pom.stats.find((s) => (s.key || "").toLowerCase() === "top_stats") ||
-      pom.stats.find((s) => (s.title || "").toLowerCase().includes("top")) ||
-      pom.stats[0];
-    for (const [humanTitle, entry] of Object.entries(grp?.stats || {})) {
-      const v = entry?.stat;
-      if (!v || typeof v.value !== "number" || v.type === "boolean") continue;
-      let display: string;
-      if (v.type === "fractionWithPercentage" && typeof v.total === "number") {
-        display = `${Math.round(v.value)}/${Math.round(v.total)}`;
-      } else if (v.type === "double") {
-        display = v.value.toFixed(2);
-      } else {
-        display = String(Math.round(v.value));
-      }
-      const key = (entry?.key || humanTitle || "").toLowerCase();
-      pomStats.push({ title: STAT_FA[key] || humanTitle, display });
-    }
-    pomStats = pomStats.slice(0, 8);
-  }
-  const playerOfTheMatch = pomName
-    ? {
-        id: typeof pom?.id === "number" ? pom.id : undefined,
-        name: pomName,
-        nameFa: playerFa(pomName),
-        rating: pomRating,
-        teamId: typeof pom?.teamId === "number" ? pom.teamId : undefined,
-        teamName: pom?.teamName || undefined,
-        teamLogo: fotmobTeamLogo(typeof pom?.teamId === "number" ? pom.teamId : 0),
-        minutes: typeof pom?.minutesPlayed === "number" ? pom.minutesPlayed : undefined,
-        role: pom?.role || undefined,
-        stats: pomStats,
-      }
-    : null;
-
-  // ---------------- video highlights (update cycle-125) ----------------
-  // matchFacts.highlights = the official YouTube highlight link + thumbnail
-  // (live-probed: featured finished matches only — 5071457/5795486 have it,
-  // 5071463 does not). Strict protocol guards: ONLY https youtube.com/watch
-  // links normalize (anything else → null, legend-111 honest absence); the
-  // thumbnail is guarded separately and may be empty (the card degrades to a
-  // text row — no broken-image risk on blocked-CDN clients thanks to the
-  // site-wide onError-hide pattern).
-  const hl = raw.content?.matchFacts?.highlights;
-  const highlights =
-    hl && typeof hl.url === "string" && /^https:\/\/(www\.)?youtube\.com\/watch/.test(hl.url)
-      ? {
-          url: hl.url,
-          image:
-            typeof hl.image === "string" && /^https:\/\/i\.ytimg\.com\//.test(hl.image)
-              ? hl.image
-              : "",
-          source: typeof hl.source === "string" && hl.source ? hl.source : "www.youtube.com",
-        }
-      : null;
-
-  // ---------------- post-match review feed (update cycle-191) ----------------
-  // matchFacts.postReview = Opta's post-match articles («گزارش‌های بازی»).
-  // Live-probed UA Chrome/124, 2026-10-30: the array repeats ONE article in
-  // several languages — ids carry a "_lang" suffix (5749727: one article,
-  // 8 entries en/es/pt-BR/fr/it/de/ar/pt). Dedupe: group by the base id
-  // (suffix stripped), the "en" entry wins its group (else the first seen),
-  // capped at 3 articles. Strict guards per the 125 protocol: BOTH a
-  // non-empty title AND a https www.fotmob.com/news/ shareUrl are required;
-  // the image is guarded separately (foreign/absent → "", the row degrades
-  // to a text row — no broken-image risk, the onError-hide pattern). The
-  // block is null when nothing survives (honest absence — 5765944 is
-  // finished yet carries no postReview; upcoming matches never do).
-  const prList = raw.content?.matchFacts?.postReview;
-  let reviews: MatchDetailNormalized["reviews"] = null;
-  if (Array.isArray(prList) && prList.length > 0) {
-    const SUFFIX_RE = /_[a-z]{2}(?:-[A-Za-z]{2})?$/;
-    const groups = new Map<string, (typeof prList)[number]>();
-    for (const a of prList) {
-      if (!a || typeof a !== "object") continue;
-      if (typeof a.title !== "string" || !a.title.trim()) continue;
-      if (typeof a.shareUrl !== "string" || !/^https:\/\/www\.fotmob\.com\/news\//.test(a.shareUrl)) continue;
-      const base = typeof a.id === "string" && a.id ? a.id.replace(SUFFIX_RE, "") : a.title;
-      const prev = groups.get(base);
-      if (!prev || (a.lang === "en" && prev.lang !== "en")) groups.set(base, a);
-      if (groups.size >= 3) break;
-    }
-    const rows: MatchReview[] = [];
-    for (const a of groups.values()) {
-      rows.push({
-        title: a.title!,
-        description: typeof a.description === "string" ? a.description : "",
-        image: typeof a.image === "string" && /^https:\/\//.test(a.image) ? a.image : "",
-        source: typeof a.source === "string" && a.source ? a.source : "FotMob",
-        url: a.shareUrl!,
-        date: typeof a.dateUpdated === "string" && a.dateUpdated ? a.dateUpdated : undefined,
-      });
-    }
-    if (rows.length > 0) reviews = rows;
-  }
-
-  // ---------------- pre-match preview feed (update cycle-207) ----------------
-  // matchFacts.preReview = editorial pre-match articles («پیش‌نمای بازی») —
-  // the chronological sibling of the 191 postReview. Live-probed UA
-  // Chrome/124, 2026-10-30: ONE article repeated in 8 languages (ids carry
-  // a "_lang" suffix; en/es/it/pt-BR/fr/de/ar/pt) on editorially-covered
-  // matches only — 5868105 (finished) + 5795498/5881208 (upcoming) carry
-  // it; 5868115/5749730 do not. Same guards as 191 with ONE probed
-  // widening: the shareUrl lives under BOTH www.fotmob.com/news/ (5795498,
-  // 5881208) AND www.fotmob.com/topnews/ (5868105) — the 191 host guard
-  // grows to (news|topnews), anything else → dropped. Language pick is a
-  // FRESH contract for a NEW block: the "ar" entry wins its group (RTL,
-  // script-adjacent to the Persian UI — the honest-raw-text family of the
-  // 96 injury names), falling back to en then first-seen; the 191 reviews
-  // keep their frozen en-wins contract (documented divergence — a future
-  // fix cycle may align them). All entries are scanned (8 langs × few
-  // articles is trivial) so the ar pick survives even with several
-  // articles; groups keep upstream order, capped at 3. The image is
-  // guarded separately (^https; hosts vary: images.performgroup.com /
-  // latest.fotmob.com — onError-hide pattern), source varies (Opta on
-  // previews, FotMob on the Clásico editorial). null when nothing
-  // survives (honest absence).
-  const preList = raw.content?.matchFacts?.preReview;
-  let previews: MatchDetailNormalized["previews"] = null;
-  if (Array.isArray(preList) && preList.length > 0) {
-    const PRE_SUFFIX_RE = /_[a-z]{2}(?:-[A-Za-z]{2})?$/;
-    const preRank = (l: unknown) => (l === "ar" ? 0 : l === "en" ? 1 : 2);
-    const preGroups = new Map<string, (typeof preList)[number]>();
-    for (const a of preList) {
-      if (!a || typeof a !== "object") continue;
-      if (typeof a.title !== "string" || !a.title.trim()) continue;
-      if (typeof a.shareUrl !== "string" || !/^https:\/\/www\.fotmob\.com\/(news|topnews)\//.test(a.shareUrl)) continue;
-      const base = typeof a.id === "string" && a.id ? a.id.replace(PRE_SUFFIX_RE, "") : a.title;
-      const prev = preGroups.get(base);
-      if (!prev || preRank(a.lang) < preRank(prev.lang)) preGroups.set(base, a);
-    }
-    const preRows: MatchReview[] = [];
-    for (const a of [...preGroups.values()].slice(0, 3)) {
-      preRows.push({
-        title: a.title!,
-        description: typeof a.description === "string" ? a.description : "",
-        image: typeof a.image === "string" && /^https:\/\//.test(a.image) ? a.image : "",
-        source: typeof a.source === "string" && a.source ? a.source : "FotMob",
-        url: a.shareUrl!,
-        date: typeof a.dateUpdated === "string" && a.dateUpdated ? a.dateUpdated : undefined,
-        lang: typeof a.lang === "string" && a.lang ? a.lang : undefined,
-      });
-    }
-    if (preRows.length > 0) previews = preRows;
-  }
-
-  // matchFacts.topPlayers = the top-5 rated players per side («برترین‌های
-  // بازی»). Live-probed UA Chrome/124, 2026-10-30: 5749721 → 5+5 entries;
-  // the upcoming 5868120 carries EMPTY arrays. The block rides the payload
-  // already fetched (zero extra upstream calls). Guards: a row needs
-  // playerId > 0 (the 167 convention), a non-empty fullName and a non-empty
-  // playerRatingRounded; cap 5 per side (upstream's own curation). The
-  // block is null when both sides end up empty (honest absence — the 191
-  // reviews family). nameFa rides playerFa at normalize time (match TTL
-  // 25s — always fresh, no player:v8 L2 staleness surface here — the 197
-  // namespace bump renamed the player cache).
-  const tpUp = raw.content?.matchFacts?.topPlayers;
-  let topPlayers: MatchDetailNormalized["topPlayers"] = null;
-  if (tpUp && typeof tpUp === "object") {
-    const mapTpSide = (list: unknown): MatchTopPlayer[] => {
-      if (!Array.isArray(list)) return [];
-      const rows: MatchTopPlayer[] = [];
-      for (const e of list) {
-        if (!e || typeof e !== "object") continue;
-        const t = e as {
-          playerId?: unknown;
-          name?: { fullName?: unknown };
-          playerRatingRounded?: unknown;
-          manOfTheMatch?: unknown;
-          positionLabel?: { label?: unknown };
-        };
-        const id = typeof t.playerId === "number" ? t.playerId : 0;
-        const nm = t.name?.fullName;
-        const rt = t.playerRatingRounded;
-        if (!(id > 0) || typeof nm !== "string" || !nm.trim()) continue;
-        if (typeof rt !== "string" || !rt.trim()) continue;
-        const posUp = t.positionLabel?.label;
-        rows.push({
-          id,
-          name: nm,
-          nameFa: playerFa(nm),
-          rating: rt,
-          motm: t.manOfTheMatch === true,
-          pos: typeof posUp === "string" && posUp.trim() ? posUp : "",
-        });
-        if (rows.length >= 5) break;
-      }
-      return rows;
-    };
-    const tpHome = mapTpSide(tpUp.homeTopPlayers);
-    const tpAway = mapTpSide(tpUp.awayTopPlayers);
-    if (tpHome.length > 0 || tpAway.length > 0) topPlayers = { home: tpHome, away: tpAway };
-  }
-
-  // ---------------- match insights (update cycle-110) ----------------
-  // Pre-match story lines (matchFacts.insights): only curated localizedTextId
-  // templates render; numbers → Persian digits, team/player refs ride the
-  // honest-name maps (unknown → raw upstream name). Single-team entries are
-  // prefixed with the owner team's Persian name; h2h/player sentences carry
-  // their subjects inline. Upstream order kept, capped at 6.
-  let insights: MatchDetailNormalized["insights"] = null;
-  {
-    const rawIns = raw.content?.matchFacts?.insights;
-    if (Array.isArray(rawIns) && rawIns.length > 0) {
-      const homeName = g.homeTeam?.name || "";
-      const awayName = g.awayTeam?.name || "";
-      const sideNameOf = (tid?: number): string => {
-        if (!tid) return "";
-        if (tid === g.homeTeam?.id) return teamFa(homeName) || homeName;
-        if (tid === g.awayTeam?.id) return teamFa(awayName) || awayName;
-        return "";
-      };
-      const fill = (tpl: string, svs: FMInsightStatValue[]): string =>
-        tpl.replace(/\{(\d+)\}/g, (_m, idx: string) => {
-          const sv = svs[Number(idx)];
-          if (!sv) return "…";
-          if (typeof sv.name === "string" && sv.name) {
-            const mapped = sv.type === "team" ? teamFa(sv.name) : playerFa(sv.name);
-            return mapped || sv.name;
-          }
-          const n = sv.value;
-          return n === null || n === undefined ? "…" : faDecimal(n);
-        });
-      const out: NonNullable<MatchDetailNormalized["insights"]> = [];
-      for (const it of rawIns) {
-        const tpl = it.localizedTextId ? MATCH_INSIGHT_FA[it.localizedTextId] : undefined;
-        if (!tpl) continue; // unknown template → honest drop
-        const svs = Array.isArray(it.statValues) ? it.statValues : [];
-        let text = fill(tpl, svs);
-        if (text.includes("…")) continue; // incomplete placeholder set → skip
-        const kind: "team" | "player" | "h2h" =
-          it.localizedTextId === "h2h_winstreak" ? "h2h" : it.type === "player" ? "player" : "team";
-        if (kind === "team") {
-          const side = sideNameOf(it.teamId);
-          if (side) text = `${side} — ${text}`;
-        }
-        const color =
-          (typeof it.color === "string" && it.color) ||
-          (it.teamId === g.homeTeam?.id ? g.teamColors?.darkMode?.home || "#5b8def" : g.teamColors?.darkMode?.away || "#f59e0b");
-        out.push({ text, color, kind });
-        if (out.length >= 6) break;
-      }
-      if (out.length > 0) insights = out;
-    }
-  }
-
-  // ---------------- pre-match poll (update cycle-257) ----------------
-  // matchFacts.poll.oddspoll.Facts: one fact per betting market (1x2 / bts /
-  // ou / dc). Each fact renders as «title: sentence» through the curated
-  // MATCH_POLL_TITLE_FA / MATCH_POLL_FA maps; StatValues roles resolve to the
-  // sides' Persian names, bare values → Persian digits (decimals keep the
-  // ASCII dot). Unknown title/template ids and incomplete placeholder sets
-  // drop honestly. The poll is a PRE-MATCH artifact (upstream keeps it on
-  // live feeds too, where the sentences stay true) → dropped once finished.
-  // No cache-key bump: the 25s matchDetails cache self-heals (cycle-117 rule).
-  let poll: MatchDetailNormalized["poll"] = null;
-  {
-    const g2 = raw.content?.matchFacts?.poll?.oddspoll;
-    const finished = raw.general?.finished;
-    if (!finished && Array.isArray(g2?.Facts) && g2.Facts.length > 0) {
-      const homeFa = teamFa(g.homeTeam?.name || "") || g.homeTeam?.name || "";
-      const awayFa = teamFa(g.awayTeam?.name || "") || g.awayTeam?.name || "";
-      const roleOf = (v: string): string =>
-        v === "home_team" ? homeFa : v === "away_team" ? awayFa : "";
-      const fill = (tpl: string, svs: string[]): string =>
-        tpl.replace(/\{(\d+)\}/g, (_m, idx: string) => {
-          const v = svs[Number(idx)];
-          if (v === undefined) return "…";
-          const name = roleOf(v);
-          if (name) return name;
-          // bare values are always numeric upstream — anything else is an
-          // unexpected shape → the "…" guard drops the whole fact honestly
-          if (/^-?\d+(\.\d+)?$/.test(v)) return faDecimal(v);
-          return "…";
-        });
-      const out: NonNullable<MatchDetailNormalized["poll"]> = [];
-      for (const f of g2.Facts) {
-        const title = f.OddsType ? MATCH_POLL_TITLE_FA[f.OddsType] : undefined;
-        const tpl = f.TextTemplateId ? MATCH_POLL_FA[f.TextTemplateId] : undefined;
-        if (!title || !tpl) continue; // unknown market/template → honest drop
-        const text = fill(tpl, Array.isArray(f.StatValues) ? f.StatValues : []);
-        if (text.includes("…")) continue; // incomplete placeholder set → skip
-        out.push({ title, text });
-        if (out.length >= 4) break;
-      }
-      if (out.length > 0) poll = out;
-    }
-  }
-
-  // ---------------- season top scorers of the two sides (update cycle-117) ----------------
-  // matchFacts.topScorers: each side's LEAGUE season top scorer + their
-  // season line (goals/assists/xG/minutes-per-goal/MOTM/rating/games).
-  // Every number coerced through the finite guard; a side with no name or
-  // no displayable season numbers drops; the whole block is null when the
-  // payload lacks it (some feeds do — probed Brazilian Série A) → the h2h
-  // tab hides the card (cycle-111 legend convention). No cache-key bump:
-  // the 25s matchDetails cache self-heals.
-  let topScorers: MatchDetailNormalized["topScorers"] = null;
-  {
-    const ts = raw.content?.matchFacts?.topScorers;
-    const n = (v: unknown): number | undefined =>
-      typeof v === "number" && Number.isFinite(v) ? v : undefined;
-    const sideOf = (p?: FMTopScorerPlayer | null, side?: "home" | "away"): TopScorerSide | null => {
-      if (!p || !side) return null;
-      const nm = (p.fullName || p.lastName || "").trim();
-      if (!nm) return null;
-      const goals = n(p.stats?.goals);
-      const assists = n(p.stats?.goalAssist);
-      const xgRaw = n(p.stats?.expectedGoals);
-      // need at least one displayable season number to justify the entry
-      if (goals == null && assists == null && xgRaw == null) return null;
-      return {
-        ...(typeof p.playerId === "number" && p.playerId > 0 ? { playerId: p.playerId } : {}),
-        name: nm,
-        nameFa: playerFa(nm),
-        side,
-        ...(goals != null ? { goals } : {}),
-        ...(assists != null ? { assists } : {}),
-        ...(xgRaw != null ? { xg: Math.round(xgRaw * 10) / 10 } : {}),
-        ...(n(p.stats?.minsPlayedGoal) != null ? { minsPerGoal: n(p.stats?.minsPlayedGoal) } : {}),
-        ...(n(p.stats?.motm) != null ? { motm: n(p.stats?.motm) } : {}),
-        ...(n(p.stats?.playerRating) != null ? { rating: n(p.stats?.playerRating) } : {}),
-        ...(n(p.stats?.gamesPlayed) != null ? { games: n(p.stats?.gamesPlayed) } : {}),
-      };
-    };
-    const h = sideOf(ts?.homePlayer, "home");
-    const a = sideOf(ts?.awayPlayer, "away");
-    if (h || a) topScorers = { home: h, away: a };
-  }
-
-  // update cycle-347: mini standings («جایگاه در جدول») — the cycle-192
-  // set-aside, closed. One guarded fetch of the gz XML blob (strict
-  // https://data.fotmob.com/ host allowlist — the payload-trusted host),
-  // decompress + regex-parse `<t>` rows (rank order = array index + 1;
-  // attrs: id, p=points, w/d/l, g=goals for, c=conceded — probe-347:
-  // 40/40 green, p verified = points not played), locate BOTH sides by id.
-  // Any failure → honest absence.
-  let table: MatchDetailNormalized["table"] = null;
-  {
-    const tp = raw.content?.table;
-    const blobUrl = typeof tp?.url === "string" ? tp.url : "";
-    const wanted = Array.isArray(tp?.teams) ? tp!.teams!.map(Number) : [];
-    const homeId = Number(raw.general?.homeTeam?.id || 0);
-    const awayId = Number(raw.general?.awayTeam?.id || 0);
-    if (
-      /^https:\/\/data\.fotmob\.com\//.test(blobUrl) &&
-      homeId > 0 &&
-      awayId > 0 &&
-      wanted.includes(homeId) &&
-      wanted.includes(awayId)
-    ) {
-      try {
-        const res = await fetch(blobUrl, {
-          headers: { "User-Agent": UA },
-          signal: AbortSignal.timeout(12_000),
-          cache: "no-store",
-        });
-        if (res.ok) {
-          // node/undici auto-decompresses Content-Encoding: gzip responses,
-          // so the buffer may arrive as plain XML (probe-347 debug: gunzipSync
-          // threw «incorrect header check» on the transparently-decompressed
-          // blob) — magic-byte sniff (1f 8b) picks the right path.
-          const buf = Buffer.from(await res.arrayBuffer());
-          const xml = buf[0] === 0x1f && buf[1] === 0x8b
-            ? gunzipSync(buf).toString("utf8")
-            : buf.toString("utf8");
-          const rows = [...xml.matchAll(/<t\s+[^>]*>/g)]
-            .map((m) => {
-              // anchored (?:^|\s) — unanchored, `d="…"` matches INSIDE
-              // `id="8315"` (probe-347 debug: Athletic showed draws=8315,
-              // its own team id, poisoning played/points derived from it)
-              const at = (n: string) => new RegExp(`(?:^|\\s)${n}="([^"]*)"`).exec(m[0])?.[1] ?? "";
-              return {
-                id: Number(at("id")),
-                p: Number(at("p")),
-                w: Number(at("w")),
-                d: Number(at("d")),
-                l: Number(at("l")),
-                g: Number(at("g")),
-                c: Number(at("c")),
-              };
-            })
-            .filter((r) => Number.isFinite(r.id) && r.id > 0 && Number.isFinite(r.p) && r.p >= 0);
-          const mk = (id: number) => {
-            const idx = rows.findIndex((r) => r.id === id);
-            if (idx < 0) return null;
-            const r = rows[idx];
-            return {
-              rank: idx + 1,
-              // probe-347 finding: in the blob `p` is POINTS, not played
-              // (Barcelona p=30 = 10w*3+0d; Lazio p=25 = 8*3+1; hp mirrors
-              // home points) — played must be derived from w+d+l.
-              played: r.w + r.d + r.l,
-              wins: r.w,
-              draws: r.d,
-              losses: r.l,
-              goalsFor: r.g,
-              goalsAgainst: r.c,
-              points: r.w * 3 + r.d,
-            };
-          };
-          const leagueBlobName = /<table\b[^>]*\bname="([^"]*)"/.exec(xml)?.[1] ?? "";
-          const h = mk(homeId);
-          const a = mk(awayId);
-          if (leagueBlobName && (h || a)) {
-            table = { leagueName: leagueBlobName, home: h, away: a };
-          }
-        }
-      } catch {
-        // honest absence — the block hides (uncovered league / hiccup)
-      }
-    }
-  }
-
   return {
     match: {
       id: matchId,
@@ -2102,7 +458,6 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
       finished,
       cancelled,
       live,
-      hasPendingVAR: raw.hasPendingVAR === true,
       minute,
       statusText: hs.reason?.long || undefined,
       home,
@@ -2111,40 +466,16 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
     scorers,
     events,
     statGroups,
-    statPeriods,
     lineups,
     info,
     form,
     momentum,
-    zones,
-    weather,
-    insights,
-    poll,
-    topScorers,
-    shootout,
-    shots,
-    xg,
-    playerStats,
-    playerOfTheMatch,
-    highlights,
-    reviews,
-    previews,
-    topPlayers,
-    table,
-    // update cycle-205: the optaId → side crosswalk (internal — GET strips it
-    // from the response once the touch map is assembled on top of it)
-    touchSides,
-    // update cycle-351: display meta for the drill-down (stripped in GET too)
-    touchMeta,
+    playerOfTheMatch: pomName ? { name: pomName, rating: pomRating } : null,
     fetchedAt: new Date().toISOString(),
   };
 }
 
 // ---------------- route handler ----------------
-// FotMob answers HTTP 200 with {error:true, message:"Data not found"} for
-// unknown ids → distinguishable "not found", not a gateway failure
-class MatchNotFoundError extends Error {}
-
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params;
   if (!/^\d{3,12}$/.test(id)) {
@@ -2156,47 +487,12 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
       const raw = await fetchJson<FMMatchDetails>(
         `https://www.fotmob.com/api/data/matchDetails?matchId=${id}`
       );
-      if (raw && typeof raw === "object" && (raw as { error?: unknown }).error === true) {
-        throw new MatchNotFoundError("Data not found");
-      }
       if (!raw?.general?.homeTeam) throw new Error("Empty match payload");
-      return await normalize(raw, id);
+      return normalize(raw, id);
     });
-    // update cycle-205: the touch map rides its OWN cache entry — the
-    // matchDetails producer runs at a 25 s cadence and must never trigger the
-    // heavier heatmap fetch on every generation. TTL by match state: a
-    // finished match never changes (1 h), a live one does (30 s), an
-    // upcoming one is never fetched at all (zero upstream hits). A 404 from
-    // the feed (small leagues — structural, probed on Botola Pro) resolves
-    // to null INSIDE the producer so the negative answer is cached too — one
-    // 404 per TTL window at most; transient (non-404) failures throw past
-    // the cache and degrade to a null card without polluting it. The key is
-    // versioned (touchMap:v3 — cycle-351 added the per-player layer; v2
-    // aggregate-only entries must not shadow the new shape for up to 1 h)
-    // so the pre-crosswalk null entries never shadow the fixed join.
-    let touchMap: TouchMap | null = null;
-    if (norm.match.started && !norm.match.cancelled) {
-      const ttl = norm.match.finished ? 3_600_000 : 30_000;
-      touchMap = await cached(`touchMap:v3:${id}`, ttl, async () => {
-        try {
-          return await buildTouchMap(id, norm.touchSides || {}, norm.touchMeta || {});
-        } catch (err) {
-          if (/\bHTTP 404\b/.test(err instanceof Error ? err.message : "")) return null;
-          throw err;
-        }
-      }).catch(() => null);
-    }
-    // touchSides/touchMeta are internal-only — never in the public response
-    const rest = { ...norm } as Record<string, unknown>;
-    delete rest.touchSides;
-    delete rest.touchMeta;
-    return NextResponse.json({ ok: true, ...rest, touchMap });
+    return NextResponse.json({ ok: true, ...norm });
   } catch (err) {
     console.error("[api/match]", err);
-    const msg = err instanceof Error ? err.message : "";
-    if (err instanceof MatchNotFoundError || /\bHTTP 404\b/.test(msg)) {
-      return NextResponse.json({ ok: false, error: "مسابقه یافت نشد." }, { status: 404 });
-    }
     return NextResponse.json(
       { ok: false, error: "خطا در دریافت جزئیات مسابقه" },
       { status: 502 }

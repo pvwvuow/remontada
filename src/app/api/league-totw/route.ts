@@ -6,20 +6,18 @@
 // the real client XHRs after three cycles of singular-pattern 404s.
 // ------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
-import { getLeagueTotw, LEAGUES } from "@/lib/fotmob";
-import { seasonParamOk } from "@/lib/season";
+import { getLeagueTotw, LEAGUES, SEASON_PARAM_RE } from "@/lib/fotmob";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("league") || "pl";
-  const lg = LEAGUES.find((l) => l.key === key);
-  if (!lg) {
+  const valid = LEAGUES.some((l) => l.key === key);
+  if (!valid) {
     return NextResponse.json({ ok: false, error: `Unknown league key: ${key}` }, { status: 400 });
   }
-  // cycle-382: plain-year seasons ride the per-league plainYearSeasons flag.
   const season = req.nextUrl.searchParams.get("season") || undefined;
-  if (season && !seasonParamOk(season, lg.plainYearSeasons === true)) {
+  if (season && !SEASON_PARAM_RE.test(season)) {
     return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
   }
   const round = req.nextUrl.searchParams.get("round") || undefined;

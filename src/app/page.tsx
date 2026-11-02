@@ -1,16 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
 import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
-import { faDigits, offsetDateISO } from "@/lib/format";
-import { GoalNotifier } from "@/components/remontada/goal-notifier";
-import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
-import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
-import { BackToTop } from "@/components/remontada/back-to-top";
 import { cn } from "@/lib/utils";
 
 type Tab = "matches" | "standings" | "news";
@@ -21,28 +15,28 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "news", label: "اخبار" },
 ];
 
+function Logo() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="relative w-10 h-10 rounded-xl bg-primary/15 border border-primary/30 flex items-center justify-center overflow-hidden pitch-lines">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" className="text-primary" aria-hidden>
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 7l4.5 3.2-1.7 5.3H9.2L7.5 10.2 12 7z" />
+        </svg>
+      </div>
+      <div className="leading-tight">
+        <h1 className="text-lg sm:text-xl font-black tracking-tight">
+          رمانتادا
+          <span className="text-primary">.</span>
+        </h1>
+        <p className="text-[10px] text-muted-foreground font-medium">فوتبال، بی‌وقفه و زنده</p>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [tab, setTab] = useState<Tab>("matches");
-
-  // restore the last visited tab (after hydration to avoid mismatch)
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("remontada:home-tab");
-      if (saved === "matches" || saved === "standings" || saved === "news") setTab(saved);
-    } catch {
-      // private mode / storage disabled — default tab stays
-    }
-  }, []);
-
-  // switch tab + remember it for the next visit
-  const changeTab = useCallback((t: Tab) => {
-    setTab(t);
-    try {
-      localStorage.setItem("remontada:home-tab", t);
-    } catch {
-      // ignore persistence failures
-    }
-  }, []);
 
   // --- matches state ---
   const [offset, setOffset] = useState(0);
@@ -52,64 +46,6 @@ export default function Home() {
   const [lastFetch, setLastFetch] = useState<string | null>(null);
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
-
-  // cycle-297: URL = view for the date carousel — the ±7-day fixtures view
-  // was the last major surface whose state lived only in client memory (a
-  // «بازی‌های فردا» view could never be shared or bookmarked). The contract
-  // mirrors the tab-restore precedent above: parse ONCE post-hydration (no
-  // SSR mismatch — the shell always prerenders today). ?date=YYYY-MM-DD
-  // drives the offset; the fetch gate below keeps the deep link's FIRST
-  // request on the right day. Live probe (cycle-297): /api/matches clamps
-  // offset to ±7 server-side — the UI clamps BEFORE the fetch instead, and
-  // per the cycle-99 marker contract corrects the address to what is shown.
-  const [urlApplied, setUrlApplied] = useState(false);
-  useEffect(() => {
-    const raw = new URLSearchParams(window.location.search).get("date");
-    if (raw === null) {
-      setUrlApplied(true);
-      return;
-    }
-    const m = /^(19|20)\d{2}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/.exec(raw);
-    const todayNoon = new Date(`${offsetDateISO(0)}T12:00:00Z`).getTime();
-    // cycle-299 fix (the 298 bug-hunt's registered finding): that regex
-    // accepts impossible calendar dates (2026-02-30, 2026-11-31) which V8
-    // silently rolls over — near a month start the rolled day can land
-    // INSIDE the ±7 window and the URL would keep showing the impossible
-    // date while rendering the rolled day (the 99 contract broken: address
-    // ≠ rendered view). The honest fix is calendar validation by
-    // re-serialization: rebuild YYYY-MM-DD from the parsed date's own UTC
-    // parts (exact — the input was pinned to noon UTC); any mismatch means
-    // the string was never a real day → malformed.
-    const d = m ? new Date(`${raw}T12:00:00Z`) : null;
-    const reser = d
-      ? `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
-      : "";
-    const req = d ? d.getTime() : NaN;
-    if (!m || !Number.isFinite(req) || reser !== raw) {
-      // malformed (bad shape OR impossible calendar date) → drop the param;
-      // the view honestly stays today
-      window.history.replaceState(null, "", "/");
-      setUrlApplied(true);
-      return;
-    }
-    const diff = Math.round((req - todayNoon) / 86_400_000);
-    const clamped = Math.max(-7, Math.min(7, diff));
-    if (clamped !== diff) {
-      // well-formed but outside the designed ±7 carousel — the URL must
-      // show the day that is actually rendered (the 99 contract)
-      window.history.replaceState(null, "", `/?date=${offsetDateISO(clamped)}`);
-    } else if (clamped === 0) {
-      window.history.replaceState(null, "", "/"); // today = the clean canonical view
-    }
-    if (clamped !== 0) setOffset(clamped);
-    setUrlApplied(true);
-  }, []);
-
-  // carousel clicks keep the address honest: a day view IS a shareable URL
-  const changeOffset = useCallback((o: number) => {
-    setOffset(o);
-    window.history.replaceState(null, "", o === 0 ? "/" : `/?date=${offsetDateISO(o)}`);
-  }, []);
 
   // --- standings state ---
   const [leagueKey, setLeagueKey] = useState("pl");
@@ -165,12 +101,10 @@ export default function Home() {
     }
   }, []);
 
-  // initial + offset change — gated until the URL's ?date= has been applied
-  // once, so a deep link's FIRST fetch is already the right day
+  // initial + offset change
   useEffect(() => {
-    if (!urlApplied) return;
     fetchMatches();
-  }, [urlApplied, offset, fetchMatches]);
+  }, [offset, fetchMatches]);
 
   // initial standings & news (lazy per tab)
   useEffect(() => {
@@ -195,55 +129,38 @@ export default function Home() {
     0
   );
 
-  // update cycle-38: reflect live matches in the browser tab title — users
-  // keeping the home tab open in the background see at a glance when games
-  // are in progress (e.g. «(۳ زنده) رمانتادا | …»), no state, no re-render
-  useEffect(() => {
-    const base = "رمانتادا | نتایج زنده فوتبال، جدول لیگ‌ها و اخبار";
-    document.title = liveCount > 0 ? `(${faDigits(liveCount)} زنده) ${base}` : base;
-    return () => {
-      document.title = base;
-    };
-  }, [liveCount]);
-
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ---------- header (cycle-23: shared SiteHeader — single-source chrome) ---------- */}
-      <SiteHeader>
-        {(liveCount > 0 || tab === "matches") && (
-          <div className="flex items-center justify-between gap-3 pt-2">
-            <div className="flex items-center gap-2.5 min-w-0">
-              {/* live matches counter — always visible when something is live */}
-              {liveCount > 0 && (
-                <button
-                  onClick={() => changeTab("matches")}
-                  title="نمایش بازی‌های زنده"
-                  aria-label={`${faDigits(liveCount)} بازی زنده در جریان است`}
-                  className="inline-flex items-center gap-1.5 text-[11px] font-black text-red-400 bg-red-500/10 border border-red-500/30 px-2.5 py-1.5 rounded-lg hover:bg-red-500/20 transition-colors cursor-pointer shrink-0"
-                >
-                  <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
-                  <span className="tabular-persian">{faDigits(liveCount)}</span>
-                  <span className="hidden xs:inline">زنده</span>
-                </button>
-              )}
-            </div>
+      {/* ---------- header ---------- */}
+      <header className="sticky top-0 z-40 backdrop-blur-xl bg-background/75 border-b border-border/50">
+        <div className="max-w-5xl mx-auto px-3 sm:px-5">
+          <div className="flex items-center justify-between gap-3 py-3">
+            <Logo />
             <div className="flex items-center gap-2">
               {tab === "matches" && (
-                <button
-                  onClick={() => fetchMatches()}
-                  className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
-                  aria-label="بروزرسانی نتایج"
-                >
-                  <svg
-                    width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                    strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-                    className={cn(matchesLoading && "animate-spin")} aria-hidden
+                <div className="flex items-center gap-2">
+                  {liveCount > 0 && (
+                    <span className="inline-flex items-center gap-1.5 text-xs font-bold text-red-400 bg-red-500/10 border border-red-500/25 px-2.5 py-1 rounded-lg">
+                      <span className="live-dot w-1.5 h-1.5 rounded-full bg-red-500 inline-block" />
+                      <span className="tabular-persian">{liveCount}</span> بازی در جریان
+                    </span>
+                  )}
+                  <button
+                    onClick={() => fetchMatches()}
+                    className="flex items-center gap-1.5 text-xs font-semibold bg-card/80 border border-border px-3 py-1.5 rounded-lg hover:bg-accent transition-colors"
+                    aria-label="بروزرسانی نتایج"
                   >
-                    <path d="M21 12a9 9 0 1 1-2.64-6.36" />
-                    <path d="M21 3v6h-6" />
-                  </svg>
-                  بروزرسانی
-                </button>
+                    <svg
+                      width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                      strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      className={cn(matchesLoading && "animate-spin")} aria-hidden
+                    >
+                      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+                      <path d="M21 3v6h-6" />
+                    </svg>
+                    بروزرسانی
+                  </button>
+                </div>
               )}
               {tab === "matches" && lastFetch && (
                 <span className="hidden sm:block text-[10px] text-muted-foreground tabular-persian whitespace-nowrap">
@@ -252,47 +169,38 @@ export default function Home() {
               )}
             </div>
           </div>
-        )}
 
-        {/* tabs */}
-        <nav className="flex items-center gap-1 -mb-px overflow-x-auto" aria-label="بخش‌های صفحه اصلی">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              onClick={() => changeTab(t.key)}
-              aria-current={tab === t.key ? "page" : undefined}
-              className={cn(
-                "relative px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors rounded-t-lg",
-                tab === t.key
-                  ? "text-primary"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {t.label}
-              {t.key === "matches" && liveCount > 0 && (
-                <span className="ms-1.5 inline-block align-top text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-full px-1.5 tabular-persian">
-                  {/* ui-cycle-16: render the live count with Persian digits —
-                      .tabular-persian only sets font-variant-numeric, it does
-                      not map 0-9 to ۰-۹; the badge was the one Latin-digit
-                      leak on the site (its own aria-label already said ۵) */}
-                  {faDigits(liveCount)}
-                </span>
-              )}
-              {tab === t.key && (
-                /* cycle-212: the codex flourish as the active-tab marker —
-                   a hairline that fades at its ends, broken by a small gold
-                   diamond (visual only, no text/testid change) */
-                <span className="codex-tab-underline absolute inset-x-3 bottom-0 h-px" aria-hidden />
-              )}
-            </button>
-          ))}
-        </nav>
-      </SiteHeader>
+          {/* tabs */}
+          <nav className="flex items-center gap-1 -mb-px overflow-x-auto" aria-label="بخش‌های سایت">
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                onClick={() => setTab(t.key)}
+                aria-current={tab === t.key ? "page" : undefined}
+                className={cn(
+                  "relative px-4 py-2.5 text-sm font-bold whitespace-nowrap transition-colors rounded-t-lg",
+                  tab === t.key
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {t.label}
+                {t.key === "matches" && liveCount > 0 && (
+                  <span className="ms-1.5 inline-block align-top text-[10px] bg-red-500/15 text-red-400 border border-red-500/30 rounded-full px-1.5 tabular-persian">
+                    {liveCount}
+                  </span>
+                )}
+                {tab === t.key && (
+                  <span className="absolute inset-x-3 bottom-0 h-0.5 bg-primary rounded-full" aria-hidden />
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+      </header>
 
       {/* ---------- content ---------- */}
       <main className="flex-1 w-full max-w-5xl mx-auto px-3 sm:px-5 py-5">
-        {/* h1 lives in the content since the shared header renders a <p> logo */}
-        <h1 className="sr-only">رمانتادا — نتایج زنده فوتبال، جدول لیگ‌ها و اخبار</h1>
         {tab === "matches" && (
           <>
             {matchesError && (
@@ -303,13 +211,11 @@ export default function Home() {
                 </button>
               </div>
             )}
-            {/* upcoming fixtures of favorited teams (cycle-20, renders nothing without favorites) */}
-            <FavoriteFixtures />
             <MatchesView
               groups={groups}
               loading={matchesLoading}
               offset={offset}
-              onOffsetChange={changeOffset}
+              onOffsetChange={setOffset}
             />
           </>
         )}
@@ -320,26 +226,24 @@ export default function Home() {
             loading={standingsLoading}
             leagueKey={leagueKey}
             onLeagueChange={setLeagueKey}
-            onRetry={() => fetchStandings(leagueKey)}
           />
         )}
 
         {tab === "news" && <NewsView items={news} loading={newsLoading} />}
       </main>
 
-      {/* goal notifications for favorite teams (opt-in chip) */}
-      <GoalNotifier />
-
-      {/* fix cycle-37: home is the portal's longest page (~17.7k px on mobile) — it was the
-          only long view without the floating back-to-top after the cycle-35 rollout */}
-      <BackToTop />
-
       {/* ---------- footer ---------- */}
-      {/* ui-cycle-24: the homepage's private inline footer (pre-cycle-19 styling, no
-          tap-hit-row, «·» separators, divergent copy) is retired — the shared SiteFooter
-          becomes the ONE footer site-wide, carrying cycle-13 metadata, cycle-19 nav
-          tap-hit-row and cycle-24 attribution tap-hit-row everywhere. */}
-      <SiteFooter />
+      <footer className="mt-auto border-t border-border/50 bg-background/60">
+        <div className="max-w-5xl mx-auto px-4 py-6 flex flex-col items-center gap-2 text-center">
+          <p className="text-xs text-muted-foreground">
+            داده‌های نتایج و جدول‌ها از <span className="font-bold text-foreground/80">FotMob</span> و
+            <span className="font-bold text-foreground/80"> ESPN</span> — اخبار از ESPN، BBC Sport و Sky Sports
+          </p>
+          <p className="text-[11px] text-muted-foreground/70">
+            رمانتادا — ساخته‌شده با عشق به فوتبال. نتایج با تأخیر چندثانیه‌ای نمایش داده می‌شوند.
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

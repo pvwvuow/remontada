@@ -12,15 +12,13 @@ import {
   findTeamInStandings,
   getTeamSeasonFromLeague,
   getTeamOfficialColor,
-  getTeamFixturesAll,
   dateKeyToYYYYMMDD,
   type NormMatch,
   type NormFixture,
   type TeamRowInfo,
   type TeamSeasonStats,
-  type TeamSeasonFixture,
 } from "@/lib/fotmob";
-import { LEAGUES, fotmobTeamLogo } from "@/lib/leagues";
+import { LEAGUES } from "@/lib/leagues";
 
 /** Pre-match context for the team page panel (cycle 18): opponent form + season stats */
 export interface PreMatchInfo {
@@ -83,39 +81,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     }
 
     if (teamMatches.length === 0) {
-      // cycle-390: the NT-aware fallback (the 386 F2 update-scale decision).
-      // The -3..+10 day-feed window is club-shaped; a national team between
-      // tournaments (probed: Iran 6711 — nothing in the window while the
-      // upstream fixture list carries 9 results + 4 upcoming incl. the 2027
-      // Asian Cup) used to hit the honest 404 and lose the whole team
-      // surface. The upstream team fixture archive (the SAME cached
-      // data/teams payload team-fixtures reads — zero extra upstream hit)
-      // now fills the window-shaped gap: nearest finished results + next
-      // upcoming rows ride the exact same pipeline below (name/logo, recent
-      // merge, prematch). Teams with NOTHING upstream keep the honest 404 —
-      // the contract only widens, never fakes.
-      const all = await getTeamFixturesAll(teamId).catch(() => null);
-      if (!all || all.total === 0) {
-        return NextResponse.json({ ok: false, error: "بازی‌ای برای این تیم در بازه‌ی نزدیک یافت نشد" }, { status: 404 });
-      }
-      const fromSeason = (f: TeamSeasonFixture): MatchRow => ({
-        id: String(f.id),
-        leagueId: 0, // no league context upstream — standings/prematch degrade honestly
-        leagueName: "",
-        leagueFa: f.tournamentFa,
-        leagueCcode: "",
-        utcTime: f.utcTime,
-        started: f.started,
-        finished: f.finished,
-        cancelled: false,
-        live: false,
-        home: { id: f.home.id, name: f.home.name, fa: f.home.fa, short: f.home.name, score: f.home.score, logo: fotmobTeamLogo(f.home.id) },
-        away: { id: f.away.id, name: f.away.name, fa: f.away.fa, short: f.away.name, score: f.away.score, logo: fotmobTeamLogo(f.away.id) },
-      });
-      teamMatches.push(
-        ...all.results.slice(0, 6).map(fromSeason), // finished, newest first — same shape feedRecent wants
-        ...all.upcoming.slice(0, 8).map(fromSeason),
-      );
+      return NextResponse.json({ ok: false, error: "بازی‌ای برای این تیم در بازه‌ی نزدیک یافت نشد" }, { status: 404 });
     }
 
     // de-dup by match id, sort by time

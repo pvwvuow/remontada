@@ -9,14 +9,14 @@ import type { StandingsData, StandingsRow, LeagueFixturesData, LeagueAllFixtures
 // cycle-99: same strict season shape as the API guard — one regex, one
 // contract (client-safe module; a value import from fotmob.ts would drag
 // the server graph into the client bundle — caught in this cycle's build)
-import { seasonParamOk } from "@/lib/season";
+import { SEASON_PARAM_RE } from "@/lib/season";
 import { LEAGUES, fotmobTeamLogo, type LeagueConfig } from "@/lib/leagues";
 import { SITE_URL } from "@/lib/site";
 import { JsonLd } from "@/components/remontada/json-ld";
 import { LeagueBracket } from "@/components/remontada/league-bracket";
 import { LeagueTransfersList } from "@/components/remontada/league-transfers";
 import { LeagueTotwSection } from "@/components/remontada/league-totw";
-import { faDecimal, faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
+import { faDigits, jalaliShort, offsetDateISO, tehranDateKey, tehranDateLong, tehranTime, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/remontada/empty-state";
 import { GlassLeagueHeader, GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
@@ -86,7 +86,7 @@ function FixtureRow({ f, showResult, showDate }: { f: NormFixture; showResult: b
       <div className="flex flex-col items-center min-w-[86px]">
         {showResult ? (
           <span className="font-black text-sm tabular-persian text-[#e0efff] bg-[#a9cdf611] border border-[color:var(--glass-border-soft)] rounded-lg px-2.5 py-0.5">
-            {faDigits(f.home.score ?? "—")} : {faDigits(f.away.score ?? "—")}
+            {f.home.score ?? "—"} : {f.away.score ?? "—"}
           </span>
         ) : (
           <span className="text-[11px] font-black text-foreground/80 tabular-persian">
@@ -343,25 +343,23 @@ function KpiCard({ label, value, sub }: { label: string; value: string; sub?: st
 // formatted with the payload's own stat.format/stat.fractions hints so the
 // numbers stay honest (percent/number/currency/kph/fraction).
 function boardValue(v: number, fmt: string, fractions: number): string {
-  // cycle-369: decimal renders go through faDecimal — the Persian decimal
-  // separator ٫ between Persian digits (bug-hunt 368 finding).
-  if (fmt === "percent") return `${faDecimal(v.toFixed(1))}٪`;
-  if (fmt === "kph") return faDecimal(v.toFixed(1));
+  if (fmt === "percent") return `${faDigits(v.toFixed(1))}٪`;
+  if (fmt === "kph") return faDigits(v.toFixed(1));
   // cycle-367: meter boards render kilometers (deepStatValueFa convention);
   // sub-1km values (defensive) stay meters.
   if (fmt === "meter") {
-    return v >= 1000 ? `${faDecimal(String(Math.round(v / 100) / 10))} کیلومتر` : `${faDecimal(String(v))} متر`;
+    return v >= 1000 ? `${faDigits(String(Math.round(v / 100) / 10))} کیلومتر` : `${faDigits(String(v))} متر`;
   }
   if (fmt === "currency") {
     const abs = Math.abs(v);
-    if (abs >= 1e9) return `${faDecimal((v / 1e9).toFixed(2))} میلیارد`;
-    if (abs >= 1e6) return `${faDecimal((v / 1e6).toFixed(1))} میلیون`;
+    if (abs >= 1e9) return `${faDigits((v / 1e9).toFixed(2))} میلیارد`;
+    if (abs >= 1e6) return `${faDigits((v / 1e6).toFixed(1))} میلیون`;
     return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
   }
   if (fmt === "number") {
     return faDigits(Math.round(v).toString().replace(/\B(?=(\d{3})+(?!\d))/g, "٬"));
   }
-  return faDecimal(v.toFixed(Math.max(0, Math.min(fractions, 2))));
+  return faDigits(v.toFixed(Math.max(0, Math.min(fractions, 2))));
 }
 
 function BoardRow({ row, kind }: { row: LeagueBoard["rows"][number] & { _v: string }; kind: "team" | "player" }) {
@@ -487,7 +485,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
     <div className="flex flex-col gap-4">
       {/* KPI row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-        <KpiCard label="میانگین گل هر بازی" value={faDecimal(stats.avgGoals.toFixed(2))} sub={`${faDigits(stats.totalGoals)} گل در ${faDigits(n)} بازی`} />
+        <KpiCard label="میانگین گل هر بازی" value={faDigits(stats.avgGoals.toFixed(2))} sub={`${faDigits(stats.totalGoals)} گل در ${faDigits(n)} بازی`} />
         <KpiCard label="هر دو تیم گل زدند" value={`${faDigits(Math.round(stats.bttsPct))}٪`} sub="از بازی‌های برگزارشده" />
         <KpiCard label="برد میزبان‌ها" value={`${faDigits(pct(stats.homeWins))}٪`} sub={`${faDigits(stats.homeWins)} بازی`} />
         <KpiCard label="برد مهمان‌ها" value={`${faDigits(pct(stats.awayWins))}٪`} sub={`${faDigits(stats.awayWins)} بازی`} />
@@ -535,7 +533,7 @@ function StatsPanel({ stats, leagueFa }: { stats: LeagueStats; leagueFa: string 
                   <div className="mt-1 h-1 rounded-full bg-white/[0.07] overflow-hidden">
                     <div className="h-full bg-chart-3/60 rounded-full" style={{ width: `${(r.goals / maxRoundGoals) * 100}%` }} />
                   </div>
-                  <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDecimal(r.avg.toFixed(1))} گل</p>
+                  <p className="text-[9px] text-muted-foreground mt-1 tabular-persian">{faDigits(r.games)} بازی · میانگین {faDigits(r.avg.toFixed(1))} گل</p>
                 </div>
               </li>
             ))}
@@ -607,7 +605,7 @@ function ScorersList({ data, leagueKey }: { data: StandingsData; leagueKey: stri
         <div className="glass-scorer-hero p-3.5 flex items-center gap-3">
           <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={56} />
           <div className="min-w-0 flex-1">
-            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">صدرنشین لیگ</p>
+            <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
             {top.playerId ? (
               <Link
                 href={`/player/${top.playerId}`}
@@ -1102,7 +1100,7 @@ function StandingsTable({ data, league }: { data: StandingsData; league: LeagueC
 function XgTable({ rows }: { rows: StandingsRow[] }) {
   const withXg = useMemo(() => rows.filter((r) => typeof r.xg === "number"), [rows]);
   if (withXg.length === 0) return null;
-  const fmt1 = (v: number) => faDecimal(v.toFixed(1));
+  const fmt1 = (v: number) => faDigits(v.toFixed(1));
   return (
     <div className="glass-card overflow-hidden" data-testid="league-xg">
       <header className="px-4 pt-3.5 pb-2 flex items-baseline justify-between gap-2">
@@ -1264,10 +1262,8 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
   // tab shows on historical views too (null → tab hidden)
   const [titles, setTitles] = useState<LeagueTitleHistory | null>(null);
 
-  // cycle-99: read the deep-linked season once on mount — strict season
-  // shape (same guard as the API routes; cycle-382 adds the plain-year
-  // "2022" shape for the per-league plainYearSeasons flag); anything else
-  // is ignored and the
+  // cycle-99: read the deep-linked season once on mount — strict SEASON_PARAM_RE
+  // shape (same guard as the API routes); anything else is ignored and the
   // current season loads. Probed upstream contract (cycle-99): a well-formed
   // season the league does not offer is silently served as the CURRENT season
   // (200 + payload marker selectedSeason=actual) — the honesty snap inside the
@@ -1277,7 +1273,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
     setSeeded(true);
     try {
       const raw = new URLSearchParams(window.location.search).get("season");
-      if (raw && seasonParamOk(raw, lg?.plainYearSeasons === true)) setSeason(raw);
+      if (raw && SEASON_PARAM_RE.test(raw)) setSeason(raw);
     } catch { /* no window — ignore */ }
   }, [seeded]);
 
@@ -1583,13 +1579,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
         </div>
       ) : (
         <div className={cn("transition-opacity", loading && "opacity-50")}>
-          {/* cycle-376: the rows guard — a pure knockout cup (first cataloged:
-              Copa del Rey) fulfills with rows=[] + noTable, so the truthy
-              standings payload can no longer mean "render the table". Zero
-              rows now fall to the empty state, with the cup-specific honest
-              copy (a knockout competition never HAS a table) and a CTA that
-              opens the fixtures tab instead of dead-ending. */}
-          {tab === "standings" && (standings && standings.rows.length > 0 ? (
+          {tab === "standings" && (standings ? (
             <div className="grid gap-4 lg:grid-cols-[1fr_300px] lg:items-start">
               <div className="grid gap-4 min-w-0">
                 {/* cycle-114: honest notice when the table is served from the
@@ -1612,19 +1602,7 @@ export function LeagueView({ leagueKey }: { leagueKey: string }) {
               </div>
               {standings.scorers?.length > 0 && <ScorersList data={standings} leagueKey={lg.key} />}
             </div>
-          ) : (
-            <EmptyState
-              icon="medal"
-              compact
-              title="جدولی برای این لیگ ثبت نشده است"
-              sub={standings?.noTable
-                ? "مسابقات حذفی جدول رده‌بندی ندارند؛ برنامه، نتایج، گلزنان و آمار از همین صفحه دنبال می‌شود."
-                : "رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود."}
-              action={standings?.noTable
-                ? { label: "مشاهده‌ی برنامه‌ی بازی‌ها", onClick: () => setTab("fixtures") }
-                : undefined}
-            />
-          ))}
+          ) : <EmptyState icon="medal" compact title="جدولی برای این لیگ ثبت نشده است" sub="رده‌بندی پس از انتشار داده‌ی فصل از سوی منبع نمایش داده می‌شود." />)}
           {tab === "stats" && (
             <div className="flex flex-col gap-4">
               {standings?.boards && standings.boards.length > 0 && (

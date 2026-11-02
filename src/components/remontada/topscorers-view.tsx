@@ -18,7 +18,7 @@ import { EmptyState } from "@/components/remontada/empty-state";
 import { LEAGUES } from "@/lib/leagues";
 import { GlassPosterMeta, pad2 } from "@/components/remontada/glass-stats";
 import { PlayerPhoto } from "@/components/remontada/player-photo";
-import { faDecimal, faDigits, timeAgoFa } from "@/lib/format";
+import { faDigits, timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const ALL_KEY = "all";
@@ -39,13 +39,13 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
     badges.push({ label: `${faDigits(s.gPlusA)} گل+پاس`, cls: "bg-primary/10 border-primary/25 text-primary", title: "مجموع گل و پاس گل" });
   }
   if (s.xg != null && s.xg > 0) {
-    badges.push({ label: `xG ${faDecimal(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
+    badges.push({ label: `xG ${faDigits(s.xg.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار" });
   }
   // cycle-230 additive: the xA badge — the assist-side twin of the xG badge
   // (season-total from the "Expected assist (xA)" category, matched by
   // player id; one decimal, the 226 display convention)
   if (s.xa != null && s.xa > 0) {
-    badges.push({ label: `xA ${faDecimal(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
+    badges.push({ label: `xA ${faDigits(s.xa.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "پاس مورد انتظار" });
   }
   // cycle-231 additive: the big-chances badge — the creation-volume twin
   // (season-total from the "Big chances created" category, matched by
@@ -58,7 +58,7 @@ function ScorerBadges({ s }: { s: GlobalScorer }) {
   // category, matched by player id; one decimal, the 226/230 display
   // convention)
   if (s.xgot != null && s.xgot > 0) {
-    badges.push({ label: `xGOT ${faDecimal(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
+    badges.push({ label: `xGOT ${faDigits(s.xgot.toFixed(1))}`, cls: "bg-muted border-border text-muted-foreground", title: "گل مورد انتظار روی دروازه" });
   }
   // cycle-235 additive: the chances-created badge — the TOTAL-creation
   // volume twin of the big-chances badge (season-total from the "Chances
@@ -611,7 +611,7 @@ export function TopScorersView() {
                 <PlayerPhoto id={heroScorer.s.playerId} name={heroScorer.s.nameFa || heroScorer.s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
-                    {showGlobal ? "آقای گل جهانی" : "صدرنشین لیگ"}
+                    {showGlobal ? "GLOBAL TOP SCORER" : "LEAGUE LEADER"}
                   </p>
                   {heroScorer.s.playerId ? (
                     <Link

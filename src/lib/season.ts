@@ -11,20 +11,3 @@
 // standings / league-fixtures / league-bracket APIs accept (cycle-55) and
 // the only shape the league page's deep-link seeding accepts (cycle-99).
 export const SEASON_PARAM_RE = /^(19|20)\d{2}\/(19|20)\d{2}$/;
-
-// cycle-382: national-team tournaments serve PLAIN-YEAR season names on
-// FotMob ("2026", "2022" — probed live UA Chrome/124 on the World Cup
-// league 77: allAvailableSeasons 2026→1966, zero slash seasons, and the
-// strict SEASON_PARAM_RE filter emptied the whole seasons tab, locking the
-// historical dimension away). The slash contract stays the DEFAULT for
-// every competition; the plain shape is accepted ONLY when the caller
-// proves the league opts in (the catalog's plainYearSeasons flag — the
-// same one-flag semantic as globalMerge/noTable). The global surfaces
-// (the getAllTopScorers race, players hub) never pass plainYearOk, so a
-// plain-year deep link stays honestly rejected there.
-export const SEASON_PLAIN_RE = /^(19|20)\d{2}$/;
-
-export function seasonParamOk(raw: string, plainYearOk: boolean): boolean {
-  if (SEASON_PARAM_RE.test(raw)) return true;
-  return plainYearOk && SEASON_PLAIN_RE.test(raw);
-}

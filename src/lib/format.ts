@@ -8,18 +8,6 @@ export function faDigits(input: string | number): string {
   return String(input).replace(/\d/g, (d) => FA_DIGITS[Number(d)]);
 }
 
-/** Persian numerals with the Persian decimal separator ٫ (U+066B).
- *
- *  cycle-369 fix (bug-hunt 368 finding): faDigits maps digits only, so
- *  numeric renders showed «۱۱۹.۴» — an ASCII '.' sitting between Persian
- *  digits — while the documented convention is the Persian decimal
- *  separator «۱۱۹٫۴». Numeric renders call this instead.
- *  Numeric-render-scoped ONLY, never global: dates, paths, hrefs and
- *  version-like strings carry meaningful dots that faDigits must preserve. */
-export function faDecimal(input: string | number): string {
-  return faDigits(String(input).replace(/(\d)\.(\d)/g, "$1٫$2"));
-}
-
 export function enDigits(input: string): string {
   return input
     .replace(/[۰-۹]/g, (d) => String("۰۱۲۳۴۵۶۷۸۹".indexOf(d)))
@@ -160,13 +148,12 @@ export function timeAgoFa(iso: string): string {
   return tehranDateLong(iso);
 }
 
-/** "€51.7m" → «۵۱٫۷ میلیون یورو» — player market value in Persian (cycle 45;
- *  cycle-370: the decimal goes through faDecimal — «۵۱٫۷» not «۵۱.۷») */
+/** "€51.7m" → «۵۱.۷ میلیون یورو» — player market value in Persian (cycle 45) */
 export function marketValueFa(v: string): string {
   if (!v) return "";
   const m = v.replace(/\s/g, "").match(/^€?([\d.,]+)(bn|b|m|k)?$/i);
   if (!m) return v;
-  const num = faDecimal(m[1].replace(/,/g, ""));
+  const num = faDigits(m[1].replace(/,/g, ""));
   const unit = (m[2] || "").toLowerCase();
   if (unit === "m") return `${num} میلیون یورو`;
   if (unit === "k") return `${num} هزار یورو`;
