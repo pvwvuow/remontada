@@ -514,6 +514,26 @@
   }
 }
 
+/* cycle-444 — the skip-link LANDING fix (the 439/443 hold's physical gap):
+   the 439 skip link («پرش به محتوا» → #main-content) rides the browser's
+   native anchor jump, and the site header is sticky top-0 z-40
+   (site-chrome.tsx) — so after the jump the main edge lands at viewport
+   top 0 and the sticky header paints OVER the first row of content (live
+   probe: 4/4 routes COVERED, main-top=0 vs header-bottom=68 on inner
+   pages / 145 on home, where the nav wraps on the 390px viewport). The
+   header height is content-driven, so no exact static value can be right
+   everywhere — but the geometry saves us: #main-content is preceded in
+   the document flow by ONLY the header, so its offsetTop always equals
+   the header height. With scroll-margin-top larger than that offsetTop
+   the anchor target position goes negative and the browser CLAMPS to the
+   top of the document, landing main exactly at the header's bottom edge
+   (offsetTop ≤ margin) — fully visible on every route, past and future
+   header heights included. 176px = the measured worst case (145) plus a
+   safety margin; it exists to trigger the clamp, not to be measured. */
+#main-content {
+  scroll-margin-top: 176px;
+}
+
 /* cycle-60 — legend-gold selection: the little game-feel detail everyone
    touches when selecting text */
 ::selection {
