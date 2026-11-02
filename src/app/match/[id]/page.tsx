@@ -87,9 +87,17 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   // problem → null, never breaks the page. One upstream call feeds both LDs
   // (same 60s cache key — no extra FotMob request).
   let crumbLd: Record<string, unknown> | null = null;
+  // update cycle-421: the match-level ICS CTA — the same cached
+  // getMatchLdData payload the two LD blocks above read; visible only when
+  // the event is actually schedulable (a kickoff time exists and the match
+  // is not cancelled — the visible-CTA ⇔ schedulable-event contract, the
+  // 420 link-visible ⇔ source-data-present convention's match-page face).
+  let cal: string | null = null;
   try {
     const m = await getMatchLdData(id);
     if (m) {
+      // cycle-421: schedulable ⇔ a kickoff exists and the match is not cancelled
+      if (m.utcTime && !m.cancelled) cal = `/api/match-calendar/${m.id}`;
       ld = {
         "@context": "https://schema.org",
         "@type": "SportsEvent",
@@ -159,6 +167,7 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
   } catch {
     ld = null; // never break the page for structured data
     crumbLd = null;
+    cal = null;
   }
 
   return (
@@ -173,6 +182,29 @@ export default async function MatchPage({ params }: { params: Promise<{ id: stri
             client-side 400 fallback only arrives after hydration. Render the
             same sr-only Persian h1 pattern as the cycle-59/84 shells so every
             page state has exactly one h1 even without JS */}
+        {/* update cycle-421: «افزودن به تقویم (ICS)» — the single-fixture
+            calendar deep link (/api/match-calendar/[id], the third rung of
+            the ICS ladder after the league 312 and the team 420). Server-
+            rendered from the SAME payload the SportsEvent LD reads; hidden
+            when the event is not schedulable (no kickoff / cancelled). Same
+            visual language as the 312/420 ICS links. */}
+        {cal && (
+          <div className="px-1 mb-3" data-testid="match-ics-row">
+            <a
+              href={cal}
+              download
+              data-testid="match-ics-link"
+              className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-soft hover:text-foreground transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+                <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+                <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+                <path d="M9 14.5l2 2 4-4" />
+              </svg>
+              افزودن به تقویم (ICS)
+            </a>
+          </div>
+        )}
         {/^\d{3,12}$/.test(id) ? (
           <MatchDetail matchId={id} />
         ) : (
