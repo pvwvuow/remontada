@@ -10797,6 +10797,9 @@ export interface TeamCoachSeason {
 
 export interface TeamCoachTenure {
   name: string;
+  // cycle-397 (the 396-F2 class completion): additive Persian name
+  // (coachFa by the row's coach id) — null → the UI falls back to name.
+  fa?: string | null;
   from: string; // "2016/2017"
   to: string; // "2025/2026"
   fromShortFa: string; // «۱۶/۱۷»
@@ -10839,6 +10842,9 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
       if (!name || !season) return null;
       return {
         name,
+        // cycle-397: the coach id rides (FMCoachHistoryRaw always carried it) —
+        // the tenure fa is coachFa(id), the 396-F2 class completion.
+        id: typeof r?.id === "number" ? r.id : 0,
         season,
         leagueName: String(r?.leagueName || ""),
         win: num(r?.win),
@@ -10855,6 +10861,7 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
 
   interface Acc {
     name: string;
+    id: number; // cycle-397: the coach id for coachFa (0 = the row carried none)
     from: string;
     to: string;
     leagueName: string;
@@ -10872,6 +10879,7 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
     const games = Math.max(r.win + r.draw + r.loss, 0);
     const last = accs[accs.length - 1];
     if (last && last.name === r.name) {
+      if (r.id && !last.id) last.id = r.id;
       last.to = r.season;
       last.leagueName = r.leagueName; // latest season's primary league wins
       last.games += games;
@@ -10893,6 +10901,7 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
     } else {
       accs.push({
         name: r.name,
+        id: r.id,
         from: r.season,
         to: r.season,
         leagueName: r.leagueName,
@@ -10920,6 +10929,7 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
 
   const tenures: TeamCoachTenure[] = accs.map((a) => ({
     name: a.name,
+    fa: a.id ? coachFa(a.id) : null,
     from: a.from,
     to: a.to,
     fromShortFa: coachShortSeasonFa(a.from),
@@ -11208,6 +11218,9 @@ export interface TeamLastLineupPlayer {
 export interface TeamLastLineup {
   formation: string | null;
   coachName: string | null;    // honest English (coach names unmapped — Loftus-Cheek contract)
+  // cycle-397 (the 396 bug-hunt F2 flip): additive Persian name (coachFa by
+  // the same lls.coach id) — null → the UI falls back to coachName.
+  coachNameFa?: string | null;
   teamMatchRating: number | null;
   averageAge: number | null;
   totalMarketValueFa: string | null;
@@ -11272,6 +11285,9 @@ export async function getTeamLastLineup(teamId: number): Promise<TeamLastLineup 
   return {
     formation: typeof lls.formation === "string" && lls.formation ? lls.formation : null,
     coachName: typeof lls.coach?.name === "string" && lls.coach.name ? lls.coach.name : null,
+    // cycle-397: additive Persian name (the 396 F2 fix path) — the raw
+    // coachName contract stays byte-exact for every consumer.
+    coachNameFa: lls.coach?.id != null ? coachFa(Number(lls.coach.id)) : null,
     teamMatchRating: num(lls.rating),
     averageAge: age,
     totalMarketValueFa: tmv != null && tmv > 0 ? marketValueFa(tmv) : null,
@@ -11623,6 +11639,17 @@ const COACH_SEED: CoachSearchResult[] = [
   { id: 804046, name: "Franck Haise", fa: "فرانک هایز", teamId: 9851, teamName: "Rennes" },
   { id: 96945, name: "Gian Piero Gasperini", fa: "جان‌پی‌یرو گاسپرینی", teamId: 8686, teamName: "Roma" },
   { id: 242474, name: "Luis García", fa: "لوییس گارسیا", teamId: 8302, teamName: "Sevilla" },
+  // — cycle-397: the eight fallback benches from the 396 patrol (every one
+  //   carries a confident Persian transliteration — the honest fallback
+  //   shrinks, nothing faked; ids probed live off /api/team-squad) —
+  { id: 59582, name: "Matthias Jaissle", fa: "ماتیاس یایسله", teamId: 10261, teamName: "Newcastle United" },
+  { id: 1791900, name: "Mehdi Tartar", fa: "مهدی طرطار", teamId: 101610, teamName: "Persepolis" },
+  { id: 9012, name: "Sergej Jakirović", fa: "سرگی یاکیروویچ", teamId: 8667, teamName: "Hull City" },
+  { id: 22317, name: "Henning Berg", fa: "هنینگ برگ", teamId: 8044, teamName: "Omonia Nicosia" },
+  { id: 504132, name: "Amir Ghalenoei", fa: "امیر قلعه‌نویی", teamId: 6711, teamName: "Iran" },
+  { id: 38922, name: "Lionel Scaloni", fa: "لیونل اسکالونی", teamId: 6706, teamName: "Argentina" },
+  { id: 78619, name: "Carlo Ancelotti", fa: "کارلو آنچلوتی", teamId: 8256, teamName: "Brazil" },
+  { id: 1059866, name: "Luis de la Fuente", fa: "لوئیس د لا فوئنته", teamId: 6720, teamName: "Spain" },
 ];
 
 // cycle-259: Persian name of a coach by id — the seed is the single source

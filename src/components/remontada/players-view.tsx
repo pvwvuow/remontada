@@ -257,7 +257,9 @@ interface SquadGroup {
 }
 interface SquadData {
   teamName?: string;
-  coach: { id: number; name: string; age?: number; nationality?: string } | null;
+  // cycle-397: fa rides the API already (coachFa, cycle-259) — the type
+  // catches up so the header renders Persian first (the 396 F1 flip).
+  coach: { id: number; name: string; fa?: string | null; age?: number; nationality?: string } | null;
   groups: SquadGroup[];
 }
 interface TeamRow {
@@ -764,7 +766,7 @@ export function PlayersView() {
                     </p>
                     <p className="text-[9.5px] text-steel/80 mt-0.5 tabular-persian">
                       {faDigits(totalPlayers)} بازیکن
-                      {squad.coach ? ` · سرمربی: ${squad.coach.name}` : ""}
+                      {squad.coach ? ` · سرمربی: ${squad.coach.fa || squad.coach.name}` : ""}
                     </p>
                   </div>
                 </div>

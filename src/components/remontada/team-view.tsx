@@ -1165,7 +1165,7 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-[12.5px] font-black truncate flex items-center gap-1.5">
-          {t.name}
+          {t.fa || t.name}
           {t.live && (
             <span className="shrink-0 rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-px text-[9px] font-black">
               نیمکت فعلی
@@ -1548,7 +1548,7 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
 
 function LastLineupSection({ data }: { data: TeamLastLineup }) {
   const meta = [
-    data.coachName ? `سرمربی: ${data.coachName}` : null,
+    data.coachName ? `سرمربی: ${data.coachNameFa || data.coachName}` : null,
     data.averageAge != null ? `میانگین سن: ${faDecimal(data.averageAge.toFixed(1))} سال` : null,
     data.totalMarketValueFa ? `ارزش بازار ترکیب: ${data.totalMarketValueFa}` : null,
   ].filter(Boolean) as string[];
