@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { LeagueGroup, StandingsData } from "@/lib/fotmob";
-import { MatchesView, tehranTime } from "@/components/remontada/matches-view";
+import { MatchesView } from "@/components/remontada/matches-view";
 import { StandingsView } from "@/components/remontada/standings-view";
 import { NewsView, type ClientNewsItem } from "@/components/remontada/news-view";
-import { faDigits, offsetDateISO } from "@/lib/format";
+import { faDigits, offsetDateISO, timeAgoFa } from "@/lib/format";
 import { GoalNotifier } from "@/components/remontada/goal-notifier";
 import { FavoriteFixtures } from "@/components/remontada/favorite-fixtures";
 import { SiteHeader, SiteFooter } from "@/components/remontada/site-chrome";
@@ -49,7 +49,9 @@ export default function Home() {
   const [groups, setGroups] = useState<LeagueGroup[]>([]);
   const [matchesLoading, setMatchesLoading] = useState(true);
   const [matchesError, setMatchesError] = useState<string | null>(null);
-  const [lastFetch, setLastFetch] = useState<string | null>(null);
+  // fix cycle-424: the feed label now reads the payload's OWN fetchedAt (the
+  // server-side data birth) — NOT the client fetch clock
+  const [feedFetchedAt, setFeedFetchedAt] = useState<string | null>(null);
   const offsetRef = useRef(offset);
   offsetRef.current = offset;
 
@@ -128,7 +130,9 @@ export default function Home() {
       if (json.ok) {
         setGroups(json.groups || []);
         setMatchesError(null);
-        setLastFetch(new Date().toISOString());
+        // the honest timestamp: stamped inside cached(), so on a cache hit it
+        // stays the producer's birth and a served cache generation reads older
+        setFeedFetchedAt(typeof json.fetchedAt === "string" ? json.fetchedAt : null);
       } else {
         setMatchesError(json.error || "خطا در دریافت نتایج");
       }
@@ -245,11 +249,6 @@ export default function Home() {
                   بروزرسانی
                 </button>
               )}
-              {tab === "matches" && lastFetch && (
-                <span className="hidden sm:block text-[10px] text-muted-foreground tabular-persian whitespace-nowrap">
-                  آخرین بروزرسانی {tehranTime(lastFetch)}
-                </span>
-              )}
             </div>
           </div>
         )}
@@ -314,7 +313,10 @@ export default function Home() {
                 deep-link language the carousel's URL contract uses (297),
                 so the file always matches the day the view shows. */}
             {!matchesLoading && !matchesError && (
-              <div className="px-1 mb-3" data-testid="home-day-ics-row">
+              <div
+                className="px-1 mb-3 flex items-center justify-between gap-2"
+                data-testid="home-day-ics-row"
+              >
                 <a
                   href={`/api/day-calendar?date=${offsetDateISO(offset)}`}
                   download
@@ -328,6 +330,24 @@ export default function Home() {
                   </svg>
                   دانلود تقویم این روز (ICS)
                 </a>
+                {/* fix cycle-424: the home day feed's freshness label joins the
+                    cycle-43 honesty contract — «به‌روزرسانی {timeAgoFa}» off the
+                    payload's own fetchedAt. Replaces the old header label that
+                    showed the CLIENT fetch clock (a cached payload masqueraded
+                    as fresh) and was hidden on mobile entirely — no freshness
+                    witness at 390×844 at all. One label, one place, every
+                    viewport; rides the row's visible ⇔ loaded contract and is
+                    per-day honest (each day's payload carries its own
+                    fetchedAt). Hydration-safe: client state, empty until the
+                    first successful fetch. */}
+                {feedFetchedAt ? (
+                  <span
+                    data-testid="home-day-freshness"
+                    className="text-[10.5px] text-muted-foreground tabular-persian whitespace-nowrap"
+                  >
+                    به‌روزرسانی {timeAgoFa(feedFetchedAt)}
+                  </span>
+                ) : null}
               </div>
             )}
             <MatchesView
