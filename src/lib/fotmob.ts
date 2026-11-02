@@ -10428,9 +10428,11 @@ export interface TeamStatRow {
   nameFa: string;
   kind: "player" | "team";
   leader?: string; // players: the team's own leader of this stat
+  leaderFa?: string; // cycle-404: fa attempt (playerFa) — UI falls back to raw leader
   value: string; // pre-formatted Persian value (unit appended)
   rank?: number; // league-wide rank (player) / league spot (team)
   extras?: string[]; // pre-formatted «name value» context strings (cycle-77)
+  extrasFa?: string[]; // cycle-404: parallel fa attempt per entry — UI falls back to raw
 }
 
 export interface TeamStatsData {
@@ -10475,8 +10477,9 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
       // topThree[0]); team blocks carry the league top-3, where topThree[0] is
       // the league leader unless we are first.
       const extras: string[] = [];
+      const extrasFa: string[] = []; // cycle-404: parallel fa attempt, lockstep with extras
       const top = Array.isArray(block.topThree) ? block.topThree : [];
-      const fmtEntry = (t: FMStatParticipant, fb: number): string | null => {
+      const fmtEntry = (t: FMStatParticipant, fb: number): { raw: string; fa: string } | null => {
         const tv =
           typeof t?.value === "number"
             ? t.value
@@ -10485,14 +10488,21 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
               : NaN;
         if (!t?.name || !Number.isFinite(tv)) return null;
         const tf = typeof t.stat?.fractions === "number" ? t.stat.fractions : fb;
-        return `${t.name} ${statValueFa(tv, tf)}${STAT_UNIT[key] || ""}`;
+        const val = `${statValueFa(tv, tf)}${STAT_UNIT[key] || ""}`;
+        // cycle-404 (the 403 finding): the name token rides the house maps —
+        // team-kind rows (the «صدر:» league leader) TEAM_FA via teamFa, player-kind
+        // rows («سپس:» teammates) byte-exact PLAYER_NAME_FA via playerFa; both
+        // helpers keep the honest raw name as their per-entry fallback, so the
+        // raw byte contract of `extras` survives untouched alongside.
+        const nFa = kind === "player" ? playerFa(t.name) : teamFa(t.name) || t.name;
+        return { raw: `${t.name} ${val}`, fa: `${nFa} ${val}` };
       };
       if (kind === "player") {
         for (const t of top) {
           if (extras.length >= 2) break;
           if (t?.name === p?.name) continue;
           const s = fmtEntry(t, fractions);
-          if (s) extras.push(s);
+          if (s) { extras.push(s.raw); extrasFa.push(s.fa); }
         }
       } else {
         const l = top[0];
@@ -10500,17 +10510,17 @@ export async function getTeamStats(teamId: number): Promise<TeamStatsData | null
           typeof l?.teamId === "number" ? l.teamId === teamId : l?.name === p?.name;
         if (l && !isUs) {
           const s = fmtEntry(l, fractions);
-          if (s) extras.push(s);
+          if (s) { extras.push(s.raw); extrasFa.push(s.fa); }
         }
       }
       out.push({
         key,
         nameFa: STAT_FA[key] || key,
         kind,
-        ...(kind === "player" && p?.name ? { leader: p.name } : {}),
+        ...(kind === "player" && p?.name ? { leader: p.name, leaderFa: playerFa(p.name) } : {}),
         value: statValueFa(v, fractions) + (STAT_UNIT[key] || ""),
         ...(typeof p?.rank === "number" && p.rank > 0 ? { rank: p.rank } : {}),
-        ...(extras.length > 0 ? { extras } : {}),
+        ...(extras.length > 0 ? { extras, extrasFa } : {}),
       });
     }
     return out;

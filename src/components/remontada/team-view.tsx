@@ -1004,7 +1004,7 @@ function TeamStatRowBox({ r }: { r: TeamStatRow }) {
           {player ? "★" : "◈"}
         </span>
         <div className="flex-1 min-w-0">
-          <p className="text-[12.5px] font-black truncate">{player ? r.leader : r.nameFa}</p>
+          <p className="text-[12.5px] font-black truncate">{player ? (r.leaderFa || r.leader) : r.nameFa}</p>
           {sub && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</p>}
         </div>
         <div className="shrink-0 flex flex-col items-end gap-0.5">
@@ -1015,11 +1015,13 @@ function TeamStatRowBox({ r }: { r: TeamStatRow }) {
         </div>
       </div>
       {/* cycle-77: topThree context — «سپس:» next-best teammates (player rows),
-          «صدر:» the league leader (team rows, hidden when we are first) */}
+          «صدر:» the league leader (team rows, hidden when we are first).
+          cycle-404: fa-first render — extrasFa rides the house maps with the
+          honest per-entry raw fallback inside the strings themselves. */}
       {r.extras && r.extras.length > 0 && (
         <p className="text-[9.5px] font-bold text-steel/80 truncate ps-[42px] tabular-persian">
           {player ? "سپس: " : "صدر: "}
-          {r.extras.join(" · ")}
+          {(r.extrasFa && r.extrasFa.length === r.extras.length ? r.extrasFa : r.extras).join(" · ")}
         </p>
       )}
     </li>
