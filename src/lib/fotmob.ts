@@ -2109,7 +2109,10 @@ function extractLeagueBoards(raw: FotMobLeague): LeagueBoard[] {
 export async function getFullGoalScorers(leagueKey: string, limit = 20, season?: string): Promise<ScorerEntry[]> {
   try {
     return await cached(
-      `fullGoals:v3:${leagueKey}:${season || "cur"}`,
+      // cycle-405: v3→v4 — the PLAYER_NAME_FA sweep batch bakes nameFa into
+      // these rows; bump so stale raw-name rows become unreachable instantly
+      // (the standings v39→v40 bump of the same cycle).
+      `fullGoals:v4:${leagueKey}:${season || "cur"}`,
       // cycle-127 thin-TTL guard: a healthy full-season list keeps the exact
       // 60-minute TTL; a thin one (dropped transient fetch, or a league
       // payload without the category) is baked for 90 SECONDS only, so the
@@ -5662,7 +5665,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // passing family's SECOND surface); old v37 rows lack it and would
     // keep the new section hidden for up to a full TTL generation. Whole
     // key bumps (the 52/…/246 additive-shape convention).
-    await cached(`standings:v39:${leagueKey}:${season || "cur"}`, (mapped) =>
+    // cycle-405: v39→v40 — the PLAYER_NAME_FA sweep batch bakes nameFa inside
+    // this cache; bump so stale raw-name rows become unreachable instantly
+    // (the coach v4→v5 lesson — a derivation change jumps the key).
+    await cached(`standings:v40:${leagueKey}:${season || "cur"}`, (mapped) =>
       // cycle-127 thin-scorers guard (closes the cycle-124 incident class
       // END-TO-END): the merged scorers list rides on this cached entry, so
       // even with the thin-TTL on fullGoals itself a thin merged list would

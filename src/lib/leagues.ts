@@ -1788,6 +1788,19 @@ const TEAM_FA: Record<string, string> = {
   "burkina faso": "بورکینافاسو",
   "bolivia": "بولیوی",
   "costa rica": "کاستاریکا",
+  // cycle-405: transfer/rumour side-club leaks (probe: scripts/cycle405_leakscan.py — Tijuana/Hartberg/… were the Latin passthroughs on the 8650 surfaces) — honest city/club names, byte-exact keys.
+  "tijuana": "تیخوانا",
+  "chicago fire fc": "شیکاگو فایر",
+  "philadelphia union": "فیلادلفیا یونیون",
+  "hartberg": "هارتبرگ",
+  "fk riga": "اف‌کی ریگا",
+  "djurgaarden": "یورگاردن",
+  "defensor sporting": "دفنسور اسپورتینگ",
+  "club brugge nxt": "کلوب بروژ دوم",
+  "bari": "باری",
+  "latina": "لاتینا",
+  "sorrento": "سورنتو",
+  "casertana": "کازرتانا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
