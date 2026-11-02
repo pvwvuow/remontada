@@ -8,7 +8,7 @@ import { gunzipSync } from "node:zlib";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
-import { roundFa, unavailableReturnFa, marketValueFa, venueFa, venueCityFa, refereeFa } from "@/lib/fotmob";
+import { roundFa, unavailableReturnFa, marketValueFa, venueFa, venueCityFa, refereeFa, leagueFaById } from "@/lib/fotmob";
 import { playerFa } from "@/lib/player-names-fa";
 import { faDecimal } from "@/lib/format";
 
@@ -2106,7 +2106,12 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
     match: {
       id: matchId,
       leagueName,
-      leagueFa: lgCfg?.faName || competitionFa(leagueName, ccode) || leagueName,
+      // cycle-426: the id hook rides leagueFaById (catalog → ARCHIVE_TID_FA →
+      // competitionFa) BEFORE the name/ccode fallthrough — for an unknown id
+      // it returns "" (falsy) so this chain behaves exactly as before; the
+      // 28 mapped day-feed ids now resolve on the match page too, and the
+      // catalog names stay byte-identical (lgCfg still wins first).
+      leagueFa: lgCfg?.faName || leagueFaById(g.leagueId, "") || competitionFa(leagueName, ccode) || leagueName,
       ccode,
       leagueId: g.leagueId ?? 0,
       round: info.round,

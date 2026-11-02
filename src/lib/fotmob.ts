@@ -1396,6 +1396,19 @@ interface FotMobMatch {
   };
 }
 
+// cycle-426: the day-feed competition header resolves exactly like every
+// league label on the site — competitionFa(name, ccode) FIRST (byte-stable
+// for every already-Persian header, including the designed «گروه A» family),
+// and only when that falls through to the raw literal (an ambiguous bare
+// name over an empty ccode, or a name every name-map misses) does the
+// id-keyed ARCHIVE_TID_FA get its chance. Ids not in the map keep the
+// honest raw fallback — the documented contract, never a zero lie.
+function dayFeedLeagueFa(lg: { id: number; name: string; ccode?: string }): string {
+  const fa = competitionFa(lg.name, lg.ccode);
+  if (fa !== lg.name) return fa;
+  return ARCHIVE_TID_FA[lg.id] ?? fa;
+}
+
 function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
   const groups: LeagueGroup[] = [];
   for (const lg of raw.leagues || []) {
@@ -1429,7 +1442,7 @@ function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
         id: String(m.id),
         leagueId: lg.id,
         leagueName: lg.name,
-        leagueFa: competitionFa(lg.name, lg.ccode),
+        leagueFa: dayFeedLeagueFa(lg),
         leagueCcode: lg.ccode,
         utcTime: m.status?.utcTime || "",
         started: !!m.status?.started,
@@ -1460,7 +1473,7 @@ function normalizeFotMobMatches(raw: FotMobMatches): LeagueGroup[] {
     groups.push({
       leagueId: lg.id,
       leagueName: lg.name,
-      leagueFa: competitionFa(lg.name, lg.ccode),
+      leagueFa: dayFeedLeagueFa(lg),
       ccode: lg.ccode,
       matches,
     });
@@ -1502,7 +1515,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // Live days need short TTL; far days can cache longer
   const isTodayOrLiveDay = dateYYYYMMDD === todayInTehran();
   const ttl = isTodayOrLiveDay ? 45_000 : 10 * 60_000;
-  return cached(`matches:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-426: v2 — the normalized groups' leagueFa content changed (the
+  // 28 id-keyed day-feed headers went Persian), so the old keys would serve
+  // up to a 10-minute tail of English headers from L2; a fresh namespace
+  // rebuilds every window cold instead of mixing generations.
+  return cached(`matches:v2:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
@@ -7637,7 +7654,7 @@ const PLAYER_STAT_FA: Record<string, string> = {
 
 const FOOT_FA: Record<string, string> = { left: "چپ", right: "راست", both: "دو پا" };
 
-function leagueFaById(id?: number, name?: string): string {
+export function leagueFaById(id?: number, name?: string): string {
   const lg = LEAGUES.find((l) => l.fotmobId === id);
   if (lg) return lg.faName;
   // cycle-389: the archive-tournament id map — the 388 patrol proved the
@@ -7662,6 +7679,21 @@ function leagueFaById(id?: number, name?: string): string {
 // without a catalog fotmobId hit. Every entry probed live off the upstream
 // payload with its team context (Sporting/Vitória ⇒ POR; Barça seasons ⇒ ESP;
 // Rennes ⇒ FRA; Leeds U23 ⇒ ENG).
+//
+// cycle-426: the map's role widens to the LIVE minor day-feed competitions —
+// the ±7-day census (scripts/cycle426-census.py, 2026-11-03, UA Chrome/124)
+// caught 28 non-catalog league ids whose group headers rendered the raw
+// upstream literal (empty ccode ⇒ the ambiguous-name guard keeps them raw,
+// and most literals are simply unmapped); the post-fix re-census on the
+// fresh v2 keys surfaced 6 MORE ids behind the same bare literals (the
+// window's other countries) — 35 total, all three batches identity-probed off
+// matchDetails — the domproof's A3 witness re-asserts every entry
+// byte-exact against the LIVE feed). The 389 argument again
+// byte-for-byte — bare literals LIE across countries: «FA Cup» = POLAND
+// (parent 198), «Super League» = CHINA (parent 120), «League Cup» = POR
+// (parent 187 = the 389 tid, so the name stays «جام اتحادیه پرتغال»), and
+// «Cup Grp. B» = RUSSIA while A/C/D = ROMANIA. The id is the only precise
+// key; disjoint from the 33 catalog fotmobIds and the six 389 ids (verified).
 const ARCHIVE_TID_FA: Record<number, string> = {
   139: "سوپرکاپ اسپانیا",
   150: "جام اتحادیه فرانسه",
@@ -7669,6 +7701,45 @@ const ARCHIVE_TID_FA: Record<number, string> = {
   188: "سوپرکاپ پرتغال",
   10176: "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲",
   10199: "مقدماتی جام جهانی — کونمبول",
+  // --- cycle-426: 28 live day-feed ids, all probed (country/gender) ---
+  9097: "جام حذفی اسرائیل", // «Cup» ISR male, round 1/32
+  9098: "جام توتو اسرائیل", // «Toto Cup» ISR male, final
+  219: "جام حذفی ایرلند", // «FAI Cup» IRL male, final
+  221: "مقدماتی لیگ برتر ایرلند", // «Premier Division Qualification» IRL — the 389 «لیگ برتر ایرلند» family
+  235: "جام حذفی هلند", // «KNVB Cup» NED male
+  9195: "دستهٔ دوم هلند", // «Tweede Divisie» NED male (the دستهٔ اول بی بلژیک convention)
+  9676: "بوندسلیگای زنان آلمان", // «Frauen-Bundesliga» GER female
+  938649: "جام حذفی لهستان", // «FA Cup» POL male, parent 198 — NOT England!
+  920266: "سوپرلیگ چین", // «Super League» CHN male, parent 120
+  942484: "جام اتحادیه پرتغال", // «League Cup» POR male, parent 187 — the 389 tid, ONE name
+  944690: "جام حذفی رومانی — گروه A", // «Cup Grp. A» ROU, parent 190
+  944691: "جام حذفی رومانی — گروه B", // «Cup Grp. B» ROU, parent 190 — batch 2
+  944692: "جام حذفی رومانی — گروه C", // «Cup Grp. C» ROU, parent 190
+  944693: "جام حذفی رومانی — گروه D", // «Cup Grp. D» ROU, parent 190
+  938418: "جام حذفی روسیه — گروه A", // «Cup Grp. A» RUS, parent 193 — batch 2
+  938419: "جام حذفی روسیه — گروه B", // «Cup Grp. B» RUS, parent 193 — A/C/D رومانی‌اند!
+  938420: "جام حذفی روسیه — گروه C", // «Cup Grp. C» RUS, parent 193 — batch 2
+  938421: "جام حذفی روسیه — گروه D", // «Cup Grp. D» RUS, parent 193 — batch 2
+  278: "جام حذفی اتریش", // «Cup» AUT male — batch 2: «Cup» = اسرائیل و اتریش هر دو!
+  944340: "جام حذفی چک", // «Cup» CZE male, parent 254 — batch 3: «Cup» = اسرائیل، اتریش، چک!
+  442: "جام حذفی اوکراین", // «Cup» UKR male, parent 442 — batch 3: «Cup» = اسرائیل، اتریش، چک، اوکراین!
+  10230: "کاپ پاراگوئه", // «Cup» PAR male, parent 10230 — batch 3: پنجمین کشور زیر یک لفظ برهنه!
+  206: "جام حذفی نروژ", // «Cup» NOR male, parent 206 — batch 3: ششمنین کشور!
+  943369: "جام لیگ ژاپن", // «League Cup» JPN male, parent 224 — batch 2: «League Cup» = پرتغال و ژاپن!
+  944879: "مرحلهٔ گروهی جام حذفی یونان", // «Cup Group Stage» GRE, parent 145
+  945923: "لیگ قهرمانان زنان اروپا", // «Women's Champions League» INT-2 female
+  949004: "جام آمریکای مرکزی کونکاکاف — پلی‌این", // parent 9682 — the 389 CC name + پلی‌این
+  951326: "مقدماتی جام حذفی ترکیه", // «Cup Qualification» TUR, parent 151
+  956109: "مقدماتی دستهٔ اول نروژ", // NOR, parent 9754
+  955997: "پلی‌آف لیگ ملی زنان آمریکا", // «NWSL Playoff» USA female, parent 9134
+  1000001210: "سوپرلیگ شمالی کانادا", // «Northern Super League» CAN female — Canadian NSL
+  1000001214: "جام لیگ آفریقای جنوبی — دور اول", // probe name «South Africa League Cup» RSA
+  1000001403: "جام حذفی آرژانتین", // «Copa Argentina» ARG (the coppa-italia convention)
+  1000001465: "سوپرلیگ ۲ زنان انگلیس", // «WSL 2» ENG female, probe name English WSL 2
+  1000001491: "جام اروپای زنان یوفا — یک‌هشتم نهایی", // stage 8th Finals = یک‌هشتم نهایی (ROUND_NAME_FA)
+  1000001513: "پریمیرلیگ ۲ انگلیس", // probe name English Premier League 2 — the 10176 family
+  1000001711: "یواس‌ال لیگ یک آمریکا — نیمه‌نهایی", // «…Championship - Semi-finals» — the 389 CC «یک‌چهارم نهایی» sibling
+  1000001769: "سوپرکاپ آفریقا", // probe id 9467 CAF Super Cup — the سوپرکاپ family
 };
 
 // ---------------- cycle-82: player deep season stats / traits / market history ----------------
