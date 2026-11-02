@@ -1790,6 +1790,37 @@ async function getLeagueRaw(leagueKey: string, season?: string): Promise<{ lg: (
   return { lg, raw };
 }
 
+// cycle-419: the honest season marker for the echo-carrying getters.
+// The standings mapper (cycle-141) ends its marker chain at overview.
+// selectedSeason — the season the payload ACTUALLY serves — and never at
+// the requested param. The fixtures/calendar/bracket getters used to end
+// at `|| season` (the raw request param), so a shape-valid but UNSERVED
+// season request came back labeled with the requested season while
+// carrying current-season rows (probed live 2026-11-02, UA Chrome/124:
+// league-fixtures-all worldcup &season=2022/2023 → selectedSeason
+// "2022/2023" over June-2026 kickoffs — the ICS even subscribed a user to
+// «جام جهانی — فیکسچرها 2022/2023» full of 2026 fixtures; hazfi
+// &season=2010/2011 → "2010/2011"; a TABLE league is saved by its own
+// echo: pl &season=2001/2002 → table marker "2026/2027"). Upstream
+// byte-ignores any season outside allAvailableSeasons, so that list is
+// the proof of service: when the requested param is absent from it (and
+// the list exists), the param is never echoed — the label comes from the
+// served markers only (table echo → overview marker → honest absence).
+// Every SERVED request (param byte-present in the list, or no param at
+// all) keeps the exact pre-419 chain, byte-identical — the cycle-99 snap
+// pair (the mapped `season` field keeps echoing the request,
+// selectedSeason disagrees) and the cycle-417 valid-season echo contract
+// stay untouched. The mapped `season` fields are deliberately NOT
+// touched: their mismatch with selectedSeason is exactly what the
+// league-view honesty snap compares to strip a stale URL (cycle-99).
+function selectedSeasonHonest(raw: FotMobLeague, season: string | undefined): string | undefined {
+  const tableEcho = raw.table?.[0]?.data?.selectedSeason;
+  if (!season) return tableEcho || undefined;
+  const list = Array.isArray(raw.allAvailableSeasons) ? raw.allAvailableSeasons : undefined;
+  if (!list || list.includes(season)) return tableEcho || season || undefined;
+  return tableEcho || raw.overview?.selectedSeason || undefined;
+}
+
 /** Pull one stats category (participant + topThree, deduped by player id). */
 function statCategory(raw: FotMobLeague, re: RegExp): FMStatPlayer[] {
   const cat = raw.stats?.players?.find?.((p) => re.test(p.header || ""));
@@ -5434,7 +5465,10 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
     // ⚠️ cycle-94 probe (UA Chrome/124): `details.seasons` is EMPTY in every
     // data/leagues payload — current AND historical (e.g. ?season=2020/2021) —
     // so this local is always "" and the honest label lives in selectedSeason
-    // (raw.table[0].data.selectedSeason = the REQUESTED season). Every
+    // (raw.table[0].data.selectedSeason = the REQUESTED season — cycle-419
+    // refinement: the echo follows whatever upstream SERVED, byte-equal to
+    // the request for valid seasons, the real served season for unserved
+    // ones — live-probed pl&season=2001/2002 → echo "2026/2027"). Every
     // consumer of the mapped `season` field must treat it as optional.
     const season = raw.details?.seasons?.find?.((s) => s.active)?.year || "";
     // cycle-55: FotMob's own selected-season label + the seasons it offers —
@@ -6240,7 +6274,7 @@ export async function getLeagueFixtures(leagueKey: string, season?: string): Pro
     }
   }
 
-  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  const selectedSeason = selectedSeasonHonest(raw, season);
   return {
     leagueKey,
     leagueFa: lg.faName,
@@ -6299,7 +6333,7 @@ export async function getLeagueCalendar(leagueKey: string, season?: string): Pro
       };
     })
     .sort((a, b) => a.utcTime.localeCompare(b.utcTime));
-  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  const selectedSeason = selectedSeasonHonest(raw, season);
   return {
     leagueKey,
     leagueFa: lg.faName,
@@ -6334,7 +6368,7 @@ export async function getLeagueAllFixtures(leagueKey: string, season?: string): 
     .filter((f) => f?.id && f?.home && f?.away && f.status?.utcTime && !f.status?.cancelled)
     .map((f) => normalizeFixture(f))
     .sort((a, b) => a.utcTime.localeCompare(b.utcTime));
-  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  const selectedSeason = selectedSeasonHonest(raw, season);
   return {
     leagueKey,
     leagueFa: lg.faName,
@@ -6501,7 +6535,7 @@ export async function getLeagueBracket(leagueKey: string, season?: string): Prom
     if (round) rounds.push(round);
   }
   if (rounds.length === 0) return null;
-  const selectedSeason = raw.table?.[0]?.data?.selectedSeason || season || undefined;
+  const selectedSeason = selectedSeasonHonest(raw, season);
   return {
     leagueKey,
     leagueFa: lg.faName,
