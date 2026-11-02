@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# cycle432-patrol.sh — bug-hunt cycle 432 (فرمول ۴): the post-harvest patrol.
+# cycle432-patrol.sh — bug-hunt harness (built cycle 432, re-anchored cycle
+# 433 per the loud-pool rule): the post-harvest patrol.
 # The 413/418/423/427/428 precedent: findings ONLY (fixes belong to the next
 # cycle). Zero src/ changes expected → but the full official chain still runs
 # (build + official start) so the patrol proves the CURRENT commit deploys.
@@ -9,13 +10,12 @@
 #      silently accepted, AND the would-be key was wrong anyway: the live
 #      probe (cycle-432 prep) shows agent-browser messages carry `type`,
 #      not `level`. Both fixed; verified with a deliberate console.error probe.
-#   2. B4 pool expectation moves 2256 → 2160 WITH the documented 430/431
-#      harvests (the loud-pool rule: the number moves with the census, never
-#      silently) — as a ±25 DRIFT BAND around the documented census, because
-#      the ±7 window edges drift a few names per sweep (observed 2160→2157
-#      within one hour, zero mapping regressions — B6 guards the regressions;
-#      a real mapping fault or a new batch moves the pool by ±40+ and MUST
-#      re-anchor this constant in the open).
+#   2. B4 pool expectation: the documented census constant — 2256 (pre-430)
+#      → 2160 (post-431) → 2108 (post-432 batch 3, the documented −49) — as a
+#      ±25 DRIFT BAND around it (the loud-pool rule: the constant moves WITH
+#      the census, never silently — the cycle that moves the pool re-anchors
+#      it here in the open; window-edge drift stays single-digit, a mapping
+#      fault or a new batch moves it by ±40+ and MUST re-anchor again).
 #   3. B5 NEW: the 429 trophy hold ASSERTED (player 696679: zero raw-fallback
 #      leagueFa rows in the whole payload + trophies[4] byte-exact Persian).
 #   4. B6 NEW: harvest batch-1 (cycle-430) and batch-2 (cycle-431) witnesses
@@ -157,7 +157,7 @@ miss2 = [w for w in W2 if w not in fa_set]
 b1 = 1 if len(leaks) == 0 else 0
 b2 = 1 if kn == "جام حذفی هلند" else 0
 b3 = 1 if pl == "پریمیرلیگ انگلیس" else 0
-b4 = 1 if abs(len(team_names) - 2160) <= 25 else 0
+b4 = 1 if abs(len(team_names) - 2108) <= 25 else 0
 T4 = "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲"
 b5 = 1 if (len(prows) == 0 and trophy4 == T4) else 0
 b6 = 1 if (not miss1 and not miss2) else 0
@@ -180,7 +180,7 @@ for i in 1 2 3 4 5 6; do
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
     3) LBL="catalog byte-stability hold (5795503)" ;;
-    4) LBL="team raw pool within the ±25 drift band of the documented 2160 census (loud-pool rule)" ;;
+    4) LBL="team raw pool within the ±25 drift band of the documented 2108 census (re-anchored 433, loud-pool rule)" ;;
     5) LBL="the 429 trophy hold: zero player raw-fallback rows + trophies[4] byte-exact" ;;
     6) LBL="harvest batch-1+batch-2 witnesses all Persian in the live ±7 feed" ;;
   esac
