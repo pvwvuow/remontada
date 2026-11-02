@@ -7177,6 +7177,10 @@ export interface PlayerCareerSeason {
 
 export interface PlayerTrophy {
   teamName: string;
+  // cycle-401: additive leagueFa (TROPHY_FA hit, null → the UI falls back
+  // to the raw upstream name — honest, never guessed). teamName stays the
+  // raw contract and rides client-side teamFa (the cycle-159 convention).
+  leagueFa: string | null;
   leagueName: string;
   seasonsWon: string[];
   runnerUp: number;
@@ -8260,7 +8264,15 @@ function normalizeTrophies(raw?: FMPlayerDetails["trophies"]): PlayerTrophy[] {
       const won = t.seasonsWon || [];
       const runnerUp = (t.seasonsRunnerUp || []).length;
       if (won.length === 0 && runnerUp === 0) continue;
-      out.push({ teamName: pt.teamName || "", leagueName: t.leagueName || "", seasonsWon: won, runnerUp });
+      // cycle-401: additive leagueFa on the honours rows — the byte-exact
+      // raw leagueName stays the contract, fa rides when the map answers
+      out.push({
+        teamName: pt.teamName || "",
+        leagueName: t.leagueName || "",
+        leagueFa: t.leagueName ? TROPHY_FA[t.leagueName] || null : null,
+        seasonsWon: won,
+        runnerUp,
+      });
     }
   }
   // most-winning first, cap at 12 to keep the page light
@@ -8320,7 +8332,10 @@ export async function getPlayerData(id: string): Promise<PlayerData> {
   // code (knockout-round badges); a v12-cached shape would serve rows
   // WITHOUT the field from the persistent SQLite L2 across restarts for up
   // to the TTL (same convention as cycle-52/86/87/96/135/159/197/201/325/355)
-  const payload = await cached(`player:v13:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-401: key bumped v13→v14 — the honours rows gained additive
+  // leagueFa; the persistent L2 could keep serving the old shapeless rows
+  // (the 264 lesson: a shape change must make old rows unreachable instantly)
+  const payload = await cached(`player:v14:${id}`, 10 * 60_000, async (): Promise<PlayerData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id) return PLAYER_NOT_FOUND;
@@ -9938,6 +9953,27 @@ const TROPHY_FA: Record<string, string> = {
   "International Champions Cup": "جام قهرمانان بین‌المللی",
   "Premier League Asia Trophy": "جام آسیایی لیگ برتر انگلیس",
   "Super Cup": "سوپرکاپ",
+  // cycle-401: the PLAYER-page honours rows joined the same contract — the
+  // harvest across 27 probed player payloads (trophies.playerTrophies,
+  // byte-exact upstream keys, raw saved repo-external) surfaced these;
+  // every entry is an established transliteration, the honest fallback
+  // stays only on the 13 documented youth/county/ambiguous cups below —
+  "Trofeo Joan Gamper": "تروفئو خوان گامپر",
+  "J.League World Challenge": "چالش جهانی جی‌لیگ",
+  "CONMEBOL/UEFA Finalissima": "فینالیسیما",
+  "FIFA U20 World Cup": "جام جهانی زیر ۲۰ سال",
+  "UEFA U17 Championship": "یورو زیر ۱۷ سال",
+  "EURO U21": "یورو زیر ۲۱ سال",
+  "Saudi First Division": "دسته اول عربستان",
+  "Gaúcho": "کامپئوناتو گائوچو",
+  "FAI Cup": "جام حذفی ایرلند",
+  "FA Youth Cup": "جام حذفی جوانان انگلیس",
+  "Summer Olympics": "المپیک تابستانی",
+  "LaLiga2": "لالیگا ۲",
+  "Croatian Cup": "جام حذفی کرواسی",
+  "UEFA Nations League A": "لیگ ملت‌های اروپا — دسته آ",
+  "CAF U23 Cup of Nations": "جام ملت‌های آفریقا زیر ۲۳ سال",
+  "First Division A": "لیگ دسته اول بلژیک",
 };
 
 export interface TeamTrophy {

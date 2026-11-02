@@ -755,7 +755,10 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   </svg>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[12.5px] truncate">{t.leagueName}</p>
+                  {/* cycle-401: fa-first honours rows — the additive leagueFa
+                      (TROPHY_FA hit) rides; raw stays the honest fallback.
+                      The teamFa side is the cycle-159 convention, untouched. */}
+                  <p className="font-bold text-[12.5px] truncate">{t.leagueFa || t.leagueName}</p>
                   {/* cycle-159: trophy rows carried the RAW upstream team name
                       («Benfica», youth sides) — the career class sibling of the
                       Latin leak fixed this cycle; teamFa keeps the single
