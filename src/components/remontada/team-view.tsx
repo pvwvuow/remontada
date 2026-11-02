@@ -1415,6 +1415,27 @@ function TeamFixturesSection({ data, teamId }: { data: TeamFixturesAll; teamId: 
         <FixtureGroup label="پیش‌رو" items={data.upcoming} teamId={teamId} />
         <FixtureGroup label="نتایج" items={data.results} teamId={teamId} />
       </div>
+      {/* cycle-420: «تقویم بازی‌ها (ICS)» — the club's whole season as an RFC
+          5545 calendar (/api/team-calendar/[id], the team-level sibling of
+          the league route's cycle-312 subscription). The link lives inside
+          this section ON PURPOSE: the calendar is derived from the same
+          payload, so the honest contract is link-visible ⇔ source-data
+          present. Same visual language as the league ICS link. */}
+      <div className="px-1">
+        <a
+          href={`/api/team-calendar/${teamId}`}
+          download
+          data-testid="team-ics-link"
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-soft hover:text-foreground transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+            <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+            <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            <path d="M9 14.5l2 2 4-4" />
+          </svg>
+          دانلود تقویم بازی‌ها (ICS)
+        </a>
+      </div>
     </Section>
   );
 }

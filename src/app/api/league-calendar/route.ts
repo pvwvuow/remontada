@@ -13,52 +13,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getLeagueCalendar, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";
 import { seasonParamOk } from "@/lib/season";
 import { SITE_URL } from "@/lib/site";
+// cycle-420: the RFC 5545 primitives moved verbatim to the shared src/lib/ics
+// (the team-calendar sibling route reads the same vocabulary — one ICS
+// implementation, the season.ts convention). Zero behavior change.
+import { foldLine, icsText, icsUtc } from "@/lib/ics";
 
 export const dynamic = "force-dynamic";
-
-const pad2 = (n: number) => String(n).padStart(2, "0");
-
-/** RFC 5545 UTC date-time (the Z form) — an unusable time becomes "". */
-function icsUtc(iso: string): string {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return (
-    `${d.getUTCFullYear()}${pad2(d.getUTCMonth() + 1)}${pad2(d.getUTCDate())}` +
-    `T${pad2(d.getUTCHours())}${pad2(d.getUTCMinutes())}${pad2(d.getUTCSeconds())}Z`
-  );
-}
-
-/** RFC 5545 TEXT escaping — backslash, semicolon, comma, newlines. */
-function icsText(s: string): string {
-  return s
-    .replace(/\\/g, "\\\\")
-    .replace(/;/g, "\\;")
-    .replace(/,/g, "\\,")
-    .replace(/\r?\n/g, "\\n");
-}
-
-/** RFC 5545 §3.1: content lines SHOULD be ≤ 75 octets — UTF-8-safe folding. */
-function foldLine(line: string): string {
-  const enc = new TextEncoder();
-  if (enc.encode(line).length <= 75) return line;
-  const parts: string[] = [];
-  let cur = "";
-  let curOctets = 0;
-  const limit = 74; // continuation lines spend one octet on the leading space
-  for (const ch of line) {
-    const octets = enc.encode(ch).length;
-    if (curOctets + octets > limit) {
-      parts.push(cur);
-      cur = ` ${ch}`;
-      curOctets = 1 + octets;
-    } else {
-      cur += ch;
-      curOctets += octets;
-    }
-  }
-  if (cur) parts.push(cur);
-  return parts.join("\r\n");
-}
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("league") || "pl";
