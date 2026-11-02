@@ -71,6 +71,30 @@ export function FavoritesSection() {
           </div>
         ))}
       </div>
+      {/* update cycle-425: the PERSONAL rung of the subscription-calendar
+          ladder (312 league → 420 team → 421 fixture → 422 matchday →
+          425 favorites) — the favorites' whole fixtures merged into ONE
+          RFC 5545 file (/api/favorites-calendar?ids=). The honest
+          link-visible ⇔ source-data-present contract: this branch only
+          renders when favorites exist, so the CTA exists exactly when the
+          source list does; the href rides the SAME ids the cards above
+          show, in the same order. The visual language is the 422 home
+          CTA's (the same calendar glyph + sky-soft label). */}
+      <div className="mt-3 px-1" data-testid="fav-ics-row">
+        <a
+          href={`/api/favorites-calendar?ids=${favs.map((t) => t.id).join(",")}`}
+          download
+          data-testid="fav-ics-link"
+          className="inline-flex items-center gap-1.5 text-[11px] font-bold text-sky-soft hover:text-foreground transition-colors"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden>
+            <rect x="3.5" y="4.5" width="17" height="16" rx="3" />
+            <path d="M8 2.5v4M16 2.5v4M3.5 10.5h17" />
+            <path d="M9 14.5l2 2 4-4" />
+          </svg>
+          دانلود تقویم منتخب‌ها (ICS)
+        </a>
+      </div>
     </section>
   );
 }
