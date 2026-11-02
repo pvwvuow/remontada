@@ -576,7 +576,7 @@ export function LeagueScorersView({ leagueKey }: { leagueKey: string }) {
                 <div className="glass-scorer-hero p-4 sm:p-5 flex items-center gap-3.5 sm:gap-5">
                   <PlayerPhoto id={top.playerId} name={top.nameFa || top.name} size={60} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">LEAGUE LEADER</p>
+                    <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">صدرنشین لیگ</p>
                     {top.playerId ? (
                       <Link
                         href={`/player/${top.playerId}`}

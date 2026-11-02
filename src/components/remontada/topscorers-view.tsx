@@ -611,7 +611,7 @@ export function TopScorersView() {
                 <PlayerPhoto id={heroScorer.s.playerId} name={heroScorer.s.nameFa || heroScorer.s.name} size={56} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[8px] font-bold tracking-[0.24em] text-[#9dbad8] uppercase">
-                    {showGlobal ? "GLOBAL TOP SCORER" : "LEAGUE LEADER"}
+                    {showGlobal ? "آقای گل جهانی" : "صدرنشین لیگ"}
                   </p>
                   {heroScorer.s.playerId ? (
                     <Link

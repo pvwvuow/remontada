@@ -624,6 +624,11 @@ const COMPETITION_FA: Record<string, string> = {
   // entries disambiguate; the plain name joins AMBIGUOUS_NAMES (cycle-146)
   "efl cup": "جام اتحادیه انگلیس",
   "carabao cup": "جام اتحادیه انگلیس",
+  // cycle-389: the two upstream spellings of the CONMEBOL WC qualifiers —
+  // the «CONMEBOL» token makes both GLOBALLY unambiguous (no CC guard need);
+  // the tid-10199 spelling also joins the ARCHIVE_TID_FA map in fotmob.ts.
+  "conmebol world cup qualifiers": "مقدماتی جام جهانی — کونمبول",
+  "world cup conmebol qualification": "مقدماتی جام جهانی — کونمبول",
   "fa cup": "جام حذفی انگلیس",
   "copa del rey": "جام حذفی اسپانیا",
   "copa italia": "جام حذفی ایتالیا",
@@ -1752,6 +1757,15 @@ const TEAM_FA: Record<string, string> = {
   "kara gostar": "کارا گستر",
   "naft masjed soleyman fc": "نفت مسجدسلیمان",
   "niroye zamini": "نیروی زمینی",
+  // cycle-389: the 388 patrol's surfaced team names — Gateshead (team-fixtures
+  // fa) and the coach-career pair (teamFa-routed stints on /coach/{id}); keys
+  // are the exact live-probed upstream spellings (the F2-378 guard).
+  "gateshead fc": "گیتس‌هد",
+  "fc liefering": "اف‌سی لیفرینگ",
+  "red bull akademie": "آکادمی ردبول",
+  // the fuller live spelling the /coach/{id} career serves (389 probe) — the
+  // 388 card's «Red Bull Akademie» rides inside this upstream string.
+  "red bull akademie under 18 (fc salzburg under 18)": "آکادمی ردبول زیر ۱۸ سالزبرگ",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
@@ -1986,6 +2000,13 @@ const COMPETITION_FA_CC: Record<string, string> = {
   "primera b|COL": "پریمرا بی کلمبیا",
   "saudi first division|KSA": "دسته اول عربستان",
   "superligaen|DEN": "سوپرلیگ دانمارک",
+  // cycle-389: the widened-window (-3..+3) edge bases the 387 composer could
+  // not resolve (F1 of the 388 patrol) — live-probed headers at offsets -3/+3
+  // (Premier Division|IRL + CONCACAF Central American Cup|INT + SAFF
+  // Championship|INT; the «Grp. A/B» suffixes ride the 387 group family).
+  "premier division|IRL": "لیگ برتر ایرلند",
+  "concacaf central american cup|INT": "جام آمریکای مرکزی کونکاکاف",
+  "saff championship|INT": "قهرمانی ساف",
   "usl league one - championship - quarter-finals|USA": "یواس‌ال لیگ یک آمریکا — یک‌چهارم نهایی",
   "veikkausliiga championship group|FIN": "ویکاس‌لییگا فنلاند — گروه قهرمانی",
 

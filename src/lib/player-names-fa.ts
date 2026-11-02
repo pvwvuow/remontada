@@ -1175,6 +1175,55 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "ángel pérez": "آنخل پرز",
   "jorge salinas": "خورخه سالیناس",
   "roger brugué": "روژه بروگه",
+  // cycle-389: the 388 patrol's surfaced person-name instances (teammates /
+  // nationalTeammates of the live-probed player payloads, the transfer
+  // Tonali/Schär class, the totw «Oscar Bobb» class, the topscorers
+  // Hinshelwood partial-coverage contrast) — CONFIDENT transliterations only:
+  // genuinely ambiguous single-word names («Gabriel» — Magalhães or Jesus?)
+  // stay deliberately absent per the cycle-104 honest-fallback convention.
+  // Keys are the exact upstream spellings, diacritics preserved.
+  "joão cancelo": "ژوائو کانسلو",
+  "alejandro balde": "الخاندرو بالده",
+  "pau cubarsí": "پاو کوبرسی",
+  "gavi": "گاوی",
+  "andreas christensen": "آندریاس کریستنسن",
+  "eric garcía": "اریک گارسیا",
+  "marc bernal": "مارک برنال",
+  "gerard martín": "ژرارد مارتین",
+  "roony bardghji": "رونی باردغجی",
+  "brian fariñas": "برایان فارینیاس",
+  "xavi espart": "خاوی اسپارت",
+  "hamza abdelkarim": "حمزه عبدالکریم",
+  "hugo souza": "هوگو سوزا",
+  "endrick": "اندریک",
+  "estêvão": "اشتوائو",
+  "danilo": "دانیلو",
+  "douglas santos": "دوگلاس سانتوس",
+  "otávio": "اوتاویو",
+  "matheuzinho": "ماتئوزینیو",
+  "vitor reis": "ویتور ریس",
+  "arthur dias": "آرتور دیاس",
+  "mauro júnior": "ماورو جونیور",
+  "breno bidon": "برنو بیدون",
+  "pedro": "پدرو",
+  "martinelli": "مارتینلی",
+  "gabriel martinelli": "گابریل مارتینلی",
+  "andrey santos": "آندری سانتوس",
+  "samuel dias lino": "ساموئل لینو",
+  "pedro morisco": "پدرو موریسکو",
+  "jair cunha": "ژایر کونها",
+  "gabriel bontempo": "گابریل بونتمپو",
+  "rayan": "رایان",
+  "sandro tonali": "ساندرو تونالی",
+  "fabian schär": "فابیان شار",
+  "jack hinshelwood": "جک هینشلوود",
+  "oscar bobb": "اسکار بوب",
+  "jacob murphy": "جیکوب مورفی",
+  "alex murphy": "الکس مورفی",
+  // («lewis hall» / «joseph willock» / «fikayo tomori» already curated above —
+  // the first-wins map order, cycle-104 convention)
+  "tyler morton": "تایلر مورتون",
+  "malick thiaw": "مالیک تیاو",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

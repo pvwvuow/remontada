@@ -7431,8 +7431,29 @@ const FOOT_FA: Record<string, string> = { left: "چپ", right: "راست", both:
 function leagueFaById(id?: number, name?: string): string {
   const lg = LEAGUES.find((l) => l.fotmobId === id);
   if (lg) return lg.faName;
+  // cycle-389: the archive-tournament id map — the 388 patrol proved the
+  // SAME upstream literal maps to DIFFERENT countries by id (tid 187
+  // «League Cup» = Taça da Liga POR on Raphinha's rows, tid 188 «Super Cup»
+  // = Supertaça POR, tid 139 «Super Cup» = Supercopa ESP) so a name key is
+  // structurally wrong here; the id is the only precise key. Ids byte-exact
+  // from the upstream payload of player 696679 (scripts/cycle389-probe.sh).
+  if (id != null && ARCHIVE_TID_FA[id]) return ARCHIVE_TID_FA[id];
   return competitionFa(name || "") || name || "";
 }
+
+// cycle-389: id-keyed Persian names for the archived/defunct tournaments the
+// player career surfaces (statSeasons/careerSeasons → leagueFaById) serve
+// without a catalog fotmobId hit. Every entry probed live off the upstream
+// payload with its team context (Sporting/Vitória ⇒ POR; Barça seasons ⇒ ESP;
+// Rennes ⇒ FRA; Leeds U23 ⇒ ENG).
+const ARCHIVE_TID_FA: Record<number, string> = {
+  139: "سوپرکاپ اسپانیا",
+  150: "جام اتحادیه فرانسه",
+  187: "جام اتحادیه پرتغال",
+  188: "سوپرکاپ پرتغال",
+  10176: "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲",
+  10199: "مقدماتی جام جهانی — کونمبول",
+};
 
 // ---------------- cycle-82: player deep season stats / traits / market history ----------------
 
@@ -7503,6 +7524,14 @@ const PLAYER_DEEP_STAT_FA: Record<string, string> = {
   error_led_to_goal: "خطا منجر به گل",
   keeper_sweeper: "خروج اسوئیپر",
   keeper_high_claim: "گرفتن توپ بلند",
+  // cycle-389: the 4 ids the 388 patrol caught falling to the raw-English
+  // title fallback on /player/{id} — ids byte-exact from the upstream
+  // playerData payload (the F2-378 guard); «xGOT» stays the designed
+  // abbreviation convention (expected_goals_on_target above), not a leak.
+  goals_subtitle: "گل پنالتی",
+  crosses_succeeeded: "کراس موفق",
+  crosses_succeeeded_accuracy: "دقت کراس",
+  penalty_won_title: "پنالتی گرفته‌شده",
 };
 
 const PLAYER_TRAIT_FA: Record<string, string> = {
@@ -9856,6 +9885,12 @@ const TROPHY_FA: Record<string, string> = {
   Eredivisie: "اردیویه",
   "Primeira Liga": "لیگ برتر پرتغال",
   "Süper Lig": "سوپرلیگ ترکیه",
+  // cycle-389: the 388 patrol's surfaced trophy names (team-trophies nameFa
+  // on /team/{id} + player trophies) — exact upstream spellings.
+  "EFL Cup": "جام اتحادیه انگلیس",
+  "A-Leagues All Stars Men": "تیم ستارگان ای‌لیگ استرالیا",
+  "CONMEBOL World Cup Qualifiers": "مقدماتی جام جهانی — کونمبول",
+  "World Cup CONMEBOL qualification": "مقدماتی جام جهانی — کونمبول",
 };
 
 export interface TeamTrophy {
