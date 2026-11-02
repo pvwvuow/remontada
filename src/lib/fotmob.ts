@@ -7442,7 +7442,14 @@ function leagueFaById(id?: number, name?: string): string {
   // structurally wrong here; the id is the only precise key. Ids byte-exact
   // from the upstream payload of player 696679 (scripts/cycle389-probe.sh).
   if (id != null && ARCHIVE_TID_FA[id]) return ARCHIVE_TID_FA[id];
-  return competitionFa(name || "") || name || "";
+  const raw = name || "";
+  const comp = competitionFa(raw);
+  if (comp && comp !== raw) return comp;
+  // cycle-402: TROPHY_FA is the FINAL chain step — the 400/401 byte-exact
+  // harvests answer competitions the catalog/archive-id/competitionFa steps
+  // all miss (Série A، Gaúcho، UEFA Nations League A، … on the career
+  // rows). Strictly additive: ids still win; byte-exact names only.
+  return TROPHY_FA[raw] || comp || raw;
 }
 
 // cycle-389: id-keyed Persian names for the archived/defunct tournaments the
@@ -9974,6 +9981,10 @@ const TROPHY_FA: Record<string, string> = {
   "UEFA Nations League A": "لیگ ملت‌های اروپا — دسته آ",
   "CAF U23 Cup of Nations": "جام ملت‌های آفریقا زیر ۲۳ سال",
   "First Division A": "لیگ دسته اول بلژیک",
+  // cycle-402: the bench-history tenure line joined the leagueFa contract —
+  // the byte-exact check showed LaLiga/Bundesliga/Championship already on
+  // file (9905-9913, bare keys); only this one was genuinely missing —
+  "Saudi Pro League": "لیگ حرفه‌ای عربستان",
 };
 
 export interface TeamTrophy {
@@ -10880,6 +10891,10 @@ export interface TeamCoachTenure {
   fromShortFa: string; // «۱۶/۱۷»
   toShortFa: string; // «۲۵/۲۶»
   leagueName: string; // primary league of the tenure's LATEST season (Palace tenures cross Championship→PL)
+  // cycle-402: additive leagueFa (TROPHY_FA hit, null → the UI falls back to
+  // the raw name — honest, never guessed). No cache bump: the tenure rows
+  // are derived fresh per request (only the upstream raw payload is cached).
+  leagueFa: string | null;
   seasons: number;
   games: number;
   win: number;
@@ -11010,6 +11025,8 @@ export async function getTeamCoachHistory(teamId: number): Promise<TeamCoachHist
     fromShortFa: coachShortSeasonFa(a.from),
     toShortFa: coachShortSeasonFa(a.to),
     leagueName: a.leagueName,
+    // cycle-402: additive leagueFa on the bench-history rows (TROPHY_FA hit)
+    leagueFa: a.leagueName ? TROPHY_FA[a.leagueName] || null : null,
     seasons: a.perSeason.length,
     games: a.games,
     win: a.win,

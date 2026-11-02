@@ -1173,7 +1173,9 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
           )}
         </p>
         <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5 truncate">
-          {t.leagueName} · {t.seasons === 1 ? "۱ فصل" : `${faDigits(t.seasons)} فصل`} · {faDigits(t.games)} بازی
+          {/* cycle-402: fa-first bench-history league line — the additive
+              leagueFa (TROPHY_FA hit) rides; raw stays the honest fallback */}
+          {t.leagueFa || t.leagueName} · {t.seasons === 1 ? "۱ فصل" : `${faDigits(t.seasons)} فصل`} · {faDigits(t.games)} بازی
         </p>
       </div>
       <div className="shrink-0 flex flex-col items-end gap-0.5">
