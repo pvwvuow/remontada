@@ -10261,6 +10261,18 @@ const TROPHY_FA: Record<string, string> = {
   // the byte-exact check showed LaLiga/Bundesliga/Championship already on
   // file (9905-9913, bare keys); only this one was genuinely missing —
   "Saudi Pro League": "لیگ حرفه‌ای عربستان",
+  // cycle-429: the 427/428 double-orphan fix — player 696679's trophies[4]
+  // «Premier League 2 Div 2» (Leeds United U23) was double-orphaned: the row
+  // carries leagueId=null so the intact tid-10176 id mapping (ARCHIVE_TID_FA)
+  // is structurally unreachable, AND normalizeTrophies (the honours chain)
+  // rides TROPHY_FA alone — no id step at all — so the byte-exact key was
+  // the only door. Value = the ESTABLISHED 10176 phrasing already riding the
+  // career-seasons rows: one competition, one name, both surfaces of the
+  // page harmonized. No 389 bare-literal-lies violation: single-country
+  // literal (English PL2 Division 2 — identity-probed by the 427 patrol),
+  // the id-keyed rule governs AMBIGUOUS literals only. Blast radius: exactly
+  // one trophy row; additive; the honest fallback stays for everything else.
+  "Premier League 2 Div 2": "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲",
 };
 
 export interface TeamTrophy {
