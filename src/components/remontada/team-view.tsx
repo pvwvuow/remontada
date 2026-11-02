@@ -960,8 +960,10 @@ function TeamVenueCard({ v }: { v: TeamVenue }) {
     <Section title="ورزشگاه خانه">
       <div className="px-3 py-3 flex flex-col gap-2.5" data-testid="team-venue">
         <div className="flex items-baseline justify-between gap-2 min-w-0">
-          <p className="text-[13.5px] font-black truncate">{v.name}</p>
-          {v.city && <p className="text-[10.5px] text-muted-foreground font-bold shrink-0">{v.city}</p>}
+          {/* cycle-391: the Persian venue heal (nameFa/cityFa from the point
+              map) rides additively — raw name/city stay the honest fallback */}
+          <p className="text-[13.5px] font-black truncate">{v.nameFa || v.name}</p>
+          {v.city && <p className="text-[10.5px] text-muted-foreground font-bold shrink-0">{v.cityFa || v.city}</p>}
         </div>
         {chips.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
