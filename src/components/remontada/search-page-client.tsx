@@ -13,6 +13,13 @@
 // surfaces telling the same story. The page itself is noindex (the
 // classic search-page SEO contract) — the dropdown and its keyboard
 // contracts stay untouched.
+// cycle-409 (fix 408 finding): the raw-name subtitle contract went
+// one-sided — only the «رقابت» rows showed the honest upstream spelling
+// under a Persian title while team/coach/player rows let the raw name
+// vanish the moment fa || name rendered. rawSub() now gives every
+// entity row the same league-row treatment: raw rides the subtitle iff
+// it differs from the rendered title (equal → nothing — no duplicate).
+// UI-only, additive; the /api/search byte contract stays untouched.
 // ------------------------------------------------------------------
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -32,6 +39,13 @@ type SearchPayload = {
 
 const MIN_Q = 2;
 const HINT_SHORT = "حداقل ۲ حرف بنویسید — جستجو بین تیم‌ها و آقای گل‌های ۲۴ لیگ و جام";
+
+// cycle-409: the raw-name subtitle — the entity's honest upstream spelling
+// rides the subtitle IFF it differs from the rendered title (the league-row
+// contract from cycle-296, now shared by every entity section).
+function rawSub(raw: string, title: string): string | undefined {
+  return raw !== title ? raw : undefined;
+}
 
 function Section({
   label,
@@ -191,7 +205,7 @@ export function SearchPageClient() {
               key={`t-${t.teamId}`}
               href={`/team/${t.teamId}`}
               title={t.fa || t.name}
-              subtitle={[t.leagueFa, t.rank != null ? `رتبه ${faDigits(t.rank)}` : "", t.pts != null ? `${faDigits(t.pts)} امتیاز` : ""].filter(Boolean).join(" · ") || undefined}
+              subtitle={[rawSub(t.name, t.fa || t.name), t.leagueFa, t.rank != null ? `رتبه ${faDigits(t.rank)}` : "", t.pts != null ? `${faDigits(t.pts)} امتیاز` : ""].filter(Boolean).join(" · ") || undefined}
               pill="تیم"
             />
           ))}
@@ -201,7 +215,7 @@ export function SearchPageClient() {
       {!short && leagues.length > 0 && (
         <Section label="رقابت‌ها" testid="search-sec-leagues">
           {leagues.map((l) => (
-            <Row key={`l-${l.key}`} href={`/league/${l.key}`} title={l.fa || l.en} subtitle={l.en !== (l.fa || l.en) ? l.en : undefined} pill="رقابت" />
+            <Row key={`l-${l.key}`} href={`/league/${l.key}`} title={l.fa || l.en} subtitle={rawSub(l.en, l.fa || l.en)} pill="رقابت" />
           ))}
         </Section>
       )}
@@ -213,7 +227,7 @@ export function SearchPageClient() {
               key={`c-${c.id}`}
               href={`/coach/${c.id}`}
               title={c.fa || c.name}
-              subtitle={c.teamName ? `سرمربی ${c.teamName}` : undefined}
+              subtitle={[rawSub(c.name, c.fa || c.name), c.teamName ? `سرمربی ${c.teamName}` : ""].filter(Boolean).join(" · ") || undefined}
               pill="مربی"
             />
           ))}
@@ -227,7 +241,7 @@ export function SearchPageClient() {
               key={`p-${p.playerId}`}
               href={`/player/${p.playerId}`}
               title={p.fa || p.name}
-              subtitle={p.teamFa || undefined}
+              subtitle={[rawSub(p.name, p.fa || p.name), p.teamFa || ""].filter(Boolean).join(" · ") || undefined}
               pill="بازیکن"
             />
           ))}
