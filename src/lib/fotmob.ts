@@ -11650,6 +11650,16 @@ const COACH_SEED: CoachSearchResult[] = [
   { id: 38922, name: "Lionel Scaloni", fa: "لیونل اسکالونی", teamId: 6706, teamName: "Argentina" },
   { id: 78619, name: "Carlo Ancelotti", fa: "کارلو آنچلوتی", teamId: 8256, teamName: "Brazil" },
   { id: 1059866, name: "Luis de la Fuente", fa: "لوئیس د لا فوئنته", teamId: 6720, teamName: "Spain" },
+  // — cycle-399 (fix 398-F): the bench-history raw witnesses join the seed —
+  //   ids + byte-exact names probed live off the upstream coachHistory
+  //   (teams?id=8650/6706, UA Chrome/124); the teamId/teamName pair is each
+  //   coach's active-or-last bench off the playerData coach careerItems.
+  //   The honest fallback stays only outside the seed — never faked —
+  { id: 26630, name: "Arne Slot", fa: "آرنه اسلوت", teamId: 8650, teamName: "Liverpool" },
+  { id: 78660, name: "Jürgen Klopp", fa: "یورگن کلوپ", teamId: 8570, teamName: "Germany" },
+  { id: 160770, name: "Brendan Rodgers", fa: "برندان راجرز", teamId: 101919, teamName: "Al Qadsiah" },
+  { id: 335697, name: "Jorge Sampaoli", fa: "خورخه سامپائولی", teamId: 10101, teamName: "Talleres" },
+  { id: 80651, name: "Gerardo Martino", fa: "خرهاردو مارتینو", teamId: 773958, teamName: "Atlanta United" },
 ];
 
 // cycle-259: Persian name of a coach by id — the seed is the single source
