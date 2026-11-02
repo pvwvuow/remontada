@@ -2317,6 +2317,52 @@ const TEAM_FA: Record<string, string> = {
   "sport huancayo": "اسپورت هوانکایو",
   "sporting cristal": "اسپورتینگ کریستال",
   "universitario de deportes": "یونیورسیتاریو د دپورته‌س",
+
+  // cycle-442: harvest batch 9 — the machine continues on the 442 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 1925 distinct = the
+  // documented 441 post-census, totalRows 3948 on the census read; the pool
+  // sweep's row count drifted (3651) but the DISTINCT pool stayed byte-stable
+  // — the 435 lesson: rows drift, distinct is decisive;
+  // scripts/cycle442-batch9-verify.py byte-identity gate, live UA Chrome/124):
+  // this batch takes ALL 16 count-3 single-country names of the ROMANIA
+  // tranche (Cup Grp. A-D + Liga II + Superliga — the live ±7 window's
+  // biggest single-country pool, exactly as the 440/441 rotation lines
+  // predicted: ROU 16 > COL 13 > RUS 12 > GUA 12; no (W) women's sides, no
+  // exclusions), 48 live leak rows covered. Transliteration: بخارست (the
+  // established Persian exonym for București), دانشگاه (the
+  // universitatea-craiova precedent) + کلوژ (the cfr-cluj anchor), the
+  // ț/ș comma-below renders (پلویشت، بیستریتا، ترگوویشته، تیمیشوارا — the
+  // Persian-Wikipedia readings), the Hungarian cs/sz reading چیکسردا
+  // (Csikszereda), prefix/suffix discipline: FC dropped (آرژ پیتشتی، باکائو،
+  // بیهور اورادیا، ولونتاری — the 436 rule + the bare-city rsd-alcalá
+  // render), letter brands kept (اف‌سی‌اس‌بی — the FCSB initials identity
+  // per the ای‌دی‌تی/یوتی letter-brand rule; یوتا آراد — UTA + city).
+  // Two documented anchors: رپید بخارست (the press-standard Persian form for
+  // the Bucharest club — the older راپید وین render for the Vienna club rides
+  // its own block unchanged; two distinct clubs, two distinct renders, no
+  // collision), and آرژ پیتشتی as this batch's ONE cross-block value-dup:
+  // the older ASCII spelling "fc arges pitesti" (the cup-era block above)
+  // already maps to the same render — two upstream spellings, one club, one
+  // value (the Logroñés precedent; the live feed serves the comma-below
+  // spelling, which the ASCII key can never byte-reach). Loud-pool rule: the
+  // documented 1925 census shrinks by this batch in the open (the B4 ±25
+  // band re-anchors with the next census, never silently).
+  "asu politehnica timișoara": "آسو پلی‌تکنیکا تیمیشوارا",
+  "chindia târgoviște": "چیندیا ترگوویشته",
+  "concordia chiajna": "کونکوردیا کیاجنا",
+  "corvinul hunedoara": "کوروینول هوندوارا",
+  "csikszereda miercurea ciuc": "چیکسردا میرکوره چوک",
+  "dinamo bucurești": "دینامو بخارست",
+  "fc argeș pitesti": "آرژ پیتشتی",
+  "fc bacău": "باکائو",
+  "fc bihor oradea": "بیهور اورادیا",
+  "fcsb": "اف‌سی‌اس‌بی",
+  "fc voluntari": "ولونتاری",
+  "gloria bistrița": "گلوریا بیستریتا",
+  "petrolul ploiești": "پترولول پلویشت",
+  "rapid bucurești": "رپید بخارست",
+  "universitatea cluj": "دانشگاه کلوژ",
+  "uta arad": "یوتا آراد",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
