@@ -2109,6 +2109,61 @@ const TEAM_FA: Record<string, string> = {
   "woking": "ووکینگ",
   "workington": "ورکینگتون",
   "worthing": "ورتینگ",
+  // cycle-436: harvest batch 5 — the machine continues on the 436 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 2053 distinct = the
+  // documented 435 post-census; scripts/cycle436-batch5-verify.py byte-identity
+  // gate, live UA Chrome/124): this batch takes the 40 count-3 single-country
+  // names of the Spain Copa del Rey / Federaciones tranche (Primera/Segunda
+  // Federacion groups + LaLiga2 — the خ/س Spanish letter conventions of the
+  // batch-3 block: Cartagena→کارتاخنا, Náxara→ناخارا, Ourense→اورنسه),
+  // 120 live leak rows covered. Prefix discipline follows the map: CD/SD/UD/
+  // RS/CDA/AD/CS drop (رئال kept, the Real- is identity), bare-city renders
+  // per the rsd-alcalá precedent (سئوتا، کوریا، زامورا). «Logroñés» and
+  // «SD Logroñés» are two feed spellings of one club — one value (لاگرونیس),
+  // the batch's single intentional value-dup. The (W) women's sides stay
+  // honest-raw per the 435 skip line (no (W) surface convention yet).
+  // Loud-pool rule: the documented 2053 census shrinks by this batch in the
+  // open (the B4 ±25 band re-anchors with the next census, never silently).
+  "ad ceuta fc": "سئوتا",
+  "alcoyano": "آلکویانو",
+  "antequera": "آنتکرا",
+  "atlético baleares": "اتلتیکو بائلارس",
+  "barakaldo": "باراکالدو",
+  "cd atlético paso": "اتلتیکو پاسو",
+  "cd badajoz": "باداخوس",
+  "cd coria": "کوریا",
+  "cda águilas fc": "آگیلاس",
+  "cs puertollano": "پوئرتویانو",
+  "cartagena": "کارتاخنا",
+  "cieza": "سیزا",
+  "conquense": "کونکنسه",
+  "coruxo fc": "کوروشو",
+  "córdoba": "کوردوبا",
+  "deportiva minera": "دپورتیوا مینرا",
+  "eldense": "الدنسه",
+  "logroñés": "لاگرونیس",
+  "mijas-las lagunas": "میخاس لاس لاگوناس",
+  "numancia": "نومانسیا",
+  "náxara": "ناخارا",
+  "peña sport": "پنیا اسپورت",
+  "poblense": "پوبلنسه",
+  "pontevedra": "پونته‌ودرا",
+  "portugalete": "پورتوالته",
+  "rs gimnástica": "خیمناستیکا",
+  "rayo cantabria": "رایو کانتابریا",
+  "real jaén": "رئال خائن",
+  "real unión": "رئال یونیون",
+  "real ávila": "رئال آویلا",
+  "recreativo huelva": "رکراتیوو اوئلوا",
+  "reus": "ریوس",
+  "sd amorebieta": "آموربیتا",
+  "sd logroñés": "لاگرونیس",
+  "san sebastian de los reyes": "سان سباستیان د لوس ریس",
+  "tudelano": "تودلانو",
+  "ud ourense": "اورنسه",
+  "utebo": "اوتبو",
+  "xerez": "خرز",
+  "zamora": "زامورا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
