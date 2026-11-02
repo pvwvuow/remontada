@@ -575,6 +575,37 @@ export const LEAGUES: LeagueConfig[] = [
   // the 376 one-flag semantic (the plain-year feed never enters the
   // slash-season allSeasons intersection).
   { key: "asiancup",   fotmobId: 290,         ccode3: "INT",  faName: "جام ملت‌های آسیا",   enName: "AFC Asian Cup",    espnSlug: "afc.asian.cup",    priority: 32, globalMerge: false, plainYearSeasons: true },
+  // cycle-417: Hazfi Cup — the 33rd competition, the IRANIAN domestic cup
+  // and the closing of a class gap for the cup footprint: every prior entry
+  // covers either Europe or the continental/national NT tournaments, while
+  // the knockout cup the Persian fan follows domestically rode no catalog
+  // row (the persiangulf league page's cup sibling). Feasibility first
+  // (scripts/cycle417-probe.sh, live UA Chrome/124, 2026-11-02): the web
+  // search surfaced the page id and /api/data/leagues?id=9487&ccode3=IRN
+  // answered 200 with the PURE-KNOCKOUT cup shape — details.name
+  // «Hazfi Cup», country IRN, leagueColor #212121, tabs
+  // [overview, playoff, fixtures, seasons], table NULL (the cycle-376
+  // noTable contract renders the honest cup empty state + fixtures CTA),
+  // playoff SERVED in the established slash shape (1/16: 32 participants /
+  // 16 matchups + 1/8: 16/8 — the 2025/2026 round of 32 and round of 16
+  // both played, 24 finished fixtures Nov 2025 → Jan 2026, roundNames
+  // «Round of 32»/«Round of 16» riding the cycle-382 named-round map),
+  // stats {} (the honest scorers empty — the worldcup precedent),
+  // transfers.data=null (the cups' honest hide), 12 slash-format
+  // allAvailableSeasons (2025/2026 → 2014/2015 — SEASON_PARAM_RE accepts
+  // them byte-identical, no plainYearSeasons flag) and 14 title-history
+  // editions in the top-level seasons[] list (Esteghlal 2024/2025,
+  // Sepahan 2023/2024, Persepolis 2022/2023, Nassaji 2021/2022, Foolad
+  // 2020/2021 — the cycle-121 «قهرمانان» contract lights up). ESPN slug
+  // probed BOTH candidates 400 (iran.hazfi_cup / iran.hazfi) → the field
+  // is OMITTED like persiangulf's (the fallback loop skips undefined,
+  // fotmob.ts:1522). TEAM_FA census: 32 distinct names across
+  // fixtures/playoff/seasons — 25 already ride the existing
+  // persiangulf/azadegan blocks; the 7 second-tier cup entrants join the
+  // TEAM_FA map (the «---- Hazfi Cup ----» block below). The day-feed
+  // group-header name «Hazfi Cup» is globally unambiguous (no AMBIGUOUS_
+  // NAMES entry needed) and rides COMPETITION_FA like coppa italia.
+  { key: "hazfi",      fotmobId: 9487,        ccode3: "IRN",  faName: "جام حذفی ایران",     enName: "Hazfi Cup",                                      priority: 33, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
@@ -640,6 +671,11 @@ const COMPETITION_FA: Record<string, string> = {
   "copa italia": "جام حذفی ایتالیا",
   "coppa italia": "جام حذفی ایتالیا",
   "dfb pokal": "جام حذفی آلمان",
+  // cycle-417: Hazfi Cup joins the catalog (league 9487) — the day-feed
+  // group header name is globally unambiguous (one Hazfi Cup exists), so a
+  // bare COMPETITION_FA key rides the coppa-italia pattern; no AMBIGUOUS_NAMES
+  // entry needed.
+  "hazfi cup": "جام حذفی ایران",
   "supercopa": "سوپرکاپ اسپانیا",
   "community shield": "سوپرکاپ انگلیس",
   "club friendlies": "بازی دوستانه باشگاهی",
@@ -1788,6 +1824,19 @@ const TEAM_FA: Record<string, string> = {
   "burkina faso": "بورکینافاسو",
   "bolivia": "بولیوی",
   "costa rica": "کاستاریکا",
+  // cycle-417: the 7 Hazfi Cup second-tier entrants the league-9487 payload
+  // serves that no earlier block reaches (the 25 other distinct names ride
+  // the persiangulf/azadegan/384/387 sets already — census in
+  // scripts/cycle417-probe.sh output). Keys are the exact live-probed
+  // upstream spellings (the F2-378 guard); honest, long-established Persian
+  // club names.
+  "bargh shiraz": "برق شیراز",
+  "chooka talesh": "چوکا تالش",
+  "damash": "داماش",
+  "foolad hormozgan": "فولاد هرمزگان",
+  "kia fc": "کیا",
+  "padyab khalkhal": "پادیاب خلخال",
+  "shahrdari nowshahr": "شهرداری نوشهر",
   // cycle-405: transfer/rumour side-club leaks (probe: scripts/cycle405_leakscan.py — Tijuana/Hartberg/… were the Latin passthroughs on the 8650 surfaces) — honest city/club names, byte-exact keys.
   "tijuana": "تیخوانا",
   "chicago fire fc": "شیکاگو فایر",
