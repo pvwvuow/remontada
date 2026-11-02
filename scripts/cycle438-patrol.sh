@@ -15,6 +15,18 @@
 # the documented −16 Romania Cup Grp. A-D + Liga II + Superliga tranche, zero
 # distinct drift) + B12 NEW: four batch-9 witnesses Persian in the live ±7
 # feed — the patrol now runs 48 checks.
+# cycle-443 promotion (bug-hunt, the C12 precedent): the 439 skip-link hold
+# leaves its cycle-specific domproof (scripts/cycle439-domproof.sh A1/A2/
+# B1–B3) and becomes TWO permanent patrol checks — C13a: the served body's
+# FIRST anchor is the skip link (href=#main-content, «پرش به محتوا», parked
+# via -translate-y-16 + revealed via focus:translate-y-0) and home carries
+# exactly one <main id="main-content">; C13b: live at 390×844 — the skip link
+# is the body's first focusable element, parked above the viewport at rest
+# (rect.bottom ≤ 0) and revealed on programmatic focus (rect.top ≥ 0,
+# non-zero height). If a future layout change demotes the link below another
+# focusable, drops the anchor pairing or the park transform, the patrol fails
+# BEFORE the keyboard a11y path silently disappears — the patrol now runs 50
+# checks.
 # Evolves the 432/433 harness (scripts/cycle432-patrol.sh) with ONE delta:
 #   C12 NEW (a/b/c): the 434 mount-gate hold ASSERTED as a permanent patrol
 #      check — until now it lived only in the cycle-specific domproof. a: the
@@ -48,7 +60,7 @@
 #   4. B6 NEW: harvest batch-1 (cycle-430) and batch-2 (cycle-431) witnesses
 #      present as Persian fa values in the live ±7 day feed.
 # A API inventory, B 426 surface + harvest holds (B4 anchor 1909, B7–B12
-# batch-4..9 witnesses), C1–C11 the interaction holds, D the 16-page DOM
+# batch-4..9 witnesses), C1–C13 the interaction holds, D the 16-page DOM
 # sweep at 390×844, E the gates.
 set -u
 BASE=http://localhost:3000
@@ -365,6 +377,58 @@ try:
 except Exception: print('NA')")
 ck "C12c the 434 mount-gate hold: fresh home load — zero console errors/asserts + zero page errors (the direct #418 probe)" \
   "$([ "$PE" = "0" ] && [ "$CE" = "0" ] && echo 1 || echo 0)" "console=$CE pageErrors=$PE"
+
+# ---- C13 NEW (cycle 443): the 439 skip-link hold, permanent patrol level ----
+# Promotion precedent = C12: a hold that lived only in a cycle-specific
+# domproof becomes a standing check. C13a reuses the C12a served fetch (same
+# moment, /tmp/c438-served.html); C13b runs live on a fresh home load.
+SKIP=$(python3 - /tmp/c438-served.html <<'PY'
+import re, sys
+h = open(sys.argv[1], encoding='utf-8').read()
+b = h.find('<body')
+i = h.find('<a', b)
+j = h.find('</a>', i)
+seg = h[i:j] if i >= 0 and j > i else ''
+m = re.search(r'href="([^"]*)"', seg)
+ok = (m is not None and m.group(1) == '#main-content'
+      and 'پرش به محتوا' in seg
+      and '-translate-y-16' in seg and 'focus:translate-y-0' in seg
+      and h.count('<main id="main-content"') == 1)
+print(1 if ok else 0)
+PY
+)
+ck "C13a the 439 skip-link hold: served body's first anchor = پرش به محتوا → #main-content (park/reveal classes, exactly 1 id'd main)" \
+  "$([ "$SKIP" = "1" ] && echo 1 || echo 0)"
+$AB open "$BASE/" >/dev/null 2>&1
+sleep 2
+# the reveal rides transition-transform (the 439 B3 lesson): focus inside the
+# FIRST eval, wait for the transition, measure in a SECOND eval — one
+# synchronous eval reads the start of the animation (revealed=false).
+SKIP_JS1='(()=>{const a=document.body.querySelector("a");if(!a||a.getAttribute("href")!=="#main-content")return JSON.stringify({err:"no skip link"});const f=[...document.body.querySelectorAll("a,button,input,select,textarea,[tabindex]")].filter(x=>!x.disabled&&x.tabIndex>=0);const first=f.length>0&&f[0]===a;const r=a.getBoundingClientRect();const parked=r.bottom<=0;a.focus();return JSON.stringify({first:first,parked:parked})})()'
+S1=$($AB eval "$SKIP_JS1" 2>/dev/null)
+sleep 1
+SKIP_JS2='(()=>{const a=document.body.querySelector("a");if(!a)return JSON.stringify({err:"absent"});const r=a.getBoundingClientRect();return JSON.stringify({revealed:r.top>=0&&r.bottom>0&&r.height>0,text:a.textContent.trim()})})()'
+S2=$($AB eval "$SKIP_JS2" 2>/dev/null)
+S1V=$(printf '%s' "$S1" | python3 -c "
+import json, sys
+s = sys.stdin.read().strip()
+if s.startswith('\"') and s.endswith('\"'): s = s[1:-1]
+s = s.replace('\\\\\"', '\"')
+try:
+    d = json.loads(s)
+    print(d.get('first'), d.get('parked'))
+except Exception: print('NA NA')" 2>/dev/null)
+S2V=$(printf '%s' "$S2" | python3 -c "
+import json, sys
+s = sys.stdin.read().strip()
+if s.startswith('\"') and s.endswith('\"'): s = s[1:-1]
+s = s.replace('\\\\\"', '\"')
+try:
+    d = json.loads(s)
+    print(d.get('revealed'), d.get('text'))
+except Exception: print('NA NA')" 2>/dev/null)
+ck "C13b the 439 skip-link hold: live 390×844 — first focusable, parked at rest, revealed on focus (post-transition)" \
+  "$([ "$S1V" = "True True" ] && printf '%s' "$S2V" | grep -q '^True پرش به محتوا$' && echo 1 || echo 0)" "rest=[$S1V] focus=[$S2V]"
 fi
 
 if has D; then
