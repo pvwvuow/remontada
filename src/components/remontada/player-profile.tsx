@@ -5,7 +5,7 @@
 // ------------------------------------------------------------------
 import Link from "next/link";
 import type { PlayerData, PlayerPitch, PlayerShot, PlayerLinkRow } from "@/lib/fotmob";
-import { faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
+import { faDecimal, faDigits, jalaliShort, marketValueFa, tehranTime } from "@/lib/format";
 import { countryFa, teamFa } from "@/lib/leagues";
 import { cn } from "@/lib/utils";
 import { ShareButton } from "./share-button";
@@ -18,7 +18,7 @@ function StatBox({ display, title, accent }: { display: string; title: string; a
   return (
     <div className="rounded-lg bg-[#a9cdf611] border border-glass-border-soft px-2 py-2.5 text-center">
       <p className={cn("font-medium text-[15px] text-[#e0efff] tabular-persian leading-6", accent && "text-chart-3")} dir="ltr">
-        {faDigits(display)}
+        {faDecimal(display)}
       </p>
       <p className="text-[9px] text-steel/80 truncate">{title}</p>
     </div>
@@ -49,14 +49,14 @@ function PitchSection({ pitch }: { pitch: PlayerPitch }) {
     [
       `${faDigits(s.min)}′`,
       s.typeFa || "",
-      s.xg !== null ? `xG ${faDigits(String(Math.round(s.xg * 100) / 100))}` : "",
+      s.xg !== null ? `xG ${faDecimal(String(Math.round(s.xg * 100) / 100))}` : "",
       s.by ? `شوت‌زن: ${s.by}` : "",
     ]
       .filter(Boolean)
       .join(" · ");
   const summary = pitch.keeper
-    ? `${faDigits(pitch.shots.length)} شوت رو‌به‌رو · ${faDigits(pitch.goals)} گل خورده${pitch.xgTotal !== null ? ` · xG ${faDigits(String(pitch.xgTotal))}` : ""}`
-    : `${faDigits(pitch.goals)} گل از ${faDigits(pitch.shots.length)} شوت${pitch.xgTotal !== null ? ` · xG مجموع ${faDigits(String(pitch.xgTotal))}` : ""}`;
+    ? `${faDigits(pitch.shots.length)} شوت رو‌به‌رو · ${faDigits(pitch.goals)} گل خورده${pitch.xgTotal !== null ? ` · xG ${faDecimal(String(pitch.xgTotal))}` : ""}`
+    : `${faDigits(pitch.goals)} گل از ${faDigits(pitch.shots.length)} شوت${pitch.xgTotal !== null ? ` · xG مجموع ${faDecimal(String(pitch.xgTotal))}` : ""}`;
   return (
     <section className="glass-card overflow-hidden" aria-label={pitch.keeper ? "شوت‌های رو‌به‌رو" : "نقشهٔ شوت‌ها"} data-testid="player-pitch">
       <header className="glass-thead px-4 py-2.5 border-b border-glass-border-soft text-[12px] font-black">
@@ -669,7 +669,7 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                     {s.apps !== null && <span title="بازی">{faDigits(s.apps)}<span className="hidden sm:inline"> بازی</span></span>}
                     {s.goals !== null && <span title="گل" className="text-mint font-black">{faDigits(s.goals)}<span className="hidden sm:inline"> گل</span></span>}
                     {s.assists !== null && <span title="پاس گل">{faDigits(s.assists)}<span className="hidden sm:inline"> پاس</span></span>}
-                    {s.rating !== null && <span title="امتیاز" className="text-primary">{faDigits(s.rating.toFixed(2))}</span>}
+                    {s.rating !== null && <span title="امتیاز" className="text-primary">{faDecimal(s.rating.toFixed(2))}</span>}
                   </span>
                 </div>
                 {s.tournaments.length > 1 && (
@@ -755,7 +755,10 @@ export function PlayerProfile({ p }: { p: PlayerData }) {
                   </svg>
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="font-bold text-[12.5px] truncate">{t.leagueName}</p>
+                  {/* cycle-401: fa-first honours rows — the additive leagueFa
+                      (TROPHY_FA hit) rides; raw stays the honest fallback.
+                      The teamFa side is the cycle-159 convention, untouched. */}
+                  <p className="font-bold text-[12.5px] truncate">{t.leagueFa || t.leagueName}</p>
                   {/* cycle-159: trophy rows carried the RAW upstream team name
                       («Benfica», youth sides) — the career class sibling of the
                       Latin leak fixed this cycle; teamFa keeps the single

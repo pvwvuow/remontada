@@ -6,7 +6,7 @@
 // ------------------------------------------------------------------
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { faDigits, faMinute, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
+import { faDecimal, faDigits, faMinute, jalaliShort, tehranDateLong, tehranTime, formColor } from "@/lib/format";
 import type { TeamSeasonStats } from "@/lib/fotmob";
 // NOTE: no VALUE imports from @/lib/fotmob here — the client bundle must not
 // pull the fetch/db graph (cycle-116: the market string is pre-formatted
@@ -29,6 +29,8 @@ interface DetailMatch {
   finished: boolean;
   cancelled: boolean;
   live: boolean;
+  // update cycle-375: live VAR review pill (strict boolean from the API)
+  hasPendingVAR: boolean;
   minute?: string;
   statusText?: string;
   home: { id: number; name: string; fa: string; logo: string; score: number | null };
@@ -391,7 +393,7 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
     <section className="glass-scorer-hero overflow-hidden" aria-label="بهترین بازیکن زمین">
       <div className="px-4 py-3.5 flex items-center gap-3.5">
         <div className="glass-avatar relative w-16 h-16 rounded-full flex flex-col items-center justify-center shrink-0" title="امتیاز فوت‌ماب">
-          <span className="text-[19px] font-light text-[#dfedff] leading-none tabular-persian">{p.rating ? faDigits(p.rating) : "—"}</span>
+          <span className="text-[19px] font-light text-[#dfedff] leading-none tabular-persian">{p.rating ? faDecimal(p.rating) : "—"}</span>
           <span className="text-[7.5px] font-bold text-steel/80 mt-0.5">امتیاز</span>
         </div>
         <div className="min-w-0 flex-1">
@@ -429,7 +431,7 @@ function PotmCard({ p }: { p: NonNullable<DetailData["playerOfTheMatch"]> }) {
         <div className="grid grid-cols-2 sm:grid-cols-4 border-t border-glass-border-soft bg-white/[0.02]">
           {p.stats.map((s, i) => (
             <div key={i} className="px-2 py-2 text-center border-b border-glass-border-soft/70 sm:[&:nth-child(-n+4)]:border-b-0 sm:border-e sm:last:border-e-0 [&:nth-child(odd)]:border-s sm:[&:nth-child(odd)]:border-s-0">
-              <p className="font-medium text-[13.5px] text-[#e0efff] tabular-persian leading-5" dir="ltr">{faDigits(s.display)}</p>
+              <p className="font-medium text-[13.5px] text-[#e0efff] tabular-persian leading-5" dir="ltr">{faDecimal(s.display)}</p>
               <p className="text-[9px] text-steel/80 truncate">{s.title}</p>
             </div>
           ))}
@@ -529,6 +531,20 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
             {m.live && <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-red-500 me-1.5 align-middle" />}
             {status}
           </span>
+          {/* update cycle-375: live VAR review pill — the last unconsumed
+              matchDetails key (hasPendingVAR) becomes an honest transient
+              badge next to the status chip; hidden unless the feed says true
+              (the 116/257 honest-absence convention). Amber = the referee's
+              review, distinct from the red live dot. */}
+          {m.live && m.hasPendingVAR && (
+            <span
+              data-testid="var-pending"
+              className="inline-flex items-center gap-1.5 text-[11px] font-black rounded-lg px-2.5 py-1 border border-amber-400/30 bg-amber-500/10 text-amber-300 tabular-persian whitespace-nowrap"
+            >
+              <span className="live-dot live-dot-glow inline-block w-1.5 h-1.5 rounded-full bg-amber-400" />
+              بررسی VAR در جریان است
+            </span>
+          )}
           {/* fix cycle-41: live kickoff countdown for upcoming matches (the
               short «رویدادی ثبت نشده» shell gets a useful heartbeat) */}
           {!m.started && !m.cancelled && !m.finished && <KickoffCountdown utcTime={m.utcTime} />}
@@ -596,7 +612,7 @@ function Scoreboard({ m, scorers, potm, shootout }: { m: DetailMatch; scorers: D
           <span className="text-chart-3">★</span>
           <span className="text-muted-foreground">بهترین بازیکن زمین:</span>
           <span className="font-black">{potm.nameFa || potm.name}</span>
-          {potm.rating && <span className="text-primary font-bold tabular-persian">({faDigits(potm.rating)})</span>}
+          {potm.rating && <span className="text-primary font-bold tabular-persian">({faDecimal(potm.rating)})</span>}
         </div>
       )}
     </section>
@@ -694,7 +710,7 @@ function TeamXgStrip({ xg, match }: { xg: NonNullable<DetailData["xg"]>; match: 
           className="text-[20px] font-black text-[#ecf3fa] tabular-persian leading-6"
           title="اسکوآپ (گل‌های مورد انتظار)"
         >
-          {v != null ? faDigits(v.toFixed(2)) : "—"}
+          {v != null ? faDecimal(v.toFixed(2)) : "—"}
         </span>
         <div className="flex flex-wrap items-center justify-center gap-1">
           {b ? (
@@ -934,7 +950,7 @@ function RatingPill({ rating }: { rating?: number }) {
       )}
       title="امتیاز فوت‌ماب"
     >
-      {faDigits(rating.toFixed(2))}
+      {faDecimal(rating.toFixed(2))}
     </span>
   );
 }
@@ -989,7 +1005,7 @@ function PlayerRow({ p }: { p: PlayerStatRow }) {
     if (p.saves != null) chips.push({ label: "مهار", value: faDigits(p.saves) });
     if (p.conceded != null) chips.push({ label: "گل خورده", value: faDigits(p.conceded) });
     if (p.goalsPrevented != null)
-      chips.push({ label: "جلوی گل", value: `${p.goalsPrevented > 0 ? "+" : ""}${faDigits(p.goalsPrevented.toFixed(1))}` });
+      chips.push({ label: "جلوی گل", value: `${p.goalsPrevented > 0 ? "+" : ""}${faDecimal(p.goalsPrevented.toFixed(1))}` });
   } else {
     if (p.passesAcc != null)
       chips.push({
@@ -1348,7 +1364,7 @@ function LineupsPitch({ lineups, match }: { lineups: NonNullable<DetailData["lin
                   <span className="text-[9px] text-muted-foreground max-w-[64px] truncate leading-3">{p.nameFa || p.name}</span>
                   {typeof p.rating === "number" && p.rating > 0 && (
                     /* ui-cycle-18: data floor 9px — rating is a value, never 8px */
-                    <span className="text-[9px] font-bold text-chart-3 tabular-persian">{faDigits(p.rating.toFixed(1))}</span>
+                    <span className="text-[9px] font-bold text-chart-3 tabular-persian">{faDecimal(p.rating.toFixed(1))}</span>
                   )}
                 </Link>
               ))}
@@ -1700,7 +1716,11 @@ const VS_CLS: Record<"above" | "below" | "average", string> = {
 };
 /** ≤2-decimal Persian number, trailing zeros trimmed (deepNumFa twin) */
 function faNum2(n: number): string {
-  return faDigits((Math.round(n * 100) / 100).toString());
+  // cycle-372: faDecimal — the average-age (lineup) and referee-average
+  // (yellow cards / fouls per match) renders carry the Persian separator ٫;
+  // was faDigits over a raw string (ASCII dot), the last dot render the
+  // 370/371 passes could not see (server payload interpolated client-side).
+  return faDecimal((Math.round(n * 100) / 100).toString());
 }
 function RefereeStadiumCard({ info }: { info: DetailData["info"] }) {
   const rs = info.refereeStats;
@@ -1790,10 +1810,10 @@ function TopScorersCard({
           const tm = side === "home" ? match.home : match.away;
           const rows: { label: string; value: string }[] = [];
           if (e.assists != null) rows.push({ label: "پاس گل", value: faDigits(e.assists) });
-          if (e.xg != null) rows.push({ label: "xG فصل", value: faDigits(e.xg.toFixed(1)) });
+          if (e.xg != null) rows.push({ label: "xG فصل", value: faDecimal(e.xg.toFixed(1)) });
           if (e.minsPerGoal != null && e.minsPerGoal > 0) rows.push({ label: "سرعت گلزنی", value: `${faDigits(e.minsPerGoal)} دقیقه` });
           if (e.motm != null && e.motm > 0) rows.push({ label: "بهترین بازیکن", value: `${faDigits(e.motm)} بار` });
-          if (e.rating != null) rows.push({ label: "امتیاز فصل", value: faDigits(e.rating.toFixed(2)) });
+          if (e.rating != null) rows.push({ label: "امتیاز فصل", value: faDecimal(e.rating.toFixed(2)) });
           const nameEl = (
             <span className="block text-[13px] font-black text-[#f1f7fd] truncate" title={e.nameFa !== e.name ? e.name : undefined}>
               {e.nameFa || e.name}
@@ -1880,7 +1900,7 @@ function SeasonComparePanel({
   ];
 
   const fmt = (v: number | null, digits?: number) =>
-    v == null ? "—" : faDigits(digits ? v.toFixed(digits) : Math.round(v));
+    v == null ? "—" : faDecimal(digits ? v.toFixed(digits) : Math.round(v));
 
   const sideName = (t: H2HTeam & { season: TeamSeasonStats | null }) =>
     t.fa || t.name;
@@ -2343,7 +2363,7 @@ function TopPlayersCard({ tp, m }: { tp: NonNullable<DetailData["topPlayers"]>; 
                   title={p.nameFa !== p.name ? p.name : "مشاهده پروفایل بازیکن"}
                 >
                   <span className="shrink-0 w-8 h-8 rounded-full bg-[#a9cdf611] border border-glass-border-soft flex items-center justify-center">
-                    <span className="text-[10.5px] font-black text-[#dfedff] tabular-persian leading-none">{faDigits(p.rating)}</span>
+                    <span className="text-[10.5px] font-black text-[#dfedff] tabular-persian leading-none">{faDecimal(p.rating)}</span>
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block text-[11px] font-bold leading-4 truncate text-[#ecf3fa] group-hover:text-primary transition-colors">

@@ -8,8 +8,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import type { NormMatch, TeamRowInfo, TeamSeasonStats, TeamFormMatch, TeamSquad, TeamSquadPlayer, TeamTransfersData, TeamTransferItem, TeamRumoursData, TeamRumourItem, TeamNewsData, TeamNewsItem, TeamTrophiesData, TeamTrophy, TeamVenue, TeamStatsData, TeamStatRow, TeamSeasonHistory, TeamSeasonRank, TeamFixturesAll, TeamSeasonFixture, TeamCoachHistory, TeamCoachTenure, TeamTopPlayers, TeamTopPlayerRow, TeamFixtureDifficulty, TeamDifficultyFixture, TeamLastLineup, TeamLastLineupPlayer } from "@/lib/fotmob";
 import { sourceStyle } from "@/components/remontada/news-view";
-import { faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
-import { fotmobTeamLogo } from "@/lib/leagues";
+import { faDecimal, faDigits, jalaliShort, tehranDateLong, tehranTime } from "@/lib/format";
+import { fotmobTeamLogo, teamFa } from "@/lib/leagues";
+import { playerFa } from "@/lib/player-names-fa";
 import { FavoriteStar } from "@/components/remontada/favorite-star";
 import { ShareButton } from "@/components/remontada/share-button";
 import { EmptyState } from "@/components/remontada/empty-state";
@@ -296,8 +297,8 @@ function BigMatchCard({ title, m, tone }: { title: string; m: (TeamFormMatch & {
 
 function SeasonPanel({ s }: { s: TeamSeasonStats }) {
   const kpis = [
-    { l: "گل زده", v: faDigits(s.goalsFor), sub: `میانگین ${faDigits(s.avgFor.toFixed(1))} در بازی` },
-    { l: "گل خورده", v: faDigits(s.goalsAgainst), sub: `میانگین ${faDigits(s.avgAgainst.toFixed(1))} در بازی` },
+    { l: "گل زده", v: faDigits(s.goalsFor), sub: `میانگین ${faDecimal(s.avgFor.toFixed(1))} در بازی` },
+    { l: "گل خورده", v: faDigits(s.goalsAgainst), sub: `میانگین ${faDecimal(s.avgAgainst.toFixed(1))} در بازی` },
     { l: "کلین‌شیت", v: faDigits(s.cleanSheets), sub: s.played ? `${faDigits(Math.round((s.cleanSheets / s.played) * 100))}٪ بازی‌ها` : "—" },
     { l: "بدون گل", v: faDigits(s.failedToScore), sub: s.played ? `${faDigits(Math.round((s.failedToScore / s.played) * 100))}٪ بازی‌ها` : "—" },
   ];
@@ -522,7 +523,10 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
       </span>
       <div className="min-w-0 flex-1">
         <p className="text-[12.5px] font-bold truncate text-[#e6f0fb] flex items-center gap-1.5">
-          {p.name}
+          {/* cycle-394 (the 393 bug-hunt F2 flip): the render wire the squad
+              section never got — mapped names ride playerFa, unmapped keep the
+              honest raw fallback (the 96/104 contract) */}
+          {playerFa(p.name)}
           {p.injured && (
             <span className="text-[9px] font-black text-red-400 bg-red-400/10 border border-red-400/30 rounded-md px-1 py-px shrink-0">
               مصدوم
@@ -530,7 +534,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
           )}
         </p>
         <p className="text-[9.5px] text-steel/80 tabular-persian truncate">
-          {[p.nationality, p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
+          {[teamFa(p.nationality), p.age != null ? `${faDigits(p.age)} ساله` : "", p.height ? `${faDigits(p.height)} سانتی‌متر` : ""]
             .filter(Boolean)
             .join(" · ")}
         </p>
@@ -556,7 +560,7 @@ function SquadRow({ p }: { p: TeamSquadPlayer }) {
             )}
             title="میانگین امتیاز فصل"
           >
-            {faDigits(p.rating.toFixed(1))}
+            {faDecimal(p.rating.toFixed(1))}
           </span>
         )}
       </div>
@@ -593,7 +597,7 @@ function SquadSection({ squad }: { squad: TeamSquad }) {
               {squad.coach.fa || squad.coach.name}
             </Link>
             <p className="text-[9.5px] text-steel/80 tabular-persian shrink-0">
-              {[squad.coach.nationality, squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
+              {[teamFa(squad.coach.nationality), squad.coach.age != null ? `${faDigits(squad.coach.age)} ساله` : ""]
                 .filter(Boolean)
                 .join(" · ")}
             </p>
@@ -960,8 +964,10 @@ function TeamVenueCard({ v }: { v: TeamVenue }) {
     <Section title="ورزشگاه خانه">
       <div className="px-3 py-3 flex flex-col gap-2.5" data-testid="team-venue">
         <div className="flex items-baseline justify-between gap-2 min-w-0">
-          <p className="text-[13.5px] font-black truncate">{v.name}</p>
-          {v.city && <p className="text-[10.5px] text-muted-foreground font-bold shrink-0">{v.city}</p>}
+          {/* cycle-391: the Persian venue heal (nameFa/cityFa from the point
+              map) rides additively — raw name/city stay the honest fallback */}
+          <p className="text-[13.5px] font-black truncate">{v.nameFa || v.name}</p>
+          {v.city && <p className="text-[10.5px] text-muted-foreground font-bold shrink-0">{v.cityFa || v.city}</p>}
         </div>
         {chips.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
@@ -1159,7 +1165,7 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
       </span>
       <div className="flex-1 min-w-0">
         <p className="text-[12.5px] font-black truncate flex items-center gap-1.5">
-          {t.name}
+          {t.fa || t.name}
           {t.live && (
             <span className="shrink-0 rounded-md border border-gold/30 bg-gold/10 text-gold px-1.5 py-px text-[9px] font-black">
               نیمکت فعلی
@@ -1167,12 +1173,14 @@ function TeamCoachTenureRow({ t }: { t: TeamCoachTenure }) {
           )}
         </p>
         <p className="text-[10px] text-muted-foreground tabular-persian mt-0.5 truncate">
-          {t.leagueName} · {t.seasons === 1 ? "۱ فصل" : `${faDigits(t.seasons)} فصل`} · {faDigits(t.games)} بازی
+          {/* cycle-402: fa-first bench-history league line — the additive
+              leagueFa (TROPHY_FA hit) rides; raw stays the honest fallback */}
+          {t.leagueFa || t.leagueName} · {t.seasons === 1 ? "۱ فصل" : `${faDigits(t.seasons)} فصل`} · {faDigits(t.games)} بازی
         </p>
       </div>
       <div className="shrink-0 flex flex-col items-end gap-0.5">
         <p className="text-[14px] font-black tabular-persian leading-none" title="میانگین امتیاز در هر بازی">
-          {faDigits(t.ppg.toFixed(1))}
+          {faDecimal(t.ppg.toFixed(1))}
         </p>
         <span className="text-[9.5px] font-bold tabular-persian text-steel/80">
           {faDigits(t.winPct)}٪ برد · {faDigits(t.win)} ب · {faDigits(t.draw)} م · {faDigits(t.loss)} پ
@@ -1216,7 +1224,7 @@ const TOP_PLAYER_GROUPS: { key: keyof TeamTopPlayers; label: string; hint: strin
 
 function TopPlayerRowItem({ r, fmt }: { r: TeamTopPlayerRow; fmt: "fraction" | "number" }) {
   const valueText =
-    fmt === "fraction" ? faDigits(r.value.toFixed(Math.min(r.fractions, 2) || 2)) : faDigits(Math.round(r.value));
+    fmt === "fraction" ? faDecimal(r.value.toFixed(Math.min(r.fractions, 2) || 2)) : faDigits(Math.round(r.value));
   return (
     <li>
       <Link
@@ -1499,9 +1507,9 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
   const facts = [
     p.seasonGoals != null && p.seasonGoals > 0 ? `${faDigits(p.seasonGoals)} گل فصل` : null,
     p.seasonAssists != null && p.seasonAssists > 0 ? `${faDigits(p.seasonAssists)} پاس گل فصل` : null,
-    p.seasonRating != null ? `فصل ${faDigits(p.seasonRating.toFixed(2))}` : null,
-    p.distanceKm != null && p.distanceKm > 0 ? `${faDigits(p.distanceKm.toFixed(1))} کیلومتر` : null,
-    p.topSpeedKmh != null && p.topSpeedKmh > 0 ? `${faDigits(p.topSpeedKmh.toFixed(1))} کیلومتر/ساعت` : null,
+    p.seasonRating != null ? `فصل ${faDecimal(p.seasonRating.toFixed(2))}` : null,
+    p.distanceKm != null && p.distanceKm > 0 ? `${faDecimal(p.distanceKm.toFixed(1))} کیلومتر` : null,
+    p.topSpeedKmh != null && p.topSpeedKmh > 0 ? `${faDecimal(p.topSpeedKmh.toFixed(1))} کیلومتر/ساعت` : null,
     p.marketValueFa,
   ].filter(Boolean) as string[];
   const inner = (
@@ -1520,7 +1528,7 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
       <div className="flex flex-col items-end gap-1 shrink-0">
         {p.matchRating != null && (
           <span className="text-[14px] font-black tabular-persian text-[#e0efff] leading-none">
-            {faDigits(p.matchRating.toFixed(1))}
+            {faDecimal(p.matchRating.toFixed(1))}
           </span>
         )}
         {(p.motm || p.yellow || p.red) && (
@@ -1542,8 +1550,8 @@ function LastLineupRow({ p }: { p: TeamLastLineupPlayer }) {
 
 function LastLineupSection({ data }: { data: TeamLastLineup }) {
   const meta = [
-    data.coachName ? `سرمربی: ${data.coachName}` : null,
-    data.averageAge != null ? `میانگین سن: ${faDigits(data.averageAge.toFixed(1))} سال` : null,
+    data.coachName ? `سرمربی: ${data.coachNameFa || data.coachName}` : null,
+    data.averageAge != null ? `میانگین سن: ${faDecimal(data.averageAge.toFixed(1))} سال` : null,
     data.totalMarketValueFa ? `ارزش بازار ترکیب: ${data.totalMarketValueFa}` : null,
   ].filter(Boolean) as string[];
   return (

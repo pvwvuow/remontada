@@ -4,18 +4,20 @@
 // bracket is null for leagues without knockout stages (cycle-56).
 // ------------------------------------------------------------------
 import { NextRequest, NextResponse } from "next/server";
-import { getLeagueBracket, LeagueUnavailableError, LEAGUES, SEASON_PARAM_RE } from "@/lib/fotmob";
+import { getLeagueBracket, LeagueUnavailableError, LEAGUES } from "@/lib/fotmob";
+import { seasonParamOk } from "@/lib/season";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const key = req.nextUrl.searchParams.get("league") || "pl";
-  const valid = LEAGUES.some((l) => l.key === key);
-  if (!valid) {
+  const lg = LEAGUES.find((l) => l.key === key);
+  if (!lg) {
     return NextResponse.json({ ok: false, error: `Unknown league key: ${key}` }, { status: 400 });
   }
+  // cycle-382: plain-year seasons ride the per-league plainYearSeasons flag.
   const season = req.nextUrl.searchParams.get("season") || undefined;
-  if (season && !SEASON_PARAM_RE.test(season)) {
+  if (season && !seasonParamOk(season, lg.plainYearSeasons === true)) {
     return NextResponse.json({ ok: false, error: `Invalid season: ${season}` }, { status: 400 });
   }
   try {

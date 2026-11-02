@@ -36,6 +36,22 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  /* glass studio tokens exposed as Tailwind colors (phase 2+): borders,
+     steel text and soft accents usable with Tailwind color utilities */
+  --color-glass-border: var(--glass-border);
+  --color-glass-border-soft: var(--glass-border-soft);
+  --color-steel: var(--steel);
+  --color-mint: var(--mint);
+  --color-mint-deep: var(--mint-deep);
+  --color-rose-soft: var(--rose-soft);
+  --color-rose-deep: var(--rose-deep);
+  --color-sky-soft: var(--sky-soft);
+  /* cycle-60 «fantasy realm» tokens — the game-menu palette layer:
+     arcane violet + legend gold + aurora teal, exposed as Tailwind colors */
+  --color-arcane: var(--arcane);
+  --color-arcane-deep: var(--arcane-deep);
+  --color-gold: var(--gold);
+  --color-teal-soft: var(--teal-soft);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -43,40 +59,75 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  /* Remontada dark pitch theme */
-  --background: oklch(0.16 0.012 165);
-  --foreground: oklch(0.96 0.005 165);
-  --card: oklch(0.205 0.014 165);
-  --card-foreground: oklch(0.96 0.005 165);
-  --popover: oklch(0.21 0.014 165);
-  --popover-foreground: oklch(0.96 0.005 165);
-  --primary: oklch(0.78 0.19 155);
-  --primary-foreground: oklch(0.17 0.03 155);
-  --secondary: oklch(0.26 0.016 165);
-  --secondary-foreground: oklch(0.96 0.005 165);
-  --muted: oklch(0.24 0.014 165);
-  --muted-foreground: oklch(0.68 0.012 165);
-  --accent: oklch(0.28 0.03 155);
-  --accent-foreground: oklch(0.96 0.005 165);
-  --destructive: oklch(0.62 0.22 25);
+  --radius: 0.875rem;
+  /* ----------------------------------------------------------------
+     Remontada "Football Glass Studio" theme (cycle-24, phase 1/5)
+     Reference: design-ref/football-glass-studio (3).html dark theme
+     — near-black navy base hsl(216 33% 8%) / body #080e16,
+       steel-blue foregrounds, soft green / rose / sky accents,
+       translucent panels with 1px light borders + top light beam.
+     ---------------------------------------------------------------- */
+  --background: oklch(0.16 0.022 255);
+  --foreground: oklch(0.93 0.018 235);
+  --card: oklch(0.21 0.027 255);
+  --card-foreground: oklch(0.93 0.018 235);
+  --popover: oklch(0.22 0.028 255);
+  --popover-foreground: oklch(0.94 0.016 235);
+  --primary: oklch(0.84 0.06 235);
+  --primary-foreground: oklch(0.25 0.045 255);
+  --secondary: oklch(0.27 0.026 255);
+  --secondary-foreground: oklch(0.9 0.018 235);
+  --muted: oklch(0.25 0.024 255);
+  --muted-foreground: oklch(0.72 0.04 250);
+  --accent: oklch(0.29 0.03 255);
+  --accent-foreground: oklch(0.9 0.024 235);
+  --destructive: oklch(0.65 0.19 25);
   --destructive-foreground: oklch(0.98 0 0);
-  --border: oklch(0.3 0.015 165 / 60%);
-  --input: oklch(0.3 0.015 165 / 60%);
-  --ring: oklch(0.78 0.19 155 / 50%);
-  --chart-1: oklch(0.78 0.19 155);
-  --chart-2: oklch(0.68 0.16 145);
-  --chart-3: oklch(0.85 0.17 95);
-  --chart-4: oklch(0.72 0.14 200);
-  --chart-5: oklch(0.65 0.2 25);
-  --sidebar: oklch(0.19 0.014 165);
-  --sidebar-foreground: oklch(0.96 0.005 165);
-  --sidebar-primary: oklch(0.78 0.19 155);
-  --sidebar-primary-foreground: oklch(0.17 0.03 155);
-  --sidebar-accent: oklch(0.28 0.03 155);
-  --sidebar-accent-foreground: oklch(0.96 0.005 165);
-  --sidebar-border: oklch(0.3 0.015 165 / 60%);
-  --sidebar-ring: oklch(0.78 0.19 155 / 50%);
+  --border: oklch(0.7 0.05 245 / 20%);
+  --input: oklch(0.5 0.04 250 / 45%);
+  --ring: oklch(0.8 0.08 235 / 55%);
+  --chart-1: oklch(0.8 0.09 170);
+  --chart-2: oklch(0.78 0.09 240);
+  --chart-3: oklch(0.78 0.06 15);
+  --chart-4: oklch(0.72 0.05 255);
+  --chart-5: oklch(0.55 0.09 165);
+  --sidebar: oklch(0.19 0.025 255);
+  --sidebar-foreground: oklch(0.93 0.018 235);
+  --sidebar-primary: oklch(0.84 0.06 235);
+  --sidebar-primary-foreground: oklch(0.25 0.045 255);
+  --sidebar-accent: oklch(0.29 0.03 255);
+  --sidebar-accent-foreground: oklch(0.9 0.024 235);
+  --sidebar-border: oklch(0.7 0.05 245 / 20%);
+  --sidebar-ring: oklch(0.8 0.08 235 / 55%);
+
+  /* ---- glass studio helper tokens (phase 1; consumed by .glass-* classes,
+         reused by later phases for cards / rows / hero tiles) ---- */
+  --glass-bg: linear-gradient(180deg, oklch(0.3 0.035 255 / 32%), oklch(0.2 0.026 255 / 58%));
+  --glass-bg-solid: oklch(0.24 0.028 255 / 55%);
+  --glass-bg-strong: oklch(0.27 0.03 255 / 74%);
+  --glass-border: oklch(0.78 0.06 240 / 17%);
+  --glass-border-soft: oklch(0.78 0.06 240 / 11%);
+  --glass-highlight: oklch(0.88 0.05 232 / 26%);
+  --glass-beam: oklch(0.87 0.055 232 / 50%);
+  --glass-halo:
+    0 18px 50px oklch(0.04 0.018 255 / 55%),
+    0 2px 10px oklch(0.04 0.018 255 / 30%);
+  --glass-hairline: oklch(0.9 0.045 240 / 9%);
+  --glass-hairline-strong: oklch(0.9 0.045 240 / 13%);
+  /* reference accents (extracted from the studio template) */
+  --mint: oklch(0.82 0.09 170);        /* #8acdb8 — live dot / soft green */
+  --mint-deep: oklch(0.52 0.09 168);   /* #246950 */
+  --rose-soft: oklch(0.82 0.05 15);    /* #d8b3b7 */
+  --rose-deep: oklch(0.5 0.13 15);     /* #9b3d4d */
+  --sky-soft: oklch(0.8 0.08 240);     /* #92c6ec */
+  --steel: oklch(0.76 0.045 250);      /* #91adc9-ish secondary text */
+
+  /* ---- cycle-60 fantasy-realm accents (game-menu mood, same lightness
+         family as the studio accents so contrast stays unchanged) ---- */
+  --arcane: oklch(0.8 0.1 300);        /* spellwork violet — gradients/glows */
+  --arcane-deep: oklch(0.5 0.12 300);  /* deep violet for borders/washes */
+  --gold: oklch(0.84 0.12 85);         /* legend gold — quest/party accents */
+  --teal-soft: oklch(0.8 0.09 190);    /* aurora teal — secondary glow */
 }
 
 @layer base {
@@ -85,16 +136,325 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* cycle-60 fantasy night — the navy field keeps its studio pools but
+       the light turns arcane: violet bloom up top, aurora teal from below.
+       cycle-63: the twinkling star tile moved out — the richer layered
+       FantasyBackdrop (aurora + twin starfields) owns the ambience now. */
     background-image:
-      radial-gradient(ellipse 80% 50% at 50% -10%, oklch(0.3 0.05 155 / 25%), transparent),
-      radial-gradient(ellipse 60% 40% at 90% 110%, oklch(0.28 0.04 155 / 18%), transparent);
+      radial-gradient(ellipse 85% 55% at 50% -8%, oklch(0.34 0.07 295 / 26%), transparent 70%),
+      radial-gradient(ellipse 60% 42% at 88% 108%, oklch(0.3 0.06 200 / 15%), transparent),
+      radial-gradient(ellipse 45% 35% at 8% 85%, oklch(0.31 0.06 265 / 13%), transparent);
     background-attachment: fixed;
   }
 }
 
 /* Vazirmatn local font faces (loaded via next/font/local in layout) */
 
-/* Custom scrollbar */
+/* ------------------------------------------------------------------
+   Glass primitives — Football Glass Studio look:
+   translucent panel + 1px light border + light beam on the top edge
+   (::before) + inner top highlight + soft outer halo. Later theme
+   phases apply these to match cards / tables / hero tiles.
+   ------------------------------------------------------------------ */
+.glass-card {
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  /* cycle-60: rounder corners + a faint arcane halo — the panel reads as a
+     game-menu card instead of a dashboard tile */
+  border-radius: 1.25rem;
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 0 1px oklch(0.7 0.08 300 / 3%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.glass-card::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--glass-beam), transparent);
+  pointer-events: none;
+}
+
+/* lighter row-level glass (list items inside a card) */
+.glass-row {
+  background: oklch(0.28 0.03 255 / 38%);
+  border: 1px solid var(--glass-border-soft);
+  border-radius: 0.75rem;
+}
+
+/* featured hero tile (phase 2: Top Match) — the studio's glowing panel:
+   stronger sky border + corner light blooms + slightly brighter glass */
+.glass-hero {
+  background:
+    radial-gradient(140px 100px at 94% 0%, oklch(0.62 0.09 240 / 13%), transparent 72%),
+    radial-gradient(130px 95px at 4% 102%, oklch(0.62 0.09 240 / 9%), transparent 72%),
+    var(--glass-bg);
+  border: 1px solid oklch(0.8 0.07 235 / 26%);
+  /* ui-cycle-15: unify with .glass-card (1.25rem) — live audit at 390x844
+     showed every top-level glass panel at 20px except heroes at 17.6px,
+     sitting directly adjacent to cards on home/league/team/topscorers */
+  border-radius: 1.25rem;
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 0 26px oklch(0.6 0.09 240 / 10%);
+}
+
+/* amber-whisper variant (favorites fixtures card) — same glass, faint
+   warm tint in the upper half so the amber accent reads on-palette */
+.glass-amber {
+  background:
+    linear-gradient(180deg, oklch(0.83 0.11 85 / 4.5%), transparent 46%),
+    var(--glass-bg);
+}
+
+/* hairline separators between rows of a glass list — mirrors the studio
+   fixtures poster (0.8px lines, rgba(202,223,246,~0.1)) */
+.glass-list > * + * {
+  border-top: 1px solid oklch(0.9 0.045 240 / 9%);
+}
+
+/* soft steel hover for rows inside glass lists */
+.glass-row-hover {
+  transition: background-color 0.18s ease;
+}
+.glass-row-hover:hover {
+  background-color: oklch(0.84 0.06 235 / 5.5%);
+}
+
+/* ------------------------------------------------------------------
+   Phase 3 — statistics posters (standings table + scoring chart):
+   tinted column-header row, rank-1 row sky wash and the scorer hero
+   panel with an avatar bloom + oversized light metric number.
+   Hex values are kept verbatim from the studio canvas.
+   ------------------------------------------------------------------ */
+.glass-thead {
+  background: #8eb7e80c;
+}
+/* rank-1 wash — stronger edge sits at the rank side (RTL: right) */
+.glass-leader {
+  background: linear-gradient(to left, #a9cffb1c, #a9cffb06);
+}
+/* scoring-chart hero panel (studio: 29496569 to 254e7a22 to 233a5020) */
+.glass-scorer-hero {
+  background:
+    radial-gradient(220px 170px at 12% 55%, rgba(114, 169, 234, 0.2), transparent 70%),
+    linear-gradient(160deg, #29496569, #254e7a22 60%, #233a5020);
+  border: 1px solid oklch(0.8 0.07 235 / 22%);
+  /* ui-cycle-15: same panel-corner unification as .glass-hero */
+  border-radius: 1.25rem;
+  box-shadow: inset 0 1px 0 oklch(0.88 0.05 232 / 16%);
+}
+/* avatar / initials tile used inside the scorer hero */
+.glass-avatar {
+  border: 1px solid oklch(0.8 0.07 235 / 24%);
+  background: linear-gradient(150deg, #334f6b, #1d2c3f);
+  box-shadow: inset 0 1px 0 oklch(0.88 0.05 232 / 22%);
+}
+
+/* cycle-65 — hall of heroes: the topscorers leader tile gets a legend
+   aura (gold bloom + arcane underglow over the studio scorer hero) */
+.hero-legend {
+  background:
+    radial-gradient(240px 170px at 88% 18%, oklch(0.84 0.12 85 / 15%), transparent 70%),
+    radial-gradient(210px 160px at 4% 94%, oklch(0.7 0.1 300 / 17%), transparent 72%),
+    radial-gradient(220px 170px at 12% 55%, rgba(114, 169, 234, 0.2), transparent 70%),
+    linear-gradient(160deg, #29496569, #254e7a22 60%, #233a5020);
+  border: 1px solid oklch(0.84 0.1 85 / 26%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.88 0.05 232 / 16%),
+    0 0 26px oklch(0.7 0.1 300 / 13%);
+}
+.hero-legend .glass-avatar {
+  border-color: oklch(0.84 0.12 85 / 38%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.88 0.05 232 / 22%),
+    0 0 16px oklch(0.84 0.12 85 / 30%);
+}
+
+/* floating overlay panel (phase 5: search dropdown) — stronger glass for
+   elements that hover above the page: heavier blur + brighter border */
+.glass-popover {
+  background: var(--glass-bg-strong);
+  border: 1px solid oklch(0.8 0.07 235 / 24%);
+  box-shadow: var(--glass-halo), inset 0 1px 0 var(--glass-highlight);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+/* ui-cycle-3 — chrome glass (sticky header slab + bottom nav dock):
+   backdrop hardened. At 74% alpha the page content scrolling behind the
+   header/dock stayed legible and competed with the chrome itself. The
+   chrome variant keeps the same glass language but the ink base is
+   near-opaque, so bleed-through rows collapse into unreadable depth
+   instead of competing text.
+   NOTE: the blur itself is applied via React inline style on the two
+   slabs, NOT here — the CSS pipeline (lightningcss) compiles
+   `backdrop-filter` down to only the -webkit- prefixed form, which
+   modern Chromium ignores (computed value stayed "none"; that prefix
+   stripping is the real root cause of the BL-3 bleed-through). Inline
+   styles reach the DOM untouched: standard property + -webkit- fallback.
+   Display layer only — borders/shadows still come from .glass-popover. */
+.glass-chrome {
+  background: linear-gradient(
+    180deg,
+    oklch(0.24 0.028 255 / 93%),
+    oklch(0.2 0.026 255 / 96%)
+  );
+}
+
+/* red live glow — pulsing minute text / dot (studio rose-red accent) */
+.live-glow {
+  text-shadow:
+    0 0 12px oklch(0.62 0.2 25 / 55%),
+    0 0 3px oklch(0.62 0.2 25 / 75%);
+}
+.live-dot-glow {
+  box-shadow:
+    0 0 9px oklch(0.62 0.21 25 / 85%),
+    0 0 2.5px oklch(0.7 0.19 25 / 90%);
+}
+
+/* sticky bars (header / footer chrome): blurred navy glass slab */
+.glass-bar {
+  background: oklch(0.18 0.024 255 / 72%);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--glass-border-soft);
+  box-shadow:
+    inset 0 1px 0 oklch(0.85 0.05 232 / 7%),
+    0 10px 28px oklch(0.03 0.015 255 / 35%);
+}
+/* footer variant — light comes from below the page, halo reads softer */
+.glass-bar-footer {
+  background: oklch(0.18 0.024 255 / 60%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid var(--glass-border-soft);
+}
+
+/* brand glyph — logo tile, mirrors the studio identity mark
+   (gradient navy tile, 1px steel border, top light inset).
+   cycle-61: arcane identity — violet aura ring + hover bloom. */
+.brand-glyph {
+  border: 1px solid oklch(0.62 0.05 245 / 55%);
+  border-radius: 12px 4px;
+  background: linear-gradient(140deg, oklch(0.33 0.045 255), oklch(0.18 0.028 255));
+  box-shadow: inset 0 1px 0 oklch(0.85 0.06 232 / 28%);
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.brand-glyph:hover {
+  border-color: oklch(0.7 0.09 300 / 60%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.85 0.06 232 / 28%),
+    0 0 16px oklch(0.7 0.1 300 / 35%),
+    0 0 3px oklch(0.84 0.12 85 / 25%);
+}
+
+/* cycle-61 — arcane gradient text: near-white steel melting into spellwork
+   violet with a legend-gold tail; used for the wordmark and card titles.
+   Always paired with a solid fallback color first (color: transparent only
+   inside the class, degrades to transparent if clip unsupported — we accept
+   it: every evergreen target supports background-clip: text).
+   ui-cycle-10: the `background:` shorthand RESETS background-clip to
+   border-box (a later theme override restated the class with a
+   shorthand — measured live: computed clip = border-box -> gradient
+   painted whole boxes with invisible glyphs). The longhand
+   background-image survives the pipeline and keeps clip: text intact. */
+.arcane-text {
+  background-image: linear-gradient(
+    100deg,
+    oklch(0.95 0.02 235) 0%,
+    oklch(0.88 0.05 245) 45%,
+    oklch(0.83 0.09 295) 78%,
+    oklch(0.86 0.1 85) 105%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* cycle-64 — quest scoreboard: podium medallions for ranks 1-3 */
+.rank-medal {
+  width: 22px;
+  height: 22px;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 10px;
+  border: 1px solid transparent;
+}
+.rank-medal-gold {
+  color: oklch(0.88 0.1 88);
+  border-color: oklch(0.84 0.12 85 / 45%);
+  background: oklch(0.84 0.12 85 / 12%);
+  box-shadow: 0 0 9px oklch(0.84 0.12 85 / 28%), inset 0 1px 0 oklch(0.9 0.08 90 / 30%);
+}
+.rank-medal-silver {
+  color: oklch(0.9 0.02 240);
+  border-color: oklch(0.85 0.03 240 / 40%);
+  background: oklch(0.85 0.03 240 / 10%);
+  box-shadow: 0 0 7px oklch(0.85 0.03 240 / 18%), inset 0 1px 0 oklch(0.9 0.02 240 / 22%);
+}
+.rank-medal-bronze {
+  color: oklch(0.8 0.09 55);
+  border-color: oklch(0.72 0.1 55 / 45%);
+  background: oklch(0.72 0.1 55 / 12%);
+  box-shadow: 0 0 7px oklch(0.72 0.1 55 / 22%), inset 0 1px 0 oklch(0.82 0.08 60 / 25%);
+}
+
+/* cycle-64 — rows march in like a leaderboard reveal (stagger via
+   inline animation-delay; frozen by the global reduced-motion guard) */
+@keyframes sb-row-in {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: none; }
+}
+.sb-row-in {
+  animation: sb-row-in 0.42s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+/* cycle-66 — command-palette feel for the search dropdown:
+   the keyboard-selected row glows like a highlighted menu option,
+   and the panel opens with a quick game-menu pop */
+@keyframes cmd-open {
+  from { opacity: 0; transform: translateY(-6px) scale(0.975); }
+  to { opacity: 1; transform: none; }
+}
+.cmd-open {
+  animation: cmd-open 0.18s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  transform-origin: top;
+}
+.cmd-active {
+  background: linear-gradient(90deg, oklch(0.7 0.1 300 / 10%), oklch(0.8 0.08 240 / 6%));
+  box-shadow:
+    inset 0 0 0 1px oklch(0.7 0.1 300 / 22%),
+    0 0 14px oklch(0.7 0.1 300 / 10%);
+}
+
+/* cycle-67 — realm chronicle: news cards levitate on hover with an
+   arcane underglow; entrance reuses the staggered reveal */
+.chronicle-card {
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.chronicle-card:hover {
+  transform: translateY(-3px);
+  border-color: oklch(0.7 0.09 300 / 35%);
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 30px oklch(0.5 0.1 300 / 14%),
+    0 0 18px oklch(0.7 0.1 300 / 10%);
+}
+
+/* Custom scrollbar — cycle-68: arcane thumb, game-menu track */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -103,11 +463,20 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: oklch(0.35 0.02 165);
+  background: linear-gradient(180deg, oklch(0.45 0.06 290), oklch(0.34 0.03 255));
   border-radius: 8px;
+  border: 1px solid oklch(0.7 0.08 300 / 12%);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: oklch(0.45 0.03 155);
+  background: linear-gradient(180deg, oklch(0.58 0.09 295), oklch(0.44 0.045 245));
+}
+
+/* cycle-68 — keyboard wanderers get a legend-gold sight: consistent
+   focus-visible ring across the realm (links, buttons, inputs) */
+:focus-visible {
+  outline: 2px solid oklch(0.84 0.12 85 / 60%);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
 
 /* Live pulse animation */
@@ -119,16 +488,57 @@
   animation: live-pulse 1.4s ease-in-out infinite;
 }
 
-/* Subtle score highlight for goals */
+/* cycle-60 — the night sky breathes: slow opacity drift over the star tile
+   (keyframes kept for the campaign's ambient layers; the body tile itself
+   was retired in cycle-63 in favor of FantasyBackdrop) */
+@keyframes star-twinkle {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.45; }
+}
+
+/* cycle-60 — respect players who prefer calm: freeze every decoration
+   (twinkle, pulses, later campaign motion) to its first frame */
+/* ui-cycle-8 (BL-8 audit): zero the DELAYS too. The staggered entrances
+   ride inline animation-delay (news cards up to 660ms, standings rows up
+   to 560ms) with fill-mode both — under reduce the duration was already
+   0.01ms but the delay survived, so reduced-motion users stared at
+   invisible from-frames (opacity:0) that popped in piecewise for ~0.7s.
+   Zeroing both delay species makes every entrance land instantly. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
+    transition-delay: 0ms !important;
+  }
+}
+
+/* cycle-60 — legend-gold selection: the little game-feel detail everyone
+   touches when selecting text */
+::selection {
+  background: oklch(0.84 0.12 85 / 30%);
+  color: oklch(0.97 0.03 90);
+}
+
+/* cycle-62 — the game-menu dock is fixed over the thumb zone on phones;
+   every page ends with breathing room so the footer never hides behind it */
+@media (max-width: 639px) {
+  body {
+    padding-bottom: 5.25rem;
+  }
+}
+
+/* Subtle score highlight for goals (soft mint flash, on-palette) */
 @keyframes goal-flash {
-  0% { background-color: oklch(0.78 0.19 155 / 35%); }
+  0% { background-color: oklch(0.8 0.09 170 / 30%); }
   100% { background-color: transparent; }
 }
 .goal-flash {
   animation: goal-flash 1.6s ease-out;
 }
 
-/* Pitch line decoration for header */
+/* Pitch line decoration (kept — reads as fine glass etching on navy) */
 .pitch-lines {
   background-image: repeating-linear-gradient(
     90deg,
@@ -142,4 +552,668 @@
 /* Persian numerals stay crisp */
 .tabular-persian {
   font-variant-numeric: tabular-nums;
+}
+
+/* ui-cycle-17: in-content touch hit-area expansion (mobile 390x844;
+   WCAG 2.5.8 aims for >=24px). Two instruments, chosen per element:
+   - .tap-hit-name for the stacked primary row links: they truncate
+     (overflow:hidden clips any ::after), are bare text (no bg/border),
+     so invisible vertical padding + equal negative margin widens the
+     clickable box with zero net layout: +4px up into the row's 10px
+     padding, +1px down toward the league chip (their 2px gap stays
+     exactly consumed, no overlap), rows keep their measured heights.
+   - .tap-hit-chip for the league chip links: no overflow clipping, so
+     a transparent absolute ::after extends the tap box 1px up / 5px
+     down / 3px sideways into the 6px flex gaps — no paint, no layout,
+     and it never reaches the neighbouring row (5+4 <= 10px padding +
+     1px border). */
+.tap-hit-name {
+  /* ui-cycle-28: 4→5 top — Latin-script names measured 23.0-23.8px effective
+     (WCAG 2.5.8 aim 24); +1px up stays inside the rows' 10px vertical padding
+     (topscorers rows py-2.5, league standings rows py-2.5), text position is
+     untouched because the extra padding cancels against the extra margin. */
+  padding-top: 5px;
+  padding-bottom: 1px;
+  margin-top: -5px;
+  margin-bottom: -1px;
+}
+.tap-hit-chip {
+  position: relative;
+}
+.tap-hit-chip::after {
+  content: "";
+  position: absolute;
+  inset: -1px -3px -5px;
+}
+/* league standings variant: the row link is a flex box (its inner span
+   truncates, the <a> itself does not clip), so a transparent ::after
+   grows the tap box to 22+8=30px; td py-2 (8px) absorbs 4+4 from
+   adjacent rows with zero overlap, and the points cell to the sides is
+   not interactive. */
+.tap-hit-row {
+  position: relative;
+}
+.tap-hit-row::after {
+  content: "";
+  position: absolute;
+  inset: -4px -6px;
+}
+
+/* ==================================================================
+   Fantasy Quest layer (ui-quest 1-10) — a minimal game-menu atmosphere
+   laid over the Football Glass Studio theme: drifting aurora fields,
+   twinkling stars, rune diamonds, glowing quest tabs, summoning
+   skeletons and forged score numerals. CSS-only; every continuous
+   animation is transform/opacity and wrapped in a
+   prefers-reduced-motion guard so motion-sensitive users get the
+   calm static version. No layout-affecting properties animate.
+   ================================================================== */
+
+:root {
+  --arcane: oklch(0.72 0.13 295);            /* violet "arcane" glow */
+  --arcane-soft: oklch(0.72 0.13 295 / 32%);
+}
+
+/* ---- UI-1: enchanted backdrop (aurora fields + starfield) ----
+   rendered by <FantasyBackdrop/> as a fixed pointer-less layer */
+.fx-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.fx-aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(72px);
+  opacity: 0.15;
+  will-change: transform;
+}
+.fx-aurora-a {
+  width: 48vmax; height: 48vmax; top: -20vmax; right: -14vmax;
+  background: radial-gradient(circle, oklch(0.62 0.14 240), transparent 66%);
+}
+.fx-aurora-b {
+  width: 42vmax; height: 42vmax; bottom: -18vmax; left: -12vmax;
+  background: radial-gradient(circle, var(--arcane), transparent 66%);
+  opacity: 0.11;
+}
+.fx-aurora-c {
+  width: 30vmax; height: 30vmax; top: 40%; left: 26%;
+  background: radial-gradient(circle, oklch(0.66 0.11 168), transparent 66%);
+  opacity: 0.09;
+}
+/* two star layers at different phases → soft twinkle chorus */
+.fx-stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.55;
+  background-image:
+    radial-gradient(1.3px 1.3px at 12% 22%, oklch(0.95 0.02 240 / 70%), transparent 100%),
+    radial-gradient(1px 1px at 34% 68%, oklch(0.9 0.03 295 / 65%), transparent 100%),
+    radial-gradient(1.4px 1.4px at 55% 12%, oklch(0.95 0.02 240 / 55%), transparent 100%),
+    radial-gradient(1px 1px at 72% 44%, oklch(0.88 0.04 168 / 60%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 86% 76%, oklch(0.95 0.02 240 / 60%), transparent 100%),
+    radial-gradient(1px 1px at 24% 88%, oklch(0.9 0.03 240 / 55%), transparent 100%),
+    radial-gradient(1.1px 1.1px at 64% 92%, oklch(0.9 0.03 295 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 92% 18%, oklch(0.92 0.02 240 / 55%), transparent 100%);
+}
+.fx-stars-b {
+  opacity: 0.4;
+  transform: scale(1.015) rotate(0.4deg);
+  background-image:
+    radial-gradient(1.2px 1.2px at 8% 55%, oklch(0.92 0.02 240 / 60%), transparent 100%),
+    radial-gradient(1px 1px at 28% 8%, oklch(0.9 0.03 168 / 55%), transparent 100%),
+    radial-gradient(1.3px 1.3px at 46% 38%, oklch(0.95 0.02 240 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 60% 82%, oklch(0.9 0.03 295 / 55%), transparent 100%),
+    radial-gradient(1.2px 1.2px at 78% 26%, oklch(0.94 0.02 240 / 55%), transparent 100%),
+    radial-gradient(1px 1px at 96% 60%, oklch(0.9 0.03 240 / 50%), transparent 100%),
+    radial-gradient(1.1px 1.1px at 40% 95%, oklch(0.9 0.03 240 / 50%), transparent 100%),
+    radial-gradient(1px 1px at 3% 82%, oklch(0.92 0.02 295 / 50%), transparent 100%);
+}
+
+/* ---- UI-2: portal gate (first-hit game boot screen) ---- */
+.portal-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: oklch(0.13 0.022 255 / 82%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  pointer-events: none; /* pure ambience — never blocks the page */
+  animation: gate-in 0.45s ease both;
+}
+.portal-gate-out { animation: gate-out 0.6s ease both; }
+@keyframes gate-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes gate-out { from { opacity: 1; } to { opacity: 0; } }
+.portal-gate-core { text-align: center; animation: gate-rise 0.7s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+@keyframes gate-rise { from { opacity: 0; transform: translateY(14px) scale(0.94); } to { opacity: 1; transform: none; } }
+.portal-gate-glyph {
+  width: 64px; height: 64px; margin: 0 auto 14px;
+  border-radius: 18px 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+  background: linear-gradient(140deg, oklch(0.36 0.05 255), oklch(0.19 0.03 255));
+  border: 1px solid oklch(0.7 0.07 245 / 55%);
+  box-shadow:
+    inset 0 1px 0 oklch(0.88 0.06 232 / 30%),
+    0 0 34px var(--arcane-soft),
+    0 0 14px oklch(0.72 0.1 240 / 35%);
+  animation: gate-glyph 1.5s ease-in-out infinite alternate;
+}
+@keyframes gate-glyph {
+  from { box-shadow: inset 0 1px 0 oklch(0.88 0.06 232 / 30%), 0 0 20px var(--arcane-soft), 0 0 8px oklch(0.72 0.1 240 / 25%); }
+  to   { box-shadow: inset 0 1px 0 oklch(0.88 0.06 232 / 30%), 0 0 44px var(--arcane-soft), 0 0 18px oklch(0.72 0.1 240 / 45%); }
+}
+.portal-gate-title {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(100deg, oklch(0.96 0.01 235) 20%, oklch(0.8 0.09 240) 46%, oklch(0.82 0.1 295) 54%, oklch(0.96 0.01 235) 80%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: gate-shine 1.6s linear infinite;
+}
+@keyframes gate-shine { from { background-position: 130% 0; } to { background-position: -90% 0; } }
+.portal-gate-sub { margin-top: 6px; font-size: 11.5px; font-weight: 700; color: var(--steel); }
+
+/* ---- UI-3: game-press micro-interactions ----
+   .press-fx — tactile squash on :active for buttons/chips/tabs
+   .lift      — hover float for glass cards (hover-capable devices only) */
+.press-fx { transition: transform 0.12s ease; }
+.press-fx:active { transform: scale(0.965); }
+.lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+}
+@media (hover: hover) {
+  .lift:hover {
+    transform: translateY(-2px);
+    border-color: oklch(0.8 0.07 235 / 30%);
+    box-shadow:
+      var(--glass-halo),
+      inset 0 1px 0 var(--glass-highlight),
+      0 0 22px oklch(0.6 0.09 240 / 12%);
+  }
+}
+
+/* ---- UI-4: rune-marked section titles ----
+   inline arcane diamond before the text; truncate-safe (inline pseudo) */
+.rune-title::before {
+  content: "✦";
+  display: inline-block;
+  margin-inline-end: 0.45rem;
+  font-size: 0.78em;
+  color: var(--arcane);
+  opacity: 0.9;
+  filter: drop-shadow(0 0 6px var(--arcane-soft));
+  vertical-align: 0.08em;
+}
+/* gradient-forged text for hero titles only (keep body copy flat) */
+.rune-glow {
+  background: linear-gradient(100deg, oklch(0.96 0.012 235) 30%, oklch(0.85 0.07 240) 70%, oklch(0.83 0.08 295 / 90%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* arcane-tinted inline glyphs (vs marks / footer separators) */
+.fx-arcane-text {
+  color: var(--arcane);
+  filter: drop-shadow(0 0 6px var(--arcane-soft));
+}
+
+/* ---- UI-5: quest tabs (diamond + glow beam on the active tab) ----
+   works wherever aria-current="page" is set — no per-site JS needed */
+.tab-rune { position: relative; }
+.tab-rune::after {
+  content: "";
+  position: absolute;
+  inset-inline: 14%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  box-shadow: 0 0 9px currentColor;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.tab-rune::before {
+  content: "◆";
+  position: absolute;
+  bottom: -2.5px;
+  left: 50%;
+  transform: translateX(-50%) scale(0);
+  font-size: 7px;
+  line-height: 1;
+  color: currentColor;
+  filter: drop-shadow(0 0 5px currentColor);
+  transition: transform 0.2s ease;
+}
+.tab-rune[aria-current="page"]::after { opacity: 1; }
+.tab-rune[aria-current="page"]::before { transform: translateX(-50%) scale(1); }
+
+/* ---- UI-6: summoning skeletons (rune sweep over the pulse) ---- */
+.summon-glyph { position: relative; overflow: hidden; }
+.summon-glyph::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 22%, oklch(0.85 0.06 235 / 12%) 50%, transparent 78%);
+  transform: translateX(-110%);
+  animation: summon-sweep 1.7s ease-in-out infinite;
+}
+@keyframes summon-sweep { to { transform: translateX(110%); } }
+.rune-spin {
+  color: var(--arcane);
+  filter: drop-shadow(0 0 9px var(--arcane-soft));
+  animation: rune-spin 2.8s linear infinite;
+}
+@keyframes rune-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ---- UI-7: forged score numerals + live battle ring ---- */
+.score-forge {
+  background: linear-gradient(180deg, oklch(0.97 0.015 235) 15%, oklch(0.8 0.06 235 / 85%));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 2px 12px oklch(0.62 0.09 240 / 35%));
+}
+.score-battle {
+  animation: score-breathe 2.2s ease-in-out infinite;
+}
+@keyframes score-breathe {
+  0%, 100% { filter: drop-shadow(0 2px 10px oklch(0.62 0.2 25 / 25%)); }
+  50% { filter: drop-shadow(0 2px 16px oklch(0.62 0.21 25 / 55%)); }
+}
+
+/* ---- UI-8: rune ring for empty-state icon tiles ---- */
+.rune-ring { position: relative; }
+.rune-ring::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  border: 1px dashed oklch(0.72 0.1 295 / 45%);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* ---- UI-9: HUD beams on the chrome bars + arcane focus glow ---- */
+.glass-bar { position: relative; }
+.glass-bar::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  inset-inline: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 6%, oklch(0.8 0.09 240 / 40%), oklch(0.8 0.08 295 / 30%), transparent 94%);
+  pointer-events: none;
+}
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  outline: 2px solid transparent;
+  box-shadow:
+    0 0 0 2px oklch(0.72 0.13 295 / 70%),
+    0 0 16px oklch(0.72 0.13 295 / 45%);
+}
+
+/* ---- UI-10: gradient scrollbar + soft card entrance ---- */
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, oklch(0.46 0.06 260), oklch(0.3 0.04 255));
+  box-shadow: inset 0 0 0 1px oklch(0.7 0.08 260 / 22%);
+  border-radius: 8px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, oklch(0.56 0.08 262), oklch(0.38 0.05 255));
+}
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(7px) scale(0.996); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ---- motion-safety: the whole fantasy layer goes static ---- */
+@media (prefers-reduced-motion: reduce) {
+  .fx-aurora, .fx-stars, .fx-stars-b { animation: none !important; }
+  .portal-gate, .portal-gate-core, .portal-gate-glyph { animation: none !important; }
+  .summon-glyph::after { animation: none !important; opacity: 0; }
+  .rune-spin { animation: none !important; }
+  .score-battle { animation: none !important; }
+  .rune-ring::before { animation: none !important; }
+  .glass-card, .glass-hero, .glass-scorer-hero { animation: none !important; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .fx-aurora-a { animation: aurora-a 26s ease-in-out infinite alternate; }
+  .fx-aurora-b { animation: aurora-b 33s ease-in-out infinite alternate; }
+  .fx-aurora-c { animation: aurora-c 39s ease-in-out infinite alternate; }
+  .fx-stars { animation: twinkle-a 5.5s ease-in-out infinite alternate; }
+  .fx-stars-b { animation: twinkle-b 7s ease-in-out infinite alternate; }
+  .rune-ring::before { animation: rune-orbit 16s linear infinite; }
+  /* ui-cycle-14: the entrance now rides the .reveal class that CardReveal
+     (IntersectionObserver, root layout) adds when a card actually nears the
+     viewport. Before: all 186 glass-cards on the home portal animated at
+     t=0 — 183 below the fold, finishing before any scroll could reach them
+     (pure startup waste, effect never seen). Cards without .reveal are
+     fully visible (the opacity:0 from-frame only exists under the
+     animation), so SSR/no-JS/RM degrade to "no entrance", never to blank. */
+  .glass-card.reveal, .glass-hero.reveal, .glass-scorer-hero.reveal { animation: card-in 0.38s ease both; }
+}
+@keyframes aurora-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(-7vmax, 5vmax, 0) scale(1.14); } }
+@keyframes aurora-b { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(6vmax, -4vmax, 0) scale(0.94); } }
+@keyframes aurora-c { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-5vmax, -3vmax, 0) scale(1.18); } }
+@keyframes twinkle-a { from { opacity: 0.3; } to { opacity: 0.62; } }
+@keyframes twinkle-b { from { opacity: 0.5; } to { opacity: 0.22; } }
+@keyframes rune-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* ==================================================================
+   Midnight Codex — cycle-211 redesign foundation (user's direct order
+   2026-10-30: «minimal fantasy» per wowfarsi.ir, no more boxes)
+   Reference language (wowfarsi.ir "Midnight Codex" v8, probed live):
+   ~80% deep cool dark, warm gold accents, sparse deep-blue highlights;
+   every surface speaks the logo flourish — a 1px hairline that FADES
+   at its ends, broken by a small ring + dot; NO solid box borders.
+   Load-last layer: re-maps the tokens every existing class consumes,
+   so the whole portal shifts language without touching any DOM,
+   testid, aria-label or pinned text (the 166/191/202/207 contracts).
+   ================================================================== */
+:root {
+  /* the codex palette (verbatim from the reference) */
+  --codex-ink-0: #04060b;
+  --codex-ink-1: #070a12;
+  --codex-ink-2: #0b0f1a;
+  --codex-gold-1: #f6e0a3;
+  --codex-gold-2: #f0c75e;
+  --codex-gold-3: #c9a232;
+  --codex-gold-4: #8a6a2a;
+  --codex-gold-dim: rgba(240, 199, 94, 0.32);
+  --codex-blue-1: #8fb4e8;
+  --codex-blue-2: #3d5f96;
+  --codex-blue-3: #17263f;
+  --codex-parch: #e8e3d6;
+  --codex-parch-dim: #a8a294;
+  --codex-mut: #857f6f;
+  /* re-map the studio tokens the components consume (end-of-file wins) */
+  --background: var(--codex-ink-0);
+  --foreground: var(--codex-parch);
+  --card: var(--codex-ink-1);
+  --card-foreground: var(--codex-parch);
+  --popover: var(--codex-ink-1);
+  --popover-foreground: var(--codex-parch);
+  --primary: var(--codex-gold-2);
+  --primary-foreground: #241a06;
+  --secondary: var(--codex-ink-2);
+  --secondary-foreground: var(--codex-parch);
+  --muted: var(--codex-ink-2);
+  --muted-foreground: var(--codex-parch-dim);
+  --accent: var(--codex-ink-2);
+  --accent-foreground: var(--codex-parch);
+  --border: rgba(240, 199, 94, 0.14);
+  --input: rgba(240, 199, 94, 0.2);
+  --ring: rgba(240, 199, 94, 0.5);
+  --steel: var(--codex-parch-dim);
+  /* the glass family goes codex: darker glass, gold hairlines */
+  --glass-bg: linear-gradient(180deg, rgba(11, 15, 26, 0.5), rgba(4, 6, 11, 0.72));
+  --glass-bg-solid: rgba(7, 10, 18, 0.66);
+  --glass-bg-strong: rgba(11, 15, 26, 0.82);
+  --glass-border: rgba(240, 199, 94, 0.15);
+  --glass-border-soft: rgba(240, 199, 94, 0.09);
+  --glass-highlight: rgba(246, 224, 163, 0.16);
+  --glass-beam: rgba(240, 199, 94, 0.4);
+  --glass-hairline: rgba(240, 199, 94, 0.12);
+  --glass-hairline-strong: rgba(240, 199, 94, 0.2);
+  --glass-halo:
+    0 18px 50px rgba(0, 0, 0, 0.55),
+    0 2px 10px rgba(0, 0, 0, 0.3);
+  /* the cycle-60 accents speak gold now (wordmark, runes, ✦ separators) */
+  --arcane: var(--codex-gold-2);
+  /* cycle-214 (fix, census root 1/4): the 211 layer re-mapped --arcane
+     but skipped its 32%-alpha twin — every drop-shadow/box-shadow that
+     consumes --arcane-soft (rune diamonds, fx-arcane-text separators,
+     the portal-gate glyph + its keyframes, rune-spin) kept glowing
+     violet; one token line heals the whole family */
+  --arcane-soft: var(--codex-gold-dim);
+  --arcane-deep: var(--codex-gold-4);
+  --gold: var(--codex-gold-2);
+  --teal-soft: var(--codex-blue-1);
+  --sky-soft: var(--codex-blue-1);
+  --mint: var(--codex-gold-1);
+}
+
+@layer base {
+  /* the night field: deep ink + one warm pool up top, one cold pool below */
+  body {
+    background-color: var(--codex-ink-0);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -10%, rgba(61, 95, 150, 0.16), transparent 70%),
+      radial-gradient(ellipse 55% 38% at 86% 106%, rgba(240, 199, 94, 0.07), transparent),
+      radial-gradient(ellipse 42% 34% at 6% 88%, rgba(23, 38, 63, 0.5), transparent);
+    background-attachment: fixed;
+  }
+  ::selection { background: rgba(240, 199, 94, 0.26); color: #fff8e7; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: var(--codex-ink-0); }
+  ::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #2b3648, #1a2333 55%, #4a3d1e);
+    border-radius: 8px;
+    border: 2px solid var(--codex-ink-0);
+  }
+  ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #3d4c66, #24304a 55%, #6b5324); }
+}
+
+/* ---------- the tome frame: the card loses its box border and speaks
+   the flourish — top+bottom hairlines that fade at their ends, the top
+   one broken by a glowing gold diamond (the reference's tome geometry,
+   radius-safe: no side lines to fight the corners) ---------- */
+.glass-card {
+  border-color: transparent;
+  background:
+    linear-gradient(90deg, transparent, var(--glass-hairline-strong) 12%, var(--glass-hairline-strong) 88%, transparent) center top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, var(--glass-hairline) 18%, var(--glass-hairline) 82%, transparent) center bottom / 100% 1px no-repeat,
+    radial-gradient(ellipse 55% 48% at 18% 0%, rgba(240, 199, 94, 0.06), transparent 72%),
+    var(--glass-bg);
+}
+.glass-card::before {
+  /* the old light beam becomes the ornament: a glowing gold diamond
+     centered on the top hairline */
+  top: 0;
+  left: 50%;
+  right: auto;
+  width: 7px;
+  height: 7px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border-radius: 1px;
+  background: var(--codex-gold-2);
+  box-shadow: 0 0 9px rgba(240, 199, 94, 0.85);
+}
+.glass-hero {
+  border: none;
+  background:
+    radial-gradient(150px 110px at 92% 0%, rgba(61, 95, 150, 0.2), transparent 72%),
+    radial-gradient(140px 100px at 4% 104%, rgba(240, 199, 94, 0.09), transparent 72%),
+    linear-gradient(90deg, transparent, rgba(240, 199, 94, 0.3) 14%, rgba(240, 199, 94, 0.3) 86%, transparent) center top / 100% 1px no-repeat,
+    linear-gradient(90deg, transparent, rgba(240, 199, 94, 0.16) 18%, rgba(240, 199, 94, 0.16) 82%, transparent) center bottom / 100% 1px no-repeat,
+    var(--glass-bg);
+}
+.glass-row {
+  background: rgba(11, 15, 26, 0.42);
+  border-color: rgba(240, 199, 94, 0.08);
+}
+.glass-row-hover:hover {
+  background: rgba(240, 199, 94, 0.045);
+  border-color: rgba(240, 199, 94, 0.2);
+}
+
+/* ---------- ambient fields: violet/teal aurora → cold blue + gold dust */
+.fx-aurora-a { background: radial-gradient(circle, rgba(61, 95, 150, 0.5), transparent 66%); }
+.fx-aurora-b { background: radial-gradient(circle, rgba(240, 199, 94, 0.14), transparent 66%); }
+.fx-aurora-c { background: radial-gradient(circle, rgba(23, 38, 63, 0.85), transparent 66%); }
+
+/* ---------- utilities for the page-level codex passes (212+) ---------- */
+.text-gold-grad {
+  background: linear-gradient(160deg, #f9ecc0 0%, #f0c75e 35%, #c9a232 62%, #f0c75e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  text-shadow: none;
+}
+.codex-hairline {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--codex-gold-dim) 18%, var(--codex-gold-dim) 82%, transparent);
+}
+.codex-ornament {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+.codex-ornament::before,
+.codex-ornament::after {
+  content: "";
+  height: 1px;
+  flex: 1;
+  background: linear-gradient(90deg, transparent, var(--codex-gold-dim), transparent);
+}
+.codex-ornament > i {
+  width: 5px;
+  height: 5px;
+  transform: rotate(45deg);
+  background: var(--codex-gold-2);
+  box-shadow: 0 0 8px rgba(240, 199, 94, 0.9);
+}
+
+/* ------------------------------------------------------------------
+   Midnight Codex — page-level pass (cycle-212): the last violet speaks
+   gold. The cycle-60/61 era hard-coded violet oklch(hue 295-300) glows
+   in shadows and gradients that no token re-map could reach; they are
+   restated here in the codex language (gold + deep blue), same shapes,
+   same geometry — visual only, zero DOM/testid/pinned-text impact.
+   ------------------------------------------------------------------ */
+/* the focus ring: violet → gold (the reference's selection language) */
+:where(a, button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  box-shadow:
+    0 0 0 2px rgba(240, 199, 94, 0.55),
+    0 0 16px rgba(240, 199, 94, 0.25);
+}
+/* glass-card: drop the violet 1px halo-ring the studio base kept */
+.glass-card {
+  box-shadow: var(--glass-halo), inset 0 1px 0 var(--glass-highlight);
+}
+/* the header slab + search dialog: gold hairline frame */
+.glass-popover {
+  border-color: rgba(240, 199, 94, 0.16);
+}
+/* the command palette's active row: violet wash → gold wash */
+.cmd-active {
+  background: linear-gradient(90deg, rgba(240, 199, 94, 0.1), rgba(61, 95, 150, 0.08));
+  box-shadow:
+    inset 0 0 0 1px rgba(240, 199, 94, 0.22),
+    0 0 14px rgba(240, 199, 94, 0.1);
+}
+/* scorer hero: navy glass → codex ink with a blue pool + gold dust */
+.glass-scorer-hero {
+  background:
+    radial-gradient(220px 170px at 12% 55%, rgba(61, 95, 150, 0.22), transparent 70%),
+    linear-gradient(160deg, rgba(23, 38, 63, 0.55), rgba(7, 10, 18, 0.6) 60%, rgba(4, 6, 11, 0.72));
+  border-color: rgba(240, 199, 94, 0.18);
+  box-shadow: inset 0 1px 0 rgba(246, 224, 163, 0.14);
+}
+.glass-avatar {
+  border-color: rgba(240, 199, 94, 0.2);
+  background: linear-gradient(150deg, #17263f, #070a12);
+  box-shadow: inset 0 1px 0 rgba(246, 224, 163, 0.18);
+}
+/* hall of heroes: the arcane underglow becomes gold dust on ink */
+.hero-legend {
+  background:
+    radial-gradient(240px 170px at 88% 18%, rgba(240, 199, 94, 0.16), transparent 70%),
+    radial-gradient(210px 160px at 4% 94%, rgba(61, 95, 150, 0.2), transparent 72%),
+    linear-gradient(160deg, rgba(23, 38, 63, 0.5), rgba(4, 6, 11, 0.7));
+  border-color: rgba(240, 199, 94, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(246, 224, 163, 0.16),
+    0 0 26px rgba(240, 199, 94, 0.12);
+}
+/* the brand glyph: violet aura → gold aura (hover bloom included) */
+.brand-glyph {
+  border-color: rgba(240, 199, 94, 0.3);
+  background: linear-gradient(140deg, #17263f, #04060b);
+}
+.brand-glyph:hover {
+  border-color: rgba(240, 199, 94, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(246, 224, 163, 0.22),
+    0 0 16px rgba(240, 199, 94, 0.3),
+    0 0 3px rgba(240, 199, 94, 0.25);
+}
+/* the wordmark gradient: parchment steel melting into gold (the codex
+   text treatment — same stops shape, gold instead of violet)
+   ui-cycle-10: longhand here too — this later override previously used
+   the `background:` shorthand, which silently RESET background-clip
+   back to border-box after cycle-61 set it (measured live: computed
+   clip = border-box -> the gradient painted whole boxes with invisible
+   glyphs instead of filling the letterforms) */
+.arcane-text {
+  background-image: linear-gradient(
+    100deg,
+    #f9ecc0 0%,
+    #f0c75e 45%,
+    #c9a232 78%,
+    #f6e0a3 105%
+  );
+}
+
+/* cycle-212: the active-tab marker speaks the flourish — a 1px gold
+   hairline that fades at its ends, broken by a small glowing diamond
+   (the reference's nav language; replaces the old solid 2px bar) */
+.codex-tab-underline {
+  background: linear-gradient(90deg, transparent, rgba(240, 199, 94, 0.55) 18%, rgba(240, 199, 94, 0.55) 82%, transparent);
+}
+.codex-tab-underline::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 5px;
+  height: 5px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: var(--codex-gold-2);
+  box-shadow: 0 0 8px rgba(240, 199, 94, 0.85);
+  border-radius: 1px;
+}
+
+/* ==================================================================
+   cycle-214 (fix) — the 4-root violet cleanup, additive-CSS only:
+   the cycle-213 census findings restated in the codex language with
+   zero DOM/testid/pinned-text changes (the contracts stay intact)
+   ================================================================== */
+/* root 2/4 — the cycle-67 chronicle hover: violet border + violet
+   underglow → the codex hover language (gold hairline, black
+   levitation mass, gold-dust tail; same geometry) */
+.chronicle-card:hover {
+  border-color: rgba(240, 199, 94, 0.28);
+  box-shadow:
+    var(--glass-halo),
+    inset 0 1px 0 var(--glass-highlight),
+    0 10px 30px rgba(0, 0, 0, 0.42),
+    0 0 18px rgba(240, 199, 94, 0.12);
+}
+/* root 3/4 — nav-dock.tsx ships a Tailwind arbitrary violet glow on
+   the active dock item (shadow-[0_0_16px_oklch(0.7_0.1_300/0.28)]);
+   the TSX stays untouched (zero DOM changes) — this unlayered rule
+   outranks the layered utility and swaps the glow to gold, and the
+   Persian aria-label keeps the header/match/league/home tab navs out */
+nav[aria-label="منوی بازی"] a[aria-current="page"] {
+  box-shadow: 0 0 16px rgba(240, 199, 94, 0.28);
+}
+/* root 4/4 — the rune-glow gradient's violet tail → the codex
+   parchment-to-gold melt, same stop shape */
+.rune-glow {
+  background: linear-gradient(100deg, #f9ecc0 30%, #f0c75e 70%, rgba(240, 199, 94, 0.9));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }

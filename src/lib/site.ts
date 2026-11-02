@@ -13,8 +13,15 @@
 //      when VERCEL_ENV === "production" so preview builds never leak
 //      ephemeral domains into canonical/sitemap output.
 //   3) VERCEL_URL — per-deployment fallback, same normalization and guard.
-//   4) The legacy default — kept last: with none of the above set (the
-//      local sandbox case) output is byte-identical to cycle-333.
+//   4) The production domain itself — cycle-374 fix: the 334 rewrite kept
+//      the dead vercel.app string as the final fallback only for
+//      byte-compat with cycle-333, but the same 334 evidence proved that
+//      domain serves DEPLOYMENT_NOT_FOUND. Every non-Vercel host (the
+//      real zxy.site deployment, local sandboxes, any future host) has no
+//      Vercel env and therefore advertised a dead domain in its RSS
+//      channel/self links, sitemap locs, robots Sitemap line and JSON-LD.
+//      The fallback is now the operator-designated production domain;
+//      hosts WITH Vercel envs keep the exact 334 behavior.
 // ------------------------------------------------------------------
 export function resolveSiteUrl(
   env: Record<string, string | undefined>,
@@ -30,7 +37,7 @@ export function resolveSiteUrl(
       if (host) return `https://${host}`;
     }
   }
-  return "https://remontada.vercel.app";
+  return "https://remontada.zxy.site";
 }
 
 export const SITE_URL = resolveSiteUrl(process.env);

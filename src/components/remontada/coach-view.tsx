@@ -8,7 +8,7 @@
 // honest — sections hide when the payload lacks them.
 // ------------------------------------------------------------------
 import Link from "next/link";
-import { faDigits } from "@/lib/format";
+import { faDecimal, faDigits } from "@/lib/format";
 import { TeamLogo } from "@/components/remontada/team-logo";
 import { ShareButton } from "@/components/remontada/share-button";
 import { JsonLd } from "@/components/remontada/json-ld";
@@ -249,7 +249,7 @@ export function CoachView({ c }: { c: CoachData }) {
                   )}
                   {t.ppg != null && (
                     <span className="text-[9px] font-bold text-steel/85 tabular-persian">
-                      {faDigits(t.ppg.toFixed(2))} امتیاز در بازی
+                      {faDecimal(t.ppg.toFixed(2))} امتیاز در بازی
                     </span>
                   )}
                 </div>
@@ -280,11 +280,13 @@ export function CoachView({ c }: { c: CoachData }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-bold text-[#e6f0fb] truncate" dir="auto">
-                    {t.leagueName || t.teamName}
+                    {/* cycle-400: fa-first honours rows — the additive leagueFa/teamFa
+                        rides (the 397 tenure pattern); raw stays the honest fallback */}
+                    {t.leagueFa || t.leagueName || t.teamName}
                   </p>
                   {t.teamName && t.leagueName && (
                     <p className="text-[9.5px] text-steel/85 truncate mt-0.5" dir="auto">
-                      {t.teamName}
+                      {t.teamFa || t.teamName}
                     </p>
                   )}
                 </div>
