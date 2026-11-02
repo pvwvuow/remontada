@@ -1525,7 +1525,10 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // cold (the 426 precedent, purge+restart remains part of the proof).
   // cycle-431: v4 — harvest batch 2 (54 more names) changed the normalized
   // team-fa content again; same rule, fresh cold window.
-  return cached(`matches:v4:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-432: v5 — harvest batch 3 (48 more names, the England National
+  // League System + the Spain Copa del Rey clusters) changed the normalized
+  // team-fa content again; same rule, fresh cold window.
+  return cached(`matches:v5:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`

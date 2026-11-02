@@ -1976,6 +1976,71 @@ const TEAM_FA: Record<string, string> = {
   "brisbane roar fc": "بریسبن رور",
   "al bukayriyah": "البکیریه",
   "hajer": "هجر",
+  // cycle-432: harvest batch 3 — the machine continues on the 432 census
+  // (scripts/cycle430-harvest.py re-run + scripts/cycle432-batch3-verify.py
+  // byte-identity gate, live UA Chrome/124): the pool read 2157 distinct
+  // after batch 2 and this batch takes the 48 next single-country names
+  // (175 live leak rows, every key byte-verified, 48/48 verified=0 bad):
+  // the whole England National League System cluster (National League North/
+  // South, Southern Premier Central/South, Isthmian, Northern Premier — the
+  // یونایتد/تاون/سیتی suffix-keeping style) and the Spain Copa del Rey
+  // first-round cluster (Segunda/Primera Federacion sides — خیمناستیکا/
+  // کولتورال Spanish conventions). The 389 rule again rules the skip line:
+  // the multi-country top of the pool stays honest-raw — «Alianza FC» (now
+  // FOUR countries in-window: INT/PAN/COL/SLV), «Santa Fe» (COL+INT),
+  // «Libertad» (PAR+ECU), «Universidad Católica» (CHI+ECU), «Olimpia»
+  // (PAR+INT); «MB Rouissat» still skipped on uncertain identity (the 431
+  // hold). Loud-pool rule: the documented 2160 census shrinks by this batch
+  // in the open (the B4 ±25 band will flag exactly this: re-anchor with the
+  // next census, never silently).
+  "hereford": "هرفورد",
+  "morecambe": "مورکم",
+  "torquay united": "تورکی یونایتد",
+  "hemel hempstead": "همل همپستد",
+  "walton and hersham": "والتون و هرشام",
+  "banbury united": "بنبری یونایتد",
+  "stratford town": "استراتفورد تاون",
+  "halesowen town fc": "هالسوون تاون",
+  "leamington": "لمینگتون",
+  "rushall olympic": "راشال المپیک",
+  "needham market": "نیدهام مارکت",
+  "leiston": "لیستون",
+  "racing club warwick": "ریسینگ کلاب وارویک",
+  "stourbridge": "استوربریج",
+  "chichester city fc": "چیچستر سیتی",
+  "hanworth villa": "هنورث ویلا",
+  "gloucester city": "گلاستر سیتی",
+  "yate town": "ییت تاون",
+  "havant and waterlooville": "هاوانت و واترلوویل",
+  "enfield town": "انفیلد تاون",
+  "chatham town": "چتم تاون",
+  "welling united": "ولینگ یونایتد",
+  "leatherhead": "لدرهد",
+  "whitehawk": "وایت‌هاوک",
+  "dulwich hamlet": "دالیویچ هملت",
+  "quorn": "کوورن",
+  "lewes": "لوئیس",
+  "bamber bridge": "بمبر بریج",
+  "bury town": "بری تاون",
+  "evesham united": "ایوشام یونایتد",
+  "chippenham town": "چیپنهم تاون",
+  "cf calamocha": "کالاموچا",
+  "ce europa": "اوریوپا",
+  "sestao": "سستائو",
+  "castellonense": "کاستلوننس",
+  "atlético tordesillas": "اتلتیکو تردسیاس",
+  "ciudad lucena": "سیوداد لوچنا",
+  "rayo majadahonda": "رایو ماخاداهوندا",
+  "gimnástica segoviana": "خیمناستیکا سگوویانا",
+  "cultural leonesa": "کولتورال لئونسا",
+  "rsd alcalá": "آلکالا",
+  "ud llanera": "لانرا",
+  "ponferradina": "پونفرادینا",
+  "ce manresa": "مانرسا",
+  "sant andreu": "سنت آندرئو",
+  "don benito": "دون بنیتو",
+  "cd extremadura": "اکسترمادورا",
+  "arosa sc": "آروسا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
