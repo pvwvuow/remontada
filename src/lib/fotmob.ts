@@ -6699,19 +6699,33 @@ export interface GlobalTransfers {
   total: number; // rows served (the wire's own latest-50 window)
   fetchedAt: string; // ISO — the producer's birth, the 305 convention
   items: GlobalTransferItem[];
+  minFee?: number; // cycle-416: the applied preset, echoed for the client state (absent = base window)
 }
 
 /** The global transfers wire — the missing portal-level surface of the
  *  «انتقال‌ها» backlog (league level = cycle-57 tab, team level = the team
  *  feed; this closes the third and last level). Rides NO shared cache with
- *  the other feeds: one 15-min key `globalTransfers:v1`, the news cadence.
+ *  the other feeds: one 15-min key per fee preset — `globalTransfers:v1`
+ *  base / `globalTransfers:v1:f{minFee}` (cycle-416), the news cadence.
  *  Throws on upstream failure/empty so cached()'s cycle-42
  *  stale-while-error serves the last snapshot and a cold start surfaces the
- *  honest 502 — the cycle-294 outage-is-not-success rule. */
-export async function getGlobalTransfers(): Promise<GlobalTransfers> {
-  return cached("globalTransfers:v1", 15 * 60_000, async (): Promise<GlobalTransfers> => {
+ *  honest 502 — the cycle-294 outage-is-not-success rule.
+ *
+ *  cycle-416: the fee preset dimension — the 415 card's documented
+ *  «چرخهٔ آینده» item. The 415/416 live probes: `page`/`date` params are
+ *  byte-ignored, but `minFee` REALLY filters AND the window widens to fill
+ *  50 qualifying rows (base window: only 12 fee-bearing rows; minFee=1e6:
+ *  50/50 fee-bearing, zero below-threshold — scripts/cycle416-feeprobe.sh).
+ *  The presets are a STRICT allowlist (the season-param convention): any
+ *  other value is rejected by the route before it reaches upstream, so the
+ *  wire can never be probed with arbitrary thresholds through this portal. */
+export const TRANSFER_FEE_PRESETS = [1_000_000, 5_000_000, 20_000_000, 50_000_000] as const;
+
+export async function getGlobalTransfers(minFee?: number): Promise<GlobalTransfers> {
+  const key = minFee ? `globalTransfers:v1:f${minFee}` : "globalTransfers:v1";
+  return cached(key, 15 * 60_000, async (): Promise<GlobalTransfers> => {
     const raw = await fetchJson<{ transfers?: FMTransferRaw[] }>(
-      `https://www.fotmob.com/api/data/transfers?date=${todayInTehran()}`
+      `https://www.fotmob.com/api/data/transfers?date=${todayInTehran()}${minFee ? `&minFee=${minFee}` : ""}`
     );
     const list = raw.transfers || [];
     if (list.length === 0) throw new Error("[transfers] upstream wire returned 0 rows");
@@ -6752,7 +6766,7 @@ export async function getGlobalTransfers(): Promise<GlobalTransfers> {
       });
     }
     if (items.length === 0) throw new Error("[transfers] upstream wire returned no usable rows");
-    return { total: items.length, fetchedAt: new Date().toISOString(), items };
+    return { total: items.length, fetchedAt: new Date().toISOString(), items, ...(minFee ? { minFee } : {}) };
   });
 }
 

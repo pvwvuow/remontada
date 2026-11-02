@@ -16,6 +16,18 @@ import { faDigits } from "@/lib/format";
 import { timeAgoFa } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+// cycle-416: the fee presets — byte-identical to the producer's strict
+// allowlist (one allowlist, one contract); «همه» = the base window (no
+// minFee param — the wire's own latest-50 window, only 12 fee-bearing rows
+// live at probe time), the presets widen the window to 50 fee-bearing rows.
+const FEE_CHIPS: { label: string; minFee?: number }[] = [
+  { label: "همه" },
+  { label: "از ۱ میلیون", minFee: 1_000_000 },
+  { label: "از ۵ میلیون", minFee: 5_000_000 },
+  { label: "از ۲۰ میلیون", minFee: 20_000_000 },
+  { label: "از ۵۰ میلیون", minFee: 50_000_000 },
+];
+
 function ClubChip({
   club,
   muted,
@@ -108,11 +120,13 @@ export function TransfersPageClient() {
   const [fetchedAt, setFetchedAt] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
+  // cycle-416: the active fee preset (undefined = the base «همه» window)
+  const [preset, setPreset] = useState<number | undefined>(undefined);
 
-  const fetchWire = useCallback(async (silent = false) => {
+  const fetchWire = useCallback(async (minFee?: number, silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const res = await fetch("/api/transfers", { cache: "no-store" });
+      const res = await fetch(`/api/transfers${minFee ? `?minFee=${minFee}` : ""}`, { cache: "no-store" });
       const json = await res.json();
       if (json.ok) {
         setItems(json.items || []);
@@ -146,6 +160,36 @@ export function TransfersPageClient() {
         </span>
       </div>
 
+      {/* cycle-416: the fee filter chips — the news-page chip language; each
+          chip rides its OWN cache key upstream so switching is instant once
+          warmed and windows never mix */}
+      <div className="flex gap-1.5 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="فیلتر کارمزد">
+        {FEE_CHIPS.map((c) => {
+          const active = preset === c.minFee;
+          return (
+            <button
+              key={c.label}
+              role="tab"
+              aria-selected={active}
+              onClick={() => {
+                if (active) return;
+                setPreset(c.minFee);
+                setFailed(false);
+                fetchWire(c.minFee);
+              }}
+              className={cn(
+                "shrink-0 rounded-xl border px-3 py-1.5 text-[11px] font-bold transition-all press-fx tap-hit-row tabular-persian",
+                active
+                  ? "bg-sky-soft/15 border-sky-soft/40 text-sky-soft"
+                  : "bg-white/[0.03] border-[color:var(--glass-border-soft)] text-steel hover:border-[color:var(--glass-border)] hover:text-foreground"
+              )}
+            >
+              {c.label}
+            </button>
+          );
+        })}
+      </div>
+
       {fetchedAt && !loading && !failed && (
         <p className="text-[10px] font-bold text-muted-foreground tabular-persian">
           به‌روزرسانی فید: {timeAgoFa(fetchedAt)}
@@ -165,7 +209,10 @@ export function TransfersPageClient() {
           <p className="text-[12.5px] font-black text-steel">فید انتقال‌ها در دسترس نیست.</p>
           <p className="mt-1 text-[10.5px] font-bold text-muted-foreground">اتصال دوباره امتحان کنید.</p>
           <button
-            onClick={() => fetchWire()}
+            onClick={() => {
+              setFailed(false);
+              fetchWire(preset);
+            }}
             className="mt-3 rounded-lg border border-[color:var(--glass-border)] bg-white/[0.05] px-4 py-2 text-[11.5px] font-black text-foreground press-fx tap-hit-row"
           >
             تلاش دوباره
