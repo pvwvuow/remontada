@@ -2109,6 +2109,59 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "hervé matthys": "اروه متیس",
   "fabian de keijzer": "فابیان د کایزر",
   "tyrese asante": "تایریس آسانته",
+
+  // — cycle-411: the residual map-lag class after the 410 wide batch — the
+  //   live leakscan (repo-external scripts/cycle411_leakscan.py, UA
+  //   Chrome/124, ~2200 name rows across matches + standings + brackets +
+  //   topscorers + teams + squads + transfers + search + coach/player) found
+  //   44 unique fa-less names, concentrated on two surfaces the 410 sweep
+  //   never read: /api/team-last-lineup («آخرین ترکیب», the XI that actually
+  //   started — Dewsbury-Hall/Mykolenko/Neuhaus…) and the match frontier
+  //   residue («غایبان»/events: Kessié/Raspadori/Scamacca/Kolašinac…).
+  //   Curated confident transliterations, byte-exact upstream keys with
+  //   diacritics preserved (é/š/ö/í…); 7 genuinely-uncertain names (Gui,
+  //   Daniel Banjaqui, Sabit Abdulai, Thiago Balieiro, Zento Uno, Noah
+  //   Raveyre, Fatih Aksoy) deliberately stay honest raw (the cycle-96
+  //   convention). Map-only, additive, zero UI/API-shape change, no cache
+  //   bump (last-lineup/squad transform per request from teamDataRaw:v2 —
+  //   the 404 precedent; the match route applies playerFa at normalize
+  //   time — the 410 precedent).
+  // — the match-frontier residue —
+  "franck kessié": "فرانک کسیه",
+  "giacomo raspadori": "جاکومو راسپادوری",
+  "gianluca gaetano": "جیانلوکا گائتانو",
+  "gianluca scamacca": "جیانلوکا اسکامااکا",
+  "isak hien": "ایساک هین",
+  "odilon kossounou": "اودیلون کوسونو",
+  "raoul bellanova": "رائول بلانووا",
+  "sead kolašinac": "سئاد کولاشیناتس",
+  "thomas kristensen": "توماس کریستنسن",
+  "thomas pompei": "توماس پمپئی",
+  "antonio espigares": "آنتونیو اسپیگارس",
+  "arthur tchaptchet": "آرتور چاپچت",
+  "francisco dias": "فرانسیسکو دیاس",
+  "juan diego castillo": "خوان دیه‌گو کاستیو",
+  "steven baseya": "استیون بازیا",
+  "paolo fernandes": "پائولو فرناندس",
+  "pedro pereira": "پدرو پریرا",
+  // — the «آخرین ترکیب» surface —
+  "kiernan dewsbury-hall": "کیرنان دیوزبری-هال",
+  "vitaliy mykolenko": "ویتالی میکولنکو",
+  "james garner": "جیمز گارنر",
+  "jake o'brien": "جیک اوبراین",
+  "harrison armstrong": "هریسون آرمسترانگ",
+  "merlin röhl": "مرلین رول",
+  "tyrique george": "تایریک جورج",
+  "luca marianucci": "لوکا ماریانوچی",
+  "rafa marín": "رافا مارین",
+  "dean huijsen": "دین هیوسن",
+  "daiki hashioka": "دایکی هاشیوکا",
+  "fabio chiarodia": "فابیو کیارودیا",
+  "florian neuhaus": "فلوریان نوهاوس",
+  "lukas ullrich": "لوکاس اولریش",
+  "philipp sander": "فیلیپ زاندر",
+  "robin hack": "روبین هاک",
+  "wael mohya": "وائل محیا",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

@@ -11811,6 +11811,15 @@ const COACH_SEED: CoachSearchResult[] = [
   { id: 160770, name: "Brendan Rodgers", fa: "برندان راجرز", teamId: 101919, teamName: "Al Qadsiah" },
   { id: 335697, name: "Jorge Sampaoli", fa: "خورخه سامپائولی", teamId: 10101, teamName: "Talleres" },
   { id: 80651, name: "Gerardo Martino", fa: "خرهاردو مارتینو", teamId: 773958, teamName: "Atlanta United" },
+  // — cycle-411: the squad-coach rows the 410 wide probe never swept — the
+  //   live leakscan (scripts/cycle411_leakscan.py) found the /api/team-squad
+  //   coach chip and the /api/team-last-lineup coachName rendering RAW on
+  //   three catalogued benches (ids probed live off /api/team-squad, the 397
+  //   method): «دیوید مویس»/«ماسیمیلیانو آلگری»/«الکساندر بلسین» — the 259
+  //   seed is the single source, the honest raw fallback stays only outside.
+  { id: 78626, name: "David Moyes", fa: "دیوید مویس", teamId: 8668, teamName: "Everton" },
+  { id: 129745, name: "Massimiliano Allegri", fa: "ماسیمیلیانو آلگری", teamId: 9875, teamName: "Napoli" },
+  { id: 29315, name: "Alexander Blessin", fa: "الکساندر بلسین", teamId: 9788, teamName: "Borussia Mönchengladbach" },
 ];
 
 // cycle-259: Persian name of a coach by id — the seed is the single source
