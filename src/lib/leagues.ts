@@ -2164,6 +2164,63 @@ const TEAM_FA: Record<string, string> = {
   "utebo": "اوتبو",
   "xerez": "خرز",
   "zamora": "زامورا",
+  // cycle-437: harvest batch 6 — the machine continues on the 437 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 2013 distinct = the
+  // documented 436 post-census; scripts/cycle437-batch6-verify.py byte-identity
+  // gate, live UA Chrome/124): this batch takes the 40 count-3 single-country
+  // names of the JAPAN tranche (J2 + J3 — the two WE League women's sides of
+  // the 42-name pool, NTV Tokyo Verdy Beleza + Omiya Ardija Ventus, stay
+  // honest-raw per the 435 skip line), 120 live leak rows covered.
+  // Transliteration: Latin-brand reading in the established J-League block
+  // style (کیوتو سانگا/ساگان توسو/گامبا اوساکا precedents) — FC prefix kept
+  // (اف‌سی گیفو, the fc-seoul precedent), FC/SC suffix dropped (اهیمه/
+  // ایواکی/توچیگی/ساگامیهارا, the kyoto-sanga + macclesfield + 436 prefix
+  // discipline), City kept like the batch-4 Town-keeping (توچیگی سیتی),
+  // letter brands as identity (ام‌وای‌اف‌سی، آر‌بی — the Red Bull rename,
+  // the ای‌اف‌سی ویمبلدون style), یوکوهاما اف‌سی kept whole for
+  // disambiguation against یوکوهاما مارینوس (one feed spelling, no dup).
+  // Loud-pool rule: the documented 2013 census shrinks by this batch in the
+  // open (the B4 ±25 band re-anchors with the next census, never silently).
+  "albirex niigata": "آلبیرکس نییگاتا",
+  "blaublitz akita": "بلاوبلیتز آکیتا",
+  "ehime fc": "اهیمه",
+  "fc gifu": "اف‌سی گیفو",
+  "fc imabari": "اف‌سی ایماباری",
+  "fc osaka": "اف‌سی اوساکا",
+  "fc ryūkyū": "اف‌سی ریوکیو",
+  "fujieda myfc": "فوجی‌ئدا ام‌وای‌اف‌سی",
+  "fukushima united": "فوکوشیما یونایتد",
+  "gainare tottori": "گایناره توتوری",
+  "giravanz kitakyushu": "گیروانز کیتاکیوشو",
+  "hokkaido consadole sapporo": "هوکایدو کونسادوله ساپورو",
+  "iwaki fc": "ایواکی",
+  "júbilo iwata": "جوبیلو ایواتا",
+  "kagoshima united": "کاگوشیما یونایتد",
+  "kamatamare sanuki": "کاماتاماره سانوکی",
+  "kataller toyama": "کاتارله تویاما",
+  "kochi united sc": "کوشی یونایتد",
+  "matsumoto yamaga": "ماتسوموتو یاماگا",
+  "mito hollyhock": "میتو هولیهوک",
+  "montedio yamagata": "مونتدیو یاماگاتا",
+  "nagano parceiro": "ناگانو پارسه‌یرو",
+  "nara club": "نارا کلاب",
+  "oita trinita": "اویتا ترینیتا",
+  "rb omiya ardija": "آر‌بی اومیا آردیجا",
+  "reilac shiga": "ریلاک شیگا",
+  "renofa yamaguchi": "رنوفا یاماگوچی",
+  "roasso kumamoto": "روآسو کوماموتو",
+  "sc sagamihara": "ساگامیهارا",
+  "shonan bellmare": "شونان بلماره",
+  "tegevajaro miyazaki": "تگه‌وا جارو میازاکی",
+  "thespa gunma": "تسپا گونما",
+  "tochigi city fc": "توچیگی سیتی",
+  "tochigi sc": "توچیگی",
+  "tokushima vortis": "توکوشیما وورتیس",
+  "vanraure hachinohe": "ون‌راوره هاچینوهه",
+  "vegalta sendai": "وگالتا سندای",
+  "ventforet kofu": "ونت‌فورت کوفو",
+  "yokohama fc": "یوکوهاما اف‌سی",
+  "zweigen kanazawa": "زوایگن کانازاوا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
