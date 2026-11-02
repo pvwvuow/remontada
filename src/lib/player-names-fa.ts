@@ -1939,6 +1939,22 @@ export const PLAYER_NAME_FA: Record<string, string> = {
   "luca stephenson": "لوکا استفنسون",
   "luke chambers": "لوک چمبرز",
   "alex scott": "الکس اسکات",
+  // — cycle-407: the match-unavailable witnesses («غایبان» chips on
+  // /match/5749738 Sassuolo–Fiorentina; probe scripts/cycle407_leakscan.py)
+  // rendered raw because the unavailable rows carry nameFa ONLY on a map hit
+  // (the cycle-116 strict contract) and the map had none of these eight —
+  // the same map-lag class the 405 batch closed for transfers/merges.
+  // Curated confident transliterations, byte-exact upstream keys with
+  // diacritics preserved (ë/ć); «کریستین توشتودت» follows the player's own
+  // fa.wikipedia title; everything uncertain stays honest raw.
+  "ismaël koné": "اسماعیل کونه",
+  "kristian thorstvedt": "کریستین توشتودت",
+  "luca ranieri": "لوکا رانیری",
+  "marin pongračić": "مارین پونگراچیچ",
+  "fabiano parisi": "فابیانو پاریسی",
+  "arthur atta": "آرتور آتا",
+  "daniel boloca": "دانیل بولوکا",
+  "fedde leysen": "فده لیزن",
 };
 
 // Persian display name for an upstream player name — exact lowercased map

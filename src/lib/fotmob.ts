@@ -4020,6 +4020,25 @@ function freshenHonestNames(st: StandingsData): StandingsData {
     // topscorers page (the 167 lesson). Decimal value untouched (verbatim —
     // the 210/217/226 convention).
     shotsPer90: (st.shotsPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    // cycle-407 additive: the three LATER per-90 siblings (the 335/336/337
+    // surfaces) missed this freshener when they joined the mapped payload as
+    // REQUIRED cached fields (v37/v38) — on the league scorers page
+    // («پاس دقیق در هر ۹۰» / «بازیابی توپ در هر ۹۰» / «پاس بلند دقیق در هر
+    // ۹۰») both the player name AND the team subtitle rendered raw
+    // («Rúben Dias / Manchester City», «Fedde Leysen / Sassuolo»…) while
+    // every 327/330/331 sibling rode the read-time honest names. The probe
+    // (repo-external scripts/cycle407_leakscan.py, UA Chrome/124) measured
+    // the class: name-rows with NO fa-ish field on exactly these three
+    // arrays across the standings/topscorers payload. Same one-map read-time
+    // wiring as the siblings (nameFa always rides playerFa — the 107
+    // honest-raw fallback; the team subtitle keeps the raw byte as the
+    // in-map fallback), same verbatim decimal value — and NO cache bump:
+    // this freshener is the read-time transform on the cached st (the
+    // 232/327/330/331 precedent — a map addition reaches the surface
+    // instantly, it never waits a TTL generation).
+    accuratePassesPer90: (st.accuratePassesPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    recoveriesPer90: (st.recoveriesPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
+    longBallsPer90: (st.longBallsPer90 || []).map((r) => ({ ...r, team: teamFa(r.team) || r.team, nameFa: playerFa(r.name) })),
     // cycle-176 additive: card rows get the same read-time honest names —
     // freshCardNames (the cycle-109 idempotent read-freshener for the cards
     // family) reused verbatim, so a player-name map addition never waits a
