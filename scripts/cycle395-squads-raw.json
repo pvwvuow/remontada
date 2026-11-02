@@ -1,0 +1,642 @@
+{
+ "totals": {
+  "teams": 7,
+  "players": 218,
+  "raw": 122
+ },
+ "per_team": {
+  "liverpool": {
+   "total": 29,
+   "raw": 16
+  },
+  "newcastle": {
+   "total": 25,
+   "raw": 6
+  },
+  "persepolis": {
+   "total": 29,
+   "raw": 25
+  },
+  "hull": {
+   "total": 33,
+   "raw": 9
+  },
+  "omonio": {
+   "total": 36,
+   "raw": 28
+  },
+  "iran-nt": {
+   "total": 26,
+   "raw": 13
+  },
+  "argentina-nt": {
+   "total": 40,
+   "raw": 25
+  }
+ },
+ "raw_unique_count": 120,
+ "raw_names": {
+  "Freddie Woodman": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Vítezslav Jaroš": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Harvey Davies": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Joseph Gomez": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Wataru Endo": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Jérémy Jacquet": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Conor Bradley": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Giovanni Leoni": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Jeremie Frimpong": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Ronald Araujo": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Ryan Gravenberch": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Trey Nyoni": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "James McConnell": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Federico Chiesa": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Víctor Muñoz": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Rio Ngumoha": {
+   "teams": [
+    "liverpool"
+   ]
+  },
+  "Mark Gillespie": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "Valentino Livramento": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "Daniel Burn": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "Joelinton": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "Jacob Ramsey": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "William Osula": {
+   "teams": [
+    "newcastle"
+   ]
+  },
+  "Payam Niazmand": {
+   "teams": [
+    "persepolis",
+    "iran-nt"
+   ]
+  },
+  "Amirreza Rafiei": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mohammad Gandomi": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Amirhossein Taheri Tanha": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Abolfazl Jalali": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mohammadmehdi Zare": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Hossein Abarghouei": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Hossein Kanani": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Majid Eydi": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Dániel Gera": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Pouya Esmi": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Alireza Homaeifard": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Danial Eiri": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mehdi Cheshmberah": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mohammad Omri": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Pouya Pourali": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Oston Urunov": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mohammad Khodabandelou": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Yasin Salmani": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Marko Bakić": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Pouria Latififar": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Mehdi Tikdarinejad": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Igor Sergeev": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Amirhossein Mahmoudi": {
+   "teams": [
+    "persepolis",
+    "iran-nt"
+   ]
+  },
+  "Mohammadhossein Sadeghi": {
+   "teams": [
+    "persepolis"
+   ]
+  },
+  "Lewie Coyle": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Ryan Giles": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Charlie Hughes": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Semi Ajayi": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Eliot Matazo": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Darko Gyabi": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Matt Crooks": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Abdülkadir Ömür": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Oli McBurnie": {
+   "teams": [
+    "hull"
+   ]
+  },
+  "Fabiano": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Pantelis Michail": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Anastasios Giannakou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Evripidis Pepis": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Nikolas Kyriakidis": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Fotis Kitsos": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Senou Coulibaly": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Stefan Simič": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Giorgos Viktoros": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Andreas Chatzievangelou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Christos Konstantinidis": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Panagiotis Christoforou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Jean-Kévin Duverne": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Athos Kounounis": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Carel Eiting": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Mateo Marić": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Florin Tănase": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Muamer Tanković": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Panagiotis Andreou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Andreas Christou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Jaden Montnor": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Ewandro": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Mihlali Mayambela": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Mateusz Musiałowski": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Angelos Neofytou": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Vladimiros Savva": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Konstantinos Panagi": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Loïs Diony": {
+   "teams": [
+    "omonio"
+   ]
+  },
+  "Hossein Hosseini": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Saleh Hardani": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Shoja Khalilzadeh": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Mehdi Zare Mohazabieh": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Saman Fallah": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Ali Nemati": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Ramin Rezaeian": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Mohammad Naderi": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Omid Noorafkan": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Aref Aghasi": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Mohammadmehdi Mohebi": {
+   "teams": [
+    "iran-nt"
+   ]
+  },
+  "Juan Foyth": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Marcos Senesi": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Nicolás Tagliafico": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Agustín Giay": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Gonzalo Montiel": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Lisandro Martínez": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Cristian Romero": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Nicolás Otamendi": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Facundo Medina": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Santiago Simón": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Tomás Palacios": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Román Vega": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Valentín Gómez": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Equi Fernández": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Leandro Paredes": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Rodrigo De Paul": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Giovani Lo Celso": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Nicolás González": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Thiago Almada": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Giuliano Simeone": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Valentín Barco": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Gianluca Prestianni": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "José López": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Lucas Beltrán": {
+   "teams": [
+    "argentina-nt"
+   ]
+  },
+  "Leonel Flores": {
+   "teams": [
+    "argentina-nt"
+   ]
+  }
+ }
+}
