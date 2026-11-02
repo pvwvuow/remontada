@@ -457,15 +457,41 @@ export function MatchesView({ groups, loading, offset, onOffsetChange }: Matches
     return [...all].sort((a, b) => weight(b) - weight(a))[0];
   }, [shownGroups, favIds]);
 
-  const todayISO = offsetDateISO(0);
+  // cycle-434: the day-nav chips are the site's ONLY SSR'd time-dependent tree
+  // (the 432 finding, root-caused for 434): the statically prerendered shell
+  // froze the build-time Tehran date into the chips' weekday/day text (the
+  // 00:16 build painted دوشنبه/۱۱…), so any load after the next Tehran
+  // midnight re-forked the HTML against the fresh client render — the
+  // deterministic React #418 hydration text mismatch, proven 3/3 fresh loads
+  // across the 2026-11-03 boundary. Fix per the 424 freshness-label pattern:
+  // the date-derived slots stay EMPTY until mount — server render and first
+  // client render are byte-identical at ANY build/load pair — then the mounted
+  // pass computes the live values. «امروز» is the stable isToday label and
+  // stays SSR'd. This cancels the pinned 2026-11-04 00:00 re-break: the shell
+  // no longer freezes any date, so no rebuild is ever needed at midnight.
+  // Rejected (433 card): suppressHydrationWarning (would keep the stale text)
+  // and revalidate (only narrows the midnight window).
+  const [mounted, setMounted] = useState(false);
+  // the ui-cycle-11 deferred-mount convention (favorite-fixtures.tsx): the
+  // setTimeout keeps setState out of the synchronous effect body so the new
+  // set-state-in-effect rule stays green — the first client render still has
+  // mounted=false, byte-matching the empty SSR slots before the flip
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    return () => clearTimeout(t);
+  }, []);
+  const todayISO = mounted ? offsetDateISO(0) : "";
   const chips = useMemo(
     () =>
       OFFSETS.map((o) => {
+        if (!mounted) {
+          return { offset: o, iso: "", day: "", month: "", weekday: "", year: "", isToday: o === 0 };
+        }
         const iso = offsetDateISO(o);
         const j = jalaliShort(`${iso}T12:00:00Z`);
         return { offset: o, iso, ...j, isToday: o === 0 };
       }),
-    [todayISO]  
+    [mounted, todayISO],
   );
 
   const activeJ = jalaliShort(`${offsetDateISO(offset)}T12:00:00Z`);
