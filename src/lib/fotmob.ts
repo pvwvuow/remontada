@@ -1519,7 +1519,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // 28 id-keyed day-feed headers went Persian), so the old keys would serve
   // up to a 10-minute tail of English headers from L2; a fresh namespace
   // rebuilds every window cold instead of mixing generations.
-  return cached(`matches:v2:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-430: v3 — the same rule, now for the team side: the 426-harvest
+  // batch put 40 raw team names into TEAM_FA, so v2 keys would serve up to
+  // a 10-minute tail of English team names from L2; v3 rebuilds the window
+  // cold (the 426 precedent, purge+restart remains part of the proof).
+  return cached(`matches:v3:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`

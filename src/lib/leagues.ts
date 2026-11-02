@@ -1850,6 +1850,62 @@ const TEAM_FA: Record<string, string> = {
   "latina": "لاتینا",
   "sorrento": "سورنتو",
   "casertana": "کازرتانا",
+  // cycle-430: the 426 card's documented «harvest machine» opens — the ±7-day
+  // day-feed census (scripts/cycle430-harvest.py, live UA Chrome/124) ranked
+  // the honest-raw team fallback pool (baseline byte-stable at
+  // teamLeakDistinct=2256 / rows=4818, the 426 A2 hold) and this batch takes
+  // the 40 highest-frequency names whose identity is SINGLE-COUNTRY in the
+  // window: every key byte-verified against the live feed (167 leak rows
+  // covered) and every value an established Persian club name (the
+  // تیخوانا j→خ rule, the مولودیه/اتحاد Algerian convention, the یونایتد/
+  // تاون suffix-keeping style of the ساوتند یونایتد/نورث‌همپتون تاون blocks).
+  // The 389 rule applied to the harvest: multi-country literals stay honest-
+  // raw and are deliberately NOT here — «Alianza FC» (PAN/SLV both real in
+  // the CONCACAF Central American Cup), «Libertad», «Santa Fe», «Olimpia»,
+  // «Universidad Católica» (CHI vs ECU both seen in the window) — they need
+  // id-keyed infrastructure first. Loud-pool rule: this batch SHRINKS the
+  // documented 2256 pool by 40 distinct names — the 426 A2 hold will flag
+  // exactly this change (that is its job: never silently 'fixed').
+  "chelmsford": "چلمزفورد",
+  "ebbsfleet united": "ابسفلیت یونایتد",
+  "hampton & richmond": "همپتون و ریچموند",
+  "braintree town": "برینتری تاون",
+  "farnham town": "فارنام تاون",
+  "truro city": "ترورو سیتی",
+  "anstey nomads": "آنستی نومادز",
+  "bishop's stortford": "بیشاپز استورتفورد",
+  "stamford afc": "استمفورد",
+  "bromsgrove sporting": "برومسگرو اسپورتینگ",
+  "kettering town fc": "کترینگ تاون",
+  "peterborough sports": "پیتربورو اسپورتس",
+  "redditch united": "ردیچ یونایتد",
+  "real bedford": "رئال بدفورد",
+  "tamworth": "تمورث",
+  "uxbridge": "یوکسبریج",
+  "bracknell town": "براکنل تاون",
+  "poole town fc": "پول تاون",
+  "chertsey town": "چرتی تاون",
+  "hanwell town": "هانول تاون",
+  "brentwood town": "برنتوود تاون",
+  "eastbourne borough": "ایستبورن بورو",
+  "st albans": "سنت آلبنز",
+  "burgess hill town": "برگس هیل تاون",
+  "stanway rovers": "استنوی روورز",
+  "leek town": "لیک تاون",
+  "cumbernauld colts": "کامبرنولد کولتس",
+  "clydebank": "کلایدبنک",
+  "mc alger": "مولودیه الجزایر",
+  "us biskra": "اتحاد بسکره",
+  "atlético-mg": "اتلتیکو مینیرو",
+  "ld alajuelense": "آلاخوئلنسه",
+  "municipal pérez zeledón": "مونیسیپال پرز زلدون",
+  "cd jaguares": "خاگوارس",
+  "deportivo pasto": "دپورتیوو پاستو",
+  "burgos cf": "بورگوس",
+  "sepsi osk": "سپسی اوسک",
+  "muang thong united": "موانگ‌تونگ یونایتد",
+  "police tero fc": "پولیس تیرو",
+  "universidad de chile": "یونیورسیداد شیلی",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
