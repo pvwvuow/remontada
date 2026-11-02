@@ -10207,6 +10207,29 @@ const VENUE_FA: Record<string, string> = {
   "Weserstadion": "ورزشگاه وِزِر",
   "Yadegar-e-Imam Stadium": "ورزشگاه یادگار امام",
   "ista-Borussia-Park": "ورزشگاه بوروسیا پارک",
+  // — cycle-412: the match-page venue row was wired to this map only in the
+  //   team-venue direction (the 391 consumer); the infoBox Stadium names on
+  //   /api/match render RAW since cycle-115. Live frontier probe (40 matches,
+  //   UA Chrome/124): 20/25 stadiums unmapped — the confident subset joins;
+  //   2 genuinely-uncertain stay honest raw (Zoudenbalch, TenCate De Herdgang).
+  "Eryaman Stadyumu": "ورزشگاه اریامان",
+  "Estádio do Sport Lisboa e Benfica (da Luz)": "ورزشگاه اسپورت لیسبون و بنفیکا (دا لوز)",
+  "Estádio Cidade de Barcelos": "ورزشگاه سیداد د بارسلوش",
+  "Paxtakor Markaziy stadioni": "ورزشگاه مرکزی پاختاکور",
+  "Jassim Bin Hamad Stadium (Al-Sadd Stadium)": "ورزشگاه جاسم بن حمد (السد)",
+  "Zabeel Stadium": "ورزشگاه زعبیل",
+  "Sultan Qaboos Sports Complex": "مجموعهٔ ورزشی سلطان قابوس",
+  "Al-Oruba Club Stadium": "ورزشگاه باشگاه العروبه",
+  "Prince Abdul Aziz bin Musa'ed Stadium": "ورزشگاه شاهزاده عبدالعزیز بن مساعد",
+  "Hajer Club Stadium": "ورزشگاه باشگاه حاجر",
+  "Al Zulfi Stadium": "ورزشگاه الزلفی",
+  "Estadio Banorte": "ورزشگاه بانورته",
+  "Asito Stadion": "ورزشگاه آسیتو",
+  "Sportpark De Toekomst": "ورزشگاه د توکومست",
+  "Estadio Heliodoro Rodríguez Lopéz": "ورزشگاه الیودورو رودریگز لوپز",
+  "Estadio Municipal Carlos Tartiere": "ورزشگاه مونیسیپال کارلوس تارتییره",
+  "Estadio Municipal José Zorrilla": "ورزشگاه مونیسیپال خوزه سوریا",
+  "Estadi Mallorca Son Moix": "ورزشگاه سون مویخ مایورکا",
 };
 
 const VENUE_CITY_FA: Record<string, string> = {
@@ -10308,7 +10331,60 @@ const VENUE_CITY_FA: Record<string, string> = {
   "Villeneuve d'Ascq": "ویلنوو داسک",
   "Vitoria-Gasteiz": "ویتوریا-گاستیس",
   "Yazd": "یزد",
+  // — cycle-412: the match-page city row wiring batch (same frontier probe):
+  //   19/24 unmapped — the confident subset joins; Amsterdam-Duivendrecht
+  //   stays honest raw (uncertain Dutch), the truncated upstream string
+  //   "Santa Cruz de Tenerife (Tenerife" is an upstream data bug (raw).
+  "Ankara": "آنکارا",
+  "Lisboa": "لیسبون",
+  "Barcelos": "بارسلوش",
+  "Toshkent (Tashkent)": "تاشکند",
+  "ad-Dōha (Doha)": "دوحه",
+  "Dubayy (Dubai)": "دبی",
+  "Masqaṭ (Muscat)": "مسقط",
+  "Sakaka (Al Jawf)": "سکاکا",
+  "Ha'il (Hail)": "حائل",
+  "Al Ahsa": "الاحساء",
+  "Al Zulfi": "الزلفی",
+  "Ciudad de México": "سیوداد د مکزیکو",
+  "Almelo": "آلملو",
+  "Utrecht": "اوترخت",
+  "Eindhoven": "آیندهوون",
+  "Oviedo": "اوویدو",
+  "Valladolid": "والادولید",
+  "Palma de Mallorca": "پالما د مایورکا",
 };
+
+// cycle-412: Persian referee name — the infoBox Referee.text renders RAW on
+// the match page since cycle-115 (the documented "honest English" comment was
+// pre-wave; the 395-411 convention is a map + honest fallback, so the
+// match-page referee row now rides the same pattern as venues). Exact-case
+// upstream keys; the live probe (40 matches, 17 unique refs): 15 confident
+// joins, 2 genuinely-uncertain stay honest raw (Fatih Tokail, Jesús Rafael
+// López Valle — the "Valle" spelling is the doubt).
+const REFEREE_FA: Record<string, string> = {
+  "John Brooks": "جان بروکس",
+  "Jon Ander González Esteban": "خون آندر گونزالس استبان",
+  "Matteo Marcenaro": "ماتئو مارچنارو",
+  "Valerio Crezzini": "والریو چرزینی",
+  "Jérémie Pignard": "ژرمی پینار",
+  "Bruno Pires Costa": "برونو پیرس کاستا",
+  "Hélder Carvalho": "الدیر کاروالیو",
+  "Ingmar Oostrom": "اینگمار اوستروم",
+  "Jorg Ordelmans": "یورگ اوردلمنس",
+  "Andy Wolff": "اندی وولف",
+  "Wouter Wiersma": "ووتر ویرسما",
+  "Manuel Ángel Pérez Hernández": "مانوئل آنخل پرز هرناندس",
+  "Alejandro Morilla Turrión": "الخاندرو موریا توریون",
+  "Dámaso Arcediano Monescillo": "داماسو آرسدیانو مونسیلیو",
+  "Gonzalo Romero Freixas": "گونسالو رومرو فری‌خاس",
+};
+
+/** cycle-412: Persian referee name, null = honest Latin passthrough (115) */
+export function refereeFa(name: string | null | undefined): string | null {
+  const key = typeof name === "string" ? name.trim() : "";
+  return key ? (REFEREE_FA[key] ?? null) : null;
+}
 
 /** cycle-391: Persian venue name, null = honest Latin passthrough */
 export function venueFa(name: string | null | undefined): string | null {

@@ -8,7 +8,7 @@ import { gunzipSync } from "node:zlib";
 import { LEAGUES, teamFa, fotmobTeamLogo, competitionFa } from "@/lib/leagues";
 import { cached } from "@/lib/cache";
 import { buildShootout } from "@/lib/shootout";
-import { roundFa, unavailableReturnFa, marketValueFa } from "@/lib/fotmob";
+import { roundFa, unavailableReturnFa, marketValueFa, venueFa, venueCityFa, refereeFa } from "@/lib/fotmob";
 import { playerFa } from "@/lib/player-names-fa";
 import { faDecimal } from "@/lib/format";
 
@@ -797,6 +797,10 @@ export interface MatchDetailNormalized {
   lineups: { home: LineupSide | null; away: LineupSide | null; predicted?: true } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
+    // cycle-412 additive: the venue/city/referee Persian twins — the 391
+    // maps (VENUE_FA/VENUE_CITY_FA) + the new REFEREE_FA ride beside the
+    // untouched raw byte contract; omitted when unmapped (honest raw).
+    stadiumFa?: string; cityFa?: string; refereeFa?: string;
     // cycle-115 additive: referee & stadium facts («داور و ورزشگاه») — the
     // infoBox Referee.stats block + Stadium capacity/surface, unconsumed since
     // the beginning. Optional → pre-115 cached payloads self-heal at the next
@@ -1562,10 +1566,19 @@ async function normalize(raw: FMMatchDetails, matchId: string): Promise<MatchDet
           ...(typeof st?.surface === "string" ? { surface: st.surface } : {}),
         }
       : undefined;
+  // cycle-412: the fa heals ride ADDITIVELY — the 391 maps + the new
+  // REFEREE_FA; omitted when unmapped so the honest raw stays the only
+  // spelling on the wire (the 391 venue-heal shape, match-page direction).
+  const stadiumFaVal = st?.name ? venueFa(st.name) : null;
+  const cityFaVal = st?.city ? venueCityFa(st.city) : null;
+  const refereeFaVal = rf?.text ? refereeFa(rf.text) : null;
   const info: MatchDetailNormalized["info"] = {
     stadium: st?.name,
     city: st?.city,
     referee: rf?.text,
+    ...(stadiumFaVal ? { stadiumFa: stadiumFaVal } : {}),
+    ...(cityFaVal ? { cityFa: cityFaVal } : {}),
+    ...(refereeFaVal ? { refereeFa: refereeFaVal } : {}),
     attendance: typeof at === "number" ? at.toLocaleString("en-US") : (typeof at === "string" ? at : undefined),
     date: md?.utcTime || utcTime,
     tournament: tn?.leagueName || leagueName,

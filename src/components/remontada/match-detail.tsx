@@ -78,6 +78,9 @@ interface DetailData {
   lineups: { home: LineupSide | null; away: LineupSide | null; predicted?: true } | null;
   info: {
     stadium?: string; city?: string; referee?: string; attendance?: string; date?: string; tournament?: string; round?: string;
+    // cycle-412 additive: the venue/city/referee Persian twins (the 391 maps
+    // + the new REFEREE_FA via the route) — fa-first render, raw fallback.
+    stadiumFa?: string; cityFa?: string; refereeFa?: string;
     refereeStats?: {
       matches?: number;
       yellowPerMatch?: number; yellowAvg?: number; yellowVs?: "above" | "below" | "average";
@@ -1654,8 +1657,8 @@ function InfoPanel({ data }: { data: DetailData }) {
     { label: "مرحله", value: data.info.round },
     { label: "تاریخ", value: data.info.date ? tehranDateLong(data.info.date) : undefined },
     { label: "ساعت", value: data.info.date ? `${tehranTime(data.info.date)} (به وقت تهران)` : undefined },
-    { label: "ورزشگاه", value: [data.info.stadium, data.info.city].filter(Boolean).join("، ") || data.info.stadium },
-    { label: "داور", value: data.info.referee },
+    { label: "ورزشگاه", value: [data.info.stadiumFa || data.info.stadium, data.info.cityFa || data.info.city].filter(Boolean).join("، ") || data.info.stadium },
+    { label: "داور", value: data.info.refereeFa || data.info.referee },
     { label: "تماشاگران", value: data.info.attendance ? faDigits(data.info.attendance) : undefined },
   ].filter((r) => r.value);
 
