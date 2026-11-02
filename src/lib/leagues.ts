@@ -2041,6 +2041,74 @@ const TEAM_FA: Record<string, string> = {
   "don benito": "دون بنیتو",
   "cd extremadura": "اکسترمادورا",
   "arosa sc": "آروسا",
+  // cycle-435: harvest batch 4 — the machine continues on the 435 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 2108 distinct = the
+  // documented 432 post-census; scripts/cycle435-batch4-verify.py byte-identity
+  // gate, live UA Chrome/124): this batch takes the 55 count-3 single-country
+  // names of the England non-league tranche (National League + North/South +
+  // Isthmian + Northern/Southern Premier — the ای‌اف‌سی/تاون/یونایتد
+  // suffix-keeping style, & → و per the batch-3 convention, of → اوف per the
+  // hill-of-beath precedent), 165 live leak rows covered. The count≤2 tail
+  // stays honest-raw: the Baller League novelty names (VZN FC, P17 FC, N5
+  // FC…) and the (W) women's sides (no (W) surface convention yet — the
+  // London City Lionesses tranche waits for one). Loud-pool rule: the
+  // documented 2108 census shrinks by this batch in the open (the B4 ±25
+  // band re-anchors with the next census, never silently).
+  "afc telford united": "ای‌اف‌سی تلفورد یونایتد",
+  "afc totton": "ای‌اف‌سی تاتون",
+  "alfreton town": "آلفرتون تاون",
+  "ashton united": "اشتون یونایتد",
+  "aveley": "ایولی",
+  "avro": "آورو",
+  "basingstoke": "باسینگ‌استوک",
+  "bath city": "بث سیتی",
+  "billericay": "بیلریکی",
+  "boston united": "بوستون یونایتد",
+  "brackley town": "براکلی تاون",
+  "buxton": "باکستون",
+  "chesham united": "چشام یونایتد",
+  "cheshunt": "چشانت",
+  "chester fc": "چستر",
+  "chorley": "چورلی",
+  "cleethorpes town": "کلیتورپس تاون",
+  "dagenham & redbridge": "داگنم و ردبریج",
+  "darlington": "دارلینگتون",
+  "dartford": "دارتفورد",
+  "dorking wanderers": "دورکینگ واندررز",
+  "emley": "املی",
+  "fc united of manchester": "اف‌سی یونایتد اوف منچستر",
+  "folkestone invicta": "فولکستون اینویکتا",
+  "gainsborough": "گینزبورو",
+  "gosport borough": "گاسپورت بورو",
+  "hartlepool united": "هارتلپول یونایتد",
+  "hednesford": "هدنسفورد",
+  "horsham": "هورشام",
+  "ilkeston town": "ایلکستون تاون",
+  "king's lynn town": "کینگز لین تاون",
+  "leighton town": "لیتون تاون",
+  "maidenhead united": "میدنهد یونایتد",
+  "maidstone united": "میدستون یونایتد",
+  "maldon & tiptree": "مالدون و تیپتری",
+  "malvern town": "مالورن تاون",
+  "merthyr town": "مرثر تاون",
+  "redcar athletic": "ردکار اتلتیک",
+  "scarborough athletic": "اسکاربرو اتلتیک",
+  "slough town": "اسلاو تاون",
+  "south shields": "ساوت شیلدز",
+  "southport": "ساوت‌پورت",
+  "spalding united": "اسپالدینگ یونایتد",
+  "spennymoor town fc": "اسپنی‌مور تاون",
+  "stockton town": "استوکتون تاون",
+  "taunton town": "تاونتون تاون",
+  "three bridges": "تری بریجز",
+  "tonbridge angels": "تونبریج انجلس",
+  "warrington rylands": "وارینگتون رایلندز",
+  "warrington town": "وارینگتون تاون",
+  "weston super mare": "وستون سوپر مار",
+  "wingate & finchley": "وینگیت و فینچلی",
+  "woking": "ووکینگ",
+  "workington": "ورکینگتون",
+  "worthing": "ورتینگ",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
