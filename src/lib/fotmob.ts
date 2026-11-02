@@ -9899,6 +9899,45 @@ const TROPHY_FA: Record<string, string> = {
   "A-Leagues All Stars Men": "تیم ستارگان ای‌لیگ استرالیا",
   "CONMEBOL World Cup Qualifiers": "مقدماتی جام جهانی — کونمبول",
   "World Cup CONMEBOL qualification": "مقدماتی جام جهانی — کونمبول",
+  // cycle-400: the coach-page honours section joined the fa contract — the
+  // harvest across 43 probed coach payloads (playerTrophies.playerTrophies,
+  // byte-exact upstream keys) surfaced these; every entry is an established
+  // transliteration, the honest fallback stays only outside the map —
+  "World Cup": "جام جهانی",
+  EURO: "یورو",
+  "Copa America": "کوپا آمریکا",
+  "Confederations Cup": "جام کنفدراسیون‌ها",
+  "DFB Pokal": "جام حذفی آلمان",
+  "Liga Pokal": "جام اتحادیه آلمان",
+  "Copa del Rey": "کوپا دل‌ری",
+  "Supercopa de España": "سوپرکاپ اسپانیا",
+  "Supercopa de Catalunya": "سوپرکاپ کاتالونیا",
+  "Copa Catalunya": "جام کاتالونیا",
+  "UEFA Super Cup": "سوپرکاپ اروپا",
+  "UEFA Cup Winners' Cup": "جام در جام اروپا",
+  Supercoppa: "سوپرکاپ ایتالیا",
+  "Coppa Italia": "کوپا ایتالیا",
+  "Serie B": "سری بی",
+  "2. Bundesliga": "بوندس‌لیگا ۲",
+  "Liga Portugal": "لیگ برتر پرتغال",
+  "Taça de Portugal": "جام حذفی پرتغال",
+  "KNVB Cup": "جام حذفی هلند",
+  "Eerste Divisie": "لیگ دسته اول هلند",
+  "Copa Libertadores": "کوپا لیبرتادورس",
+  "Recopa Sudamericana": "رکوپا سودامریکانا",
+  // cycle-400 B3 catch: the domproof scoped the honest fallback and found
+  // this one out — same competition as the existing «Club World Cup» key
+  "FIFA Club World Cup": "جام باشگاه‌های جهان",
+  "Copa do Brasil": "جام حذفی برزیل",
+  "Supercopa do Brasil": "سوپرکاپ برزیل",
+  "Série A": "سری آ برزیل",
+  "Liga Profesional": "لیگ حرفه‌ای آرژانتین",
+  Carioca: "کامپئوناتو کاریوکا",
+  "Emirates Cup": "جام امارات",
+  "Audi Cup": "جام آئودی",
+  "International Champions Cup": "جام قهرمانان بین‌المللی",
+  "Premier League Asia Trophy": "جام آسیایی لیگ برتر انگلیس",
+  "Super Cup": "سوپرکاپ",
 };
 
 export interface TeamTrophy {
@@ -11435,7 +11474,9 @@ export interface CoachData {
   // the site never surfaced. Past benches only: the active bench has its own
   // dedicated record card, so zero duplication.
   tenures: CoachTenure[];
-  trophies: { teamName: string; leagueName: string; seasonsWon: string[]; runnerUp: number }[];
+  // cycle-400: the honours rows carry additive fa (teamFa + TROPHY_FA hit,
+  // null → the UI falls back to the raw upstream names — honest, no guessing)
+  trophies: { teamName: string; teamFa: string | null; leagueName: string; leagueFa: string | null; seasonsWon: string[]; runnerUp: number }[];
 }
 
 export interface CoachTenure {
@@ -11474,7 +11515,10 @@ function coachInfoRow(raw: FMPlayerDetails, translationKey: string): { text: str
  */
 export async function getCoachData(id: string): Promise<CoachData> {
   if (!/^\d{3,12}$/.test(id)) throw new CoachNotFoundError(`bad coach id: ${id}`);
-  const payload = await cached(`coach:v4:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
+  // cycle-400: key bumped v4→v5 — the honours rows gained additive teamFa /
+  // leagueFa; the persistent L2 could keep serving the old shapeless rows
+  // (the 264 lesson: a shape change must make old rows unreachable instantly)
+  const payload = await cached(`coach:v5:${id}`, 10 * 60_000, async (): Promise<CoachData | typeof PLAYER_NOT_FOUND> => {
     const raw = await fetchJson<FMPlayerDetails>(`https://www.fotmob.com/api/data/playerData?id=${id}`, 9000);
     if (!raw || typeof raw !== "object" || (raw as { error?: unknown }).error === true) return PLAYER_NOT_FOUND;
     if (!raw.name || !raw.id || raw.isCoach !== true) return PLAYER_NOT_FOUND;
@@ -11558,7 +11602,16 @@ export async function getCoachData(id: string): Promise<CoachData> {
         const won = t.seasonsWon || [];
         const runnerUp = (t.seasonsRunnerUp || []).length;
         if (won.length === 0 && runnerUp === 0) continue;
-        trophies.push({ teamName: pt.teamName || "", leagueName: t.leagueName || "", seasonsWon: won, runnerUp });
+        // cycle-400: additive fa on the honours rows — teamFa always answers
+        // (raw passthrough built in), leagueFa stays null outside TROPHY_FA
+        trophies.push({
+          teamName: pt.teamName || "",
+          teamFa: pt.teamName ? teamFa(pt.teamName) || null : null,
+          leagueName: t.leagueName || "",
+          leagueFa: t.leagueName ? TROPHY_FA[t.leagueName] || null : null,
+          seasonsWon: won,
+          runnerUp,
+        });
       }
     }
     trophies.sort((a, b) => b.seasonsWon.length - a.seasonsWon.length);

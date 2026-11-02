@@ -1366,6 +1366,9 @@ const TEAM_FA: Record<string, string> = {
   "gimnàstic": "خیمناستیک", "gimnastic": "خیمناستیک",
   "sporting gijón": "اسپورتینگ خیخون", "sporting gijon": "اسپورتینگ خیخون",
   "boca juniors": "بوکا جونیورز", "estudiantes": "استودیانتس",
+  // cycle-400: the coach-trophies harvest surfaced these two — established
+  // transliterations, the honest passthrough shrinks to zero on the set
+  "river plate": "ریور پلات", "newell's old boys": "نیولز اولد بویز",
   "talleres": "تایرس", "tigre": "تیگره", "leones": "لئونس",
   "lyngby": "لینگبی", "silkeborg": "سیلکبورگ", "ifk norrköping": "نورشوپینگ",
   "ifk norrkoping": "نورشوپینگ",

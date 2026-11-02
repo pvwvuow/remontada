@@ -280,11 +280,13 @@ export function CoachView({ c }: { c: CoachData }) {
                 </span>
                 <div className="min-w-0 flex-1">
                   <p className="text-[12px] font-bold text-[#e6f0fb] truncate" dir="auto">
-                    {t.leagueName || t.teamName}
+                    {/* cycle-400: fa-first honours rows — the additive leagueFa/teamFa
+                        rides (the 397 tenure pattern); raw stays the honest fallback */}
+                    {t.leagueFa || t.leagueName || t.teamName}
                   </p>
                   {t.teamName && t.leagueName && (
                     <p className="text-[9.5px] text-steel/85 truncate mt-0.5" dir="auto">
-                      {t.teamName}
+                      {t.teamFa || t.teamName}
                     </p>
                   )}
                 </div>
