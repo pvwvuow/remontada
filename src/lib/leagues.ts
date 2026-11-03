@@ -3485,6 +3485,58 @@ const TEAM_FA: Record<string, string> = {
   "slovácko": "یک. اسلواتسکو",
   "teplice": "تپلیتسه",
   "vysočina jihlava": "وی‌سوچینا ییهلاوا",
+  // cycle-475: batch 28 — ALL 8 count>=3 single-country ISR names of the
+  // 475 census (the live Liga Leumit/Liga Alef wave) into TEAM_FA (the
+  // 446-pick rule) — the waiting half of the 472 CZE/ISR 8/24 two-way
+  // tie, ALONE at the top since 472 (the 473/474 rotation lines), probed
+  // fresh (scripts/c475-census.py + c475-wiki-probe.py +
+  // c475-wiki-probe2.py + c475-wiki-probe3.py + the رعانانا single-title
+  // probe, the 447 live-re-read lesson — fa.wiki MOVED under our feet):
+  // THREE direct identity-verified fa.wiki club articles, ALL re-verified
+  // fresh with the two Tel Aviv articles RENAMED upstream since the 472
+  // read (the SAME pageids 43798549/44406164 now carry the
+  // باشگاه‌پrefixed titles; the bare spellings MISSING — the
+  // intro-carrying target's OWN title wins, the هامارابی/دالاس lesson;
+  // the keys ride the FC rule minus the باشگاه فوتبال prefix anyway):
+  // بنی یهودا تل آویو 43798549 «باشگاه فوتبال بنی یهودا تل آویو… یک
+  // باشگاه فوتبال است که در شهر تل آویو کشور اسرائیل» / هاپوئل تل‌آویو
+  // 44406164 «…یکی از باشگاه‌های فوتبال… که در تل‌آویو قرار دارد…
+  // ۱۹۲۷» / اشدود (FC Ashdod) 43349375 «باشگاه فوتبال اشدود… ام اس
+  // اشدود» (the bare اشدود 43597406 stays the CITY — re-confirmed
+  // fresh). CITY-grounded toponyms (the 461 مریدا city-title rule):
+  // Kiryat Yam → کریات یام (the CITY 42126668's OWN spelling,
+  // re-verified fresh), Raanana → رعانانا (the CITY 41090895 — the
+  // en.langlink spelling; the رعاننا/رعانا press forms BOTH missing, the
+  // single-title probe settled it), Jaffa → یافا (the CITY 44825068).
+  // Zero-anchor honest reads (the 452..472 precedent): Hapoel Kfar
+  // Shalem → هاپوئل کفر شالم (کفر شالم/باشگاه فوتبال کفر شالم both
+  // missing — pure phonetic, the 466 UPNFM rule), Ironi Modiin → ایرونی
+  // مودیعین (مودیعین/مودیعین-مکابیم-رعوت/هاپوئل مودیعین all missing —
+  // pure phonetic; the en-search hit Tel Aviv was the WRONG identity,
+  // rejected, the 466 پلاتنسه rule), Maccabi Kabilio Jaffa → مکابی
+  // کابیلیو یافا (کابیلیو pure phonetic; the مکابی یافا spelling is the
+  // IDENTITY-DISTINCT club Maccabi Jaffa and MISSING anyway — the
+  // distinctness rule protected the key). Hapoel Raanana → هاپوئل
+  // رعانانا (هاپوئل pure phonetic + the grounded CITY toponym).
+  // Byte-verify (scripts/c475-batch28-verify.py): PRE 8/8 verified 0
+  // bad, every name single-country ISR across the whole ±7 window, 24
+  // live leak rows covered (sample ids 6031122-6446063); the collision
+  // gate clean: dupKeys=[] and zero proposed key/value collisions
+  // against the whole 2289-pair file (the five flagged valueCollisions
+  // the intentional league-name homoglyphs, the
+  // 465/466/467/470/471/472 precedent), 1867 → 1875 TEAM_FA pairs.
+  // Cache: matches v31 → v32 per the standing rule (fresh cold window).
+  // Patrol: B4 re-anchored 1704→1691 (the loud-pool rule, the 445
+  // precedent) + B33 NEW (four batch-28 witnesses Persian in the live
+  // ±7 feed — the patrol now runs 72 checks).
+  "bnei yehuda tel aviv": "بنی یهودا تل آویو",
+  "fc ashdod": "اشدود",
+  "hapoel kfar shalem": "هاپوئل کفر شالم",
+  "hapoel raanana": "هاپوئل رعانانا",
+  "hapoel tel aviv": "هاپوئل تل‌آویو",
+  "ironi modiin": "ایرونی مودیعین",
+  "kiryat yam": "کریات یام",
+  "maccabi kabilio jaffa": "مکابی کابیلیو یافا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
