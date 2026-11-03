@@ -6915,8 +6915,20 @@ export interface TeamRowInfo {
   leagueFa: string;
 }
 
-/** Find a team's standings row across our configured leagues (best-effort). */
-export async function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
+/** Find a team's standings row across our configured leagues (best-effort).
+ * cycle-464 fix (the reproduced cycle-463 patrol read): the walk below is
+ * sequential over the full 34-league list — a team OUTSIDE every configured
+ * table (the ARG harvest wave: Tucumán / Argentinos, probed live) pays the
+ * whole miss-walk on EVERY request (cold 21.8s measured vs 0.05s warm; the
+ * team route runs it up to three times per call — own row + prematch
+ * opponent — so a cold team page held the ui-cycle-30 skeleton, sr-only h1
+ * «صفحه تیم», for ~22s+ and hung client fetches). Fix: memoize the OUTCOME
+ * (positive AND the expensive negative) through the house two-tier cache,
+ * keyed per team+hint, 10-minute TTL — the same class as the 10-minute team
+ * index and strictly fresher than the 60-minute standings cache beneath,
+ * so no staleness regression. Additive: same exported name/signature, zero
+ * call-site change (team route, match-h2h). */
+const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> => {
   const candidates = [...LEAGUES].sort((a, b) => {
     const ah = hintLeagueId && a.fotmobId === hintLeagueId ? -1 : 0;
     const bh = hintLeagueId && b.fotmobId === hintLeagueId ? -1 : 0;
@@ -6938,6 +6950,19 @@ export async function findTeamInStandings(teamId: number, hintLeagueId?: number)
     }
   }
   return null;
+};
+
+/** cycle-464: memoized public wrapper — the walk outcome (row or the
+ * expensive definitive miss) rides the house two-tier cache for 10 minutes
+ * per (teamId, hintLeagueId). The null miss is the WHOLE point: an
+ * out-of-league team previously re-walked all 34 leagues per request. */
+export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
+  if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
+  return cached(
+    `teamStandingsRow:v1:${teamId}:${hintLeagueId ?? 0}`,
+    10 * 60_000,
+    () => findTeamInStandingsWalk(teamId, hintLeagueId),
+  );
 }
 
 // ---------------- Team season stats (from league season fixtures) ----------------
