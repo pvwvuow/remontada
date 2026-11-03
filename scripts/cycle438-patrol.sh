@@ -101,6 +101,9 @@
 #      1943 (post-440 batch 7, the documented −30, zero distinct drift) →
 #      1925 (post-441 batch 8, the documented −18, zero distinct drift) →
 #      1909 (post-442 batch 9, the documented −16, zero distinct drift) →
+#      1798 (post-457 batch 18: the −10 Ukraine tranche EXACTLY −10 in
+#      the count-3 segment (203→193, the isolated proof) + 1 long-tail
+#      window drift, the 445/455 precedent) ←
 #      1809 (post-456 batch 17: the −10 Montenegro tranche EXACTLY −10 in
 #      the count-3 segment (213→203, the isolated proof), zero long-tail
 #      drift this time) ←
@@ -135,17 +138,17 @@
 # the live feed). If a future cycle legitimately edits a batch-15 value, it
 # re-anchors B20 in the open (the B4 loud-pool precedent). The patrol now
 # runs 59 checks.
-# cycle-456 batch-17 note: the batch-15 block region read stays bounded to
-# the next cycle marker (the cycle-455/456 blocks now follow it — the
-# naive marker→}; scan would still read the 455 block's tail and break the
-# hold; the lookahead guard holds).
-# cycle-456 re-anchor (the loud-pool rule, the harvest-batch delta): B4
-# 1819 → 1809 (harvest batch 17, the documented −10 Montenegro tranche
-# EXACTLY −10 in the count-3 segment 213→203 — the isolated proof, zero
-# long-tail window drift this time) + B22 NEW: four batch-17 witnesses
-# Persian in the live ±7 feed. The patrol now runs 61 checks.
-# A API inventory, B 426 surface + harvest holds (B4 anchor 1809, B7–B22
-# batch-4..17 witnesses + the 886f6ff byte-identity), C1–C14 the interaction
+# cycle-456/457 batch-17/18 note: the batch-15 block region read stays
+# bounded to the next cycle marker (the cycle-455/456/457 blocks now
+# follow it — the naive marker→}; scan would still read the later blocks'
+# tails and break the hold; the lookahead guard holds).
+# cycle-457 re-anchor (the loud-pool rule, the harvest-batch delta): B4
+# 1809 → 1798 (harvest batch 18, the documented −10 Ukraine tranche
+# EXACTLY −10 in the count-3 segment 203→193 — the isolated proof — + 1
+# long-tail window drift, the 445/455 precedent) + B23 NEW: four batch-18
+# witnesses Persian in the live ±7 feed. The patrol now runs 62 checks.
+# A API inventory, B 426 surface + harvest holds (B4 anchor 1798, B7–B23
+# batch-4..18 witnesses + the 886f6ff byte-identity), C1–C14 the interaction
 # holds, D the 16-page DOM sweep at 390×844, E the gates.
 set -u
 BASE=http://localhost:3000
@@ -313,6 +316,8 @@ W16 = ["چای نات", "ناکون پاتوم", "خون کائن یونایتد
 W17 = ["آستریا وین", "فرست ویینا", "واکر اینسبروک", "تیرول"]
 # cycle-456: B22 — batch-17 witnesses (the Montenegro 1. CFL tranche)
 W18 = ["بودوچنوست پودگوریتسا", "آرسنال تیوات", "دچیچ توزی", "سوتجسکا نیکشیچ"]
+# cycle-457: B23 — batch-18 witnesses (the Ukrainian Cup tranche)
+W19 = ["دینامو کی‌یف", "کارپات لویو", "زوریا لوگانسک", "کریوباس"]
 miss1 = [w for w in W1 if w not in fa_set]
 miss2 = [w for w in W2 if w not in fa_set]
 miss4 = [w for w in W4 if w not in fa_set]
@@ -330,10 +335,11 @@ miss15 = [w for w in W15 if w not in fa_set]
 miss16 = [w for w in W16 if w not in fa_set]
 miss17 = [w for w in W17 if w not in fa_set]
 miss18 = [w for w in W18 if w not in fa_set]
+miss19 = [w for w in W19 if w not in fa_set]
 b1 = 1 if len(leaks) == 0 else 0
 b2 = 1 if kn == "جام حذفی هلند" else 0
 b3 = 1 if pl == "پریمیرلیگ انگلیس" else 0
-b4 = 1 if abs(len(team_names) - 1809) <= 25 else 0
+b4 = 1 if abs(len(team_names) - 1798) <= 25 else 0
 T4 = "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲"
 b5 = 1 if (len(prows) == 0 and trophy4 == T4) else 0
 b6 = 1 if (not miss1 and not miss2) else 0
@@ -352,6 +358,7 @@ b18 = 1 if not miss15 else 0
 b19 = 1 if not miss16 else 0
 b21 = 1 if not miss17 else 0
 b22 = 1 if not miss18 else 0
+b23 = 1 if not miss19 else 0
 # cycle-454: B20 — the batch-15 block byte-identity to commit 886f6ff (the
 # 453 finding #A3 re-anchor promoted to a permanent hold: the committed
 # block must never silently drift from the immutable shipped batch)
@@ -370,8 +377,8 @@ print("B-SUMMARY "
       f"compLeaks={len(leaks)} teamRows={team_rows} teamDistinct={len(team_names)} "
       f"knvb={kn!r} catalog={pl!r} ukr={uk!r} "
       f"playerLeakRows={len(prows)} teamLeakRows={len(trows)} "
-      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} batch13Missing={miss14} batch14Missing={miss15} batch15Missing={miss16} batch16Missing={miss17} batch17Missing={miss18} batch15Block={'ok' if b20 else 'DRIFT'} trophy4={trophy4!r}")
-print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18} b20={19} b21={20} b22={21}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20, b21, b22))
+      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} batch13Missing={miss14} batch14Missing={miss15} batch15Missing={miss16} batch16Missing={miss17} batch17Missing={miss18} batch18Missing={miss19} batch15Block={'ok' if b20 else 'DRIFT'} trophy4={trophy4!r}")
+print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18} b20={19} b21={20} b22={21} b23={22}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20, b21, b22, b23))
 if leaks: print("B-LEAKS:", json.dumps({f"{k[0]}|{k[1]}": v for k, v in list(leaks.items())[:6]}, ensure_ascii=False))
 if prows: print("B-PLAYER-LEAKS:", json.dumps(prows[:10], ensure_ascii=False))
 if trows: print("B-TEAM-LEAKS:", json.dumps(trows[:10], ensure_ascii=False))
@@ -379,7 +386,7 @@ PY
 )
 echo "$RES"
 S=$(echo "$RES" | grep "B-ASSERTS" | tail -1)
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23; do
   V=$(echo "$S" | grep -oE "b$i=[01]" | cut -d= -f2)
   D=""
   [ "$i" = "20" ] && D=$(echo "$RES" | grep "B20-WHY" | tail -1 | cut -c1-200)
@@ -387,7 +394,7 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22; do
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
     3) LBL="catalog byte-stability hold (5795503)" ;;
-    4) LBL="team raw pool within the ±25 drift band of the documented 1809 census (re-anchored 456, loud-pool rule)" ;;
+    4) LBL="team raw pool within the ±25 drift band of the documented 1798 census (re-anchored 457, loud-pool rule)" ;;
     5) LBL="the 429 trophy hold: zero player raw-fallback rows + trophies[4] byte-exact" ;;
     6) LBL="harvest batch-1+batch-2 witnesses all Persian in the live ±7 feed" ;;
     7) LBL="harvest batch-4 witnesses (England non-league tranche) all Persian in the live ±7 feed" ;;
@@ -406,6 +413,7 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22; do
     20) LBL="the 454 batch-15 block hold: leagues.ts byte-identical to commit 886f6ff (11 pairs — the A3 re-anchor promoted)" ;;
     21) LBL="harvest batch-16 witnesses (Austria Bundesliga/2. Liga tranche) all Persian in the live ±7 feed" ;;
     22) LBL="harvest batch-17 witnesses (Montenegro 1. CFL tranche) all Persian in the live ±7 feed" ;;
+    23) LBL="harvest batch-18 witnesses (Ukrainian Cup tranche) all Persian in the live ±7 feed" ;;
   esac
   ck "B$i $LBL" "${V:-0}" "$D"
 done

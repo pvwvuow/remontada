@@ -2811,6 +2811,70 @@ const TEAM_FA: Record<string, string> = {
   "otrant": "اوترانت",
   "petrovac": "پتروواتس",
   "sutjeska": "سوتجسکا نیکشیچ",
+
+  // cycle-457: harvest batch 18 — the machine continues on the 457 census
+  // (scripts/c451-pool-sweep.py re-run read EXACTLY 1809 distinct = the
+  // documented 456 post-census, ZERO distinct drift for the EIGHTH
+  // consecutive cycle; rows steady at 3317 — the 435 lesson: rows drift,
+  // distinct is decisive; scripts/c457-batch18-verify.py byte-identity
+  // gate, live UA Chrome/124: 10/10 verified=0 bad, 30 live leak rows
+  // covered): the two-way tie POL/UKR (each 10 count-3 names / 30 rows)
+  // was DEAD-EVEN on direct fa.wiki club articles (POL 1 زنیچ پروشکوف vs
+  // UKR 1 دینامو کی‌یف), so the 447 read extended one documented level —
+  // CITY-TOPONYM anchor quality (the 452 city-title rule, the same anchor
+  // class the 451/452/455/456 batches rode): UKR 6 city hits (خارکوف
+  // Q42308، ژیتومیر Q156713، ریونه Q156739، چرکاسی Q157055،
+  // کامیانتس-پودیلسکی Q193965، برهوفه Q146497 — the last a WRONG-CITY
+  // probe artifact for Liviy Bereh, excluded from value anchoring) vs POL
+  // 4 (سویدنگک/ونچنا/اوپوله/ژشوف) — scripts/c457-wiki-tiebreak.py,
+  // documented as read: this batch takes ALL 10 count-3 single-country
+  // names of the UKRAINE tranche (the Ukrainian Cup field; no
+  // exclusions). Anchors (scripts/c457-wiki-probe.py/2): Dynamo Kyiv →
+  // دینامو کی‌یف (the fa.wiki club article «باشگاه فوتبال دینامو کی‌یف»
+  // pageid 43974850 — the descriptor drops per the FC rule; distinct from
+  // the file's OWN دینامو بخارست/مسکو/درسدن/مخاچ‌قلعه/دیناموزاگرب). FC
+  // Kharkiv → خارکوف (FC dropped; the bare value = club = town, the 455
+  // رید / 456 پتروواتس precedent; the fa.wiki city pageid 44675128). FC
+  // Karpaty Lviv → کارپات لویو (the bare کارپات page 3537193 is a
+  // NON-club subject — identity verified: an SS Ramsey Town SHIP article
+  // — unusable as an anchor; لویو the fa.wiki city pageid 44886178 AND
+  // the file's OWN lks pogoń lwów → پوگون لویو letter-reading; Karpaty
+  // honest). FC Kryvbas → کریوباس (honest read documented — opensearch
+  // dead: کرواسی noise only; the ore-basin namesake is unambiguous in a
+  // football context). LNZ Cherkasy → ال‌ان‌زد چرکاسی (the letter-reading
+  // per the encyclopedia's OWN ال‌ان‌جی LNG page family + the file's OWN
+  // fsv→اف‌اس‌وی convention, ZWNJ letters; چرکاسی the fa.wiki city
+  // pageid 35486135). Liviy Bereh → لیوی بره (honest transliteration
+  // documented as read — the fa.wiki «برهوفه» city hit is a WRONG-CITY
+  // probe artifact: the club is a Kyiv-side side, Berehove is a
+  // Zakarpattia town; no fa.wiki article under any spelling — the 452
+  // لویی precedent). Polissya Zhytomyr → پولیسیا ژیتومیر (پولیسیا the
+  // encyclopedia's OWN derivation — the fa.wiki ethnographic «پولیسیان‌ها»
+  // reads the region name; ژیتومیر the fa.wiki city pageid 44202029). NK
+  // Veres Rivne → ورس ریونه (the bare ورس page 1311780 is a NON-club
+  // subject — identity verified: a Category:Eva Perón — unusable as an
+  // anchor; ورس honest + ریونه the fa.wiki city pageid 41341728). FC
+  // Zorya Luhansk → زوریا لوگانسک (the bare زوریا page 44163684 is an
+  // unresolvable redirect — unusable as an anchor; زوریا honest + لوگانسک
+  // the fa.wiki city pageid 12375949). FC Epitsentr Kamianets-Podilskyi →
+  // اپیسنتر کامیانتس-پودیلسکی (اپیسنتر the encyclopedia's OWN spelling of
+  // the epicenter word the club is named after — the bare form is the
+  // science article, so the value rides the city کامیانتس-پودیلسکی the
+  // fa.wiki pageid 43825852; FC dropped). Collision gate: zero key and
+  // zero value collisions against the whole 1770-pair file (each render
+  // one distinct full-value string — no Logroñés case). Loud-pool rule:
+  // the documented 1809 census shrinks by this batch in the open (the B4
+  // band re-anchors with the next census, never silently).
+  "dynamo kyiv": "دینامو کی‌یف",
+  "epitsentr kamianets-podilskyi": "اپیسنتر کامیانتس-پودیلسکی",
+  "fc kharkiv": "خارکوف",
+  "karpaty": "کارپات لویو",
+  "kryvbas": "کریوباس",
+  "lnz cherkasy": "ال‌ان‌زد چرکاسی",
+  "liviy bereh": "لیوی بره",
+  "polissya zhytomyr": "پولیسیا ژیتومیر",
+  "veres rivne": "ورس ریونه",
+  "zorya": "زوریا لوگانسک",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
