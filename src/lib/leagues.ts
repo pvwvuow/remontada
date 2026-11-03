@@ -3349,6 +3349,55 @@ const TEAM_FA: Record<string, string> = {
   "seattle sounders fc": "سیاتل ساندرز",
   "sporting kansas city": "اسپورتینگ کانزاس سیتی",
   "vancouver whitecaps": "ونکوور وایتکپس",
+  // cycle-471: batch 26 — ALL 8 count>=3 single-country SWE names of the
+  // 471 census (the live Allsvenskan/Superettan wave) into TEAM_FA (the
+  // 446-pick rule) — the WINNER of the CZE/SWE/ISR 8/24 THREE-WAY tie by
+  // the FRESH 447 re-read (scripts/c471-wiki-probe.py + c471-wiki-probe2.py
+  // + the direct fa existence/identity probes, the 456 live-re-read
+  // precedent: the anchor map MOVED again since the 470 read): SWE carries
+  // FIVE direct identity-verified fa.wiki club articles (الفسبورگ «باشگاه
+  // فوتبال در کشور سوئد… شهر بوروس… ۱۹۰۴» / دیگرفوش «دیگرفوش آی‌اف یک
+  // باشگاه فوتبال سوئدی… آلسنسکان» / بروماپویکارنا «یک باشگاه فوتبال مستقر
+  // در بروما (سوئد)… لیگ برتر فوتبال سوئد» / هالمستاد «Halmstads BK…
+  // هالمستاد، بخش هاللاند، سوئد» / هامارابی 43805003 «Hammarby Fotboll… یک
+  // باشگاه فوتبال سوئدی است که در سال ۱۹۱۵ در استکهلم تأسیس شده‌است») vs
+  // CZE 4 (زبرویوفکا برنو / هرادتس کرالووه / ملادا بولسلاف / یک. اسلواتسکو
+  // — the تپلیتسه 43208205 and ییهلاوا 41212923 pages are the CITY
+  // articles, NOT club anchors, the 466 خوتیکالپا wrong-identity lesson),
+  // ISR 3 (اشدود / هاپوئل تل‌آویو / بنی یهودا تل آویو). The Hammarby
+  // spelling lesson: the direct hit came under the هاماربی spelling — which
+  // is a REDIRECT to باشگاه فوتبال هامارابی (the 466 اتلتیکو ایندپندینته
+  // redirect lesson) — so the intro-carrying target's OWN title wins: هامارابی
+  // (the c470 دالاس lesson). Values minus the باشگاه فوتبال prefix per the
+  // FC rule; BK dropped per the 447 کراسنودار/اورنبورگ suffix-drop rule.
+  // Zero-anchor honest reads (the 452/455/457/460/461/462/465/466
+  // precedent): Landskrona BoIS → لاندسکرونا بوایز (BoIS the acronym →
+  // بوایز, the 466 UPNFM spelled-out rule; no article under any probed
+  // spelling), Varbergs BoIS FC → واربرگ بوایز (the CITY article واربرگ
+  // 40333636 grounds the toponym per the 461 مریدا city-title rule — the
+  // city's OWN spelling over the press واربریس, the 466 اولانچو pattern;
+  // FC + genitive absorbed), Västerås SK → وستروس اس‌کی (no article under
+  // any probed spelling — pure phonetic; SK the acronym spelled with the
+  // ZWNJ per the 466 UPNFM rule). The ä key rides the file's OWN
+  // südtirol/köln/árabe/españa/montreal-é precedent. Byte-verify
+  // (scripts/c471-batch26-verify.py): PRE 8/8 verified=0 bad, every name
+  // single-country SWE across the whole ±7 window, 24 live leak rows
+  // covered (sample ids 5107637-5125663); the collision gate clean:
+  // dupKeys=[] and zero proposed-key/value collisions against the whole
+  // 2273-pair file (the five flagged valueCollisions the intentional
+  // league-name homoglyphs, the 465/466/467/470 precedent), 1851 → 1859
+  // TEAM_FA pairs. Cache: matches v29 → v30 per the standing rule. Patrol:
+  // B4 re-anchored 1720→1712 (the loud-pool rule, the 445 precedent) + B31
+  // NEW (four batch-26 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 70 checks).
+  "brommapojkarna": "بروماپویکارنا",
+  "degerfors": "دیگرفوش",
+  "elfsborg": "الفسبورگ",
+  "halmstads bk": "هالمستاد",
+  "hammarby": "هامارابی",
+  "landskrona bois": "لاندسکرونا بوایز",
+  "varbergs bois fc": "واربرگ بوایز",
+  "västerås sk": "وستروس اس‌کی",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
