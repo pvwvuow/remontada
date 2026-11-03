@@ -3537,6 +3537,60 @@ const TEAM_FA: Record<string, string> = {
   "ironi modiin": "ایرونی مودیعین",
   "kiryat yam": "کریات یام",
   "maccabi kabilio jaffa": "مکابی کابیلیو یافا",
+  // cycle-477: batch 29 — ALL 7 count>=3 single-country ALB names of the
+  // FRESH 477 census into TEAM_FA (the 446-pick rule) — the fresh 447
+  // re-read (scripts/c477-census.py, the 447 live-re-read lesson) DISSOLVED
+  // the 476 rotation line's GRE/BUL/DEN/ALB field with the window move (GRE
+  // now 4, BUL 2, DEN 5 — its (W) side GONE from the window) and surfaced
+  // the NEW two-way tie ALB 7 = PAR 7 (ENG's 7 carries FOUR (W) sides — the
+  // 435 rule leaves it 2 effective; ESP 6 -> 2 effective — no (W) tranche
+  // in the race). Tie-break (the 472 CZE-vs-ISR precedent): ALB 4 DIRECT
+  // identity-verified fa.wiki club articles vs PAR 1 (سرو پورتنیو 41367502
+  // — scripts/c477-wiki-probe.py) → ALB harvested, PAR waits. The FOUR
+  // direct anchors, all extracts verified Albanian-club fresh: KF Tirana →
+  // تیرانا (باشگاه فوتبال تیرانا 43804587 «…یک باشگاه فوتبال در شهر
+  // تیرانا، آلبانی است… ۱۹۲۰… ۲۷ قهرمانی سوپر لیگ» — the club named after
+  // its city, the FC rule minus the prefix, the fc ashdod → اشدود
+  // precedent) / FC Dinamo City → دینامو تیرانا (wikidata Q34120 KS Dinamo
+  // Tirana — the SAME club RENAMED Dinamo City upstream; the article
+  // باشگاه فوتبال دینامو تیرانا 42185043 keeps the old name «(انگلیسی: FK
+  // Dinamo Tirana)… در تیرانا، آلبانی» — the anchor's OWN title wins, the
+  // 475 RENAMED-upstream lesson) / Partizani → پارتیزانی تیرانا (باشگاه
+  // فوتبال پارتیزانی تیرانا 43805559 «FK Partizani Tirana… ۱۹۴۶… آلبانی»)
+  // / Vllaznia → ولازنیا اشکودر (باشگاه فوتبال ولازنیا اشکودر 35742201
+  // «ولازنیا اشکودر… سوپر لیگ فوتبال آلبانی… قدیمی‌ترین باشگاه کشور
+  // آلبانی»). Zero-anchor honest reads (the 452..475 precedent): Elbasani
+  // → البسان (the club's own article باشگاه فوتبال البسان 3990515 EXISTS —
+  // «(انگلیسی: KF Elbasani)… در الباسان پایه‌گذاری شده» — but its extract's
+  // country adjective is an upstream TYPO «اسلواکی»; the strict
+  // wrong-country rule REJECTS it as a direct anchor, the title still
+  // evidences the spelling) / Skënderbeu → اسکندربو (no club article
+  // anywhere — scripts/c477-wiki-probe3.py: the bare and full spellings
+  // MISSING; the spelling grounded by the club's OWN stadium article
+  // ورزشگاه اسکندربو 5322302 whose extract names the club «باشگاه فوتبال
+  // اسکندربو کورچه» — home club named inside the related article) / Vora →
+  // وورا (no wikidata entity, no fa.wiki search hits — pure phonetic, the
+  // 466 UPNFM rule). The کورچا title trap dodged (the fa.wiki کورچا page
+  // is a SPANISH settlement — never consulted). Byte-verify
+  // (scripts/c477-batch29-verify.py): PRE 7/7 verified 0 bad, every name
+  // single-country ALB across the whole ±7 window (3 rows each, sample ids
+  // 5944198-5944202); the collision gate clean: dupKeys=[] and zero
+  // proposed key/value collisions against the whole 2297-pair file (the
+  // five flagged valueCollisions the intentional league-name homoglyphs,
+  // the 465..475 precedent), 1875 → 1882 TEAM_FA pairs. Cache: matches v32
+  // → v33 per the standing rule (fresh cold window). Patrol: B4 re-anchored
+  // 1691→1671 (the loud-pool rule, the 445 precedent — the post-patch
+  // census MEASURED 1671/2959, the −8 = the 7 harvested + 1 window drift;
+  // the pre-patch census read 1679/2982) + B34 NEW (four
+  // batch-29 witnesses Persian in the live ±7 feed — the patrol now runs
+  // 73 checks).
+  "elbasani": "البسان",
+  "fc dinamo city": "دینامو تیرانا",
+  "kf tirana": "تیرانا",
+  "partizani": "پارتیزانی تیرانا",
+  "skënderbeu": "اسکندربو",
+  "vllaznia": "ولازنیا اشکودر",
+  "vora": "وورا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

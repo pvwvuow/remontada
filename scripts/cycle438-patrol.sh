@@ -245,8 +245,18 @@
 # probed fresh; the pre-patch census read 1699, raw_rows 3049) + B33 NEW:
 # four batch-28 witnesses Persian in the live ±7 feed. The patrol now
 # runs 72 checks.
-# A API inventory, B 426 surface + harvest holds (B4 anchor 1691, B7–B33
-# batch-4..28 witnesses + the 886f6ff byte-identity), C1–C14 the
+# cycle-477 re-anchor (the loud-pool rule, the 445 precedent): B4
+# 1691 → 1671 (harvest batch 29 — the −7 ALB tranche, the live Albanian
+# Kategoria Superiore/First Category wave, the WINNER of the fresh
+# ALB/PAR 7/24 two-way tie the 477 census surfaced — the 476 card's
+# GRE/BUL/DEN/ALB field DISSOLVED with the window move — by the 447
+# anchor re-read: FOUR direct identity-verified club articles
+# (تیرانا / دینامو تیرانا — the RENAMED-upstream club / پارتیزانی تیرانا /
+# ولازنیا اشکودر) vs PAR 1; the pre-patch census read 1679, raw_rows 2982,
+# the post-patch MEASURED 1671/2959) + B34 NEW: four batch-29 witnesses
+# Persian in the live ±7 feed. The patrol now runs 73 checks.
+# A API inventory, B 426 surface + harvest holds (B4 anchor 1671, B7–B34
+# batch-4..29 witnesses + the 886f6ff byte-identity), C1–C14 the
 # interaction holds, D the 16-page DOM sweep at 390×844, E the gates.
 set -u
 BASE=http://localhost:3000
@@ -436,6 +446,8 @@ W27 = ["الفسبورگ", "هالمستاد", "هامارابی", "دیگرفو
 W28 = ["زبرویوفکا برنو", "هرادتس کرالووه", "ملادا بولسلاف", "یک. اسلواتسکو"]
 # cycle-475: B33 — batch-28 witnesses (the ISR tranche, the waiting half of the 472 two-way tie)
 W29 = ["بنی یهودا تل آویو", "هاپوئل تل‌آویو", "اشدود", "ایرونی مودیعین"]
+# cycle-477: B34 — batch-29 witnesses (the ALB tranche, the fresh ALB/PAR two-way-tie winner)
+W30 = ["البسان", "دینامو تیرانا", "اسکندربو", "ولازنیا اشکودر"]
 miss1 = [w for w in W1 if w not in fa_set]
 miss2 = [w for w in W2 if w not in fa_set]
 miss4 = [w for w in W4 if w not in fa_set]
@@ -464,10 +476,11 @@ miss26 = [w for w in W26 if w not in fa_set]
 miss27 = [w for w in W27 if w not in fa_set]
 miss28 = [w for w in W28 if w not in fa_set]
 miss29 = [w for w in W29 if w not in fa_set]
+miss30 = [w for w in W30 if w not in fa_set]
 b1 = 1 if len(leaks) == 0 else 0
 b2 = 1 if kn == "جام حذفی هلند" else 0
 b3 = 1 if pl == "پریمیرلیگ انگلیس" else 0
-b4 = 1 if abs(len(team_names) - 1691) <= 25 else 0
+b4 = 1 if abs(len(team_names) - 1671) <= 25 else 0
 T4 = "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲"
 b5 = 1 if (len(prows) == 0 and trophy4 == T4) else 0
 b6 = 1 if (not miss1 and not miss2) else 0
@@ -497,6 +510,7 @@ b30 = 1 if not miss26 else 0
 b31 = 1 if not miss27 else 0
 b32 = 1 if not miss28 else 0
 b33 = 1 if not miss29 else 0
+b34 = 1 if not miss30 else 0
 # cycle-454: B20 — the batch-15 block byte-identity to commit 886f6ff (the
 # 453 finding #A3 re-anchor promoted to a permanent hold: the committed
 # block must never silently drift from the immutable shipped batch)
@@ -516,7 +530,7 @@ print("B-SUMMARY "
       f"knvb={kn!r} catalog={pl!r} ukr={uk!r} "
       f"playerLeakRows={len(prows)} teamLeakRows={len(trows)} "
       f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} batch13Missing={miss14} batch14Missing={miss15} batch15Missing={miss16} batch16Missing={miss17} batch17Missing={miss18} batch18Missing={miss19} batch19Missing={miss20} batch20Missing={miss21} batch21Missing={miss22} batch22Missing={miss23} batch23Missing={miss24} batch24Missing={miss25} batch25Missing={miss26} batch26Missing={miss27} batch27Missing={miss28} batch15Block={'ok' if b20 else 'DRIFT'} trophy4={trophy4!r}")
-print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18} b20={19} b21={20} b22={21} b23={22} b24={23} b25={24} b26={25} b27={26} b28={27} b29={28} b30={29} b31={30} b32={31} b33={32}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20, b21, b22, b23, b24, b25, b26, b27, b28, b29, b30, b31, b32, b33))
+print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18} b20={19} b21={20} b22={21} b23={22} b24={23} b25={24} b26={25} b27={26} b28={27} b29={28} b30={29} b31={30} b32={31} b33={32} b34={33}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20, b21, b22, b23, b24, b25, b26, b27, b28, b29, b30, b31, b32, b33, b34))
 if leaks: print("B-LEAKS:", json.dumps({f"{k[0]}|{k[1]}": v for k, v in list(leaks.items())[:6]}, ensure_ascii=False))
 if prows: print("B-PLAYER-LEAKS:", json.dumps(prows[:10], ensure_ascii=False))
 if trows: print("B-TEAM-LEAKS:", json.dumps(trows[:10], ensure_ascii=False))
@@ -524,7 +538,7 @@ PY
 )
 echo "$RES"
 S=$(echo "$RES" | grep "B-ASSERTS" | tail -1)
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 32 33 34; do
   V=$(echo "$S" | grep -oE "b$i=[01]" | cut -d= -f2)
   D=""
   [ "$i" = "20" ] && D=$(echo "$RES" | grep "B20-WHY" | tail -1 | cut -c1-200)
@@ -532,7 +546,7 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
     3) LBL="catalog byte-stability hold (5795503)" ;;
-    4) LBL="team raw pool within the ±25 drift band of the documented 1691 census (re-anchored 475, loud-pool rule)" ;;
+    4) LBL="team raw pool within the ±25 drift band of the documented 1671 census (re-anchored 477, loud-pool rule)" ;;
     5) LBL="the 429 trophy hold: zero player raw-fallback rows + trophies[4] byte-exact" ;;
     6) LBL="harvest batch-1+batch-2 witnesses all Persian in the live ±7 feed" ;;
     7) LBL="harvest batch-4 witnesses (England non-league tranche) all Persian in the live ±7 feed" ;;
@@ -562,6 +576,7 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27
     31) LBL="harvest batch-26 witnesses (SWE tranche, the three-way-tie winner by the FRESH 447 anchor re-read) all Persian in the live ±7 feed" ;;
     32) LBL="harvest batch-27 witnesses (CZE tranche, the two-way-tie winner by the FRESH 447 re-read) all Persian in the live ±7 feed" ;;
     33) LBL="harvest batch-28 witnesses (ISR tranche, the waiting half of the 472 two-way tie) all Persian in the live ±7 feed" ;;
+    34) LBL="harvest batch-29 witnesses (ALB tranche, the fresh ALB/PAR two-way-tie winner by the 447 re-read) all Persian in the live ±7 feed" ;;
   esac
   ck "B$i $LBL" "${V:-0}" "$D"
 done
@@ -576,18 +591,29 @@ if has C; then
 echo "================ C: the recent holds, real interactions (390x844) ================"
 $AB set viewport 390 844 >/dev/null 2>&1
 TODAY=$(TZ=Asia/Tehran date +%F)
+# cycle-477 harness re-pin (the 476 documented-harness-fix precedent): the
+# old FIXED C3 pin 2026-10-27 was a time bomb — it left the ±7 window at
+# the Tehran-midnight boundary 2026-11-04 (the 476 patrol passed it at
+# 23:46 Tehran 11-03, the pinned date sitting exactly on the window floor
+# today−7; minutes later today−7 = 10-28 and the served day CLAMPS to the
+# floor — the documented app design, verified live twice: ?date=2026-10-27
+# → CTA 2026-10-28 while in-window ?date=2026-10-30 drives verbatim). The
+# pin is now RELATIVE: today+3 (Tehran clock) — always inside the window
+# under the app's Tehran-date arithmetic, non-today, future — the deep-link
+# hold keeps its full semantics with no further expiry.
+FUT=$(TZ=Asia/Tehran date -d '+3 days' +%F)
 $AB open "$BASE/" >/dev/null 2>&1
 sleep 3
 HREF=$($AB eval "document.querySelector('[data-testid=home-day-ics-link]')?.getAttribute('href')||''" 2>/dev/null | tr -d '"')
 ck "C1 the 422 hold: home ICS href == today" "$([ "$HREF" = "/api/day-calendar?date=$TODAY" ] && echo 1 || echo 0)" "'$HREF'"
 FRESH=$($AB eval "(()=>{const el=document.querySelector('[data-testid=home-day-freshness]');return el?el.textContent.trim():''})()" 2>/dev/null | tr -d '"')
 case "$FRESH" in "به‌روزرسانی "*) ck "C2 the 424 hold: freshness label alive" 1;; *) ck "C2 424 freshness" 0 "'$FRESH'";; esac
-$AB open "$BASE/?date=2026-10-27" >/dev/null 2>&1
+$AB open "$BASE/?date=$FUT" >/dev/null 2>&1
 sleep 3
 HREF2=$($AB eval "document.querySelector('[data-testid=home-day-ics-link]')?.getAttribute('href')||''" 2>/dev/null | tr -d '"')
-ck "C3 the 422 deep-link hold: ?date=2026-10-27 drives the CTA href" "$([ "$HREF2" = "/api/day-calendar?date=2026-10-27" ] && echo 1 || echo 0)" "'$HREF2'"
+ck "C3 the 422 deep-link hold: ?date=$FUT (today+3, re-pinned 477) drives the CTA href" "$([ "$HREF2" = "/api/day-calendar?date=$FUT" ] && echo 1 || echo 0)" "'$HREF2'"
 LEAKH=$($AB eval "Array.from(document.querySelectorAll('h3.rune-title')).filter(h=>{const t=h.textContent.trim();return /[A-Za-z]/.test(t)&&!/[\u0600-\u06FF]/.test(t)}).length" 2>/dev/null | tr -d '"')
-ck "C4 the 426 hold: zero pure-Latin headers on the id-235 day" "$([ "$LEAKH" = "0" ] && echo 1 || echo 0)" "n=$LEAKH"
+ck "C4 the 426 hold: zero pure-Latin headers on the deep-linked day" "$([ "$LEAKH" = "0" ] && echo 1 || echo 0)" "n=$LEAKH"
 $AB open "$BASE/match/5795503" >/dev/null 2>&1
 sleep 3
 MHREF=$($AB eval "Array.from(document.querySelectorAll('a')).map(a=>a.getAttribute('href')).find(h=>h&&h.includes('match-calendar'))||''" 2>/dev/null | tr -d '"')
