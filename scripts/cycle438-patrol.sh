@@ -30,6 +30,17 @@
 # the documented −12 Russia Premier League + Cup Grp. A-D tranche, EXACTLY
 # −12 with zero long-tail drift between the reads) + B15 NEW: four batch-12
 # witnesses Persian in the live ±7 feed — the patrol now runs 53 checks.
+# cycle-448 promotion (bug-hunt, the C13 precedent): the 444 skip-link
+# LANDING hold (post-jump main-top >= header-bottom with the hash kept —
+# the scroll-margin clamp geometry) leaves its cycle-specific probe
+# (scripts/c444_probe.sh + cycle444-domproof.sh B4) and becomes the C14
+# permanent patrol check on home + one inner route (the two header-height
+# regimes) — the last unheld link of the 439→443→444 chain. Zero product
+# bugs this cycle; the landing itself re-proved live under a REAL click
+# (home mt=146=hb, inner mt=68=hb, scrollY=0, hash kept). Harness lesson:
+# the bash pipeline DISPLAY mangled the probe's a[href= into aref= and
+# nearly triggered a phantom repair of a CORRECT file — the Read tool is
+# the byte authority. The patrol now runs 54 checks.
 # cycle-443 promotion (bug-hunt, the C12 precedent): the 439 skip-link hold
 # leaves its cycle-specific domproof (scripts/cycle439-domproof.sh A1/A2/
 # B1–B3) and becomes TWO permanent patrol checks — C13a: the served body's
@@ -80,7 +91,7 @@
 #   4. B6 NEW: harvest batch-1 (cycle-430) and batch-2 (cycle-431) witnesses
 #      present as Persian fa values in the live ±7 day feed.
 # A API inventory, B 426 surface + harvest holds (B4 anchor 1865, B7–B15
-# batch-4..12 witnesses), C1–C13 the interaction holds, D the 16-page DOM
+# batch-4..12 witnesses), C1–C14 the interaction holds, D the 16-page DOM
 # sweep at 390×844, E the gates.
 set -u
 BASE=http://localhost:3000
@@ -467,6 +478,64 @@ try:
 except Exception: print('NA NA')" 2>/dev/null)
 ck "C13b the 439 skip-link hold: live 390×844 — first focusable, parked at rest, revealed on focus (post-transition)" \
   "$([ "$S1V" = "True True" ] && printf '%s' "$S2V" | grep -q '^True پرش به محتوا$' && echo 1 || echo 0)" "rest=[$S1V] focus=[$S2V]"
+# cycle-448 promotion (bug-hunt, the C13 precedent): the 444 skip-link
+# LANDING hold leaves its cycle-specific probe (scripts/c444_probe.sh +
+# cycle444-domproof.sh B4) and becomes a permanent patrol check — C14: live
+# at 390×844 the REAL anchor jump (the actual <a href=#main-content> click
+# from the page bottom) must land #main-content VISIBLE: post-jump
+# main rect.top >= header rect.bottom with the hash retained (the 444
+# geometry: in the document flow ONLY the sticky header precedes
+# #main-content, so any scroll-margin larger than its offsetTop drives the
+# anchor target negative and the browser clamps to the document top —
+# value-independent, holds for every header height; the standing ±1px
+# header-height drift 145→146 is harmless by the same argument). Home + one
+# inner route cover the two header-height regimes (home nav wraps at 390px
+# vs the 68px inner chrome). If a future layout change re-breaks the
+# landing (the pre-444 state: the sticky top-0 z-40 header painting over
+# the first row, main-top=0 COVERED), the patrol fails BEFORE keyboard
+# users silently lose the target. Harness lesson banked the same cycle: the
+# bash pipeline DISPLAY mangled the probe's a[href= into aref= and nearly
+# triggered a phantom repair of a CORRECT file — the Read tool is the byte
+# authority; verify file bytes with Read before declaring a file broken.
+C14BAD=0; C14DETAIL=""
+for C14P in "/" "/league/pl"; do
+  $AB open "$BASE$C14P" >/dev/null 2>&1
+  sleep 3
+  RH=$($AB eval 'JSON.stringify({hb:Math.round(document.querySelector("header").getBoundingClientRect().bottom)})' 2>/dev/null)
+  HB14=$(printf '%s' "$RH" | python3 -c "
+import json, sys
+s = sys.stdin.read().strip()
+if s.startswith('\"') and s.endswith('\"'): s = s[1:-1]
+s = s.replace('\\\\\"', '\"')
+try: print(json.loads(s).get('hb'))
+except Exception: print('NA')" 2>/dev/null)
+  $AB eval "window.scrollTo(0, document.body.scrollHeight)" >/dev/null 2>&1
+  sleep 1
+  $AB eval "(()=>{const el=document.querySelector('a[href=\"#main-content\"]');if(el){el.click();return 'clicked'}return 'missing'})()" >/dev/null 2>&1
+  sleep 1.5
+  RM=$($AB eval 'JSON.stringify({mt:Math.round(document.getElementById("main-content").getBoundingClientRect().top),h:location.hash})' 2>/dev/null)
+  MT14=$(printf '%s' "$RM" | python3 -c "
+import json, sys
+s = sys.stdin.read().strip()
+if s.startswith('\"') and s.endswith('\"'): s = s[1:-1]
+s = s.replace('\\\\\"', '\"')
+try: print(json.loads(s).get('mt'))
+except Exception: print('NA')" 2>/dev/null)
+  HS14=$(printf '%s' "$RM" | python3 -c "
+import json, sys
+s = sys.stdin.read().strip()
+if s.startswith('\"') and s.endswith('\"'): s = s[1:-1]
+s = s.replace('\\\\\"', '\"')
+try: print(json.loads(s).get('h'))
+except Exception: print('NA')" 2>/dev/null)
+  if [ "$MT14" != "NA" ] && [ "$HB14" != "NA" ] && [ "$HS14" = "#main-content" ] && [ "$MT14" -ge $((HB14 - 2)) ] 2>/dev/null; then
+    C14DETAIL="$C14DETAIL $C14P(hb=$HB14,mt=$MT14,ok)"
+  else
+    C14BAD=$((C14BAD+1)); C14DETAIL="$C14DETAIL $C14P(hb=$HB14,mt=$MT14,h=$HS14,BAD)"
+  fi
+done
+ck "C14 the 444 landing hold: real skip-link click lands main below the header bottom, hash kept (home+inner)" \
+  "$([ "$C14BAD" = "0" ] && echo 1 || echo 0)" "bad=$C14BAD$C14DETAIL"
 fi
 
 if has D; then
