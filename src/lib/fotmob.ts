@@ -1588,7 +1588,7 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // tranche: the Polish FA Cup + II/I Liga field) changed the
   // normalized team-fa content again; same rule, fresh cold window
   // (v21 L2 rows purged + official restart).
-  return cached(`matches:v22:${dateYYYYMMDD}`, ttl, async () => {
+  return cached(`matches:v23:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`

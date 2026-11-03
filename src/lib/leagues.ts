@@ -2926,6 +2926,64 @@ const TEAM_FA: Record<string, string> = {
   "avia świdnik": "آویا شویدنگک",
   "stal rzeszów": "استال ژشوف",
   "odra opole": "اودر اوپوله",
+  // cycle-461: harvest batch 20 — ALL 8 count-3 single-country names of the
+  // MEXICO tranche into TEAM_FA (Liga de Expansión MX — the 446-pick rule:
+  // the fresh census re-run read EXACTLY 1779 distinct = the documented 460
+  // post-census, ZERO distinct drift for the TENTH consecutive cycle, rows
+  // 3264; MEX 10 names/30 rows heads the pool but TWO of the ten are (W)
+  // women's sides — Club León (W) / Santos Laguna (W), Liga MX Femenil —
+  // SKIPPED at pick time per the 435 skip line (no (W)-level convention
+  // yet): the pick is the remaining 8 names / 24 rows, documented as read;
+  // no exclusions), byte-verified 8/8 (scripts/c461-batch20-verify.py:
+  // every key byte-exact from the live UA Chrome/124 feed — the non-ASCII
+  // é/ú keys ride the file's OWN südtirol/köln/budućnost/dečić precedent —
+  // every name single-country MEX across the whole ±7 window, 24 live leak
+  // rows covered, the collision gate clean: dupKeys=[] and zero value
+  // collisions against the whole 1790-pair file). Anchors
+  // (scripts/c461-wiki-probe.py/2/3): ONE direct fa.wiki club article —
+  // Atlético Morelia → اتلتیکو مورلیا («باشگاه فوتبال اتلتیکو مورلیا»
+  // pageid 41466700, identity-verified «یک باشگاه فوتبال مکزیکی مستقر در
+  // مورلیا، میچوآکان... در لیگا ده اکسپانسیون مکزیک بازی می‌کند»; the bare
+  // اتلتیکو مورلیا page 41466701 is its R-from-move redirect; the
+  // descriptor drops per the FC rule; the wikidata probe's Morelia
+  // sitelink came back the ERZURUMSPOR Persian title — a wrong-country
+  // artifact identity-excluded, the 460 آدرا-Spain lesson); the city-title
+  // rule (the 452 rule) — Cancún FC → کانکون (کانکون 44776288, the
+  // encyclopedia's OWN rendering, FC dropped per the 457 خارکوف / Thai
+  // چای نات precedent), Tlaxcala FC → تلاسکالا (تلاسکالا 41256613, the
+  // encyclopedia's OWN Tlaxcala-state title spelling, the article's own
+  // text rendering both readings; FC dropped), Atlético La Paz →
+  // اتلتیکو لاپاز (اتلتیکو the file's OWN atlético madrid form + لاپاز
+  // (مکزیک) 44822373 identity-verified the Baja California Sur capital —
+  // the bare لا پاز page 38968699 is an ARGENTINE settlement
+  // identity-excluded, the fused لاپاز is the encyclopedia's OWN spelling
+  // the disambiguation page documents); the file's OWN phonetic-Spanish
+  // convention (بوکا جونیورز دی کالی، ایندپندینته مدئین، استودیانتس،
+  // آلاوس) — Alacranes de Durango → آلاکرانس دی دورانگو (de→دی per the
+  // boca juniors de cali precedent, initial a→آ per the alavés→آلاوس
+  // precedent, دورانگو the encyclopedia's OWN state rendering 41358540
+  // whose center is شهر دورانگو), Leones Negros → لئونس نگروس, Piratas →
+  // پیراتاس (the Liga de Expansión MX franchise, Piratas vs Tapatío in
+  // the live feed — the استودیانتس-style Spanish plural), Venados FC →
+  // ونادوس (FC dropped); the Mérida/Yucatán context pages (مریدا
+  // (یوکاتان) 44647020 / یوکاتان 41727782) documented, not used — the
+  // club name carries no city; the honest-read fallbacks (no fa.wiki
+  // article under any spelling, the opensearch/wikidata gate dead — the
+  // 452 لویی / 455 آلتاخ / 457 لیوی بره / 460 پودهاله precedent):
+  // آلاکرانس، لئونس نگروس، پیراتاس، ونادوس. Cache: matches v22 → v23 per
+  // the standing rule (fresh cold window). Patrol: B4 re-anchored to the
+  // post-patch census read (the loud-pool rule, the 445 precedent) + B25
+  // NEW (four batch-20 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 64 checks). The post-patch census + drift story live in the
+  // repo worklog card (the 455-457 pattern).
+  "alacranes de durango": "آلاکرانس دی دورانگو",
+  "atlético la paz": "اتلتیکو لاپاز",
+  "atlético morelia": "اتلتیکو مورلیا",
+  "cancún fc": "کانکون",
+  "leones negros": "لئونس نگروس",
+  "piratas": "پیراتاس",
+  "tlaxcala fc": "تلاسکالا",
+  "venados fc": "ونادوس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
