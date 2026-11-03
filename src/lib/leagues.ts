@@ -2696,6 +2696,62 @@ const TEAM_FA: Record<string, string> = {
   "pattaya dolphins united": "پاتایا دلفینز یونایتد",
   "pt satun fc": "پی‌تی ساتون",
   "songkhla united fc": "سونگکلا یونایتد",
+
+  // cycle-455: harvest batch 16 — the machine continues on the 455 census
+  // (scripts/c451-pool-sweep.py re-run read EXACTLY 1830 distinct = the
+  // documented 452 post-census, ZERO distinct drift for the SIXTH
+  // consecutive cycle; rows drifted to 3379 — the 435 lesson: rows drift,
+  // distinct is decisive; scripts/c455-batch16-verify.py byte-identity
+  // gate, live UA Chrome/124: 10/10 verified=0 bad, 30 live leak rows
+  // covered): the four-way tie AUT/POL/UKR/MNE (each 10 count-3 names /
+  // 30 rows) broke on fa.wiki DIRECT club-article anchor quality per the
+  // 447 rule (scripts/c455-wiki-tiebreak.py: AUT 3 — آستریا وین/گراتس/
+  // ولفسبرگر — vs POL 0 / UKR 1 / MNE 2, documented as read): this batch
+  // takes ALL 10 count-3 single-country names of the AUSTRIA tranche
+  // (Bundesliga + 2. Liga; no exclusions). Anchors
+  // (scripts/c455-wiki-probe.py/2): Austria Wien → آستریا وین (the fa.wiki
+  // club article «باشگاه فوتبال آستریا وین» pageid 535778 + the file's OWN
+  // austria→آستریا (austria lustenau) and wien→وین (rapid wien) readings).
+  // WSG Tirol → تیرول (the fa.wiki club article «باشگاه فوتبال تیرول»
+  // pageid 5973388 — the entity's own spelling absorbs the WSG descriptor,
+  // the FC-drop rule; distinct from the زودتیرول full value). First Vienna
+  // FC → فرست ویینا (the fa.wiki club article «باشگاه فوتبال فرست ویینا»
+  // pageid 5211062 — the encyclopedia's own byte-spelling ویینا wins over
+  // the invented فرست وینا; FC dropped). Grazer AK → گراتس (the fa.wiki
+  // club article «باشگاه ورزشی گراتس» pageid 4904665 — the باشگاه ورزشی
+  // descriptor absorbs AK exactly like the 451 AEL لیماسول read; the
+  // full-value string stays distinct from the file's own اشتورم گراتس; the
+  // invented گراتسر form died at the opensearch gate). Wolfsberger AC →
+  // ولفسبرگر (the fa.wiki club article «باشگاه ورزشی ولفسبرگر» pageid
+  // 4940416; AC absorbed in the descriptor; distinct from the ولفسبرگ
+  // city). FC Hertha Wels → هرتا ولس (هرتا honest + ولس the fa.wiki city
+  // pageid 638927 — NOT the invented هرتا ولز which would read as Wales;
+  // FC dropped). FC Wacker Innsbruck → واکر اینسبروک (واکر the fa.wiki
+  // «واکر» article's own spelling + اینسبروک the fa.wiki city pageid
+  // 222006; FC dropped). Ried → رید (the fa.wiki city article «رید ایم
+  // اینکرایس» documented as the anchor — the feed's bare toponym rides its
+  // own core; SV dropped per the file's own sv-werder/darmstadt
+  // convention). SW Bregenz → اس‌دبلیو برگنتس (SW letters per the file's
+  // OWN fsv→اف‌اس‌وی letter-reading convention + برگنتس the fa.wiki city
+  // pageid 643035; no press form documented as read — the letters are the
+  // club's distinguishing identity like psv). Altach → آلتاخ (honest
+  // transliteration documented as read — fa.wiki has NO article under any
+  // spelling: آلتاخ/راین‌دورف MISSING, the 452 لویی precedent). Collision
+  // gate: zero key and zero value collisions against the whole 1750-pair
+  // file (each render one distinct full-value string — no Logroñés case).
+  // Loud-pool rule: the documented 1830 census shrinks by this batch in
+  // the open (the B4 band re-anchors with the next census, never
+  // silently).
+  "altach": "آلتاخ",
+  "austria wien": "آستریا وین",
+  "fc hertha wels": "هرتا ولس",
+  "fc wacker innsbruck": "واکر اینسبروک",
+  "first vienna fc": "فرست ویینا",
+  "grazer ak": "گراتس",
+  "ried": "رید",
+  "sw bregenz": "اس‌دبلیو برگنتس",
+  "wsg tirol": "تیرول",
+  "wolfsberger ac": "ولفسبرگر",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

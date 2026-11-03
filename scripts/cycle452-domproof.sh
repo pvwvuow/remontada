@@ -59,7 +59,7 @@ echo "== A. the map block integrity =="
 python3 - <<'PY'
 import re, json
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
-m = re.search(r'cycle-452: harvest batch 15(.*?)};', s, re.S)
+m = re.search(r'cycle-452: harvest batch 15(.*?)(?=// cycle-|};)', s, re.S)
 pairs = re.findall(r'"([^"]+)":\s*"([^"]+)"', m.group(1))
 json.dump(dict(pairs), open('/tmp/c452-pairs.json', 'w'), ensure_ascii=False)
 print(len(pairs))
