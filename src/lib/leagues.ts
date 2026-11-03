@@ -2875,6 +2875,57 @@ const TEAM_FA: Record<string, string> = {
   "polissya zhytomyr": "پولیسیا ژیتومیر",
   "veres rivne": "ورس ریونه",
   "zorya": "زوریا لوگانسک",
+
+  // cycle-460: harvest batch 19 — the machine continues on the 460 census
+  // (scripts/c451-pool-sweep.py re-run read EXACTLY 1798 distinct = the
+  // documented 457 post-census, ZERO distinct drift for the NINTH
+  // consecutive cycle; rows steady at 3285 — the 435 lesson: rows drift,
+  // distinct is decisive; scripts/c460-batch19-verify.py byte-identity
+  // gate, live UA Chrome/124: 10/10 verified=0 bad, 30 live leak rows
+  // covered + the collision gate clean: dupKeys=[] and zero value
+  // collisions against the whole 1780-pair file): the 446-pick rule read
+  // POL 10 names / 30 rows as the LARGEST count>=3 single-country pool
+  // (PAN/HON 9/27 below — no tie at the top, so the 447 tie-break is NOT
+  // invoked this cycle; documented as read; no exclusions): this batch
+  // takes ALL 10 count-3 single-country names of the POLAND tranche (the
+  // Polish FA Cup + II/I Liga field). Anchors
+  // (scripts/c460-wiki-probe.py/2/3/4/5): ONE direct fa.wiki club
+  // article — Znicz Pruszków → زنیچ پروشکوف («باشگاه فوتبال زنیچ
+  // پروشکوف» pageid 36186560 — the bare زنیچ پروشکوف page is its
+  // R-from-move redirect; the descriptor drops per the FC rule; the same
+  // article the 447 tie-break documented as POL's direct club article);
+  // the city-title rule (the 452 rule) — Górnik Łęczna → گورنیک ونچنا
+  // (the fa.wiki city ونچنا pageid 38070173 — the encyclopedia's OWN
+  // Ł→و reading), Stal Rzeszów → استال ژشوف (ژشوف 42131222), Pogoń
+  // Siedlce → پوگون شدلتسه (شدلتسه 38064699 — the fawiki sitelink of
+  // Q319813, the spelling the exact-title candidates missed), Avia
+  // Świdnik → آویا شویدنگک (شویدنگک 41046896), Podhale Nowy Targ →
+  // پودهاله نووی تارگ (نووی تارگ 39125769), Odra Opole → اودر اوپوله
+  // (اوپوله 43398736), Olimpia Grudziądz → المپیا گروجونتس (گروجونتس
+  // 42131175 — identity-verified: «(به لهستانی: Grudziądz)»), Sokół
+  // Kleczew → سوکوو کلچو (کلچو from the gmina title گمینا کلچو 41516608
+  // — the descriptor drops per the FC-rule shape); the file's OWN
+  // letter-readings — گورنیک (گورنیک زابژه), استال (استال میلتس /
+  // ستالووا وولا), پوگون (پوگون شچچین/لویو), المپیا (cd olimpia) — and
+  // the encyclopedia's OWN river rendering اودر (رود اودر pageid
+  // 43734188 — the club named for the Odra; the آدرا page is Adra Spain,
+  // identity-excluded); the honest-read fallbacks (no fa.wiki article
+  // under any spelling — the opensearch/wikidata gate dead, the 452 لویی
+  // / 455 آلتاخ / 457 لیوی بره precedent) — پودهاله (the Podhale
+  // region), آویا (the آویا page is Avaya, اویا is OUYA — both
+  // identity-excluded), سوکوو (ó→و per the file's OWN گورنیک, ł→و per
+  // the encyclopedia's OWN ونچنا). Cache: matches v21 → v22 per the
+  // standing rule (fresh cold window).
+  "górnik łęczna": "گورنیک ونچنا",
+  "olimpia grudziądz": "المپیا گروجونتس",
+  "sokół kleczew": "سوکوو کلچو",
+  "podhale nowy targ": "پودهاله نووی تارگ",
+  "puszcza niepołomice": "پوشچا نیپلومیتز",
+  "znicz pruszków": "زنیچ پروشکوف",
+  "pogoń siedlce": "پوگون شدلتسه",
+  "avia świdnik": "آویا شویدنگک",
+  "stal rzeszów": "استال ژشوف",
+  "odra opole": "اودر اوپوله",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
