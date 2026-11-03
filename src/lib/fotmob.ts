@@ -1559,7 +1559,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // Premier League + Cup Grp. A-D) changed the normalized team-fa content
   // again; same rule, fresh cold window (v13 L2 rows purged + official
   // restart).
-  return cached(`matches:v14:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-449: v15 — the byte-drift fix («al jeel» spaced key added beside
+  // the dead hyphenated cycle-140 capture; one more normalized team-fa
+  // entry — the c449 fold-probe's only drift in the 1865-name pool); same
+  // rule, fresh cold window (v14 L2 rows purged + official restart).
+  return cached(`matches:v15:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`

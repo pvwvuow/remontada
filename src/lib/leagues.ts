@@ -899,6 +899,20 @@ const TEAM_FA: Record<string, string> = {
   "neom sc": "نیوم", "abha": "ابها", "al akhdoud": "الأخدود",
   "al najma": "النجمة", "al taee": "الطایی", "al anwar": "الأنوار",
   "al jabalain": "الجبلین", "al-jeel": "الجیل",
+  // cycle-449: the byte-drift fix — the cycle-140 capture spelled this club
+  // with a HYPHEN («al-jeel») but the live day feed serves «Al Jeel» with a
+  // SPACE (byte-verified on 3 live ±7 rows: 20261027 / 20261102 / 20261108,
+  // Saudi First Division KSA; the c449 fold-probe shows the ONLY such drift
+  // in the whole 1865-name raw pool). teamFa's exact-key lookup
+  // (toLowerCase().trim() — leagues.ts:2902) never matched, so every row
+  // leaked raw to Persian readers. The live-literal key rides the file's own
+  // defensive-variant convention (180 same-value key groups already: «barça
+  // atlètic»+«barca atletic», «nürnberg»+«nurnberg», «alavés»+«alaves»);
+  // the render stays the file's own «الجیل» — same club, same league, same
+  // country (the 389 identity-first rule); the hyphenated key STAYS for any
+  // hyphen-spelled surface (the block itself already mixes both styles:
+  // «al diriyah» spaced vs «al-faisaly» hyphenated).
+  "al jeel": "الجیل",
   "al-wehda": "الوحده", "al-jazira": "الجزیره", "al ain": "العین",
   "al-duhail sc": "الدحیل", "al-rayyan": "الریان", "almería": "آلمریا",
   "américa-mg": "آمریکا مینه‌ایرو", "ceramica cleopatra": "سرامیکا کلئوپاترا",

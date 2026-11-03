@@ -41,6 +41,12 @@
 # the bash pipeline DISPLAY mangled the probe's a[href= into aref= and
 # nearly triggered a phantom repair of a CORRECT file — the Read tool is
 # the byte authority. The patrol now runs 54 checks.
+# cycle-449 re-anchor (the loud-pool rule, the FIRST fix-cycle re-anchor):
+# B4 1865 → 1864 (the byte-drift fix: the live-literal «al jeel» key added
+# beside the dead hyphenated cycle-140 capture — EXACTLY −1, Al Jeel leaves
+# the raw pool; the c449 fold-probe proved it the only such drift in the
+# whole 1865-name pool) + B16 NEW: the fix witness «الجیل» Persian in the
+# live ±7 feed — the patrol now runs 55 checks.
 # cycle-443 promotion (bug-hunt, the C12 precedent): the 439 skip-link hold
 # leaves its cycle-specific domproof (scripts/cycle439-domproof.sh A1/A2/
 # B1–B3) and becomes TWO permanent patrol checks — C13a: the served body's
@@ -77,6 +83,8 @@
 #      1943 (post-440 batch 7, the documented −30, zero distinct drift) →
 #      1925 (post-441 batch 8, the documented −18, zero distinct drift) →
 #      1909 (post-442 batch 9, the documented −16, zero distinct drift) →
+#      1864 (post-449 the byte-drift fix: the −1 Al Jeel live-literal key,
+#      exactly −1) ←
 #      1865 (post-447 batch 12: the −12 Russia tranche, exactly −12) ←
 #      1877 (post-446 batch 11: the −13 Colombia tranche, exactly −13) ←
 #      1890 (post-445 batch 10: the −11 Norway tranche MINUS 8 long-tail
@@ -245,6 +253,9 @@ W11 = ["آمریکا د کالی", "بوکا جونیورز دی کالی", "ر�
 # cycle-447: B15 — batch-12 witnesses (the Russia Premier League + Cup
 # Grp. A-D tranche)
 W12 = ["اسپارتاک مسکو", "زسکا مسکو", "لوکوموتیو مسکو", "روبین کازان"]
+# cycle-449: B16 — the byte-drift fix witness (the Saudi First Division
+# live-literal key; the render is the file's own «الجیل»)
+W13 = ["الجیل"]
 miss1 = [w for w in W1 if w not in fa_set]
 miss2 = [w for w in W2 if w not in fa_set]
 miss4 = [w for w in W4 if w not in fa_set]
@@ -256,10 +267,11 @@ miss9 = [w for w in W9 if w not in fa_set]
 miss10 = [w for w in W10 if w not in fa_set]
 miss11 = [w for w in W11 if w not in fa_set]
 miss12 = [w for w in W12 if w not in fa_set]
+miss13 = [w for w in W13 if w not in fa_set]
 b1 = 1 if len(leaks) == 0 else 0
 b2 = 1 if kn == "جام حذفی هلند" else 0
 b3 = 1 if pl == "پریمیرلیگ انگلیس" else 0
-b4 = 1 if abs(len(team_names) - 1865) <= 25 else 0
+b4 = 1 if abs(len(team_names) - 1864) <= 25 else 0
 T4 = "لیگ ۲ پریمیرلیگ انگلیس — دستهٔ ۲"
 b5 = 1 if (len(prows) == 0 and trophy4 == T4) else 0
 b6 = 1 if (not miss1 and not miss2) else 0
@@ -272,12 +284,13 @@ b12 = 1 if not miss9 else 0
 b13 = 1 if not miss10 else 0
 b14 = 1 if not miss11 else 0
 b15 = 1 if not miss12 else 0
+b16 = 1 if not miss13 else 0
 print("B-SUMMARY "
       f"compLeaks={len(leaks)} teamRows={team_rows} teamDistinct={len(team_names)} "
       f"knvb={kn!r} catalog={pl!r} ukr={uk!r} "
       f"playerLeakRows={len(prows)} teamLeakRows={len(trows)} "
-      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} trophy4={trophy4!r}")
-print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15))
+      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} trophy4={trophy4!r}")
+print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16))
 if leaks: print("B-LEAKS:", json.dumps({f"{k[0]}|{k[1]}": v for k, v in list(leaks.items())[:6]}, ensure_ascii=False))
 if prows: print("B-PLAYER-LEAKS:", json.dumps(prows[:10], ensure_ascii=False))
 if trows: print("B-TEAM-LEAKS:", json.dumps(trows[:10], ensure_ascii=False))
@@ -285,13 +298,13 @@ PY
 )
 echo "$RES"
 S=$(echo "$RES" | grep "B-ASSERTS" | tail -1)
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16; do
   V=$(echo "$S" | grep -oE "b$i=[01]" | cut -d= -f2)
   case $i in
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
     3) LBL="catalog byte-stability hold (5795503)" ;;
-    4) LBL="team raw pool within the ±25 drift band of the documented 1865 census (re-anchored 447, loud-pool rule)" ;;
+    4) LBL="team raw pool within the ±25 drift band of the documented 1864 census (re-anchored 449, loud-pool rule)" ;;
     5) LBL="the 429 trophy hold: zero player raw-fallback rows + trophies[4] byte-exact" ;;
     6) LBL="harvest batch-1+batch-2 witnesses all Persian in the live ±7 feed" ;;
     7) LBL="harvest batch-4 witnesses (England non-league tranche) all Persian in the live ±7 feed" ;;
@@ -303,6 +316,7 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
     13) LBL="harvest batch-10 witnesses (Norway 1. Divisjon/Cup/Eliteserien tranche) all Persian in the live ±7 feed" ;;
     14) LBL="harvest batch-11 witnesses (Colombia Primera A + Primera B tranche) all Persian in the live ±7 feed" ;;
     15) LBL="harvest batch-12 witnesses (Russia Premier League + Cup Grp. A-D tranche) all Persian in the live ±7 feed" ;;
+    16) LBL="the 449 byte-drift fix witness («الجیل», the Saudi First Division live-literal key) Persian in the live ±7 feed" ;;
   esac
   ck "B$i $LBL" "${V:-0}"
 done
