@@ -2517,6 +2517,57 @@ const TEAM_FA: Record<string, string> = {
   "fk akhmat": "اخمت گروزنی",
   "akron togliatti": "آکرون تولیاتی",
   "fc orenburg": "اورنبورگ",
+  // cycle-450: harvest batch 13 — the machine continues on the 450 census
+  // (scripts/c450-pool-sweep.py read EXACTLY 1864 distinct = the documented
+  // 449 post-census in the live ±7 walk, ZERO distinct drift for the second
+  // consecutive cycle; rows drifted to 3482 — the 435 lesson: rows drift,
+  // distinct is decisive; scripts/c450-batch13-verify.py byte-identity gate,
+  // live UA Chrome/124: 12/12 verified=0 bad): this batch takes ALL 12
+  // count-3 single-country names of the GUATEMALA tranche (Liga Nacional
+  // Apertura) — exactly what the 447/448 rotation lines predicted («GUA ۱۲
+  // در نوبت است») and the window now delivers: GUA 12 names/36 rows >
+  // CYP 11/33 = THA 11/33; no (W) women's sides, no exclusions. The
+  // count>=4 multi-country names stay honest-raw (Alianza FC 10
+  // COL/INT/PAN/SLV, Santa Fe COL/INT, Libertad ECU/PAR, Universidad
+  // Católica CHI/ECU, Olimpia INT/PAR, BK Häcken (W) INT/SWE — the 389
+  // identity-first rule; the single MB Rouissat ALG waits for its tranche).
+  // Transliteration rides NINE direct Persian-Wikipedia anchors (the map's
+  // new record, batch 12's seven beaten): «باشگاه فوتبال آنتیگوا گواتمالا»,
+  // «باشگاه فوتبال آئورورا» (Aurora — FC dropped, the 445/446
+  // suffix-discipline rule), «باشگاه فوتبال کوبان ایمپریال», «باشگاه
+  // فوتبال کامیونیکیشنس» (Comunicaciones — the article is the GUATEMALAN
+  // club, Los Cremas 1949; the encyclopedia's own spelling rides the 447
+  // زسکا rule, the press کومونیکاسیونس forms stay press; FC dropped),
+  // «باشگاه فوتبال مونیسیپال» (the extract opens «در گواتمالاسیتی،
+  // گواتمالا» — the Guatemala club; CSD dropped like cd olimpia → المپیا;
+  // the file's مونیسیپال پرز زلدون anchor concurs), «باشگاه فوتبال
+  // دپورتیوو مالاکاتکو» (the article lead's own spelling — its slug-title
+  // is the مالاکاتیکو variant; footba11's مالاکاتکو concurs), «باشگاه
+  // فوتبال دپورتیوو مارکوئنزه», «باشگاه فوتبال دپورتیوو میسکو»,
+  // «گواستاتویا» (the toponym anchor). No article: CD Suchitepéquez →
+  // سوچیتپکز (CD dropped like cd nacional → ناسیونال; the -péquez → پکز
+  // fold rides the Spanish -ez convention: میراندس/پرز); Club Xelajú →
+  // شلاخو (the Persian live-score press form — footba11 and hazaran both
+  // serve شلاخو for this exact fixture; Club dropped like club deportivo
+  // moquegua → موکگوا; the bookmaker machine form ژلاجو is not press);
+  // San Pedro → سن پدرو (footba11's own team-page title «سن پدرو»;
+  // scoreyab's «دپورتیوو سن پدرو» confirms the club). Collision gate: zero
+  // key and zero value collisions against the whole file (each render one
+  // distinct string — no Logroñés case this batch).
+  // Loud-pool rule: the documented 1864 census shrinks by this batch in the
+  // open (the B4 band re-anchors with the next census, never silently).
+  "antigua guatemala": "آنتیگوا گواتمالا",
+  "aurora fc": "آئورورا",
+  "cd suchitepéquez": "سوچیتپکز",
+  "club xelajú": "شلاخو",
+  "coban imperial": "کوبان ایمپریال",
+  "comunicaciones fc": "کامیونیکیشنس",
+  "csd municipal": "مونیسیپال",
+  "deportivo malacateco": "دپورتیوو مالاکاتکو",
+  "deportivo marquense": "دپورتیوو مارکوئنزه",
+  "deportivo mixco": "دپورتیوو میسکو",
+  "guastatoya": "گواستاتویا",
+  "san pedro": "سن پدرو",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

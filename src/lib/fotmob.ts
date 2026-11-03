@@ -1563,7 +1563,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // the dead hyphenated cycle-140 capture; one more normalized team-fa
   // entry — the c449 fold-probe's only drift in the 1865-name pool); same
   // rule, fresh cold window (v14 L2 rows purged + official restart).
-  return cached(`matches:v15:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-450: v16 — harvest batch 13 (12 more names, the Guatemala
+  // tranche: Liga Nacional Apertura) changed the normalized team-fa
+  // content again; same rule, fresh cold window (v15 L2 rows purged +
+  // official restart).
+  return cached(`matches:v16:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
