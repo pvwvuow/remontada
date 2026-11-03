@@ -25,6 +25,16 @@
 # Harness lessons (432-451): probes are picked from the day's ACTUAL render
 # set (count from the feed, never from a manual tally); eval prints escaped-
 # quoted JSON (parse with abf); grep -c counts lines not occurrences.
+# cycle-454 re-anchor (the Fix cycle for finding #453): A3 no longer reads
+# /tmp/c452-verified.json — that PRE byte-proof was ONE-SHOT by design (once
+# the batch ships, the raw literals leave the live feed and PRE reports
+# ABSENT) and /tmp does not survive a container recycle (453 caught A3 red
+# with FileNotFoundError on a HEALTHY product; B/C/D all green in the same
+# run). A3 is now anchored to the in-repo git truth: the 11 pairs commit
+# 886f6ff added to src/lib/leagues.ts, byte-compared (key AND value) against
+# the current block. The domproof is standalone-runnable on any fresh clone;
+# run c452-batch15-verify.py PRE only BEFORE a batch ships, POST (--post)
+# after. The same hold now lives permanently in the patrol as B20.
 set -u
 BASE="${BASE:-http://localhost:3000}"
 OUT=/tmp/c452-domproof-results.txt
@@ -62,14 +72,22 @@ p=json.load(open('/tmp/c452-pairs.json'))
 vs=list(p.values())
 print(len(vs)-len(set(vs)))")
 [ "$DUPL" = "0" ] && ok "A2 zero within-block value-dups (each of the 11 clubs one render in the block)" || bad "A2 dup values" "$DUPL"
-SRC=$(python3 -c "
-import json
-s=open('src/lib/leagues.ts',encoding='utf-8').read()
-v=json.load(open('/tmp/c452-verified.json'))
-p=json.load(open('/tmp/c452-pairs.json'))
-bad=[x['key'] for x in v if x['key'] not in p]
-print(len(bad))")
-[ "$SRC" = "0" ] && ok "A3 every verified key (11/11 from the live ±7 gate) is present in the block" || bad "A3 key coverage" "$SRC"
+SRC=$(python3 - <<'PY'
+import re, json, subprocess
+d = subprocess.run(["git", "show", "886f6ff", "--", "src/lib/leagues.ts"],
+                   capture_output=True, text=True).stdout
+batch = dict(re.findall(r'^\+\s*"([^"]+)"\s*:\s*"([^"]*)"', d, re.M))
+if len(batch) != 11:
+    print("BADCOUNT:%d (expected the 11 batch-15 pairs added by 886f6ff)" % len(batch))
+else:
+    p = json.load(open("/tmp/c452-pairs.json"))  # written by THIS domproof from the committed block (A1)
+    missing = sorted(k for k in batch if k not in p)
+    drifted = sorted(k for k in batch if k in p and p[k] != batch[k])
+    n = len(missing) + len(drifted)
+    print(str(n) if n == 0 else "%d missing=%s drifted=%s" % (n, missing, drifted))
+PY
+)
+[ "$SRC" = "0" ] && ok "A3 (454 re-anchor) every batch-15 key shipped in commit 886f6ff is present in the current block byte-exact (11/11, git truth — the one-shot /tmp/c452-verified.json dependency is gone)" || bad "A3 key coverage" "$SRC"
 SPECIAL=$(python3 -c "
 import json
 p=json.load(open('/tmp/c452-pairs.json'))

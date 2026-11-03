@@ -119,9 +119,19 @@
 #      leagueFa rows in the whole payload + trophies[4] byte-exact Persian).
 #   4. B6 NEW: harvest batch-1 (cycle-430) and batch-2 (cycle-431) witnesses
 #      present as Persian fa values in the live ±7 day feed.
-# A API inventory, B 426 surface + harvest holds (B4 anchor 1830, B7–B19
-# batch-4..15 witnesses), C1–C14 the interaction holds, D the 16-page DOM
-# sweep at 390×844, E the gates.
+# cycle-454 promotion (the Fix cycle, the C12/C13/C14 precedent + the pinned
+# 453 order): the batch-15 block hold leaves the cycle-specific domproof A3
+# and becomes a permanent patrol check — B20: the leagues.ts batch-15 region
+# must stay byte-identical (key AND value, 11 pairs) to what commit 886f6ff
+# shipped. This is the git-truth anchor that replaced the one-shot
+# /tmp/c452-verified.json dependency (finding #453: the PRE byte-proof dies
+# with the recycle AND with the batch's own success — the raw literals leave
+# the live feed). If a future cycle legitimately edits a batch-15 value, it
+# re-anchors B20 in the open (the B4 loud-pool precedent). The patrol now
+# runs 59 checks.
+# A API inventory, B 426 surface + harvest holds (B4 anchor 1830, B7–B20
+# batch-4..15 witnesses + the 886f6ff byte-identity), C1–C14 the interaction
+# holds, D the 16-page DOM sweep at 390×844, E the gates.
 set -u
 BASE=http://localhost:3000
 PASS=0; FAIL=0
@@ -319,12 +329,26 @@ b16 = 1 if not miss13 else 0
 b17 = 1 if not miss14 else 0
 b18 = 1 if not miss15 else 0
 b19 = 1 if not miss16 else 0
+# cycle-454: B20 — the batch-15 block byte-identity to commit 886f6ff (the
+# 453 finding #A3 re-anchor promoted to a permanent hold: the committed
+# block must never silently drift from the immutable shipped batch)
+_b15d = subprocess.run(["git", "show", "886f6ff", "--", "src/lib/leagues.ts"],
+                       capture_output=True, text=True).stdout
+_b15 = dict(re.findall(r'^\+\s*"([^"]+)"\s*:\s*"([^"]*)"', _b15d, re.M))
+_src15 = open("src/lib/leagues.ts", encoding="utf-8").read()
+_m15 = re.search(r'cycle-452: harvest batch 15(.*?)};', _src15, re.S)
+_cur15 = dict(re.findall(r'"([^"]+)":\s*"([^"]+)"', _m15.group(1))) if _m15 else {}
+b20 = 1 if (len(_b15) == 11 and _cur15 == _b15) else 0
+if not b20:
+    print("B20-WHY gitBatch=%d curBlock=%d missing=%s drift=%s" % (
+        len(_b15), len(_cur15), sorted(set(_b15) - set(_cur15))[:4],
+        [k for k in _b15 if k in _cur15 and _cur15[k] != _b15[k]][:4]))
 print("B-SUMMARY "
       f"compLeaks={len(leaks)} teamRows={team_rows} teamDistinct={len(team_names)} "
       f"knvb={kn!r} catalog={pl!r} ukr={uk!r} "
       f"playerLeakRows={len(prows)} teamLeakRows={len(trows)} "
-      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} batch13Missing={miss14} batch14Missing={miss15} batch15Missing={miss16} trophy4={trophy4!r}")
-print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19))
+      f"batch1Missing={miss1} batch2Missing={miss2} batch4Missing={miss4} batch5Missing={miss5} batch6Missing={miss6} batch7Missing={miss7} batch8Missing={miss8} batch9Missing={miss9} batch10Missing={miss10} batch11Missing={miss11} batch12Missing={miss12} fixWitnessMissing={miss13} batch13Missing={miss14} batch14Missing={miss15} batch15Missing={miss16} batch15Block={'ok' if b20 else 'DRIFT'} trophy4={trophy4!r}")
+print("B-ASSERTS b1={0} b2={1} b3={2} b4={3} b5={4} b6={5} b7={6} b8={7} b9={8} b10={9} b11={10} b12={11} b13={12} b14={13} b15={14} b16={15} b17={16} b18={17} b19={18} b20={19}".format(b1, b2, b3, b4, b5, b6, b7, b8, b9, b10, b11, b12, b13, b14, b15, b16, b17, b18, b19, b20))
 if leaks: print("B-LEAKS:", json.dumps({f"{k[0]}|{k[1]}": v for k, v in list(leaks.items())[:6]}, ensure_ascii=False))
 if prows: print("B-PLAYER-LEAKS:", json.dumps(prows[:10], ensure_ascii=False))
 if trows: print("B-TEAM-LEAKS:", json.dumps(trows[:10], ensure_ascii=False))
@@ -332,8 +356,10 @@ PY
 )
 echo "$RES"
 S=$(echo "$RES" | grep "B-ASSERTS" | tail -1)
-for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20; do
   V=$(echo "$S" | grep -oE "b$i=[01]" | cut -d= -f2)
+  D=""
+  [ "$i" = "20" ] && D=$(echo "$RES" | grep "B20-WHY" | tail -1 | cut -c1-200)
   case $i in
     1) LBL="day-feed zero pure-Latin competition headers across ±7" ;;
     2) LBL="match hook KNVB Persian (6321650)" ;;
@@ -354,8 +380,9 @@ for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19; do
     17) LBL="harvest batch-13 witnesses (Guatemala Liga Nacional Apertura tranche) all Persian in the live ±7 feed" ;;
     18) LBL="harvest batch-14 witnesses (Cyprus 2. Division + Cup tranche) all Persian in the live ±7 feed" ;;
     19) LBL="harvest batch-15 witnesses (Thailand League Cup tranche) all Persian in the live ±7 feed" ;;
+    20) LBL="the 454 batch-15 block hold: leagues.ts byte-identical to commit 886f6ff (11 pairs — the A3 re-anchor promoted)" ;;
   esac
-  ck "B$i $LBL" "${V:-0}"
+  ck "B$i $LBL" "${V:-0}" "$D"
 done
 SUM=$(echo "$RES" | grep "B-SUMMARY" | tail -1)
 echo "   FINDINGS(team leagueFaById rows with raw labels — report-only): $(echo "$SUM" | grep -oE 'teamLeakRows=[0-9]+' )"

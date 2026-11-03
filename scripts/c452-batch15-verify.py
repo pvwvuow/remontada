@@ -10,6 +10,12 @@
 # (W) women's sides, no exclusions).
 # POST mode (--post): after the patch, the same names must render PERSIAN
 # in the live ±7 feed (zero raw literals left for this batch).
+# cycle-454 note: PRE mode is ONE-SHOT — it matches the raw English literals
+# in the live feed, so it only works BEFORE the batch ships (after the patch
+# it reports ABSENT by design — that IS the patch's success). POST mode
+# (--post) is the repeatable half. cycle452-domproof.sh A3 no longer depends
+# on this script's /tmp output (the 453 finding): it reads the git truth of
+# commit 886f6ff instead.
 import json, re, subprocess, sys
 
 BASE = "http://localhost:3000"
