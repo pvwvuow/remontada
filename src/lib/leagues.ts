@@ -2363,6 +2363,44 @@ const TEAM_FA: Record<string, string> = {
   "rapid bucurești": "رپید بخارست",
   "universitatea cluj": "دانشگاه کلوژ",
   "uta arad": "یوتا آراد",
+  // cycle-445: harvest batch 10 — the machine continues on the 445 census
+  // (scripts/cycle430-harvest.py re-run read EXACTLY 1909 distinct = the
+  // documented 442 post-census, totalRows 3951 on the census read — the 435
+  // lesson: rows drift (3948→3951), distinct is decisive;
+  // scripts/cycle445-batch10-verify.py byte-identity gate, live UA Chrome/124):
+  // this batch takes ALL 11 count-3 single-country names of the NORWAY
+  // tranche (1. Divisjon + Cup + Eliteserien — the live ±7 window's biggest
+  // single-country pool; the 442/443 rotation lines predicted COL 13 > RUS
+  // 12 > GUA 12 > NOR 11, but the window re-ranked and the rivals dropped
+  // under 3 — exactly what the 435 lesson demands: the window decides, the
+  // prediction does not; no (W) women's sides, no exclusions), 33 live leak
+  // rows covered. Transliteration rides the standing Eliteserien block
+  // (the 969/971 renders): ø → و (بودو/ترومسو/لیلهستروم) so Hødd = هود; the
+  // site's own aalesund → اوله‌سوند anchor gives Å its /oː/ reading (the
+  // Ålesund IPA), so Åsane = اوسانه; Strømsgodset = استرومسگودست (the
+  // Persian-Wikipedia article title — this batch's ONE direct fa.wiki
+  // anchor); Odds Ballklubb = اودز (the literal genitive s kept — the
+  // هارتس/رنجرز/کویینز plural rule — with Ballklubb dropped, the BK/IL/FC
+  // suffix-discipline rule, the Rosenborg BK → روزنبورگ precedent);
+  // Sandefjord = سانفیورد (fjord → فیورد), Kongsvinger = کونگزوینگر,
+  // Ranheim = رانهایم (heim → هایم), Hamarkameratene = هامارکامراتنه (the
+  // full feed literal, -tene → تنه), Egersund = اگرسوند, Sogndal = سوگندال,
+  // Lyn = لین (the Persian press form for the Oslo club). Collision gate:
+  // zero key and zero value collisions against the whole file (every club
+  // one distinct render — no Logroñés case this batch). Loud-pool rule: the
+  // documented 1909 census shrinks by this batch in the open (the B4 ±25
+  // band re-anchors with the next census, never silently).
+  "lyn": "لین",
+  "åsane": "اوسانه",
+  "hødd": "هود",
+  "egersund": "اگرسوند",
+  "sogndal": "سوگندال",
+  "strømsgodset": "استرومسگودست",
+  "odds ballklubb": "اودز",
+  "sandefjord": "سانفیورد",
+  "kongsvinger": "کونگزوینگر",
+  "ranheim": "رانهایم",
+  "hamarkameratene": "هامارکامراتنه",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
