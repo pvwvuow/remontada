@@ -3087,6 +3087,56 @@ const TEAM_FA: Record<string, string> = {
   "defensa y justicia": "دفنسا و خوستیسیا",
   "independiente": "ایندپندینته",
   "banfield": "بانفیلد",
+  // cycle-465: batch 22 — ALL 9 count>=3 single-country PAN names of the
+  // 465 census (the live LPF Apertura wave) into TEAM_FA (the 446-pick
+  // rule, the 464-card pin). The fresh census read distinct=1754 = EXACTLY
+  // the documented 462 post-census (zero drift, rows 3210) and the top of
+  // the pool is the documented TIE: PAN 9/27 = HON 9/27 — the 447
+  // tie-break invoked (anchor quality, the RUS=GUA precedent): PAN carries
+  // FIVE direct fa.wiki club articles vs HON's TWO club articles + the
+  // خوتیکالپا CITY page (not a club anchor per the 452/462 rule) → PAN
+  // harvested, HON waits for the next update. Anchors
+  // (scripts/c465-wiki-probe.py/2, every one identity-verified from its
+  // own intro): CD Árabe Unido → عربه یونیدو («باشگاه فوتبال عربه یونیدو»
+  // pageid 43804828, «یک باشگاه فوتبال حرفه‌ای واقع در کلون، پاناما
+  // است…»), CD Plaza Amador → پلازا آمادور («باشگاه فوتبال پلازا آمادور»
+  // pageid 41460671, «یک باشگاه فوتبال پانامایی… قدیمی‌ترین تیم
+  // پاناما»), Sporting San Miguelito → اسپورتینگ سن میگلیتو («باشگاه
+  // فوتبال اسپورتینگ سن میگلیتو» pageid 44052583, «یک تیم فوتبال
+  // حرفه‌ای پانامایی است»), Tauro FC → تائورو («باشگاه فوتبال تائورو»
+  // pageid 41367386, «…در ناحیه پدرگال در شرق پاناماسیتی، پاناما…»),
+  // San Francisco FC → سان فرانسیسکو («باشگاه فوتبال سان فرانسیسکو»
+  // pageid 41367482, «یک تیم فوتبال حرفه‌ای واقع در لا چوررا، پاناما
+  // است») — every value minus the باشگاه فوتبال prefix per the FC rule.
+  // The honest-read fallbacks (no fa.wiki club article under any spelling,
+  // the wikidata gate dead — the 452 لویی / 455 آلتاخ / 457 لیوی بره /
+  // 460 پودهاله / 461 آلاکرانس / 462 ریسترا precedent): UMECIT FC →
+  // اومسیت (no club entity found), CD Universitario → یونیورسیتاریو (the
+  // club entity Q2212675 carries NO fawiki sitelink; the Peruvian
+  // namesake family deliberately NOT used — the wrong-country artifact
+  // documented), Herrera FC → هررا (the bare-loanword rule, the انستیتو
+  // 462 precedent), Independiente de La Chorrera → ایندپندینته دی لا
+  // چوررا (ایندپندینته per the file's OWN independiente medellín form,
+  // de→دی per the boca juniors de cali / 462 precedent, لا چوررا rides
+  // the San Francisco article's OWN intro «واقع در لا چوررا، پاناما»);
+  // every name single-country PAN across the whole ±7 window, 27 live
+  // leak rows covered, the collision gate clean: dupKeys=[] and zero
+  // value collisions against the whole 1817-pair file (the five flagged
+  // hits are the intentional league-name homoglyphs), 1817 → 1826 pairs.
+  // Cache: matches v25 → v26 per the standing rule (fresh cold window).
+  // Patrol: B4 re-anchored (the loud-pool rule, the 445 precedent) + B27
+  // NEW (four batch-22 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 66 checks). The post-patch census + drift story live in the
+  // repo worklog card (the 455-457 pattern).
+  "cd árabe unido": "عربه یونیدو",
+  "cd plaza amador": "پلازا آمادور",
+  "sporting san miguelito": "اسپورتینگ سن میگلیتو",
+  "umecit fc": "اومسیت",
+  "tauro fc": "تائورو",
+  "cd universitario": "یونیورسیتاریو",
+  "herrera fc": "هررا",
+  "independiente de la chorrera": "ایندپندینته دی لا چوررا",
+  "san francisco fc": "سان فرانسیسکو",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

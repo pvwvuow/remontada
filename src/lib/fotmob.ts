@@ -1600,7 +1600,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // B1 caught mid-cycle («Cup» RUS id 951803, the new-format Russian Cup,
   // the seventh country under the bare «Cup») joined the leagueId table;
   // same rule, fresh cold window (v24 L2 rows purged + official restart).
-  return cached(`matches:v25:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-465: v26 — harvest batch 22 (9 more names, the Panama tranche:
+  // the 447 tie-break winner over HON 9/27) changed the normalized
+  // team-fa content again; same rule, fresh cold window (v25 L2 rows
+  // purged + official restart).
+  return cached(`matches:v26:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
