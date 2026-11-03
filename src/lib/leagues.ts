@@ -2984,6 +2984,109 @@ const TEAM_FA: Record<string, string> = {
   "piratas": "پیراتاس",
   "tlaxcala fc": "تلاسکالا",
   "venados fc": "ونادوس",
+  // cycle-462: harvest batch 21 — ALL 19 count>=3 single-country names of the
+  // ARGENTINA tranche into TEAM_FA (the live Liga Profesional + Copa
+  // Argentina wave — the 446-pick rule: the fresh census re-run read
+  // distinct=1773 = the documented 461 post-census 1771 + 2 net live-window
+  // churn (the 445/455/460 precedent; the promotion-vs-new-entrant split not
+  // separately observable in this wake — documented as read), rows 3272; the
+  // count-3 segment 185→204 = +19 with the ARG wave the headline: 19 names /
+  // 62 rows (14 at count-3, 5 at count-4), ZERO (W) sides — no 435 skip
+  // needed — every name single-country ARG across the whole ±7 window; ARG
+  // 19/62 tops the pool with PAN/HON 9/27 (the 461 leaders) held below and
+  // CZE/EST/SWE/ISR/USA 8/24 next; no tie at the top so the 447 tie-break is
+  // NOT invoked — documented as read; no exclusions), byte-verified 19/19
+  // (scripts/c462-batch21-verify.py: every key byte-exact from the live UA
+  // Chrome/124 feed — the non-ASCII é/ó/ú keys ride the file's OWN
+  // südtirol/köln/budućnost/dečić/atlético precedent — every name
+  // single-country ARG across the whole ±7 window, 62 live leak rows
+  // covered, the collision gate clean: dupKeys=[] and zero value collisions
+  // against the whole 1798-pair file, 1798 → 1817 pairs). Anchors
+  // (scripts/c462-wiki-probe.py/2/3): EIGHT direct fa.wiki club articles via
+  // the wikidata sitelinks, every one identity-verified from its own intro
+  // — Argentinos Juniors → آرژانتینوس جونیورز («باشگاه فوتبال آرژانتینوس
+  // جونیورز» pageid 44853348, «یک باشگاه فوتبال در شهر بوئنوس آیرس،
+  // آرژانتین است»; جونیورز rides the file's OWN boca juniors form),
+  // Atlético Tucumán → اتلتیکو توکومان («باشگاه فوتبال اتلتیکو توکومان»
+  // pageid 44676322, «یک باشگاه فوتبال در سانتیاگو دوتوکومان، استان
+  // توکومان، آرژانتین است»; the descriptor drops per the FC rule; توکومان
+  // the article's OWN rendering, the city page توکومان 9499834), Gimnasia
+  // LP → جیمناسیا لاپلاتا («باشگاه فوتبال جیمناسیا و اسگریما لاپلاتا»
+  // pageid 43107433 — the article's OWN intro SHORT form «باشگاه فوتبال
+  // جیمناسیا لاپلاتا» is what the literal "Gimnasia LP" rides, «از
+  // قدیمی‌ترین باشگاه‌های فوتبال کشور آرژانتین در شهر لاپلاتا می‌باشد»;
+  // لاپلاتا the fused spelling the article itself uses, the city pages
+  // لا پلاتا 41536486 / لاپلاتا 6789648 documented), Huracán → هوراکان
+  // («باشگاه فوتبال اتلتیکو هوراکان» pageid 41152768, «یک باشگاه فوتبال
+  // در شهر بوئنوس آیرس کشور آرژانتین می‌باشد که در لیگ برتر فوتبال
+  // آرژانتین بازی می‌کند»; the encyclopedia's OWN rendering هوراکان — the
+  // اوراکان spelling family unused), Racing Club → راسینگ کلوب («باشگاه
+  // فوتبال راسینگ» pageid 44298641 — the intro's OWN first words render the
+  // full name «راسینگ کلوب آویاندا»; the literal "Racing Club" rides that
+  // rendering minus the city, which also keeps the existing bare
+  // racing → راسینگ mapping collision-free), Rosario Central →
+  // روزاریو سنترال («باشگاه فوتبال روساریو سنترال» pageid 44294156, «یک
+  // باشگاه فوتبال در شهر روزاریو، سانتا فه، آرژانتین است»), Vélez Sarsfield
+  // → ولز سارسفیلد («باشگاه فوتبال ولز سارسفیلد» pageid 44298647, «یک
+  // باشگاه فوتبال در شهر بوئنوس آیرس کشور آرژانتین می‌باشد»),
+  // Independiente → ایندپندینته («باشگاه فوتبال ایندپندینته» pageid
+  // 44891429, «باشگاه اتلتیکو ایندپندینته... در شهر آویاندا قرار دارد»; the
+  // value rides the file's OWN independiente medellín → ایندپندینته form) —
+  // plus Banfield → بانفیلد (the direct club article «باشگاه فوتبال
+  // بانفیلد» pageid 43805809 found by probe 2 after the wikidata search hit
+  // the CITY entity (بانفیلد city 41574058) — a wrong-entity artifact
+  // superseded by the club article itself, identity-verified «یک باشگاه
+  // فوتبال در شهر بانفیلد، بوئنوس آیرس کشور آرژانتین می‌باشد»); the 460
+  // اودر-river precedent for the namesake anchors — Belgrano → بلگرانو (the
+  // بلگرانو page 34223211 is a MENDOZA settlement — a wrong-city artifact
+  // identity-excluded, the 461 لا پاز-Argentina lesson; the namesake anchor
+  // مانوئل بلگرانو pageid 43803266, the man the Córdoba club is named for);
+  // the city-title context pages (سانتا فه 24987262 for the Unión club of
+  // Santa Fe, ریو کوارتو 41557532 for Estudiantes de Río Cuarto) documented
+  // per the 461 Mérida pattern; the honest-read fallbacks (no fa.wiki
+  // article under any spelling, the opensearch/wikidata gate dead — the 452
+  // لویی / 455 آلتاخ / 457 لیوی بره / 460 پودهاله / 461 آلاکرانس
+  // precedent): Deportivo Riestra → دپورتیوو ریسترا (دپورتیوو per the
+  // file's OWN deportivo a coruña form), Independiente Rivadavia →
+  // ایندپندینته ریواداویا (ایندپندینته per the file's OWN independiente
+  // medellín form; the namesake article برناردینو ریواداویا MISSING —
+  // probed and documented), Club Atlético Platense → پلاتنسه, Instituto →
+  // انستیتو (the bare انستیتو page 31484932 extract-UNVERIFIABLE — not used
+  // as an anchor per the 456 rule; the value rides the standard Persian
+  // loanword for the Spanish word the club is named for), Estudiantes de
+  // Río Cuarto → استودیانتس دی ریو کوارتو (استودیانتس per the file's OWN
+  // bare estudiantes form, de→دی per the boca juniors de cali precedent),
+  // Sarmiento → سارمینتو, Unión → اونیون (the file's OWN union → یونیون
+  // convention covers the Italian/German/English forms — brescia/berlin/
+  // st.gilloise; the Spanish Unión rides the encyclopedia's OWN اونیون
+  // family the opensearch itself surfaced: اونیون (فرانش-کومته)، اونیون
+  // پانامریکانا، اونیونه), Barracas Central → باراکاس سنترال (سنترال per
+  // the file's OWN central coast mariners form), Defensa y Justicia →
+  // دفنسا و خوستیسیا. Cache: matches v23 → v24 per the standing rule (fresh
+  // cold window). Patrol: B4 re-anchored to the post-patch census read (the
+  // loud-pool rule, the 445 precedent) + B26 NEW (four batch-21 witnesses
+  // Persian in the live ±7 feed — the patrol now runs 65 checks). The
+  // post-patch census + drift story live in the repo worklog card (the
+  // 455-457 pattern).
+  "deportivo riestra": "دپورتیوو ریسترا",
+  "argentinos juniors": "آرژانتینوس جونیورز",
+  "independiente rivadavia": "ایندپندینته ریواداویا",
+  "atlético tucumán": "اتلتیکو توکومان",
+  "club atlético platense": "پلاتنسه",
+  "instituto": "انستیتو",
+  "estudiantes de río cuarto": "استودیانتس دی ریو کوارتو",
+  "gimnasia lp": "جیمناسیا لاپلاتا",
+  "huracán": "هوراکان",
+  "racing club": "راسینگ کلوب",
+  "sarmiento": "سارمینتو",
+  "rosario central": "روزاریو سنترال",
+  "vélez sarsfield": "ولز سارسفیلد",
+  "unión": "اونیون",
+  "belgrano": "بلگرانو",
+  "barracas central": "باراکاس سنترال",
+  "defensa y justicia": "دفنسا و خوستیسیا",
+  "independiente": "ایندپندینته",
+  "banfield": "بانفیلد",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

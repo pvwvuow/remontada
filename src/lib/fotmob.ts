@@ -1588,7 +1588,19 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // tranche: the Polish FA Cup + II/I Liga field) changed the
   // normalized team-fa content again; same rule, fresh cold window
   // (v21 L2 rows purged + official restart).
-  return cached(`matches:v23:${dateYYYYMMDD}`, ttl, async () => {
+  // cycle-461: v23 — harvest batch 20 (8 more names, the Mexico
+  // tranche: Liga de Expansión MX) changed the normalized team-fa
+  // content again; same rule, fresh cold window (v22 L2 rows purged +
+  // official restart).
+  // cycle-462: v24 — harvest batch 21 (19 more names, the Argentina
+  // tranche: the live Liga Profesional + Copa Argentina wave) changed
+  // the normalized team-fa content again; same rule, fresh cold window
+  // (v23 L2 rows purged + official restart).
+  // cycle-462: v25 — the live-window competition gap the standing patrol's
+  // B1 caught mid-cycle («Cup» RUS id 951803, the new-format Russian Cup,
+  // the seventh country under the bare «Cup») joined the leagueId table;
+  // same rule, fresh cold window (v24 L2 rows purged + official restart).
+  return cached(`matches:v25:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
@@ -7794,6 +7806,7 @@ const ARCHIVE_TID_FA: Record<number, string> = {
   442: "جام حذفی اوکراین", // «Cup» UKR male, parent 442 — batch 3: «Cup» = اسرائیل، اتریش، چک، اوکراین!
   10230: "کاپ پاراگوئه", // «Cup» PAR male, parent 10230 — batch 3: پنجمین کشور زیر یک لفظ برهنه!
   206: "جام حذفی نروژ", // «Cup» NOR male, parent 206 — batch 3: ششمنین کشور!
+  951803: "جام حذفی روسیه", // «Cup» RUS male — the cycle-462 live-window find: هفتمین کشور زیر یک لفظ برهانهٔ «Cup» (the new-format Russian Cup id, the RUS group-stage ids 938418-938421 already mapped with the same «جام حذفی روسیه» family name)
   943369: "جام لیگ ژاپن", // «League Cup» JPN male, parent 224 — batch 2: «League Cup» = پرتغال و ژاپن!
   944879: "مرحلهٔ گروهی جام حذفی یونان", // «Cup Group Stage» GRE, parent 145
   945923: "لیگ قهرمانان زنان اروپا", // «Women's Champions League» INT-2 female
