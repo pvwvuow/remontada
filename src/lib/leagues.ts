@@ -2568,6 +2568,59 @@ const TEAM_FA: Record<string, string> = {
   "deportivo mixco": "دپورتیوو میسکو",
   "guastatoya": "گواستاتویا",
   "san pedro": "سن پدرو",
+  // cycle-451: harvest batch 14 — the machine continues on the 451 census
+  // (scripts/c451-pool-sweep.py read EXACTLY 1852 distinct = the documented
+  // 450 post-census, ZERO distinct drift for the THIRD consecutive cycle;
+  // rows drifted to 3446 — the 435 lesson: rows drift, distinct is
+  // decisive; scripts/c451-batch14-verify.py byte-identity gate, live UA
+  // Chrome/124: 11/11 verified=0 bad): this batch takes ALL 11 count-3
+  // single-country names of the CYPRUS tranche (2. Division + Cup + Cyprus
+  // League). The honest CYP/THA tie (11 names/33 rows/33 day-presence EACH
+  // — the documented read) broke on anchor quality + visibility per the 447
+  // precedent: TWO direct Persian-Wikipedia club articles in the CYP pool
+  // («باشگاه فوتبال المپیاکوس نیکوزیا» pageid 6063477 + «باشگاه فوتبال
+  // ارمیس آرادیپو» pageid 6491621) plus the file's own Cypriot block
+  // (اومونیا نیکوزیا/آپوئل نیکوزیا/آنورتوسیس/پافوس) riding the rest, vs a
+  // THA pool with ZERO club articles; no (W) women's sides, no exclusions.
+  // The count>=4 multi-country names stay honest-raw (Alianza FC 10
+  // COL/INT/PAN/SLV, Santa Fe COL/INT, Libertad ECU/PAR, Universidad
+  // Católica CHI/ECU, Olimpia INT/PAR, BK Häcken (W) INT/SWE — the 389
+  // identity-first rule; the single MB Rouissat ALG waits for its tranche).
+  // Transliteration: AEL → آئل rides the file's own آئک آتن AE→آئ reading
+  // — the fa.wiki article «باشگاه ورزشی لیماسول» (the Athletic-Union
+  // descriptor title, found via the az.wiki langlink) drops its باشگاه
+  // ورزشی prefix like the 447 FC rule, the toponym لیماسول is the fa.wiki
+  // city anchor; AEP → آئپ same rule (Polemidion → پولمیدیون, the Greek δ
+  // → د like the رودس convention). Omonia rides the file's OWN اومونیا
+  // نیکوزیا anchor: Omonia Aradippou = اومونیا آرادیپو (آرادیپو the fa.wiki
+  // city) and Omonia 29 Maiou = اومونیا ۲۹ می (the Persian digits rule:
+  // مونیخ ۱۸۶۰/ایبریا ۱۹۹۹; Μαΐου → می). Doxa Katokopia = دوکسا کاتوکوپیاس
+  // (the footba11 press form with the genitive -pias kept; footba11's
+  // Cyprus page renders it exactly so). Karmiotissa = کارمیوتیسا (the
+  // footba11 press form exact, the آنورتوسیس σσ→س anchor). Iraklis
+  // Gerolakkou = ایراکلیس جیرولاکو (Iraklis the Persian press form for the
+  // Greek club family; Γερολάκκου → جیرولاکو — the γ reading rides the
+  // fa.wiki جیرولامو precedent + the Arabic sofascore form جيرولاككو; the
+  // Persian press has no form of its own). Chalkanoras Idaliou =
+  // خالکانوراس ایدالیو and Digenis Morphou = دیگنیس مورفو (the honest
+  // transliterations: χ → خ like خالکیدا, ιδάλιον → ایدالیو, Μόρφου →
+  // مورفو). Collision gate: zero key and zero value collisions against the
+  // whole file (المپیاکوس نیکوزیا vs the Piraeus olympiacos → المپیاکوس
+  // and اومونیا آرادیپو vs اومونیا نیکوزیا are distinct full-value strings
+  // — the دینامو بخارست vs دینامو مسکو precedent; no Logroñés case).
+  // Loud-pool rule: the documented 1852 census shrinks by this batch in the
+  // open (the B4 band re-anchors with the next census, never silently).
+  "ael limassol": "آئل لیماسول",
+  "aep polemidion": "آئپ پولمیدیون",
+  "chalkanoras idaliou": "خالکانوراس ایدالیو",
+  "digenis morphou": "دیگنیس مورفو",
+  "doxa katokopia": "دوکسا کاتوکوپیاس",
+  "ermis aradippou": "ارمیس آرادیپو",
+  "iraklis gerolakkou": "ایراکلیس جیرولاکو",
+  "karmiotissa": "کارمیوتیسا",
+  "olympiakos nicosia": "المپیاکوس نیکوزیا",
+  "omonia 29 maiou": "اومونیا ۲۹ می",
+  "omonia aradippou": "اومونیا آرادیپو",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
