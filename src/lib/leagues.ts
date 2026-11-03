@@ -3623,6 +3623,56 @@ const TEAM_FA: Record<string, string> = {
   "skënderbeu": "اسکندربو",
   "vllaznia": "ولازنیا اشکودر",
   "vora": "وورا",
+  // cycle-480: batch 30 — ALL 7 count>=3 single-country PAR names of the
+  // FRESH 480 census into TEAM_FA (the 446-pick rule) — the 479 rotation
+  // line's declared field: PAR 7 ALONE at the top, the 477 tie loser
+  // finally harvesting. The fresh census (scripts/c480-census.py, the 447
+  // live-re-read lesson): pre-patch distinct=1671/raw_rows=2959 == the B4
+  // anchor EXACTLY (zero drift), RUS 6 / ESP 6 (with a (W) side) / CRC 6
+  // behind, ENG 7 but FOUR (W) sides → 2 effective (the 435 rule) — no
+  // (W) tranche in the race, PAR harvested whole. The Wikimedia 429 wall
+  // (documented honestly): the probes hit a ~50-minute IP-wide rate limit
+  // (fa.wiki action+REST, en.wiki, wikidata ALL HTTP 429 from 06:13 to
+  // ~07:04 Tehran, gentle single-title retries try1..try4 logged) —
+  // cleared at the 51-minute mark; the full probe re-ran at 1.8s cadence
+  // (scripts/c480-wiki-probe.py + c480-wiki-probe2.py + the single-title
+  // re-probe of the three empty-intro pages). The TWO direct anchors,
+  // both extracts verified Paraguayan-club fresh: Cerro Porteño → سرو
+  // پورتنیو (Q914086 → باشگاه فوتبال سرو پورتنیو 41367502 — the
+  // 477-documented pageid RENAMED upstream to the باشگاه-پrefixed form
+  // since the 477 read, the bare spelling now a separate EMPTY stub
+  // 6956335 — the anchor's OWN title wins, the 475 RENAMED-upstream
+  // lesson; the FC rule minus the prefix; extract «…یک باشگاه فوتبال
+  // حرفه‌ای اهل پاراگوئه است… ۱۹۱۲…») / Guaraní → گوارانی (باشگاه فوتبال
+  // گوارانی (پاراگوئه) 6305735 «یک تیم فوتبال از پاراگوئه است که در محله
+  // پینوزا در آسونسیون… ۱۹۰۳…» — the FC rule minus the prefix AND the
+  // (پاراگوئه) disambiguator; the bare گوارانی 7003177 an empty stub,
+  // never consulted). City-grounded toponym (the 461 مریدا rule):
+  // Sportivo San Lorenzo → اسپورتیوو سن لورنزو (سن لورنزو (پاراگوئه)
+  // 1071973 the city article grounds the toponym; its intro EMPTY — the
+  // title still evidences the spelling, the 477 Elbasani rule). Zero-
+  // anchor honest reads (the 452..477 precedent; the wikidata entities
+  // prove the Paraguayan identity AND the fa-sitelink absence, the fa
+  // search hits all irrelevant player pages — the 466 UPNFM rule): 2 de
+  // Mayo → ۲ د مایو (Q1926287 Club Sportivo 2 de Mayo) / Rubio Ñú → روبیو
+  // نیو (Q603085) / Sportivo Ameliano → اسپورتیوو آملیانو (Q15294976) /
+  // Sportivo Trinidense → اسپورتیوو ترینیدنس (Q2980011). Byte-verify
+  // (scripts/c480-batch30-verify.py): PRE 7/7 verified 0 bad, every name
+  // single-country PAR across the whole ±7 window (3 rows each, sample
+  // ids 1000017447-1000017452); the collision gate clean: dupKeys=[] and
+  // zero proposed key/value collisions against the whole 2304-pair file
+  // (the five flagged valueCollisions the intentional league-name
+  // homoglyphs, the 465..477 precedent), 2304 → 2311 file pairs. Cache:
+  // matches v33 → v34 per the standing rule (fresh cold window). Patrol:
+  // B4 re-anchor + B35 NEW (four batch-30 witnesses Persian in the live
+  // ±7 feed — the patrol now runs 74 checks).
+  "2 de mayo": "۲ د مایو",
+  "cerro porteño": "سرو پورتنیو",
+  "guaraní": "گوارانی",
+  "rubio ñú": "روبیو نیو",
+  "sportivo ameliano": "اسپورتیوو آملیانو",
+  "sportivo san lorenzo": "اسپورتیوو سن لورنزو",
+  "sportivo trinidense": "اسپورتیوو ترینیدنس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
