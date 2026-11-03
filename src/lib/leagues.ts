@@ -2452,6 +2452,57 @@ const TEAM_FA: Record<string, string> = {
   "real cundinamarca": "رئال کوندینامارکا",
   "tigres fc": "تیگرس",
   "águilas doradas": "آگیلاس دوراداس",
+  // cycle-447: harvest batch 12 — the machine continues on the 447 census
+  // (scripts/cycle430-harvest.py + scripts/c447-pool-sweep.py read EXACTLY
+  // 1877 distinct = the documented 446 post-census in BOTH reads, zero drift;
+  // rows drifted 3951→3527 — the 435 lesson: rows drift, distinct is
+  // decisive; scripts/c447-batch12-verify.py byte-identity gate, live UA
+  // Chrome/124): this batch takes ALL 12 count-3 single-country names of the
+  // RUSSIA tranche (Premier League + Cup Grp. A-D). The window's tie with
+  // GUA (12 names/36 rows/36 day-presence EACH — the honest read) broke on
+  // anchor quality + visibility: this is the biggest-club pool in the map's
+  // history (Spartak/CSKA/Lokomotiv Moscow, Krasnodar, Rubin) and every name
+  // carries a direct Persian-Wikipedia anchor, while GUA is one league with
+  // weak anchors — GUA stays next in line, the window decides next cycle
+  // (the 435 lesson). The count>=4 multi-country names stay honest-raw
+  // (Alianza FC 10/Santa Fe/Libertad/Universidad Católica/Olimpia — the 389
+  // identity-first rule; singles Goiás/MB Rouissat wait for their tranches).
+  // Transliteration rides the Persian-Wikipedia club articles (SEVEN direct
+  // hits this batch — the map's richest): «باشگاه فوتبال اسپارتاک مسکو» (the
+  // article spells it اسپارتاک with leading ا — the Persian sp→اسپ rule:
+  // اسپانیا/اسپورتینگ), «باشگاه فوتبال زسکا مسکو» (زسکا — the Russian club's
+  // fa.wiki title; the file's cska sofia → سسکا صوفیه is the BULGARIAN
+  // community's spelling, the divergence is the encyclopedia's own),
+  // «باشگاه فوتبال لوکوموتیو مسکو», «باشگاه فوتبال کراسنودار» (FC dropped —
+  // the suffix-discipline rule), «باشگاه فوتبال روبین کازان», «باشگاه
+  // فوتبال دینامو مخاچ‌قلعه» (the ZWNJ is byte-exact from the city article
+  // «مخاچ‌قلعه»; Dynamo → دینامو rides the دینامو درسدن anchor — the
+  // Houston MLS داینامو is the English club's own reading), «باشگاه فوتبال
+  // بالتیکا کالینینگراد» (Baltika → بالتیکا), «باشگاه فوتبال اورنبورگ» (FC
+  // dropped), «باشگاه فوتبال فاکل وورونژ» (the encyclopedia's وورونژ with
+  // the DOUBLE و for Russian В — the literal is bare Fakel so the render is
+  // فاکل). No fa.wiki article for Krylya Sovetov → کرلیا سوفیتوف سامارا (the
+  // Persian press form; the toponym IS in the literal — fa.wiki «سامارا»);
+  // Akron Togliatti → آکرون تولیاتی (fa.wiki «تولیاتی»); FK Akhmat → اخمت
+  // گروزنی (the Persian press form + the file's crvena-zvezda → ستاره سرخ
+  // بلگراد add-toponym precedent; the club's fa.wiki article is «احمد
+  // گروزنی» — the renamed Terek, same club, the render keeps the feed's own
+  // Akhmat transliteration). Collision gate: zero key and zero value
+  // collisions against the whole file (no Logroñés case this batch).
+  // Loud-pool rule: the documented 1877 census shrinks by this batch in the
+  // open (the B4 ±25 band re-anchors with the next census, never silently).
+  "spartak moscow": "اسپارتاک مسکو",
+  "cska moscow": "زسکا مسکو",
+  "lokomotiv moscow": "لوکوموتیو مسکو",
+  "fc krasnodar": "کراسنودار",
+  "rubin kazan": "روبین کازان",
+  "dynamo makhachkala": "دینامو مخاچ‌قلعه",
+  "krylya sovetov samara": "کرلیا سوفیتوف سامارا",
+  "baltika": "بالتیکا",
+  "fakel": "فاکل",
+  "fk akhmat": "اخمت گروزنی",
+  "akron togliatti": "آکرون تولیاتی",
+  "fc orenburg": "اورنبورگ",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
