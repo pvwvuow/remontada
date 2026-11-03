@@ -2401,6 +2401,57 @@ const TEAM_FA: Record<string, string> = {
   "kongsvinger": "کونگزوینگر",
   "ranheim": "رانهایم",
   "hamarkameratene": "هامارکامراتنه",
+  // cycle-446: harvest batch 11 — the machine continues on the 446 census
+  // (scripts/cycle430-harvest.py re-run + scripts/c446-pool-sweep.py read
+  // EXACTLY 1890 distinct = the documented 445 post-census on both reads,
+  // rows drifted 3951→3568 between them — the 435 lesson again: rows drift,
+  // distinct is decisive; scripts/c446-batch11-verify.py byte-identity gate,
+  // live UA Chrome/124): this batch takes ALL 13 single-country names with
+  // count>=3 of the COLOMBIA tranche (11 count-3 + Envigado/Unión Magdalena
+  // at count-4 — Primera A + Primera B; the 445 rotation line predicted the
+  // KSA/AUT/ISR segment to lead but the window re-ranked again and RUS/GUA
+  // tied 12 while COL's count≥3 singles reached 13 names/41 live leak rows —
+  // the 435 lesson: the window decides, the prediction does not; no (W)
+  // women's sides, no exclusions), 41 live leak rows covered. The count>=4
+  // multi-country names stay honest-raw (Alianza FC 10/Santa Fe/Libertad/
+  // Universidad Católica/Olimpia — the 389 identity-first rule). Transliteration
+  // rides this file's own Spanish block: Unión → یونیون (the real unión →
+  // رئال یونیون anchor) so Unión Magdalena = یونیون ماگدالنا (fa.wiki
+  // «ماگدالنا»); Boca Juniors de Cali = بوکا جونیورز دی کالی (the file's
+  // boca juniors → بوکا جونیورز anchor); Deportivo → دپورتیوو (the
+  // deportivo pasto → دپورتیوو پاستو COLOMBIAN anchor) so Deportivo Pereira =
+  // دپورتیوو پریرا (fa.wiki «پریرا (کلمبیا)»); Independiente → ایندپندینته
+  // (the independiente medellín → ایندپندینته مدئین COLOMBIAN anchor) with
+  // Valle → وایه riding the file's v→و rule (والنسیا/ویارئال/سلتاویگو/رایو
+  // وایکانو) so Independiente Valle del Cauca = ایندپندینته وایه دل کائوکا;
+  // Real + toponym full-space (the رئال اویدو/ساراگوسا/خائن rule) so Real
+  // Cartagena = رئال کارتاخنا (fa.wiki «کارتاخنا (کلمبیا)» — the j → خ rule)
+  // and Real Cundinamarca = رئال کوندینامارکا; Águilas → آگیلاس (the cda
+  // águilas fc → آگیلاس anchor) so Águilas Doradas = آگیلاس دوراداس. THREE
+  // direct fa.wiki anchors this batch: «انویگادو» (Envigado), «آمریکا د کالی»
+  // (América de Cali — the article title spells de → د), «کارتاخنا (کلمبیا)».
+  // The FC suffix-discipline rule (the 445 Ballklubb precedent, junior fc →
+  // جونیور) drops FC: Chicó FC = چیکو (fa.wiki «چیکو»), Fortaleza FC =
+  // فورتالسا (the Persian press form), Tigres FC = تیگرس (the Tigres UANL
+  // press form). Deportes Quindío = دپورتیس کیندیو (Deportes plural →
+  // دپورتیس; Quindío → کیندیو). Collision gate: zero key and zero value
+  // collisions against the whole file (every club one distinct render —
+  // «کارتاخنا» alone is FC Cartagena's, ours is «رئال کارتاخنا»). Loud-pool
+  // rule: the documented 1890 census shrinks by this batch in the open (the
+  // B4 ±25 band re-anchors with the next census, never silently).
+  "envigado": "انویگادو",
+  "unión magdalena": "یونیون ماگدالنا",
+  "américa de cali": "آمریکا د کالی",
+  "boca juniors de cali": "بوکا جونیورز دی کالی",
+  "chicó fc": "چیکو",
+  "deportes quindío": "دپورتیس کیندیو",
+  "deportivo pereira": "دپورتیوو پریرا",
+  "fortaleza fc": "فورتالسا",
+  "independiente valle del cauca": "ایندپندینته وایه دل کائوکا",
+  "real cartagena": "رئال کارتاخنا",
+  "real cundinamarca": "رئال کوندینامارکا",
+  "tigres fc": "تیگرس",
+  "águilas doradas": "آگیلاس دوراداس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
