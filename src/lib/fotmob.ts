@@ -4340,6 +4340,13 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       "grp. e": "گروه E", "grp. f": "گروه F", "grp. g": "گروه G", "grp. h": "گروه H",
       "grp. i": "گروه I", "grp. j": "گروه J", "grp. k": "گروه K", "grp. l": "گروه L",
       "best 3rd placed teams": "بهترین تیم‌های سوم",
+      // cycle-469: the LPF composite feed (the catalog's panama, fotmob id
+      // 9039) spells its four zones «Apertura - Eastern/Western» + «Clausura
+      // - Eastern/Western» (probed live UA Chrome/124: four 6-row
+      // sub-tables) — unmapped labels would leak raw Latin on the
+      // standings page the registration itself just lit up.
+      "apertura - eastern": "آپرتورا — شرقی", "apertura - western": "آپرتورا — غربی",
+      "clausura - eastern": "کلاسورا — شرقی", "clausura - western": "کلاسورا — غربی",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];
@@ -6929,7 +6936,8 @@ export interface TeamRowInfo {
 
 /** Find a team's standings row across our configured leagues (best-effort).
  * cycle-464 fix (the reproduced cycle-463 patrol read): the walk below is
- * sequential over the full 34-league list — a team OUTSIDE every configured
+ * sequential over the full configured list (36 leagues since cycle-469's
+ * three harvest-wave registrations) — a team OUTSIDE every configured
  * table (the ARG harvest wave: Tucumán / Argentinos, probed live) pays the
  * whole miss-walk on EVERY request (cold 21.8s measured vs 0.05s warm; the
  * team route runs it up to three times per call — own row + prematch
@@ -6967,11 +6975,18 @@ const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): P
 /** cycle-464: memoized public wrapper — the walk outcome (row or the
  * expensive definitive miss) rides the house two-tier cache for 10 minutes
  * per (teamId, hintLeagueId). The null miss is the WHOLE point: an
- * out-of-league team previously re-walked all 34 leagues per request. */
+ * out-of-league team previously re-walked all configured leagues per request.
+ * cycle-469: v1 → v2 — the catalog grew the first three harvest-wave leagues
+ * (estonia/honduras/panama), so the walk's result set changed: an L2 (DB-
+ * backed, restart-surviving) v1 NEGATIVE computed against the pre-469 walk
+ * would outlive this deploy within its 10-minute TTL and keep the very
+ * teams this fix serves on the «اطلاعات لیگ یافت نشد» fallback. The bump
+ * invalidates every stale key in one move (the matches-cache version
+ * standing rule). */
 export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
   return cached(
-    `teamStandingsRow:v1:${teamId}:${hintLeagueId ?? 0}`,
+    `teamStandingsRow:v2:${teamId}:${hintLeagueId ?? 0}`,
     10 * 60_000,
     () => findTeamInStandingsWalk(teamId, hintLeagueId),
   );

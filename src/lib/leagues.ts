@@ -606,6 +606,78 @@ export const LEAGUES: LeagueConfig[] = [
   // group-header name «Hazfi Cup» is globally unambiguous (no AMBIGUOUS_
   // NAMES entry needed) and rides COMPETITION_FA like coppa italia.
   { key: "hazfi",      fotmobId: 9487,        ccode3: "IRN",  faName: "جام حذفی ایران",     enName: "Hazfi Cup",                                      priority: 33, globalMerge: false },
+  // cycle-469: the 468 finding's fix — the first THREE harvest-wave league
+  // registrations (the finding's named ids: the two 468 witness leagues
+  // EST/HON + PAN). Scope discipline (scripts/c469-league-sweep.py, live
+  // ±7 window UA Chrome/124 2026-11-03: 309 distinct league ids in the
+  // window, 298 unregistered — the full missing list rides the sweep
+  // artifact as the one-per-cycle follow-up ledger, the 165/181/361/362/
+  // 417 one-competition-per-cycle precedent; the 468 finding itself named
+  // exactly these three). The DAY-feed ids (EST 1000001181 / HON 941508 /
+  // PAN 941168) all answered literal NULL as league pages (the 376/377/
+  // 380/381/385 day-tournament subclass) — the real page ids surfaced via
+  // the cycle-141 crack (matchDetails content.matchFacts.infoBox.Tournament
+  // .parentLeagueId, scripts/c469-league-probe2.py): EST 248, HON 337,
+  // PAN 9039 — each page probed with the app's OWN fetch shape (scripts/
+  // c469-league-probe3.py, raw payloads saved from the probe window):
+  // cycle-469 — ESTONIA Premium liiga (the 468 finding's first witness
+  // league, /team/1588 and friends): flat 10-row 2026 FINAL table (FCI
+  // Levadia 90 pts champion / 35 played, Narva Trans 20 — the calendar
+  // season is over, the table serves as the final archive), 17 PLAIN-YEAR
+  // allAvailableSeasons ('2026'→'2010') → plainYearSeasons:true (the 382
+  // flag; the slash contract stays the default for every other
+  // competition and every global surface), titleHistory ABSENT (the
+  // «قهرمانان» tab honestly hidden, the 121 contract), transfers.data
+  // REAL (Adyn Torres → Nõmme JK Kalju — a 468 witness club),
+  // playoff=null (bracket tab honestly absent, the 56 contract),
+  // stats.players/teams present, fixtures.allMatches=180, leagueColor
+  // #212121. ESPN probed BOTH candidates 400 (est.1 / estonia.1) → the
+  // field is OMITTED (the Gulf pattern). faName rides the ALREADY-SHIPPED
+  // mapping «لیگ برتر استونی» ("premium liiga|EST") so the day feed and
+  // the league page never disagree; enName byte-identical to the day-feed
+  // group name (the feed's own lowercase «liiga» casing). globalMerge:
+  // false — a plain-year feed must never enter the slash-season
+  // allSeasons intersection (the 382 one-flag semantic).
+  { key: "estonia",    fotmobId: 248,         ccode3: "EST",  faName: "لیگ برتر استونی",    enName: "Premium liiga",                                  priority: 34, globalMerge: false, plainYearSeasons: true },
+  // cycle-469 — HONDURAS Liga Nacional (the 468 finding's second witness
+  // league, /team/1384118 and /team/2096910): flat 12-row LIVE 2026/2027
+  // Apertura table (CD Olimpia 29 pts / 12 played top, Juticalpa 6 bottom
+  // — the 466 batch's own clubs), 33 SUFFIXED allAvailableSeasons
+  // ('2026/2027 - Apertura' …) — NEITHER the slash shape NOR plain years,
+  // so the strict contract admits none: allSeasons=[] → the season
+  // selector honestly hides (the cycle-55 "leagues without a season list
+  // simply hide the control" contract) while the current season still
+  // serves via the payload's own selectedSeason — documented degradation,
+  // zero code change. titleHistory ABSENT, transfers.data REAL (Exon
+  // Arzú → Real España), playoff=null (the Apertura playoff not yet
+  // drawn), stats present, fixtures.allMatches=96, leagueColor #7ABD46.
+  // ESPN hon.1 probed 200 AND content-verified («Honduran Liga Nacional»
+  // — events UPNFM at Olancho FC / Motagua at Estrella Roja / Juticalpa
+  // at Olimpia, the batch-23 clubs themselves) → the field RIDES;
+  // honduras.1 400. faName rides the ALREADY-SHIPPED mapping «لیگ ملی
+  // هندوراس — آپرتورا» ("liga nacional - apertura|HON"); enName
+  // byte-identical to the day-feed group name (the dash separates it from
+  // GUA's bare «Liga Nacional Apertura»). globalMerge: false — the
+  // suffixed feed never enters the slash-season intersection.
+  { key: "honduras",   fotmobId: 337,         ccode3: "HON",  faName: "لیگ ملی هندوراس — آپرتورا", enName: "Liga Nacional - Apertura", espnSlug: "hon.1",          priority: 35, globalMerge: false },
+  // cycle-469 — PANAMA LPF (the 468 finding's third named id):
+  // COMPOSITE feed (composite:true + FOUR sub-tables 'Apertura - Eastern'
+  // / 'Apertura - Western' / 'Clausura - Eastern' / 'Clausura - Western',
+  // 6 rows each — Plaza Amador / San Francisco FC / Veraguas United tops;
+  // the cycle-141 parser flattens data.tables[] as-is) — the four zone
+  // labels join COMPOSITE_REGION_FA (fotmob.ts) so the standings page
+  // never leaks raw Latin. 11 MIXED allAvailableSeasons (2026/2025/2024/
+  // 2023/2010 plain + 2015/2016…2010/2011 slash) → plainYearSeasons:true
+  // admits the plain five, the slash six always passed (the 382 flag).
+  // playoff SERVED (1/4:4 / 1/2:2 / final:1 — the bracket tab RENDERS,
+  // the 56 parser shape), titleHistory ABSENT, transfers.data REAL
+  // (Eduardo Anderson → Baltika), stats present, fixtures.allMatches=199,
+  // leagueColor #333333. ESPN probed BOTH candidates 400 (pan.1 /
+  // panama.1) → OMITTED (the Gulf pattern). faName rides the
+  // ALREADY-SHIPPED mapping «لیگ فوتبال پاناما — آپرتورا» ("lpf
+  // apertura|PAN"); enName byte-identical to the day-feed group name.
+  // globalMerge: false — the 376 one-flag semantic unchanged.
+  { key: "panama",     fotmobId: 9039,        ccode3: "PAN",  faName: "لیگ فوتبال پاناما — آپرتورا", enName: "LPF Apertura",                                   priority: 36, globalMerge: false, plainYearSeasons: true },
 ];
 
 // Persian names for well-known competitions that appear inside the
