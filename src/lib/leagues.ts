@@ -2752,6 +2752,65 @@ const TEAM_FA: Record<string, string> = {
   "sw bregenz": "اس‌دبلیو برگنتس",
   "wsg tirol": "تیرول",
   "wolfsberger ac": "ولفسبرگر",
+
+  // cycle-456: harvest batch 17 — the machine continues on the 456 census
+  // (scripts/c451-pool-sweep.py re-run read EXACTLY 1819 distinct = the
+  // documented 455 post-census, ZERO distinct drift for the SEVENTH
+  // consecutive cycle; rows drifted to 3347 — the 435 lesson: rows drift,
+  // distinct is decisive; scripts/c456-batch17-verify.py byte-identity
+  // gate, live UA Chrome/124: 10/10 verified=0 bad, 30 live leak rows
+  // covered): the three-way tie POL/UKR/MNE (each 10 count-3 names / 30
+  // rows) broke on fa.wiki DIRECT club-article anchor quality per the 447
+  // rule (scripts/c456-wiki-tiebreak.py RE-READ live this cycle: MNE 2 —
+  // بودوچنوست پودگوریتسا/آرسنال تیوات — vs POL 1 زنیچ پروشکوف / UKR 1
+  // دینامو کی‌یف, documented as read; the 455 read had MNE 2 / UKR 1 /
+  // POL 0 — the MNE lead held): this batch takes ALL 10 count-3
+  // single-country names of the MONTENEGRO tranche (1. CFL; no
+  // exclusions). Anchors (scripts/c456-wiki-probe.py/2): Budućnost
+  // Podgorica → بودوچنوست پودگوریتسا (the fa.wiki club article «باشگاه
+  // فوتبال بودوچنوست پودگوریتسا» pageid 42378368; the descriptor drops per
+  // the FC rule). FK Arsenal Tivat → آرسنال تیوات (the fa.wiki club
+  // article «باشگاه فوتبال آرسنال تیوات» pageid 41367275; FK dropped).
+  // Dečić Tuzi → دچیچ توزی (دچیچ honest read — ć→چ per the encyclopedia's
+  // OWN بودوچنوست/نیکشیچ spellings; the opensearch gate dead: دریچه noise
+  // only; توزی the fa.wiki city pageid 39148180). FK Bokelj → بوکلی کوتور
+  // (بوکلی honest; the fa.wiki «بوکلی» page 22771837 is a NON-club subject
+  // — identity verified, unusable as an anchor — so the bare form
+  // disambiguates with کوتور the fa.wiki city pageid 41551328; FK
+  // dropped). Jezero → یزرو پلاو (یزرو the encyclopedia's OWN toponym
+  // spelling — the fa.wiki village cluster «یزرو (سینیتسا)/(دسپوتوواتس)/
+  // (سوکوبانگا)» reads Jezero exactly یزرو, none of them the Montenegro
+  // one; the bare value stays out — the word is hyper-generic; پلاو the
+  // fa.wiki city pageid 43888965). Mornar → مورنار بار (مورنار honest —
+  // opensearch dead; bare بار is a Persian common word so the value rides
+  // بار the fa.wiki city pageid 41746946). OFK Mladost Donja Gorica →
+  // ملادوست دونیا گوریتسا (OFK dropped; ملادوست honest; دونیا the
+  // encyclopedia's OWN Donja spelling — the fa.wiki village «دونیا
+  // وربیتسا» reads Donja exactly دونیا; the toponym itself has no
+  // article). Otrant → اوترانت (honest read documented — spelled beside
+  // the encyclopedia's OWN «اوترانتو» for the Italian Otranto, the feed's
+  // bare form rides that spelling family; opensearch dead: اترنت/
+  // اوترانتو noise only). Petrovac → پتروواتس (پتروواتس the
+  // encyclopedia's OWN spelling — the fa.wiki «پتروواتس نا ملاوی» reads
+  // Petrovac exactly پتروواتس; the bare value = club = town, the 455 رید
+  // precedent; FC dropped). Sutjeska → سوتجسکا نیکشیچ (سوتجسکا honest —
+  // tj→ج; the bare value stays out — the toponym is the famous BiH
+  // river/battle; نیکشیچ the fa.wiki city pageid 41554198). Collision
+  // gate: zero key and zero value collisions against the whole 1760-pair
+  // file (each render one distinct full-value string — no Logroñés case).
+  // Loud-pool rule: the documented 1819 census shrinks by this batch in
+  // the open (the B4 band re-anchors with the next census, never
+  // silently).
+  "budućnost podgorica": "بودوچنوست پودگوریتسا",
+  "dečić tuzi": "دچیچ توزی",
+  "fk arsenal tivat": "آرسنال تیوات",
+  "fk bokelj": "بوکلی کوتور",
+  "jezero": "یزرو پلاو",
+  "mornar": "مورنار بار",
+  "ofk mladost donja gorica": "ملادوست دونیا گوریتسا",
+  "otrant": "اوترانت",
+  "petrovac": "پتروواتس",
+  "sutjeska": "سوتجسکا نیکشیچ",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
