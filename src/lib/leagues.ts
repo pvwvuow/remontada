@@ -3137,6 +3137,61 @@ const TEAM_FA: Record<string, string> = {
   "herrera fc": "هررا",
   "independiente de la chorrera": "ایندپندینته دی لا چوررا",
   "san francisco fc": "سان فرانسیسکو",
+  // cycle-466: batch 23 — ALL 9 count>=3 single-country HON names of the
+  // 466 census (the live Liga Nacional Apertura wave) into TEAM_FA (the
+  // 446-pick rule, the 465-card pin) — the UNBROKEN half of the PAN/HON
+  // 9/27 tie (PAN won the 447 tie-break in 465 by anchor quality). The
+  // pre-census read distinct=1745 = EXACTLY the documented 465 post-census
+  // (zero drift, rows 3183) and the top of the pool is HON 9/27 (CZE/EST/
+  // SWE/ISR/USA 8/24 next), every row Liga Nacional - Apertura.
+  // THE FIRST ZERO-ANCHOR BATCH: the live probe (scripts/c466-wiki-probe.py)
+  // found NO direct fa.wiki club article under any spelling — the رئال
+  // اسپانیا title is the SPANISH CURRENCY page («واحد پول در اسپانیا بود تا
+  // ۱۸۶۸», the 462 بلگرانو wrong-identity lesson), اتلتیکو ایندپندینته is a
+  // REDIRECT to the Argentine باشگاه فوتبال ایندپندینته (the wrong-country
+  // artifact the 465 probe itself warned about), جنسیس is the music/car
+  // disambiguation page, ستاره سرخ the symbol page, خوتیکالپا the CITY page
+  // («یک منطقهٔ مسکونی در هندوراس… استان اولانچو») — city-grounded spelling
+  // per the 461 مریدا pattern, not a club anchor per the 452/462 rule.
+  // ALL 9 honest phonetic reads (the 452 لویی / 455 آلتاخ / 457 لیوی بره /
+  // 460 پودهاله / 461 آلاکرانس / 462 ریسترا / 465 اومسیت precedent), each on
+  // the file's OWN convention: Estrella Roja → استریا روخا (estrella→استریا
+  // per the villa→ویا ll-rule, roja→روخا j→خ), Atletico Independiente →
+  // اتلتیکو ایندپندینته (اتلتیکو the OWN مورلیا/توکومان form, ایندپندینته the
+  // OWN medellín form — deliberately DISTINCT from 462's bare ایندپندینته),
+  // Lobos UPNFM → لوبوس یو‌پی‌ان‌اف‌ام (the acronym spelled out — TEAM_FA
+  // values are pure Persian, the AFC group markers the only Latin values),
+  // Genesis FC → جنسیس (the standard Persian rendering of the literal — the
+  // disambiguation page itself uses جنسیس for the band/Hyundai), Real
+  // España → رئال اسپانیا (رئال the OWN مادرید/بتیس form; the currency page
+  // NOT used), Juticalpa → خوتیکالپا (the city-grounded spelling), CD
+  // Choloma → چولوما (CD prefix dropped, the 465 عربه یونیدو/یونیورسیتاریو
+  // precedent), Olancho FC → اولانچو (FC suffix dropped; the spelling rides
+  // the city page's OWN intro «استان اولانچو»), Platense FC → دپورتیوو
+  // پلاتنسه (the club's OWN full-name Club Deportivo prefix, deliberately
+  // DISTINCT from 462's Argentine پلاتنسه — the value-collision gate would
+  // refuse the bare form; the 462 C2 note anticipated this harvest).
+  // Byte-verify (scripts/c466-batch23-verify.py): PRE 9/9 verified=0 bad,
+  // every key byte-exact from the live feed (the ñ key rides the file's OWN
+  // logroñés/südtirol precedent), every name single-country HON across the
+  // whole ±7 window, 27 live leak rows covered (sample ids 6365900-6365904);
+  // the collision gate clean: dupKeys=[] and zero proposed-value collisions
+  // against the whole 2248-pair file (the five flagged valueCollisions are
+  // the intentional league-name homoglyphs, the 465 precedent), 1826 → 1835
+  // TEAM_FA pairs. Cache: matches v26 → v27 per the standing rule. Patrol:
+  // B4 re-anchored 1745→1736 (the loud-pool rule, the 445 precedent) + B28
+  // NEW (four batch-23 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 67 checks). The post-patch census + drift story live in the
+  // repo worklog card (the 455-457 pattern).
+  "estrella roja": "استریا روخا",
+  "atletico independiente": "اتلتیکو ایندپندینته",
+  "lobos upnfm": "لوبوس یو‌پی‌ان‌اف‌ام",
+  "genesis fc": "جنسیس",
+  "real españa": "رئال اسپانیا",
+  "juticalpa": "خوتیکالپا",
+  "cd choloma": "چولوما",
+  "olancho fc": "اولانچو",
+  "platense fc": "دپورتیوو پلاتنسه",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
