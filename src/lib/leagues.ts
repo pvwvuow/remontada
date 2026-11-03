@@ -3192,6 +3192,48 @@ const TEAM_FA: Record<string, string> = {
   "cd choloma": "چولوما",
   "olancho fc": "اولانچو",
   "platense fc": "دپورتیوو پلاتنسه",
+  // cycle-467: batch 24 — ALL 8 count>=3 single-country EST names of the
+  // 467 census (the live Meistriliiga wave) into TEAM_FA (the 446-pick
+  // rule, the 466-card pin) — the WINNER of the FIVE-WAY CZE/EST/ISR/SWE/
+  // USA 8/24 tie by the 447 tie-break (anchor quality, the RUS=GUA and
+  // PAN=HON precedents): EST carries FOUR direct identity-verified fa.wiki
+  // club articles vs ISR 3, SWE 3, USA 2 (one of them the CANADIAN مونترال
+  // playing in MLS per the feed's own USA grouping, the 389 rule), CZE 0.
+  // The pre-census read distinct=1736 = EXACTLY the documented 466
+  // post-census (zero drift, rows 3156). Anchors
+  // (scripts/c467-wiki-probe.py, every one identity-verified from its own
+  // intro): FC Kuressaare → کورساره (pageid 36019310, «یک باشگاه فوتبال در
+  // شهر کورساره، استونی است»), FCI Levadia → لوادیا تالین (pageid 44678815,
+  // «باشگاهی در شهر تالین، استونی است»), Narva Trans → ناروا ترانس
+  // (pageid 27014475), Nõmme JK Kalju → نومه کالیو (pageid 44763589) —
+  // every value minus the باشگاه فوتبال prefix per the FC rule. The
+  // honest-read fallbacks (no fa.wiki club article under any spelling, the
+  // 466 zero-anchor precedent): Nõmme United → نومه یونایتد (نومه rides the
+  // OWN نومه کالیو article rendering; یونایتد the standard loanword), Paide
+  // Linnameeskond → پایده لیننامه‌سکوند (honest read), Pärnu JK Vaprus →
+  // پارنو واپروس (پارنو the standard city rendering; JK dropped per the FC
+  // rule), Tammeka → تامکا (honest read; the file's OWN تالین
+  // double-consonant simplification precedent); the õ/ä keys ride the
+  // file's OWN südtirol/köln/árabe/españa precedent. Byte-verify
+  // (scripts/c467-batch24-verify.py): PRE 8/8 verified=0 bad, every name
+  // single-country EST across the whole ±7 window, 24 live leak rows
+  // covered (sample ids 1000007987-1000007991); the collision gate clean:
+  // dupKeys=[] and zero proposed-value collisions against the whole
+  // 2257-pair file (the five flagged valueCollisions are the intentional
+  // league-name homoglyphs, the 465/466 precedent), 1835 → 1843 TEAM_FA
+  // pairs. Cache: matches v27 → v28 per the standing rule. Patrol: B4
+  // re-anchored 1736→1728 (the loud-pool rule, the 445 precedent) + B29
+  // NEW (four batch-24 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 68 checks). The post-patch census + drift story live in the
+  // repo worklog card (the 455-457 pattern).
+  "fc kuressaare": "کورساره",
+  "fci levadia": "لوادیا تالین",
+  "narva trans": "ناروا ترانس",
+  "nõmme jk kalju": "نومه کالیو",
+  "nõmme united": "نومه یونایتد",
+  "paide linnameeskond": "پایده لیننامه‌سکوند",
+  "pärnu jk vaprus": "پارنو واپروس",
+  "tammeka": "تامکا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
