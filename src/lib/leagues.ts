@@ -713,6 +713,38 @@ export const LEAGUES: LeagueConfig[] = [
   // globalMerge: false — the composite suffixed-season feed never enters
   // the slash-season allSeasons intersection (the 382 one-flag semantic).
   { key: "argentina",  fotmobId: 112,         ccode3: "ARG",  faName: "لیگ حرفه‌ای آرژانتین", enName: "Liga Profesional", espnSlug: "arg.1",           priority: 37, globalMerge: false, plainYearSeasons: true },
+  // cycle-479 — GUATEMALA Liga Nacional (the 469 registry's next head after
+  // ARG): the sweep id 938628 is the DAY-FEED id and answers literal null on
+  // /api/data/leagues — the SAME trap as ARG's 1000001729; the real page id
+  // comes from the 141-crack via the team route: match 5861309 (CSD
+  // Municipal vs Comunicaciones FC, round 17) matchDetails general carries
+  // leagueId 938628 + parentLeagueId 336 + countryCode GUA
+  // (scripts/c479-league-probe.py + c479-league-probe2.py, 2026-11-04).
+  // Page 336 (325KB): FLAT 12-row LIVE 2026/2027 Apertura table (Antigua
+  // Guatemala 35 pts / 18 played top, CD Suchitepéquez 12 bottom — all 12
+  // clubs are the ±7 feed's own GUA wave, already Persian in TEAM_FA from
+  // the 44x harvest tranches: مونیسیپال / کامیونیکیشنس / آنتیگوا گواتمالا /
+  // گواستاتویا / شلاخو …), pageUrl /leagues/336/overview/liga-nacional,
+  // leagueColor legend championship-playoff indices 0..5, playoff=null,
+  // transfers.data REAL, stats present, fixtures.allMatches — all flat /
+  // single-table (NO composite → zero COMPOSITE_REGION_FA additions, the
+  // estonia/honduras path). allAvailableSeasons: SEVENTEEN names, every one
+  // the strict SLASH shape '2026/2027' … '2011/2012' → the contract admits
+  // all of them with NO flag (the 382 one-flag semantic stays
+  // plain-year-only) and the payload's selectedSeason '2026/2027' serves
+  // the current table — the season selector is LIVE (unlike honduras's
+  // documented suffixed degradation). ESPN gua.1 probed 200 AND
+  // content-verified («Guatemalan Liga Nacional» — events Aurora at
+  // Municipal / Comunicaciones at Marquense, the feed's own clubs) → the
+  // field RIDES; guatemala.1 400 (the 469 two-candidate rule). faName rides
+  // the ALREADY-SHIPPED mapping «لیگ ملی گواتمالا — آپرتورا» ("liga
+  // nacional apertura|GUA", the 384 CC-keyed block) so the day feed and the
+  // league page never disagree; enName byte-identical to the day-feed group
+  // name «Liga Nacional Apertura» (the BARE no-dash form — honduras's
+  // dash-spelled «Liga Nacional - Apertura» keeps the two byte-distinct, the
+  // 469 disambiguation comment). globalMerge: false — the feed never enters
+  // the slash-season intersection of another league (the 382 semantic).
+  { key: "guatemala",  fotmobId: 336,         ccode3: "GUA",  faName: "لیگ ملی گواتمالا — آپرتورا", enName: "Liga Nacional Apertura", espnSlug: "gua.1",        priority: 38, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the

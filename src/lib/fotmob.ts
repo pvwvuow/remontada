@@ -7018,11 +7018,17 @@ const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): P
  * own witnesses (Argentinos Juniors 10086 / Atlético Tucumán 161727 — the
  * patrol's documented anchors) and their L2 NEGATIVES would outlive this
  * deploy inside the 10-minute TTL, pinning the very pages this fix serves
- * to the fallback. */
+ * to the fallback.
+ * cycle-479: v3 → v4 — the same one-move rule for the registry's next head
+ * (guatemala 336): the pre-479 probes walked the GUA wave's own witnesses
+ * (CSD Municipal 9933 / Comunicaciones FC 49761 — the 5861309 crack's
+ * clubs, hinted by the day id 938628 which the catalog does not carry) and
+ * their L2 NEGATIVES would outlive this deploy inside the 10-minute TTL,
+ * pinning the very pages this fix serves to the fallback. */
 export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
   return cached(
-    `teamStandingsRow:v3:${teamId}:${hintLeagueId ?? 0}`,
+    `teamStandingsRow:v4:${teamId}:${hintLeagueId ?? 0}`,
     10 * 60_000,
     () => findTeamInStandingsWalk(teamId, hintLeagueId),
   );

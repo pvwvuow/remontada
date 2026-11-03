@@ -36,7 +36,7 @@ body = m.group(1)
 entries = re.findall(r'\{ key: "([a-z0-9]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
 d = {e[0]: e for e in entries}
 ok = True; why = []
-if len(entries) != 37: ok=False; why.append(f"entries={len(entries)}!=37")  # cycle-474: the ledger's HEAD registration (argentina 112) — the count legitimately grows one-per-fix-cycle
+if len(entries) != 38: ok=False; why.append(f"entries={len(entries)}!=38")  # cycle-479: the registry's next head (guatemala 336) — the count legitimately grows one-per-fix-cycle
 want = {"estonia": ("248","EST","34"), "honduras": ("337","HON","35"), "panama": ("9039","PAN","36")}
 for k,(fid,cc,pr) in want.items():
     if k not in d: ok=False; why.append(f"{k} missing"); continue
@@ -50,7 +50,7 @@ for k,(fid,cc,pr) in want.items():
 print("0" if ok else ";".join(why))
 PY
 )
-[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 37 entries (36 since 469 + the 474 ledger HEAD argentina 112); estonia=248/EST/34, honduras=337/HON/35 (espnSlug hon.1), panama=9039/PAN/36; all globalMerge:false; plainYearSeasons only on estonia+panama" || bad "A1 catalog" "$A1"
+[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 38 entries (36 since 469 + the 474 ledger HEAD argentina 112 + the 479 registry head guatemala 336); estonia=248/EST/34, honduras=337/HON/35 (espnSlug hon.1), panama=9039/PAN/36; all globalMerge:false; plainYearSeasons only on estonia+panama" || bad "A1 catalog" "$A1"
 A2=$(python3 - <<'PY'
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 fa = {"estonia": "لیگ برتر استونی", "honduras": "لیگ ملی هندوراس — آپرتورا", "panama": "لیگ فوتبال پاناما — آپرتورا"}
@@ -73,10 +73,10 @@ print('0' if not miss else miss)")
 [ "$A3" = "0" ] && ok "A3 COMPOSITE_REGION_FA carries the four PAN zone labels (no raw Latin on the composite standings page)" || bad "A3 zone labels" "$A3"
 A4=$(python3 -c "
 s = open('src/lib/fotmob.ts', encoding='utf-8').read()
+v4 = 'teamStandingsRow:v4:' in s
 v3 = 'teamStandingsRow:v3:' in s
-v2 = 'teamStandingsRow:v2:' in s
-print('0' if (v3 and not v2) else f'v3={v3} v2_still_present={v2}')")
-[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 469 v2 (currently v3 per the 474 ledger-HEAD registration — stale pre-registration negatives cannot survive the deploy)" || bad "A4 cache bump" "$A4"
+print('0' if (v4 and not v3) else f'v4={v4} v3_still_present={v3}')")
+[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 474 v3 (currently v4 per the 479 registry head guatemala 336 — stale pre-registration negatives cannot survive the deploy)" || bad "A4 cache bump" "$A4"
 
 echo "== B. the standings APIs + the witness sweep =="
 api() { curl -s --max-time 90 "$BASE/api/standings?league=$1"; }
