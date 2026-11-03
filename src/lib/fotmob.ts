@@ -4359,6 +4359,16 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // standings page the registration itself just lit up.
       "apertura - eastern": "آپرتورا — شرقی", "apertura - western": "آپرتورا — غربی",
       "clausura - eastern": "کلاسورا — شرقی", "clausura - western": "کلاسورا — غربی",
+      // cycle-474: the Liga Profesional composite feed (the catalog's
+      // argentina, fotmob id 112) spells its four groups «Clausura Group
+      // A/B» + «Apertura Group A/B» (probed live UA Chrome/124: four
+      // 15-row sub-tables) — the bare "group a".."group h" keys never
+      // match the compound spellings, so every label would leak raw Latin
+      // on the standings page the registration itself just lit up. Latin
+      // group letters in the Persian label are the standard Persian
+      // sports convention (the 157 «گروه A» line).
+      "clausura group a": "کلاسورا — گروه A", "clausura group b": "کلاسورا — گروه B",
+      "apertura group a": "آپرتورا — گروه A", "apertura group b": "آپرتورا — گروه B",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];
@@ -6994,11 +7004,17 @@ const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): P
  * would outlive this deploy within its 10-minute TTL and keep the very
  * teams this fix serves on the «اطلاعات لیگ یافت نشد» fallback. The bump
  * invalidates every stale key in one move (the matches-cache version
- * standing rule). */
+ * standing rule).
+ * cycle-474: v2 → v3 — the same one-move rule for the ledger's HEAD
+ * registration (argentina 112): the pre-474 walks probed the ARG wave's
+ * own witnesses (Argentinos Juniors 10086 / Atlético Tucumán 161727 — the
+ * patrol's documented anchors) and their L2 NEGATIVES would outlive this
+ * deploy inside the 10-minute TTL, pinning the very pages this fix serves
+ * to the fallback. */
 export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
   return cached(
-    `teamStandingsRow:v2:${teamId}:${hintLeagueId ?? 0}`,
+    `teamStandingsRow:v3:${teamId}:${hintLeagueId ?? 0}`,
     10 * 60_000,
     () => findTeamInStandingsWalk(teamId, hintLeagueId),
   );

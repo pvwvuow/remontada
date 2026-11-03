@@ -678,6 +678,41 @@ export const LEAGUES: LeagueConfig[] = [
   // apertura|PAN"); enName byte-identical to the day-feed group name.
   // globalMerge: false — the 376 one-flag semantic unchanged.
   { key: "panama",     fotmobId: 9039,        ccode3: "PAN",  faName: "لیگ فوتبال پاناما — آپرتورا", enName: "LPF Apertura",                                   priority: 36, globalMerge: false, plainYearSeasons: true },
+  // cycle-474 — ARGENTINA Liga Profesional (the 469 registration ledger's
+  // HEAD, the standing fix-cycle pool "one per cycle": ARG 1000001729 /
+  // GUA 938628 / RUS 63+951803 / MLS 913550). The day-feed id 1000001729
+  // answers LITERAL NULL as a league page even on the app's own
+  // api/data/leagues shape (the 469 day-id trap, scripts/c474-league-probe
+  // .py) — the real page id 112 surfaced via the 141 crack
+  // (scripts/c474-league-probe2.py: witness match 1000019617's matchDetails
+  // infoBox Tournament parentLeagueId=112, link
+  // /leagues/112/overview/liga-profesional, leagueName «Liga Profesional»).
+  // COMPOSITE feed (composite:true + FOUR 15-row sub-tables «Clausura
+  // Group A/B» + «Apertura Group A/B» — Instituto 33/15 top of A, Rosario
+  // Central 31/15 top of B; BOTH fix witnesses live in Clausura B:
+  // Argentinos Juniors idx 2 pts 31, Atlético Tucumán idx 10 pts 17),
+  // probed live UA Chrome/124 via the app's own fetch shape
+  // (scripts/c474-league-probe.py on id=112&ccode3=ARG, 915KB payload).
+  // 23 MIXED allAvailableSeasons («2026 - Clausura» … suffixed 13 + plain
+  // years 10) — the suffixed shape matches NEITHER season contract, the
+  // plain ten admit via plainYearSeasons:true (the 382 flag, the PAN
+  // mixed-shape precedent); the current season keeps serving through
+  // overview.selectedSeason «2026 - Clausura» regardless (the 419 marker).
+  // playoff=null (no bracket tab), titleHistory ABSENT, transfers.data
+  // REAL (Hernán López → Argentinos Juniors — the 10086 witness itself),
+  // stats players/teams present, fixtures.allMatches=240. ESPN arg.1
+  // probed 200 AND content-verified («Argentine Liga Profesional de
+  // Fútbol» — events Boca/River/Belgrano/Barracas/Newell's/Unión, the
+  // probed table's own clubs, scripts/c474-espn-probe.py, the app's own
+  // site/v2 scoreboard shape) → the field RIDES; argentina.1 400 → the
+  // second spelling stays absent (the 469 two-candidate rule). faName
+  // rides the ALREADY-SHIPPED mapping «لیگ حرفه‌ای آرژانتین» ("liga
+  // profesional|ARG") so the day feed and the league page never disagree;
+  // enName byte-identical to the day-feed group name «Liga Profesional»
+  // (byte-read from the live team route recent[0].leagueName, 2026-11-04).
+  // globalMerge: false — the composite suffixed-season feed never enters
+  // the slash-season allSeasons intersection (the 382 one-flag semantic).
+  { key: "argentina",  fotmobId: 112,         ccode3: "ARG",  faName: "لیگ حرفه‌ای آرژانتین", enName: "Liga Profesional", espnSlug: "arg.1",           priority: 37, globalMerge: false, plainYearSeasons: true },
 ];
 
 // Persian names for well-known competitions that appear inside the
