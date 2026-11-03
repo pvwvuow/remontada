@@ -3398,6 +3398,58 @@ const TEAM_FA: Record<string, string> = {
   "landskrona bois": "لاندسکرونا بوایز",
   "varbergs bois fc": "واربرگ بوایز",
   "västerås sk": "وستروس اس‌کی",
+  // cycle-472: batch 27 — ALL 8 count>=3 single-country CZE names of the
+  // 472 census (the live Czech 2. Liga/ČFL wave) into TEAM_FA (the
+  // 446-pick rule) — the WINNER of the CZE/ISR 8/24 TWO-WAY tie by the
+  // FRESH 447 re-read (scripts/c472-wiki-probe.py + c472-wiki-probe2.py +
+  // c472-wiki-probe3.py + c472-wiki-probe4.py, the 456 live-re-read
+  // precedent): CZE carries FOUR direct identity-verified fa.wiki club
+  // articles (زبرویوفکا برنو 43783062 «FC Zbrojovka Brno… شهر برنو، کشور
+  // جمهوری چک… ۱۹۱۳» / هرادتس کرالووه 32598818 «FC Hradec Králové… شهر
+  // هرادتس کرالووه» / یک. اسلواتسکو 43123547 «1. FC Slovácko… لیگ دسته
+  // اول فوتبال جمهوری چک» / ملادا بولسلاف 44786128 «FK Mladá Boleslav…
+  // شهر ملادا بولسلاف… لیگ برتر فوتبال جمهوری چک… ۱۹۰۲» — the last the
+  // 471 documented anchor re-verified fresh) vs ISR 3 (بنی یهودا تل آویو
+  // 43798549 / هاپوئل تل‌آویو 44406164 / اشدود 43349375 — the ISR tranche
+  // waits; the bare اشدود page is the CITY, the club article is باشگاه
+  // فوتبال اشدود, and کریات یام 42126668 the CITY too). The تپلیتسه
+  // 43208205 and ییهلاوا 41212923 pages re-confirmed the CITY articles,
+  // NOT club anchors (the 466 خوتیکالپا lesson). Zero-anchor honest reads
+  // (the 452/455/457/460/461/462/465/466/471 precedent): Artis Brno →
+  // آرتیس برنو (no article under any probed spelling; the برنو toponym
+  // rides the زبرویوفکا برنو anchor's OWN intro — the city's own
+  // rendering, the واربرگ 461 pattern), SK Prostějov → پروستییوف (SK
+  // dropped per the 447 کراسنودار/اورنبورگ suffix rule; pure phonetic —
+  // پروستیوف/باشگاه فوتبال پروستییوف/اف‌سی پروستییوف all missing),
+  // Teplice → تپلیتسه (the CITY article 43208205's OWN spelling grounds
+  // the toponym per the 461 مریدا city-title rule — تپلیسه the press
+  // form loses; FK absorbed; no CLUB article under any probed spelling:
+  // باشگاه فوتبال تپلیسه/اف‌کی تپلیتسه both missing), Vysočina Jihlava →
+  // وی‌سوچینا ییهلاوا (the CITY article ییهلاوا 41212923's OWN spelling
+  // grounds the toponym; Vysočina pure phonetic with the ZWNJ joint, the
+  // 466 UPNFM rule). Slovácko → یک. اسلواتسکو (the anchor title's OWN
+  // rendering minus the باشگاه فوتبال prefix — the 470 دالاس lesson; the
+  // 466 پلاتنسه identity-distinctness rule). The á/ě/č keys ride the
+  // file's OWN südtirol/köln/árabe/españa/montreal-é/ä precedent.
+  // Byte-verify (scripts/c472-batch27-verify.py): PRE 8/8 verified=0 bad,
+  // every name single-country CZE across the whole ±7 window, 24 live
+  // leak rows covered (sample ids 5943697-6420191); the collision gate
+  // clean: dupKeys=[] and zero proposed-key/value collisions against the
+  // whole 2281-pair file (the five flagged valueCollisions the
+  // intentional league-name homoglyphs, the
+  // 465/466/467/470/471 precedent), 1859 → 1867 TEAM_FA pairs. Cache:
+  // matches v30 → v31 per the standing rule. Patrol: B4 re-anchored
+  // 1712→1704 (the loud-pool rule, the 445 precedent) + B32 NEW (four
+  // batch-27 witnesses Persian in the live ±7 feed — the patrol now runs
+  // 71 checks).
+  "artis brno": "آرتیس برنو",
+  "fc zbrojovka brno": "زبرویوفکا برنو",
+  "hradec králové": "هرادتس کرالووه",
+  "mladá boleslav": "ملادا بولسلاف",
+  "sk prostějov": "پروستییوف",
+  "slovácko": "یک. اسلواتسکو",
+  "teplice": "تپلیتسه",
+  "vysočina jihlava": "وی‌سوچینا ییهلاوا",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
