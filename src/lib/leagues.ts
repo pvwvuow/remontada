@@ -2621,6 +2621,81 @@ const TEAM_FA: Record<string, string> = {
   "olympiakos nicosia": "المپیاکوس نیکوزیا",
   "omonia 29 maiou": "اومونیا ۲۹ می",
   "omonia aradippou": "اومونیا آرادیپو",
+  // cycle-452: harvest batch 15 — the machine continues on the 452 census
+  // (scripts/c452-pool-sweep.py read EXACTLY 1841 distinct = the documented
+  // 451 post-census, ZERO distinct drift for the FIFTH consecutive cycle;
+  // rows drifted to 3413 — the 435 lesson: rows drift, distinct is
+  // decisive; scripts/c452-batch15-verify.py byte-identity gate, live UA
+  // Chrome/124: 11/11 verified=0 bad): this batch takes ALL 11 count-3
+  // single-country names of the THAILAND tranche (League Cup Play-offs —
+  // the honest 451 runner-up: the CYP/THA tie broke on anchor quality and
+  // CYP went first; with CYP gone THA stands alone as the largest pool at
+  // 11 names/33 rows/33 day-presence, the 446-pick rule). Zero direct
+  // Persian-Wikipedia CLUB articles in the pool — exactly the 451 read
+  // («only city toponyms ناکون پاتوم/ساتون/چاینات») — so this batch rides
+  // the fa.wiki CITY-TITLE toponym rule (the 451 آرادیپو/لیماسول precedent:
+  // the city article's own spelling wins over press variants) + the
+  // footba11 press forms where the live-score press renders the club
+  // itself; no (W) women's sides, no exclusions. The count>=4 multi-country
+  // names stay honest-raw (Alianza FC 10 COL/INT/PAN/SLV, Santa Fe COL/INT,
+  // Libertad ECU/PAR, Universidad Católica CHI/ECU, Olimpia INT/PAR, BK
+  // Häcken (W) INT/SWE — the 389 identity-first rule; the single MB
+  // Rouissat ALG waits for its tranche). Transliteration: Chainat FC →
+  // چای نات (the fa.wiki CITY article title pageid 481797 «چای نات یک شهر
+  // در تایلند است» — the PROVINCE is چاینات pageid 3671778 and the
+  // footba11 press form چینات هورنبیل stays press; FC dropped per the
+  // 445/446 suffix-discipline rule). Nakhon Pathom → ناکون پاتوم (the
+  // fa.wiki CITY title pageid 5035427 — «ناکون پاتوم یک منطقهٔ مسکونی در
+  // تایلند است» — while ناخون پاتوم pageid 3671934 is the PROVINCE and the
+  // footba11 press form ناخون پاتوم یونایتد stays press; the feed's bare
+  // toponym rides the city spelling). Songkhla United FC → سونگکلا یونایتد
+  // (the fa.wiki CITY title pageid 4888420 «سونگکلا یک شهر در تایلند است»
+  // — the ک spelling is the city, the province is سونگخلا pageid 3671981;
+  // FC dropped). PT Satun FC → پی‌تی ساتون (ساتون the fa.wiki city pageid
+  // 118303 «شهری است واقع در جنوب تایلند و پایتخت استان ساتون» + PT →
+  // پی‌تی; FC dropped; the full-value string پی‌تی ساتون stays distinct
+  // from the English Sutton's own ساتون render — the دینامو بخارست vs
+  // دینامو مسکو precedent). Kanchanaburi Power → کانتچانابوری پاور
+  // (کانتچانابوری the fa.wiki city pageid 4926179 + پاور the honest
+  // rendering of the club's own Power branding — no Persian press form
+  // exists, documented as read). Kasetsart → کاستسارت (the fa.wiki article
+  // «دانشگاه کاستسارت» — the encyclopedia's own spelling of the eponym
+  // university the club belongs to; the invented کاسه‌سارت candidate died
+  // at the opensearch gate). Khonkaen United FC → خون کائن یونایتد (the
+  // footba11 press form, Google-indexed from the footba11 standings; FC
+  // dropped; the full-value string is distinct from the fa.wiki «خون کائن»
+  // FOOD-COMPANY article spelling — same toponym reading, different
+  // entity, no collision). Nong Bua Pitchaya FC → نونگ بوا پیچایا (the
+  // footba11 press form, Google-indexed from the footba11 team page; FC
+  // dropped). Pattaya Dolphins United → پاتایا دلفینز یونایتد (پاتایا the
+  // fa.wiki city pageid 156925 «پِتایا یا پاتایا شهر ساحلی کوچکی است» +
+  // دلفینز honest + یونایتد; the older fa.wiki «باشگاه فوتبال پاتایا
+  // یونایتد» article describes the dissolved namesake, not the Dolphins
+  // entity — identity-first, no anchor theft). Mahasarakham Sam Bai Tao →
+  // مهاساراخام سام بای تائو (مهاساراخام rides the BBC-syndicated press
+  // form «جامعة مهاساراخام» served by three Arabic outlets + the ar.wiki
+  // ماها ساراخام concurrence; سام بای تائو honest; no fa.wiki city article
+  // under either spelling, documented as read). Muang Loei United → موانگ
+  // لویی یونایتد (موانگ rides the file's OWN muang thong united →
+  // موانگ‌تونگ یونایتد reading; لویی honest — fa.wiki has NO Thai-Loei
+  // article: لوی pageid 50476 is Oman's Liwa, شهرستان لویی pageid
+  // 4791610 is China's Zhoukou, استان لوی MISSING — documented as read;
+  // یونایتد press). Collision gate: zero key and zero value collisions
+  // against the whole file (each render one distinct full-value string —
+  // no Logroñés case). Loud-pool rule: the documented 1841 census shrinks
+  // by this batch in the open (the B4 band re-anchors with the next
+  // census, never silently).
+  "chainat fc": "چای نات",
+  "kanchanaburi power": "کانتچانابوری پاور",
+  "kasetsart": "کاستسارت",
+  "khonkaen united fc": "خون کائن یونایتد",
+  "mahasarakham sam bai tao": "مهاساراخام سام بای تائو",
+  "muang loei united": "موانگ لویی یونایتد",
+  "nakhon pathom": "ناکون پاتوم",
+  "nong bua pitchaya fc": "نونگ بوا پیچایا",
+  "pattaya dolphins united": "پاتایا دلفینز یونایتد",
+  "pt satun fc": "پی‌تی ساتون",
+  "songkhla united fc": "سونگکلا یونایتد",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
