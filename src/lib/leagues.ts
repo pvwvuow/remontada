@@ -3306,6 +3306,49 @@ const TEAM_FA: Record<string, string> = {
   "paide linnameeskond": "پایده لیننامه‌سکوند",
   "pärnu jk vaprus": "پارنو واپروس",
   "tammeka": "تامکا",
+  // cycle-470: batch 25 — ALL 8 count>=3 single-country USA names of the
+  // 470 census (the live MLS wave) into TEAM_FA (the 446-pick rule, the
+  // 469-card pin) — the WINNER of the FOUR-WAY CZE/SWE/ISR/USA 8/24 tie by
+  // the FRESH 447 re-read (scripts/c467-wiki-probe.py re-run, the 456
+  // live-re-read precedent: the anchor map MOVED since 467's own read —
+  // fa.wiki has grown): USA carries FOUR direct identity-verified fa.wiki
+  // club articles (کلمبوس کرو 44340016 «یک تیم فوتبال در شهر کلمبوس،
+  // اوهاییو در آمریکا» / سن خوزه ارث‌کوئیکز 44340008 / سیاتل ساندرز
+  // 44340011 / ونکوور وایتکپس 44340045 — the last the CANADIAN city per its
+  // own intro, riding the MLS grouping of the feed itself, the 389 rule +
+  // the 467 مونترال line) vs SWE 3, CZE 2 (زبرویوفکا برنو + یک. اسلواتسکو
+  // — NEW articles since the 467 zero-read), ISR 2. The other four clubs
+  // carry their OWN identity-verified articles found under plausible
+  // spellings (scripts/c470-wiki-probe.py — the 467 read had missed them):
+  // CF Montréal → مونترال (44340044, «باشگاه فوتبال مونترال (به فرانسوی:
+  // Club de Foot Montréal) با نام سابق مونترال ایمپکت… در کانادا… ام‌ال اس»
+  // — the feed's own USA grouping, the 389 rule), FC Dallas → دالاس
+  // (44340005, the intro-carrying article; the bare اف‌سی دالاس title is
+  // the empty-intro redirect — the 466 wrong-identity lesson), Nashville SC
+  // → نشویل (44340019 — the article's OWN ش spelling, NOT the press ناشویل
+  // form), Sporting Kansas City → اسپورتینگ کانزاس سیتی (44339998, the
+  // intro-carrying title's SPACE form; the ZWNJ-titled twin is the
+  // redirect) — every value minus the باشگاه فوتبال prefix per the FC rule,
+  // the OWN full Sporting prefix kept (the 466 دپورتیوو پلاتنسе rule). The
+  // é key rides the file's OWN südtirol/köln/árabe/españa precedent.
+  // Byte-verify (scripts/c470-batch25-verify.py): PRE 8/8 verified=0 bad,
+  // every name single-country USA across the whole ±7 window, 24 live leak
+  // rows covered (sample ids 5071456-5071469); the collision gate clean:
+  // dupKeys=[] and zero proposed-key/value collisions against the whole
+  // 2265-pair file (the five flagged valueCollisions the intentional
+  // league-name homoglyphs, the 465/466/467 precedent), 1843 → 1851
+  // TEAM_FA pairs. Cache: matches v28 → v29 per the standing rule. Patrol:
+  // B4 re-anchored 1728→1720 (the loud-pool rule, the 445 precedent) + B30
+  // NEW (four batch-25 witnesses Persian in the live ±7 feed — the patrol
+  // now runs 69 checks).
+  "cf montréal": "مونترال",
+  "columbus crew": "کلمبوس کرو",
+  "fc dallas": "دالاس",
+  "nashville sc": "نشویل",
+  "san jose earthquakes": "سن خوزه ارث‌کوئیکز",
+  "seattle sounders fc": "سیاتل ساندرز",
+  "sporting kansas city": "اسپورتینگ کانزاس سیتی",
+  "vancouver whitecaps": "ونکوور وایتکپس",
 };
 
 export function competitionFa(name: string, ccode?: string): string {
