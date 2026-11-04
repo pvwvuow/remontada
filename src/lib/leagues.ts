@@ -4326,6 +4326,52 @@ const TEAM_FA: Record<string, string> = {
   "fc košice": "کوشیتسه",
   "skalica": "اسکالیتسا",
   "zemplín michalovce": "زمپلین میخالوفتسه",
+  // cycle-497: batch 41 — ALL 4 count>=3 single-country SVN names of the
+  // FRESH 497 census into TEAM_FA (the 446-pick rule) — the LONE-LEADER
+  // form (the 477/482/485 precedents): the 496 harvest took SVK out of
+  // the raw pool and the post-harvest field left SVN 4 ALONE at the top
+  // (the 496 rotation line's own words). The fresh census
+  // (scripts/c497-census.py, the 447 live-re-read lesson): pre-patch
+  // distinct=1618/raw_rows=2796 vs the B4 anchor 1618/2796 — EXACT, ZERO
+  // pool drift; the field confirmed fresh: SVN 4 (all zero (W)), ENG 7
+  // five (W) → 2 effective, ESP 6 four (W) → 2 effective, INT 4 fully
+  // (W) → 0 (the 435 rule); KSA/NED/MAR/KUW/BUL 2 below; the MLS playoff
+  // wave STILL below the threshold (no USA name reached count>=3 in the
+  // window — the 494 observation).
+  // The fresh probe (scripts/c497-wiki-probe.py, 1.8s cadence): SVN 1
+  // direct anchor — المپیا لیوبلیانا 6417931 (Q31932 P17=Q215 verified +
+  // the fawiki sitelink; identity via the extract's own «Olimpija
+  // Ljubljana Football Club»; the extract again carries the «بالاترین
+  // سطح» clause — the 491-classified artifact, ladder context irrelevant
+  // here since SVN is the sole tranche). Bravo Q64363556 + Brinje
+  // Q16828238 entities P17=Q215 with ZERO fawiki sitelinks; Nafta NO
+  // wikidata entity (the 495/496 probe finding, fresh again).
+  // fa-search fallback (zero-anchor documentation): «براوو اسلوونی» /
+  // «ان‌کی براوو» zero hits; «نفتا هاجدید» / «نافتا لنداوا» zero hits;
+  // «گروسوپلیه» hit the geography entry «ولیکا لوکا، گروسوپلیه» NOT the
+  // club (the نستوس-کریسوپولی 491 class) — «برینیه» zero hits.
+  // ONE direct anchor, the render BYTE-DERIVED from the anchor's OWN
+  // title (the FC rule minus the title's OWN باشگاه-فوتبال prefix, the
+  // اشدود/آمازولو precedent): Olimpija Ljubljana → المپیا لیوبلیانا
+  // (باشگاه فوتبال المپیا لیوبلیانا 6417931).
+  // THREE zero-anchor honest reads (the 466 UPNFM rule — the feed's
+  // single-country SVN tagging as identity evidence, the آرهوس-فرماد 485
+  // precedent; the NK-prefix strip consistent with the file's OWN nk
+  // celje → سلیه / nk varazdin → واراژدین / nk lokomotiva → لوکوموتیوا):
+  // NK Bravo → براوو / Nafta → نفتا / Nk Brinje Grosuplje → برینیه
+  // گروسوپلیه (all pure phonetic).
+  // Patrol: B4 re-anchored 1618→1613 (the loud-pool rule — the
+  // post-patch census DOUBLE-READ MEASURED 1613/2782 IDENTICAL, the
+  // −5 = the 4 harvested + 1 upstream single-row raw name leaving the
+  // ±7 window entirely, the ±25 tolerance class — the 492 −5 shape,
+  // the count>=3 field itself clean: ONLY the 4 SVN names exited, zero
+  // net-new names) + B46 NEW (the four batch-41 witnesses Persian in
+  // the live ±7 feed — the patrol now runs 85 checks).
+  "olimpija ljubljana": "المپیا لیوبلیانا",
+  "nk bravo": "براوو",
+  "nafta": "نفتا",
+  "nk brinje grosuplje": "برینیه گروسوپلیه",
+
 
 
 };
