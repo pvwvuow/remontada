@@ -3781,6 +3781,53 @@ const TEAM_FA: Record<string, string> = {
   "inter san carlos": "اینتر سن کارلوس",
   "puntarenas fc": "پونتاریناس",
   "sporting fc": "اسپورتینگ اف‌سی",
+  // cycle-485: batch 33 — ALL 5 count>=3 single-country DEN names of the
+  // FRESH 485 census into TEAM_FA (the 446-pick rule) — the WINNER of the
+  // NEW DEN/RSA 5/5 two-way tie (the 484 rotation line's declared field):
+  // both tranches zero (W); ESP 6 four (W) → 2 effective, ENG 7 five (W) →
+  // 2 effective (the 435 rule; GRE/SVK/BLR/SVN/FIN/CHI/SLV 4 behind). The
+  // fresh census (scripts/c485-census.py, the 447 live-re-read lesson):
+  // pre-patch distinct=1652/raw_rows=2895 == the B4 anchor EXACTLY (zero
+  // pool drift — the 484 fix touched only the LEAGUES catalog). The 447
+  // tie-break (the 472 CZE-vs-ISR / 477 ALB-vs-PAR / 482 RUS-vs-CRC
+  // precedents): DEN TWO direct identity-verified fa.wiki club articles vs
+  // RSA ONE (آمازولو 6853449 «…مستقر در دوربان، آفریقای جنوبی… لیگ برتر
+  // فوتبال آفریقای جنوبی» — probed live, scripts/c485-wiki-probe.py +
+  // probe2) — DEN harvests, RSA waits (the CRC 482→483 precedent). The TWO
+  // direct anchors, extracts verified Danish-club fresh, renders
+  // BYTE-DERIVED from the anchors' OWN titles: AC Horsens → هورسنس
+  // (باشگاه ورزشی هورسنس 6217839 «یک باشگاه فعال در سوپر لیگ فوتبال
+  // دانمارک است که در شهر هورسنس واقع شده‌است» — the باشگاه-ورزشی prefix
+  // rule, the هردیانو 483 precedent) / Esbjerg fB → اسبیرگ (باشگاه فوتبال
+  // اسبیرگ 5562829 «یک باشگاه فوتبال است که در اسبیرگ کشور دانمارک
+  // پایه‌گذاری شده‌است» — the FC rule minus the باشگاه فوتبال prefix, the
+  // fc ashdod → اشدود precedent; the city article اسبیرگ 492488 grounds the
+  // toponym). THREE zero-anchor honest reads (the 452..483 precedent; the
+  // feed's own single-country DEN tagging is the identity evidence, the
+  // 466 UPNFM rule): Aarhus Fremad → آرهوس فرماد (no club entity at all,
+  // fa searches player-noise only; آرهوس grounded by the city article
+  // 492451 AND the file's own agf → آرهوس mapping, Fremad pure phonetic) /
+  // Brabrand → برابرند (Q848827 Brabrand IF proves the Danish identity AND
+  // the fa-sitelink absence; the برابرند fa hits pure noise) / FC Roskilde
+  // → اف‌سی راسکیله (Q737633 proves the Danish identity AND the sitelink
+  // absence; the CITY article راسکیله Q26563 grounds the spelling — the
+  // upstream split دانشگاه روسکیلد/فرودگاه راسکیلد settled by the 475
+  // own-title-wins lesson; the اف‌سی ZWNJ convention, the 483 sporting-fc
+  // precedent). Byte-verify (scripts/c485-batch33-verify.py): PRE 5/5
+  // verified 0 bad, every name single-country DEN across the whole ±7
+  // window (3 rows each, sample ids 5739540-5864746); the collision gate
+  // clean: dupKeys=[] and zero proposed collisions (the five flagged
+  // valueCollisions the intentional league-name homoglyphs, the
+  // 465..483 precedent), 2323 → 2328 file pairs. Cache: matches v36 → v37
+  // per the standing rule (fresh cold window; the chain APPENDED as a new
+  // line, the 483 chain-repair lesson). Patrol: B4 re-anchor + B38 NEW
+  // (four batch-33 witnesses Persian in the live ±7 feed — the patrol now
+  // runs 77 checks).
+  "aarhus fremad": "آرهوس فرماد",
+  "ac horsens": "هورسنس",
+  "brabrand": "برابرند",
+  "esbjerg fb": "اسبیرگ",
+  "fc roskilde": "اف‌سی راسکیله",
 };
 
 export function competitionFa(name: string, ccode?: string): string {

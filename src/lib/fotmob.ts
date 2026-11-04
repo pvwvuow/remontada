@@ -1641,10 +1641,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // the normalized team-fa content again; same rule, fresh cold window (v34
   // L2 rows purged + official restart).
   // cycle-483: v36 — harvest batch 32 (6 more names, the CRC tranche: the
+  // cycle-485: v37 — harvest batch 33 (5 more names, the DEN tranche: the winner of the NEW DEN/RSA two-way tie by the fresh 447 re-read) changed the normalized team-fa content again; same rule, fresh cold window (v36 L2 rows purged + official restart).
   // 477/482 tie loser finally harvesting alone at the top) changed the
   // normalized team-fa content again; same rule, fresh cold window (v35 L2
   // rows purged + official restart).
-  return cached(`matches:v36:${dateYYYYMMDD}`, ttl, async () => {
+  return cached(`matches:v37:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
