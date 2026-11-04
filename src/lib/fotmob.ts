@@ -1650,10 +1650,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // cycle-495: v43 — harvest batch 39 (4 more names, the SLV tranche: the WINNER of the SVK/SLV 2-2 anchor tie by the 447 QUALITY tie-break on the fresh bytes — both SLV anchors state «لیگ برتر» + the ایسیدرو ۱۰-titles record vs SVK's second-tier string + the field's only negative marker) changed the normalized team-fa content again; same rule, fresh cold window (v42 L2 rows purged + official restart).
   // cycle-496: v44 — harvest batch 40 (4 more names, the SVK tranche: the WINNER of the SVK/SVN 4-4 tie by the fresh 447 ANCHOR COUNT — SVK 2 [کوشیتسه + دوکلا-فالبک، فرم ۴۹۰] vs SVN 1 [المپیا]) changed the normalized team-fa content again; same rule, fresh cold window (v43 L2 rows purged + official restart).
   // cycle-497: v45 — harvest batch 41 (4 more names, the SVN tranche: the LONE-LEADER form — the 496 harvest took SVK out of the raw pool, SVN 4 ALONE at the top, the 477/482/485 precedent) changed the normalized team-fa content again; same rule, fresh cold window (v44 L2 rows purged + official restart).
+  // cycle-500: v46 — harvest batch 42 (2 more names, the ENG tranche: the WINNER of the NEW ENG/ESP 2-2 tie by the fresh 447 ANCHOR COUNT — ENG 2 verified standing articles vs ESP 0 club anchors) changed the normalized team-fa content again; same rule, fresh cold window (v45 L2 rows purged + official restart).
   // 477/482 tie loser finally harvesting alone at the top) changed the
   // normalized team-fa content again; same rule, fresh cold window (v35 L2
   // rows purged + official restart).
-  return cached(`matches:v45:${dateYYYYMMDD}`, ttl, async () => {
+  return cached(`matches:v46:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`

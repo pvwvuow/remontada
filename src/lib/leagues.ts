@@ -4371,6 +4371,36 @@ const TEAM_FA: Record<string, string> = {
   "nk bravo": "براوو",
   "nafta": "نفتا",
   "nk brinje grosuplje": "برینیه گروسوپلیه",
+  // cycle-500: batch 42 — the ENG tranche (2 names) of the FRESH 500
+  // census into TEAM_FA (the 446-pick rule) — the WINNER of the NEW ENG/ESP
+  // 2-2 tie by the fresh 447 ANCHOR COUNT (the 496 form): the fresh census
+  // (scripts/c500-census.py, the 447 live-re-read lesson) measured
+  // distinct=1613 (EXACT vs the B4 anchor) / raw_rows=2783 (+1, the ±25
+  // upstream drift class) DOUBLE-READ IDENTICAL; the field: ENG 7 names
+  // five (W) → 2 effective [Frome Town, Whitby], ESP 6 four (W) → 2
+  // effective [Elche Ilicitano, La Nucía], INT 4 fully (W) → 0 (the 435
+  // rule); KSA/NED/MAR/KUW/BUL/IND/HUN/NGA 2 below; the MLS playoff wave
+  // STILL below the threshold (no USA name reached count>=3 — the 494
+  // observation, fresh again).
+  // The fresh probe (scripts/c500-wiki-probe.py, 1.8s cadence): ENG 2
+  // verified standing articles (the 490/496 scoreboard class — the
+  // sitelink + the fa-search fallback both counted, identity via the
+  // extracts' OWN English names) vs ESP 0 club anchors: Frome Town
+  // Q5505739 → باشگاه فوتبال فروم تاون (pageid 1689425; extract «Frome
+  // Town Football Club»; P17=Q145 the UK class) + Whitby Q18306 → باشگاه
+  // فوتبال ویتبای تاون (pageid 1688996; extract «Whitby Town Football
+  // Club»; P17=Q145); Elche Ilicitano NO wikidata entity + zero fa-search
+  // hits; La Nucía Q4889929 P17=Q29 OK but ZERO fawiki sitelink and the
+  // fa search hit only the TOWN article «لا نوسیا» (دهستانی در استان
+  // آلیکانته — geography, NOT the club; the 491 class).
+  // TWO direct anchors, every render BYTE-DERIVED from the anchor's OWN
+  // title (the FC rule minus the title's OWN باشگاه-فوتبال prefix, the
+  // اشدود/آمازولو precedent): Frome Town → فروم تاون (باشگاه فوتبال فروم
+  // تاون 1689425) / Whitby → ویتبای تاون (باشگاه فوتبال ویتبای تاون
+  // 1688996 — the title's OWN ویتبای spelling, byte-derived not hand-typed).
+  "frome town": "فروم تاون",
+  "whitby": "ویتبای تاون",
+
 
 
 
