@@ -763,6 +763,33 @@ export const LEAGUES: LeagueConfig[] = [
   // leagues=['Russian Premier League'] — the dormant fotmob-outage
   // fallback, the 474/479 espnSlug rule). globalMerge: false.
   { key: "russia",     fotmobId: 63,          ccode3: "RUS",  faName: "لیگ برتر روسیه",     enName: "Premier League", espnSlug: "rus.1",           priority: 39, globalMerge: false },
+  // cycle-489: the registry's next head (the 475/482/483/484 ledger order:
+  // GUA 479 → russia 63 → کاپ 951803 → MLS 913550, one-per-cycle) — the
+  // Russian Cup, the ledger's «کاپ 951803» line. THE DAY-TOURNAMENT-ID TRAP
+  // CLASS EATEN (the 377 dfbpokal / 380 coppaitalia precedent, re-proven
+  // live 2026-11-04 UA Chrome/124): the day feed carries the Cup as
+  // leagueId=951803 parent=193 (2 matches that day: Yenisey Krasnoyarsk–
+  // Pari Nizhny Novgorod, Leningradets–SKA-Khabarovsk), and id=951803
+  // answers HTTP 200 with body `null` as a league page — the REAL page id
+  // is the day feed's OWN parentLeagueId 193 (live-probed: details.name
+  // "Russian Cup", 17 SLASH allAvailableSeasons '2026/2027'→… — NO
+  // plainYearSeasons, the GUA semantics; composite:true with FOUR 4-row
+  // sub-tables 'Cup Grp. A'..'Cup Grp. D' = 16 rows, the new-format group
+  // stage the cycle-141 composite branch renders; 60 fixtures 49 finished;
+  // stats players present (2 metric groups); playoff key present with ZERO
+  // rounds — the honest no-bracket hide; transfers the cups' honest hide).
+  // faName rides the ALREADY-SHIPPED mapping «جام حذفی روسیه» (the
+  // ARCHIVE_TID_FA 951803 entry + the group ids 938418-938421 family, the
+  // 462 live-window find) byte-equal so the day feed and the league page
+  // never disagree; enName byte-identical to the payload's own "Russian
+  // Cup". espnSlug probed LIVE and honestly ABSENT: rus.cup AND
+  // russian.cup both HTTP 400 (the hazfi no-slug precedent — the dormant
+  // ESPN fallback simply skips). The four 'cup grp. x' composite labels
+  // joined COMPOSITE_REGION_FA this cycle (the 469/474 unmapped-label
+  // lesson — otherwise every group header would leak raw Latin on the
+  // standings page the registration itself just lit up). globalMerge:
+  // false — the 376 one-flag semantic unchanged.
+  { key: "russia-cup", fotmobId: 193,         ccode3: "RUS",  faName: "جام حذفی روسیه",    enName: "Russian Cup",      priority: 40, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the

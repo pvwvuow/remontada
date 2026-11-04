@@ -4392,6 +4392,17 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // sports convention (the 157 «گروه A» line).
       "clausura group a": "کلاسورا — گروه A", "clausura group b": "کلاسورا — گروه B",
       "apertura group a": "آپرتورا — گروه A", "apertura group b": "آپرتورا — گروه B",
+      // cycle-489: the Russian Cup composite feed (the catalog's russia-cup,
+      // fotmob id 193 — the ledger's کاپ head) spells its four group
+      // sub-tables «Cup Grp. A»..'Cup Grp. D' (probed live UA Chrome/124:
+      // four 4-row sub-tables, composite:true) — neither the bare
+      // "group a".."group h" keys nor the "grp. a".."grp. l" class matches
+      // the compound spelling, so every label would leak raw Latin on the
+      // standings page the registration itself just lit up. The Persian
+      // family name rides the 938418-938421 day-feed mapping convention
+      // («جام حذفی روسیه — گروه A» etc., byte-equal).
+      "cup grp. a": "جام حذفی روسیه — گروه A", "cup grp. b": "جام حذفی روسیه — گروه B",
+      "cup grp. c": "جام حذفی روسیه — گروه C", "cup grp. d": "جام حذفی روسیه — گروه D",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];
@@ -7044,11 +7055,17 @@ const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): P
  * Premier League witnesses (Rubin Kazan 8683 et al.) cached their
  * «اطلاعات لیگ یافت نشد» negatives at v4 before the russia 63 head
  * landed; the bump retires them so the newly served league-info line
- * cannot be pinned to the fallback. */
+ * cannot be pinned to the fallback.
+ * cycle-489: v5 → v6 — the same one-move rule for the registry's next
+ * head (russia-cup 193): the cup's own witnesses (Yenisey Krasnoyarsk /
+ * SKA-Khabarovsk et al. — the Regions Path wave the day feed serves under
+ * the day id 951803/parent 193) cached their «اطلاعات لیگ یافت نشد»
+ * negatives at v5 before the 193 head landed; the bump retires them so
+ * the newly served league-info line cannot be pinned to the fallback. */
 export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
   return cached(
-    `teamStandingsRow:v5:${teamId}:${hintLeagueId ?? 0}`,
+    `teamStandingsRow:v6:${teamId}:${hintLeagueId ?? 0}`,
     10 * 60_000,
     () => findTeamInStandingsWalk(teamId, hintLeagueId),
   );

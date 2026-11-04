@@ -33,10 +33,10 @@ import re
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 m = re.search(r'export const LEAGUES: LeagueConfig\[\] = \[(.*?)\n\];', s, re.S)
 body = m.group(1)
-entries = re.findall(r'\{ key: "([a-z0-9]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
+entries = re.findall(r'\{ key: "([a-z0-9\-]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
 d = {e[0]: e for e in entries}
 ok = True; why = []
-if len(entries) != 39: ok=False; why.append(f"entries={len(entries)}!=39")  # cycle-484: the registry's next head (russia 63) — the count legitimately grows one-per-fix-cycle
+if len(entries) != 40: ok=False; why.append(f"entries={len(entries)}!=40")  # cycle-484: the registry's next head (russia 63) — the count legitimately grows one-per-fix-cycle
 want = {"estonia": ("248","EST","34"), "honduras": ("337","HON","35"), "panama": ("9039","PAN","36")}
 for k,(fid,cc,pr) in want.items():
     if k not in d: ok=False; why.append(f"{k} missing"); continue
@@ -50,7 +50,7 @@ for k,(fid,cc,pr) in want.items():
 print("0" if ok else ";".join(why))
 PY
 )
-[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 39 entries (36 since 469 + the 474 ledger HEAD argentina 112 + the 479 registry head guatemala 336 + the 484 registry head russia 63); estonia=248/EST/34, honduras=337/HON/35 (espnSlug hon.1), panama=9039/PAN/36; all globalMerge:false; plainYearSeasons only on estonia+panama" || bad "A1 catalog" "$A1"
+[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 40 entries (36 since 469 + the 474 ledger HEAD argentina 112 + the 479 registry head guatemala 336 + the 484 registry head russia 63 + the 489 registry head russia-cup 193); estonia=248/EST/34, honduras=337/HON/35 (espnSlug hon.1), panama=9039/PAN/36; all globalMerge:false; plainYearSeasons only on estonia+panama" || bad "A1 catalog" "$A1"
 A2=$(python3 - <<'PY'
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 fa = {"estonia": "لیگ برتر استونی", "honduras": "لیگ ملی هندوراس — آپرتورا", "panama": "لیگ فوتبال پاناما — آپرتورا"}
@@ -73,10 +73,10 @@ print('0' if not miss else miss)")
 [ "$A3" = "0" ] && ok "A3 COMPOSITE_REGION_FA carries the four PAN zone labels (no raw Latin on the composite standings page)" || bad "A3 zone labels" "$A3"
 A4=$(python3 -c "
 s = open('src/lib/fotmob.ts', encoding='utf-8').read()
+v6 = 'teamStandingsRow:v6:' in s
 v5 = 'teamStandingsRow:v5:' in s
-v4 = 'teamStandingsRow:v4:' in s
-print('0' if (v5 and not v4) else f'v5={v5} v4_still_present={v4}')")
-[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 479 v4 (currently v5 per the 484 registry head russia 63 — stale pre-registration negatives cannot survive the deploy)" || bad "A4 cache bump" "$A4"
+print('0' if (v6 and not v5) else f'v6={v6} v5_still_present={v5}')")
+[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 484 v5 (currently v6 per the 489 registry head russia-cup 193 — stale pre-registration negatives cannot survive the deploy)" || bad "A4 cache bump" "$A4"
 
 echo "== B. the standings APIs + the witness sweep =="
 api() { curl -s --max-time 90 "$BASE/api/standings?league=$1"; }

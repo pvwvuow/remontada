@@ -31,10 +31,10 @@ import re
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 m = re.search(r'const LEAGUES[^=]*= \[(.*?)\];', s, re.S)
 body = m.group(1)
-entries = re.findall(r'\{ key: "([a-z0-9]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
+entries = re.findall(r'\{ key: "([a-z0-9\-]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
 d = {e[0]: e for e in entries}
 ok = True; why = []
-if len(entries) != 39: ok=False; why.append(f"entries={len(entries)}!=39")
+if len(entries) != 40: ok=False; why.append(f"entries={len(entries)}!=40")
 e = d.get("russia")
 if not e: ok=False; why.append("russia missing")
 else:
@@ -52,7 +52,7 @@ if not x or x[1]!="336" or x[2]!="GUA": ok=False; why.append("guatemala head dri
 print("0" if ok else ";".join(why))
 PY
 )
-[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 39 entries; russia=63/RUS/39 (espnSlug rus.1, globalMerge:false, NO plainYearSeasons — the 484 registry head); the 479 guatemala head byte-intact" || bad "A1 catalog" "$A1"
+[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 40 entries; russia=63/RUS/39 (espnSlug rus.1, globalMerge:false, NO plainYearSeasons — the 484 registry head) + the 489 registry head russia-cup 193 (NO espnSlug, the hazfi precedent, composite groups) byte-intact; the 479 guatemala head byte-intact" || bad "A1 catalog" "$A1"
 A2=$(python3 - <<'PY'
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 ok = True; why = []
@@ -90,10 +90,10 @@ PY
 [ "$A3" = "0" ] && ok "A3 enName byte-read LIVE off the day feed: the RUS group leagueId=63 «Premier League» == the catalog enName (the 474 byte-read rule)" || bad "A3 live byte" "$A3"
 A4=$(python3 -c "
 s = open('src/lib/fotmob.ts', encoding='utf-8').read()
+v6 = 'teamStandingsRow:v6:' in s
 v5 = 'teamStandingsRow:v5:' in s
-v4 = 'teamStandingsRow:v4:' in s
-print('0' if (v5 and not v4) else f'v5={v5} v4_still_present={v4}')")
-[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow:v4 → v5 (the pre-484 L2 negatives for the RUS witnesses 8683 et al. cannot survive the deploy — the standing one-move rule)" || bad "A4 cache bump" "$A4"
+print('0' if (v6 and not v5) else f'v6={v6} v5_still_present={v5}')")
+[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow:v5 → v6 (the pre-484 L2 negatives for the RUS witnesses 8683 et al. cannot survive the deploy — the standing one-move rule)" || bad "A4 cache bump" "$A4"
 
 echo "== B. the live APIs (the fix's own effect) =="
 B1=$(curl -s --max-time 90 "$BASE/api/standings?league=russia" | python3 -c "

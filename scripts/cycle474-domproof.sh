@@ -35,10 +35,10 @@ import re
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 m = re.search(r'export const LEAGUES: LeagueConfig\[\] = \[(.*?)\n\];', s, re.S)
 body = m.group(1)
-entries = re.findall(r'\{ key: "([a-z0-9]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
+entries = re.findall(r'\{ key: "([a-z0-9\-]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
 d = {e[0]: e for e in entries}
 ok = True; why = []
-if len(entries) != 39: ok=False; why.append(f"entries={len(entries)}!=39")  # cycle-484: the registry's next head (russia 63) — the count legitimately grows one-per-fix-cycle
+if len(entries) != 40: ok=False; why.append(f"entries={len(entries)}!=40")  # cycle-484: the registry's next head (russia 63) — the count legitimately grows one-per-fix-cycle
 e = d.get("argentina")
 if not e: ok=False; why.append("argentina missing")
 else:
@@ -58,7 +58,7 @@ for k,(fid,cc,pr) in {"estonia":("248","EST","34"),"honduras":("337","HON","35")
 print("0" if ok else ";".join(why))
 PY
 )
-[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 39 entries (the 479 registry head guatemala 336 + the 484 registry head russia 63 joined); argentina=112/ARG/37 (espnSlug arg.1, globalMerge:false, plainYearSeasons:true); the 469 trio byte-intact" || bad "A1 catalog" "$A1"
+[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 40 entries (the 479 registry head guatemala 336 + the 484 registry head russia 63 + the 489 registry head russia-cup 193 joined); argentina=112/ARG/37 (espnSlug arg.1, globalMerge:false, plainYearSeasons:true); the 469 trio byte-intact" || bad "A1 catalog" "$A1"
 A2=$(python3 - <<'PY'
 s = open('src/lib/leagues.ts', encoding='utf-8').read()
 ok = True; why = []
@@ -80,10 +80,10 @@ print('0' if not miss else miss)")
 [ "$A3" = "0" ] && ok "A3 COMPOSITE_REGION_FA carries the four ARG group labels (no raw Latin on the composite standings page)" || bad "A3 group labels" "$A3"
 A4=$(python3 -c "
 s = open('src/lib/fotmob.ts', encoding='utf-8').read()
+v6 = 'teamStandingsRow:v6:' in s
 v5 = 'teamStandingsRow:v5:' in s
-v4 = 'teamStandingsRow:v4:' in s
-print('0' if (v5 and not v4) else f'v5={v5} v4_still_present={v4}')")
-[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 479 v4 (currently v5 per the 484 registry head — the pre-474 L2 negatives for the ARG witnesses cannot survive the deploy)" || bad "A4 cache bump" "$A4"
+print('0' if (v6 and not v5) else f'v6={v6} v5_still_present={v5}')")
+[ "$A4" = "0" ] && ok "A4 the walk cache bumped teamStandingsRow past the 484 v5 (currently v6 per the 489 registry head — the pre-474 L2 negatives for the ARG witnesses cannot survive the deploy)" || bad "A4 cache bump" "$A4"
 
 echo "== B. the live APIs (the fix's own effect) =="
 B1=$(curl -s --max-time 90 "$BASE/api/standings?league=argentina" | python3 -c "
