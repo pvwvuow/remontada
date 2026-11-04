@@ -38,8 +38,8 @@ grep -q '"whitby": "ویتبای تاون",' src/lib/leagues.ts \
   && ok "A2 the whitby key byte-exact in TEAM_FA (the anchor title's OWN ویتبای spelling)" || bad "A2" "missing"
 grep -q "cycle-500: batch 42 — the ENG tranche" src/lib/leagues.ts \
   && ok "A3 the batch-42 block comment present" || bad "A3" "missing"
-grep -q "matches:v46:" src/lib/fotmob.ts && ! grep -q "matches:v45:" src/lib/fotmob.ts \
-  && ok "A4 the cache constant v46 (v45 purged)" || bad "A4" "cache constant"
+grep -qE "matches:v[0-9]+:" src/lib/fotmob.ts && ! grep -q "matches:v45:" src/lib/fotmob.ts \
+  && ok "A4 the cache constant advanced past v45 (version-agnostic since the 501 stale-pin lesson — the B4 re-anchor discipline applied to the family)" || bad "A4" "cache constant"
 grep -q "cycle-500: v46 — harvest batch 42" src/lib/fotmob.ts \
   && ok "A5 the cache comment-chain v46 line present (the 487 lesson: chain + constant)" || bad "A5" "chain line"
 DK=$(python3 -c "

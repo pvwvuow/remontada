@@ -4400,6 +4400,35 @@ const TEAM_FA: Record<string, string> = {
   // 1688996 — the title's OWN ویتبای spelling, byte-derived not hand-typed).
   "frome town": "فروم تاون",
   "whitby": "ویتبای تاون",
+  // cycle-501: batch 43 — the ESP tranche (2 names) of the FRESH 501
+  // census into TEAM_FA (the 446-pick rule) — the waiting 500 runner-up
+  // FINALLY ALONE at the top (the 477/482/485 loser-waits precedent): the
+  // fresh census (scripts/c501-census.py, the 447 live-re-read lesson)
+  // measured distinct=1611 / raw_rows=2776 == the 500 post-patch MEASURED
+  // numbers EXACT (zero upstream drift) DOUBLE-READ IDENTICAL; the field:
+  // ESP 6 names four (W) → 2 effective [Elche Ilicitano, La Nucía] ALONE,
+  // ENG 5 names ALL (W) → 0 (the 435 rule — the 500 harvest took Frome
+  // Town + Whitby out of the raw pool), INT 4 fully (W) → 0; KSA/NED/MAR/
+  // KUW/BUL/IND/HUN 2 below; the MLS playoff wave STILL below the
+  // threshold (no USA name in the count>=3 field — the 494 observation,
+  // fresh a third time).
+  // The fresh probe (scripts/c501-wiki-probe.py, 1.8s cadence): ESP 0
+  // direct anchors CONFIRMED fresh — Elche Ilicitano NO wikidata club
+  // entity + zero direct fa hits; La Nucía Q4889929 P17=Q29 OK but ZERO
+  // fawiki sitelink (fresh again) and the fa search hitting only the
+  // TOWN article. BOTH renders are the 466-rule honest reads,
+  // BYTE-DERIVED from witnesses (never hand-typed):
+  // • Elche Ilicitano → الچه ایلیسیتانو — the fa.wiki article's OWN
+  //   phrase «الچه سی اف ایلیسیتانو» (خوزه لوئیس فریازا pageid 6235403:
+  //   «...برای الچه سی اف ایلیسیتانو بازی می‌کند»; the same spelling in
+  //   خوان مودستو + پاتریک گراف) minus the «سی اف» the feed's raw does
+  //   not carry — the FC-rule-minus-prefix class, the اشدود/آمازولو
+  //   precedent.
+  // • La Nucía → لا نوسیا — the TOWN article 214243's OWN title (the
+  //   آرهوس 485 / دوربان 486 town-grounding class; the club named after
+  //   the town, the raw carries no suffix).
+  "elche ilicitano": "الچه ایلیسیتانو",
+  "la nucía": "لا نوسیا",
 
 
 
