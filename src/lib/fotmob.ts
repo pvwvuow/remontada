@@ -4406,6 +4406,19 @@ export async function getStandings(leagueKey: string, season?: string): Promise<
       // («جام حذفی روسیه — گروه A» etc., byte-equal).
       "cup grp. a": "جام حذفی روسیه — گروه A", "cup grp. b": "جام حذفی روسیه — گروه B",
       "cup grp. c": "جام حذفی روسیه — گروه C", "cup grp. d": "جام حذفی روسیه — گروه D",
+      // cycle-494: the MLS composite feed (the catalog's mls, fotmob id 130
+      // — the ledger's MLS head) spells its three sub-tables «Eastern» /
+      // «Western» / «Supporters Shield» (probed live UA Chrome/124: 15 + 15
+      // + 30 rows) — the bare "east"/"west" keys never match the -ern
+      // spellings, so every group header would leak raw Latin on the
+      // standings page the registration itself just lit up (the
+      // 469/474/489 unmapped-label lesson). MLS runs CONFERENCES, hence the
+      // کنفرانس labels; the third block IS the merged 30-row table but the
+      // honest label is the trophy's own name, not the Swiss «جدول کلی»
+      // borrow (the 160 semantics differ: that map entry belongs to an
+      // archived season split, this one to a live standing trophy table).
+      "eastern": "کنفرانس شرقی", "western": "کنفرانس غربی",
+      "supporters shield": "سپانسرز شیلد",
     };
     const compositeSubs = raw.table?.[0]?.data?.composite === true ? raw.table?.[0]?.data?.tables : undefined;
     const rows: StandingsRow[] = [];

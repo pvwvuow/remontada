@@ -790,6 +790,60 @@ export const LEAGUES: LeagueConfig[] = [
   // standings page the registration itself just lit up). globalMerge:
   // false — the 376 one-flag semantic unchanged.
   { key: "russia-cup", fotmobId: 193,         ccode3: "RUS",  faName: "جام حذفی روسیه",    enName: "Russian Cup",      priority: 40, globalMerge: false },
+  // cycle-494: the registry's next head (the 475/482/483/484/489 ledger
+  // order: GUA 479 → russia 63 → کاپ 951803 → MLS 913550, one-per-cycle) —
+  // Major League Soccer, the ledger's «MLS 913550» line. THE DAY-ID TRAP
+  // CLASS EATEN (the 469 EST/HON/PAN + 474 ARG + 479 GUA precedent,
+  // re-proven live 2026-11-04 UA Chrome/124): the day feed carries MLS as
+  // leagueId=913550 primaryId=130 parentLeagueId=130 (witness match 5071455,
+  // LAFC 2-2 LA Galaxy, 2026-10-26), and id=913550 answers literal NULL as a
+  // league page across EVERY shape tried (bare / empty ccode3 / ccode3=USA
+  // + a six-code brute USA|MLS|INT|WOR|AME|NAM + season=2026 — all null).
+  // The REAL page id 130 surfaced TWICE: the day feed's own parentLeagueId
+  // AND the 141 crack (matchDetails 5071455 infoBox Tournament {id
+  // 10000002, parentLeagueId 130, link /leagues/130/overview/major-league-
+  // soccer, leagueName «Major League Soccer»}; the team route agrees —
+  // LA Galaxy 6637 tableData leagueId=130). NEW PROBE CLASS, honestly
+  // recorded: id=130 itself answered INTERMITTENT literal-null 200s for
+  // ~15 probe minutes (both the curl and the urllib shapes, ~15 requests)
+  // before settling into full-payload 200s on every retry — upstream
+  // edge-cache warming, self-healing with repeats; a probe-lesson only,
+  // zero app change (the app's 60-min league cache and its on-demand
+  // fetches sit downstream of the same class).
+  // Probed shape (1.3MB payload): COMPOSITE table (composite:true + THREE
+  // sub-tables 'Eastern' 15 rows / 'Western' 15 / 'Supporters Shield' 30 —
+  // Nashville SC 74 pts tops both the East and the Shield, Vancouver
+  // Whitecaps 61 tops the West) — the three labels join COMPOSITE_REGION_FA
+  // (fotmob.ts) so the standings page the registration lights up never
+  // leaks raw Latin (the 469/474/489 unmapped-label lesson). 17 PLAIN-YEAR
+  // allAvailableSeasons ('2026'→'2010', ZERO slash/suffixed) →
+  // plainYearSeasons:true (the 382 flag; the estonia/panama/argentina
+  // precedent), selectedSeason '2026'. playoff ABSENT (the regular season
+  // is over; the live playoffs ride the day-tournament id 913550 — the
+  // bracket tab honestly hides, the 56 contract); titleHistory ABSENT (the
+  // «قهرمانان» tab honestly hidden, the 121 contract — the payload's own
+  // `seasons` winners block is a different field the app does not read);
+  // transfers.data REAL (100 rows, first Hernán López — the 474 witness
+  // name); stats PRESENT (players + teams, Top scorer Lionel Messi 26 —
+  // Inter Miami CF); fixtures.allMatches=510; leagueColor/pageUrl ABSENT →
+  // the strict-hex guard hides the color chip (the fotmob.ts:964
+  // contract). espnSlug usa.1 probed LIVE on the app's OWN shape (site/v2
+  // scoreboard, the fotmob.ts:1685 URL): 200 + content verified
+  // (dates=20261107: 15 events, 8 verified MLS club hits — Vancouver
+  // Whitecaps / Inter Miami CF / Austin FC / …) → the field RIDES (the
+  // 474/479 rule); mls.1 404+400 on both shapes. faName rides the
+  // ALREADY-SHIPPED CC mapping "major league soccer|USA" = «لیگ حرفه‌ای
+  // آمریکا» (the 384 block) — verified LIVE on the app's own feed
+  // (/api/matches?offset=-9: the group's leagueFa renders «لیگ حرفه‌ای
+  // آمریکا» byte-equal and the witness match API /api/match/5071457 carries
+  // match.leagueFa byte-equal, all five witness teams already Persian from
+  // the 470 batch-3 wave) so the day feed and the league page never
+  // disagree; enName byte-identical to the day-feed group name «Major
+  // League Soccer» (the live group block + matchDetails leagueName bytes —
+  // NOT the details.name "MLS", the 469 disambiguation semantics).
+  // globalMerge: false — the plain-year feed never enters the slash-season
+  // allSeasons intersection (the 382 one-flag semantic).
+  { key: "mls",        fotmobId: 130,         ccode3: "USA",  faName: "لیگ حرفه‌ای آمریکا", enName: "Major League Soccer", espnSlug: "usa.1",        priority: 41, globalMerge: false, plainYearSeasons: true },
 ];
 
 // Persian names for well-known competitions that appear inside the

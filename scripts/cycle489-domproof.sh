@@ -34,7 +34,7 @@ body = m.group(1)
 entries = re.findall(r'\{ key: "([a-z0-9\-]+)",\s*fotmobId: (\d+),\s*ccode3: "([A-Z0-9]+)",\s*faName: "([^"]+)",\s*enName: "([^"]+)",?(.*?)\},', body)
 d = {e[0]: e for e in entries}
 ok = True; why = []
-if len(entries) != 40: ok=False; why.append(f"entries={len(entries)}!=40")
+if len(entries) != 41: ok=False; why.append(f"entries={len(entries)}!=41")  # re-anchored 40→41 at cycle-494: the registry's next head (mls, fotmobId 130) joined — the loud re-anchor, the B4/492 lesson
 e = d.get("russia-cup")
 if not e: ok=False; why.append("russia-cup missing")
 else:
@@ -54,7 +54,7 @@ if not y or y[1]!="336" or y[2]!="GUA": ok=False; why.append("guatemala head dri
 print("0" if ok else ";".join(why))
 PY
 )
-[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 40 entries; russia-cup=193/RUS/40 (faName «جام حذفی روسیه», enName «Russian Cup», NO espnSlug — the live 400 probe, globalMerge:false, NO plainYearSeasons — the 489 registry head); the 484 russia 63 + 479 guatemala 336 heads byte-intact" || bad "A1 catalog" "$A1"
+[ "$A1" = "0" ] && ok "A1 LEAGUES parses to exactly 41 entries (re-anchored 40→41 at cycle-494 — the registry's next head mls joined, the loud re-anchor lesson); russia-cup=193/RUS/40 (faName «جام حذفی روسیه», enName «Russian Cup», NO espnSlug — the live 400 probe, globalMerge:false, NO plainYearSeasons — the 489 registry head); the 484 russia 63 + 479 guatemala 336 heads byte-intact" || bad "A1 catalog" "$A1"
 A2=$(python3 - <<'PY'
 s = open('src/lib/fotmob.ts', encoding='utf-8').read()
 ok = True; why = []
