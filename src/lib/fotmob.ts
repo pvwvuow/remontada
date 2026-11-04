@@ -7036,11 +7036,16 @@ const findTeamInStandingsWalk = async (teamId: number, hintLeagueId?: number): P
  * (CSD Municipal 9933 / Comunicaciones FC 49761 — the 5861309 crack's
  * clubs, hinted by the day id 938628 which the catalog does not carry) and
  * their L2 NEGATIVES would outlive this deploy inside the 10-minute TTL,
- * pinning the very pages this fix serves to the fallback. */
+ * pinning the very pages this fix serves to the fallback.
+ * cycle-484: v4 → v5 — the same class one registry head later: the RUS
+ * Premier League witnesses (Rubin Kazan 8683 et al.) cached their
+ * «اطلاعات لیگ یافت نشد» negatives at v4 before the russia 63 head
+ * landed; the bump retires them so the newly served league-info line
+ * cannot be pinned to the fallback. */
 export function findTeamInStandings(teamId: number, hintLeagueId?: number): Promise<TeamRowInfo | null> {
   if (!Number.isFinite(teamId) || teamId <= 0) return Promise.resolve(null);
   return cached(
-    `teamStandingsRow:v4:${teamId}:${hintLeagueId ?? 0}`,
+    `teamStandingsRow:v5:${teamId}:${hintLeagueId ?? 0}`,
     10 * 60_000,
     () => findTeamInStandingsWalk(teamId, hintLeagueId),
   );

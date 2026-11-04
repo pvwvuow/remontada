@@ -745,6 +745,24 @@ export const LEAGUES: LeagueConfig[] = [
   // 469 disambiguation comment). globalMerge: false — the feed never enters
   // the slash-season intersection of another league (the 382 semantic).
   { key: "guatemala",  fotmobId: 336,         ccode3: "GUA",  faName: "لیگ ملی گواتمالا — آپرتورا", enName: "Liga Nacional Apertura", espnSlug: "gua.1",        priority: 38, globalMerge: false },
+  // cycle-484: the registry's next head (the 475/482/483 ledger order:
+  // GUA 479 → russia 63 → cup 951803 → MLS 913550, one-per-cycle) — the
+  // Russian Premier League, the REAL page id the day feed itself carries
+  // (groups leagueId=63 «Premier League» probed 2026-11-04, UA Chrome/124 —
+  // no day-id trap here, unlike the 938422 First League wave whose ids are
+  // the null-page class). faName rides the ALREADY-SHIPPED mapping «لیگ
+  // برتر روسیه» ("premier league|RUS", the 384 CC-keyed block — byte-equal
+  // so the day feed and the league page never disagree); enName
+  // byte-identical to the day-feed group name «Premier League» (the ENG pl
+  // shares the enName but every consumer is id/keyed — fotmobId 47 vs 63,
+  // and the 384 mapping keys are CC-suffixed "premier league|RUS" vs the
+  // ENG bare form, the 469 disambiguation semantics). Probed shape: 17
+  // SLASH seasons ('2026/2027'… — NO plainYearSeasons, the GUA semantics),
+  // table[0].data.table.all present (the standard table league), details
+  // name «Premier League». espnSlug rus.1 probed LIVE (ESPN answers
+  // leagues=['Russian Premier League'] — the dormant fotmob-outage
+  // fallback, the 474/479 espnSlug rule). globalMerge: false.
+  { key: "russia",     fotmobId: 63,          ccode3: "RUS",  faName: "لیگ برتر روسیه",     enName: "Premier League", espnSlug: "rus.1",           priority: 39, globalMerge: false },
 ];
 
 // Persian names for well-known competitions that appear inside the
