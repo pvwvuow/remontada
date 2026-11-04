@@ -4218,6 +4218,68 @@ const TEAM_FA: Record<string, string> = {
   "hjk": "هلسینکی",
   "if gnistan": "گنیستان",
   "vps": "وی‌پی‌اس",
+  // cycle-495: batch 39 — ALL 4 count>=3 single-country SLV names of the
+  // FRESH 495 census into TEAM_FA (the 446-pick rule) — the WINNER of the
+  // SVK/SLV 2-2 anchor tie by the 447 QUALITY tie-break on the FRESH bytes
+  // (the 491/492 form; scripts/c495-wiki-probe.py, 1.8s cadence). The 494
+  // rotation line declared the waiting tie SVK 4 / SVN 4 / SLV 4 with the
+  // fresh-492 anchor scoreboard SVK 2 / SLV 2 / SVN 1 — the fresh probe
+  // re-count (the 447 live-re-read lesson) confirmed the tie EXACTLY:
+  // SLV 2 (پلاتینزه 6438277 + ایسیدرو متاپان 6638134, both P17=Q792
+  // verified) / SVK 2 (کوشیتسه 6386288 direct + دوکلا بانسکا بیستریتسا
+  // 6386207 re-surfaced by the fa-search fallback, the 490 precedent — its
+  // wikidata entity NOT found by this probe's search while the fa article
+  // stands, the fallback path again) / SVN 1 (المپیا 6417931; Bravo/
+  // Brinje/Nafta zero entities or no sitelinks). THE TIE-BREAK ON TODAY'S
+  // WORDS (the 494 rotation line's own two axes — the UEFA axis AND the
+  // extracts' negative/positive markers): BOTH SLV anchors state the
+  // country's TOP flight BY NAME («در حال حاضر در لیگ برتر بازی می‌کند» —
+  // پلاتینزه 6438277 / «در لیگ برتر فوتبال السالوادور بازی می‌کند» —
+  // ایسیدرو 6638134) + the field's strongest POSITIVE record marker
+  // («آنها ۱۰ عنوان لیگ ملی را … کسب کرده‌اند»، «یک باشگاه غالب در فوتبال
+  // السالوادور») — vs SVK's SECOND-TIER string («لیگ دسته اول فوتبال
+  // اسلواکی», the standing 490/491 framing «SVK دستهٔ اول»; the extracts'
+  // «بالاترین سطح» clause stays the 491-classified artifact the 491/492
+  // cards ranked below named top flights) + the field's ONLY NEGATIVE
+  // marker («از سال ۲۰۱۷ … با مشکلات متعدد اقتصادی» — دوکلا, fresh today).
+  // The UEFA axis as practiced (491: GRE's UEFA top flight beat both; 492:
+  // FIN's UEFA top flight beat both) never ranked a UEFA second tier above
+  // a non-UEFA top flight — the level-by-name + marker evidence decides;
+  // SVK and SVN wait (the 472/477/482/485/487/490/491/492 loser-waits
+  // precedents; SVK's negative marker + second-tier string lose the
+  // visibility contest, the 492 record-visibility rule). The fresh census
+  // (scripts/c495-census.py, the 447 live-re-read lesson): pre-patch
+  // distinct=1625/raw_rows=2819 vs the B4 anchor 1626/2820 — a -1/-1
+  // delta, ONE single-row raw name exited the ±7 window entirely (the ±25
+  // tolerance class, the 492 −1-upstream-mutation precedent in reverse);
+  // the THREE-way 4-tie SVK/SVN/SLV confirmed fresh (all zero (W)); ENG 7
+  // five (W) → 2 effective (Frome Town, Whitby), ESP 6 four (W) → 2
+  // effective (Elche Ilicitano, La Nucía), INT 4 fully (W) → 0 effective
+  // (the 435 rule); KSA/NED/MAR/KUW/BUL/IND 2 below the tie; the MLS
+  // playoff wave STILL below the threshold (the 494 observation's
+  // possibility — each playoff club 1-2 rows in the window, count<3; the
+  // wave may reach x3 when a club's second playoff leg lands).
+  // TWO direct anchors, every render BYTE-DERIVED from the anchors' OWN
+  // titles (the FC rule minus the title's OWN prefix, the اشدود/آمازولو
+  // precedent): CD Platense Municipal → پلاتینزه مونیسیپال زاکاتیکولوکا
+  // (باشگاه فوتبال پلاتینزه مونیسیپال زاکاتیکولوکا 6438277, the extract's
+  // own short-form clause «معمولاً به اختصار فقط پلاتینزه نامیده می‌شود»
+  // noted, the full title kept byte-derived) / Isidro Metapan → ایسیدرو
+  // متاپان (باشگاه ورزشی ایسیدرو متاپان 6638134 — the title's OWN prefix
+  // is باشگاه ورزشی, NOT باشگاه فوتبال; the 487 ledger's short form).
+  // TWO zero-anchor honest reads (the 466 UPNFM rule — the feed's
+  // single-country SLV tagging as identity evidence, the آرهوس-فرماد 485
+  // precedent): CD Cacahuatique → کاکاهواتیکه (Q60786481 P17=Q792 + the
+  // fa-sitelink absence; the «کاکاهواتیکه» fa search zero hits; pure
+  // phonetic) / Fuerte San Francisco → فوئرته سان فرانسیسکو (Q2979866
+  // P17=Q792 + the fa-sitelink absence; the fa hits climate/airport
+  // geography noise NOT the club — the نستوس-کریسوپولی 491 class; pure
+  // phonetic).
+  "cd cacahuatique": "کاکاهواتیکه",
+  "cd platense municipal": "پلاتینزه مونیسیپال زاکاتیکولوکا",
+  "fuerte san francisco": "فوئرته سان فرانسیسکو",
+  "isidro metapan": "ایسیدرو متاپان",
+
 };
 
 export function competitionFa(name: string, ccode?: string): string {
