@@ -4279,6 +4279,54 @@ const TEAM_FA: Record<string, string> = {
   "cd platense municipal": "پلاتینزه مونیسیپال زاکاتیکولوکا",
   "fuerte san francisco": "فوئرته سان فرانسیسکو",
   "isidro metapan": "ایسیدرو متاپان",
+  // cycle-496: batch 40 — ALL 4 count>=3 single-country SVK names of the
+  // FRESH 496 census into TEAM_FA (the 446-pick rule) — the WINNER of the
+  // SVK/SVN 4-4 tie by the fresh 447 ANCHOR COUNT (the 490 form exactly:
+  // SVK 2 vs SVN 1; scripts/c496-wiki-probe.py, 1.8s cadence). The 495
+  // rotation line declared the waiting tie SVK 4 / SVN 4 with the fresh-495
+  // anchor scoreboard SVK 2 (کوشیتسه + دوکلا-فالبک) vs SVN 1 (المپیا) —
+  // the fresh probe re-count (the 447 live-re-read lesson) confirmed the
+  // tie EXACTLY: the strict sitelink scoreboard read 1-1 (کوشیتسه 6386288 —
+  // Q5426448 P17=Q214 verified + the fawiki sitelink; المپیا 6417931 —
+  // Q31932 P17=Q215 + the sitelink) and the fallback class (the 490
+  // precedent — the fa article standing IS the direct anchor) restored the
+  // standing 2-1: دوکلا بانسکا بیستریتسا 6386207 — the fa article STANDS,
+  // the FIRST hit of the fa-search fallback for the exact form, identity
+  // verified via its extract's English name «FK Dukla Banská Bystrica»,
+  // its wikidata entity again NOT found by the probe's search while the fa
+  // article stands (the same probe behavior as 495) — so SVK 2 beats SVN 1
+  // by the anchor count (the 447/490/492 precedents); SVN waits (Bravo
+  // Q64363556 + Brinje Q16828238 entities exist P17=Q215 but ZERO fawiki
+  // sitelinks; Nafta no entity — the loser-waits precedents 472/477/482/
+  // 485/487/490/491/492/495). The fresh census (scripts/c496-census.py,
+  // the 447 live-re-read lesson): pre-patch distinct=1622/raw_rows=2808 vs
+  // the B4 anchor 1622/2808 — EXACT, ZERO pool drift (the first exact-match
+  // census since the 492 re-anchor); the tie confirmed fresh: SVK 4 / SVN 4
+  // (both zero (W)); ENG 7 five (W) → 2 effective (Frome Town, Whitby),
+  // ESP 6 four (W) → 2 effective (Elche Ilicitano, La Nucía), INT 4 fully
+  // (W) → 0 effective (the 435 rule); KSA/NED/MAR/KUW/BUL/IND/HUN/NGA 2
+  // below the tie; the MLS playoff wave STILL below the threshold (the 494
+  // observation — no USA name reached count>=3 in the window).
+  // TWO direct anchors, every render BYTE-DERIVED from the anchors' OWN
+  // titles (the FC rule minus the title's OWN باشگاه-فوتبال prefix, the
+  // اشدود/آمازولو precedent): Dukla Banská Bystrica → دوکلا بانسکا
+  // بیستریتسا (باشگاه فوتبال دوکلا بانسکا بیستریتسا 6386207) / FC Košice →
+  // کوشیتسه (باشگاه فوتبال کوشیتسه 6386288).
+  // TWO zero-anchor honest reads (the 466 UPNFM rule — the feed's
+  // single-country SVK tagging as identity evidence, the آرهوس-فرماد 485
+  // precedent): Skalica → اسکالیتسا (no wikidata club entity + no fa
+  // sitelink; the fa search «اسکالیتسا» hit a universities-list page only,
+  // «اسکالیسا» zero hits; pure phonetic — the «تس» transliteration
+  // consistent with the field's OWN بیستریتسا from the Dukla anchor title)
+  // / Zemplín Michalovce → زمپلین میخالوفتسه (no entity + no sitelink; the
+  // fa hits geography noise «اسلواکی/جغرافیای اسلواکی» and a biologist
+  // «بیورن زمپلین» NOT the club — the نستوس-کریسوپولی 491 class; pure
+  // phonetic).
+  "dukla banská bystrica": "دوکلا بانسکا بیستریتسا",
+  "fc košice": "کوشیتسه",
+  "skalica": "اسکالیتسا",
+  "zemplín michalovce": "زمپلین میخالوفتسه",
+
 
 };
 

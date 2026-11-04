@@ -1648,10 +1648,11 @@ export async function getMatchesByDate(dateYYYYMMDD: string): Promise<{ groups: 
   // cycle-491: v41 — harvest batch 37 (4 more names, the GRE tranche: the WINNER of the THREE-WAY 2-tie GRE/SVK/SLV by the 447 QUALITY tie-break — both GRE anchors current Super League Greece) changed the normalized team-fa content again; same rule, fresh cold window (v40 L2 rows purged + official restart).
   // cycle-492: v42 — harvest batch 38 (4 more names, the FIN tranche: the WINNER of the THREE-WAY 2-tie SVK/FIN/SLV by the 447 QUALITY tie-break — both FIN anchors state «لیگ برتر فوتبال فنلاند» + the HJK 27-titles record) changed the normalized team-fa content again; same rule, fresh cold window (v41 L2 rows purged + official restart).
   // cycle-495: v43 — harvest batch 39 (4 more names, the SLV tranche: the WINNER of the SVK/SLV 2-2 anchor tie by the 447 QUALITY tie-break on the fresh bytes — both SLV anchors state «لیگ برتر» + the ایسیدرو ۱۰-titles record vs SVK's second-tier string + the field's only negative marker) changed the normalized team-fa content again; same rule, fresh cold window (v42 L2 rows purged + official restart).
+  // cycle-496: v44 — harvest batch 40 (4 more names, the SVK tranche: the WINNER of the SVK/SVN 4-4 tie by the fresh 447 ANCHOR COUNT — SVK 2 [کوشیتسه + دوکلا-فالبک، فرم ۴۹۰] vs SVN 1 [المپیا]) changed the normalized team-fa content again; same rule, fresh cold window (v43 L2 rows purged + official restart).
   // 477/482 tie loser finally harvesting alone at the top) changed the
   // normalized team-fa content again; same rule, fresh cold window (v35 L2
   // rows purged + official restart).
-  return cached(`matches:v43:${dateYYYYMMDD}`, ttl, async () => {
+  return cached(`matches:v44:${dateYYYYMMDD}`, ttl, async () => {
     try {
       const raw = await fetchJson<FotMobMatches>(
         `https://www.fotmob.com/api/data/matches?date=${dateYYYYMMDD}`
