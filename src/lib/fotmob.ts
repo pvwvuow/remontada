@@ -6830,8 +6830,25 @@ export async function getLeagueTransfers(leagueKey: string): Promise<LeagueTrans
   const { lg, raw } = await getLeagueRaw(leagueKey);
   const list = raw.transfers?.data || [];
   if (list.length === 0) return null;
+  // cycle-499 (the 494 recorded observation, now fixed): the composite branch —
+  // on composite feeds (argentina 474 / mls 494) the flat `data.table` is an
+  // EMPTY object (the 141 probe), so this set stayed empty and every transfer
+  // row failed the club-membership gate — the tab honestly-hidden while
+  // transfers.data carried real rows (MLS probed 494: 100 rows, first
+  // هِرنان لوپس). Club ids now come from BOTH branches: the flat `all` block
+  // AND the composite sub-tables `data.tables[].table.all` — the same row
+  // shape (the 141 probe) and the same access path the standings renderer
+  // uses (fotmob.ts compositeSubs).
+  const tableData = raw.table?.[0]?.data;
   const clubIds = new Set<number>(
-    (raw.table?.[0]?.data?.table?.all || []).map((r) => Number(r?.id || 0)).filter((x) => x > 0)
+    [
+      ...(tableData?.table?.all || []),
+      ...(tableData?.composite === true && Array.isArray(tableData?.tables)
+        ? tableData.tables.flatMap((sub) => sub?.table?.all || [])
+        : []),
+    ]
+      .map((r) => Number(r?.id || 0))
+      .filter((x) => x > 0)
   );
   const items: LeagueTransferItem[] = [];
   for (const t of list) {
